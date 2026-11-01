@@ -10,6 +10,8 @@ body = body.replace("אין לך הרשאה לשמור כאן. בקשו מבעל
                     "לא ניתן לשמור: השם הזה רשום עם קוד אישי אחר. צאו והיכנסו מחדש עם הקוד הנכון.")
 body = body.replace("השמירה זמינה למורים שנכנסו עם חשבון ויש להם הרשאת עריכה לעמוד. בינתיים אפשר להוריד את התוכנית ל־Word.",
                     "אין חיבור לשרת כרגע. אפשר להוריד את התוכנית ל־Word ולנסות לשמור שוב בעוד רגע.")
+for x,y in [("עריכה (רכז)","עריכה"),("<b>עריכה כרכז · </b>","<b>עריכת תוכנית של מורה אחר · </b>"),("לוח הבקרה המלא פתוח לרכז.","")]:
+    body = body.replace(x, y)
 gate_css = """<style>
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}
 #gate{position:fixed;inset:0;z-index:50;background:radial-gradient(circle at 80% 10%,rgba(255,255,255,.14) 0 180px,transparent 181px),radial-gradient(circle at 10% 90%,rgba(255,255,255,.1) 0 140px,transparent 141px),var(--grad,#2f6fd6);display:grid;place-items:center;padding:20px;overflow:auto}
