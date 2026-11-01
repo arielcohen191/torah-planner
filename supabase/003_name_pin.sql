@@ -1,0 +1,3 @@
+-- login by teacher name + personal PIN: check_owner(), and save_plans accepts a 4–8 digit key
+-- (applied in Supabase as migration "name_and_pin_login")
+-- reset a teacher's PIN (deletes nothing else): update public.plans set owner_key_hash = extensions.crypt('NEWPIN', extensions.gen_salt('bf')) where teacher = 'NAME';
