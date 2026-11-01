@@ -1,0 +1,939 @@
+<title>מתכנן הספק כנפי רוח</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Frank+Ruhl+Libre:wght@700;900&display=swap">
+<style>
+/* Layout: admin console — dark navigation rail on the right, white top bar, widget grid on a cool grey canvas; lessons as color-coded schedule cards, numbers as rings and progress bars. */
+:root{
+  --canvas:#eef1f6; --card:#ffffff; --sunk:#f4f6fa; --line:#e1e6ee; --ink:#1d2939; --muted:#667085; --faint:#98a2b3;
+  --rail:#1c2636; --rail-2:#243245; --rail-ink:#c9d3e2; --rail-dim:#7d8aa0;
+  --primary:#2f6fd6; --primary-2:#4f8df0; --primary-ink:#ffffff; --primary-soft:#e6efff;
+  --ok:#14804a; --ok-soft:#dff5e8; --bad:#c8323f; --bad-soft:#fde5e7; --gold:#a35a00; --gold-soft:#fff1d6;
+  --s-torah:#2f6fd6; --s-navi:#d4631a; --s-mishna:#1f9d6b; --s-gemara:#8a4fd1; --s-other:#d6457f;
+  --t-torah:#e9f0fc; --t-navi:#fdeee3; --t-mishna:#e2f5ed; --t-gemara:#f1eafb; --t-other:#fbe8ef;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --f-ui:"Rubik","Segoe UI",Arial,sans-serif; --f-brand:"Frank Ruhl Libre","Times New Roman",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --canvas:#0e131b; --card:#171e2a; --sunk:#1d2533; --line:#293446; --ink:#e7ecf4; --muted:#9aa5b8; --faint:#6c788c;
+  --rail:#0a0f16; --rail-2:#151d29; --rail-ink:#c9d3e2; --rail-dim:#76839a;
+  --primary:#4a86e8; --primary-2:#6a9cf0; --primary-ink:#0b1320; --primary-soft:#1b2a44;
+  --ok:#5fd394; --ok-soft:#153024; --bad:#f2808a; --bad-soft:#3a1c21; --gold:#f0b860; --gold-soft:#33281a;
+  --s-torah:#4a86e8; --s-navi:#d9762f; --s-mishna:#2a9f70; --s-gemara:#9068e0; --s-other:#d9578a;
+  --t-torah:#1a2740; --t-navi:#33231a; --t-mishna:#142b22; --t-gemara:#261d38; --t-other:#33192a;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --canvas:#0e131b; --card:#171e2a; --sunk:#1d2533; --line:#293446; --ink:#e7ecf4; --muted:#9aa5b8; --faint:#6c788c;
+  --rail:#0a0f16; --rail-2:#151d29; --rail-ink:#c9d3e2; --rail-dim:#76839a;
+  --primary:#4a86e8; --primary-2:#6a9cf0; --primary-ink:#0b1320; --primary-soft:#1b2a44;
+  --ok:#5fd394; --ok-soft:#153024; --bad:#f2808a; --bad-soft:#3a1c21; --gold:#f0b860; --gold-soft:#33281a;
+  --s-torah:#4a86e8; --s-navi:#d9762f; --s-mishna:#2a9f70; --s-gemara:#9068e0; --s-other:#d9578a;
+  --t-torah:#1a2740; --t-navi:#33231a; --t-mishna:#142b22; --t-gemara:#261d38; --t-other:#33192a;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--canvas);color:var(--ink);font-family:var(--f-ui);font-size:14.5px;line-height:1.5;direction:rtl}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--rail)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+
+/* shell */
+.app{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh}
+.rail{background:var(--rail);color:var(--rail-ink);position:sticky;top:env(safe-area-inset-top,0px);height:100vh;overflow-y:auto;display:flex;flex-direction:column;padding-right:env(safe-area-inset-right,0px)}
+.brand{display:flex;align-items:center;gap:10px;padding:18px 16px;border-bottom:1px solid var(--rail-2)}
+.mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--primary-2),var(--primary));display:grid;place-items:center;color:#fff;font-family:var(--f-brand);font-weight:900;font-size:17px;flex:none}
+.brand b{display:block;color:#fff;font-size:16px;font-weight:700;line-height:1.2}
+.brand small{color:var(--rail-dim);font-size:12px}
+.me{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--rail-2)}
+.me img{width:36px;height:36px;border-radius:50%;flex:none;background:var(--rail-2)}
+.me b{display:block;color:#fff;font-size:14px;font-weight:600}
+.me small{color:var(--rail-dim);font-size:12px;display:flex;align-items:center;gap:5px}
+.me small::before{content:"";width:7px;height:7px;border-radius:50%;background:#3cc47c}
+.rail h6{margin:16px 16px 6px;font-size:11px;font-weight:600;color:var(--rail-dim);letter-spacing:.06em}
+.nav{display:flex;flex-direction:column;gap:2px;padding:0 8px}
+.nav button{font:inherit;display:flex;align-items:center;gap:10px;width:100%;text-align:right;background:none;border:none;color:var(--rail-ink);padding:10px 12px;border-radius:8px;cursor:pointer;position:relative}
+.nav button svg{width:18px;height:18px;flex:none;opacity:.85}
+.nav button:hover{background:var(--rail-2)}
+.nav button[aria-selected="true"]{background:var(--rail-2);color:#fff;font-weight:600}
+.nav button[aria-selected="true"]::after{content:"";position:absolute;right:-8px;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--primary-2)}
+.nav .count{margin-inline-start:auto;font-size:11px;font-weight:700;background:var(--primary);color:#fff;border-radius:99px;padding:1px 7px}
+.rail-foot{margin-top:auto;padding:14px 16px;font-size:12px;color:var(--rail-dim);border-top:1px solid var(--rail-2)}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:20px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.topbar h1{margin:0;font-size:19px;font-weight:700}
+.crumb{font-size:12px;color:var(--faint)}
+.today{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);background:var(--sunk);border:1px solid var(--line);border-radius:99px;padding:5px 12px;white-space:nowrap}
+.content{padding-block:20px 48px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:20px}
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .brand{border:none;padding:12px 4px}
+  .me,.rail h6,.rail-foot{display:none}
+  .nav{flex-direction:row;overflow-x:auto;padding:0 0 10px;width:100%}
+  .nav button{white-space:nowrap;width:auto}
+  .nav button[aria-selected="true"]::after{right:10px;left:10px;top:auto;bottom:2px;width:auto;height:3px}
+  .topbar{position:static;padding-right:max(16px,env(safe-area-inset-right,0px));padding-left:max(16px,env(safe-area-inset-left,0px))}
+  .content{padding-right:max(16px,env(safe-area-inset-right,0px));padding-left:max(16px,env(safe-area-inset-left,0px))}
+}
+
+/* widgets */
+.view{display:flex;flex-direction:column;gap:18px}
+.w{background:var(--card);border-radius:8px;box-shadow:var(--shadow);border:1px solid var(--line);min-width:0}
+.w-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.w-h h2{margin:0;font-size:15.5px;font-weight:700}
+.w-h .tools{display:flex;gap:2px;align-items:center}
+.w-h .tools button{border:none;background:none;color:var(--faint);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:16px;line-height:1}
+.w-h .tools button:hover{background:var(--sunk);color:var(--ink)}
+.w-b{padding:16px}
+.w.min .w-b{display:none}
+.wgrid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
+.wgrid2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:1100px){.wgrid,.wgrid2{grid-template-columns:minmax(0,1fr)}}
+.hint{color:var(--muted);font-size:13px;margin:0 0 14px}
+h3{font-size:14px;font-weight:700;margin:20px 0 8px;color:var(--ink)}
+
+/* stepper */
+.steps{display:flex;gap:0;margin-bottom:16px;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;box-shadow:var(--shadow)}
+.steps button{flex:1;font:inherit;font-size:13.5px;border:none;border-left:1px solid var(--line);background:none;color:var(--muted);padding:11px 10px;cursor:pointer;display:flex;gap:8px;align-items:center;justify-content:center}
+.steps button:last-child{border-left:none}
+.steps button b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--sunk);font-size:12px;color:var(--muted);border:1px solid var(--line)}
+.steps button[aria-current="step"]{background:var(--primary-soft);color:var(--ink);font-weight:600}
+.steps button[aria-current="step"] b{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}
+
+/* forms */
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px 14px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:600;color:var(--muted);min-width:0}
+input,select,textarea{font:inherit;font-size:14.5px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;min-width:0}
+input:hover,select:hover,textarea:hover{border-color:var(--faint)}
+textarea{min-height:120px;resize:vertical}
+input[type=number]{font-variant-numeric:tabular-nums}
+.subj-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px}
+.subj-pick button{font:inherit;font-weight:600;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);padding:10px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.subj-pick button i{width:10px;height:10px;border-radius:3px;flex:none}
+.subj-pick button[aria-pressed="true"]{border-color:currentColor;box-shadow:inset 0 0 0 1px currentColor}
+.days{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.days{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.day{border:1px solid var(--line);border-radius:8px;padding:9px 8px;text-align:center;background:var(--sunk)}
+.day.on{border-color:var(--primary);background:var(--primary-soft)}
+.day span{display:block;font-weight:600;font-size:13px;margin-bottom:5px}
+.day input{text-align:center;padding:5px;background:var(--card)}
+.row-list{display:flex;flex-direction:column;gap:8px}
+.mrow{display:grid;grid-template-columns:1fr 90px minmax(0,1.4fr) auto;gap:8px;align-items:center}
+@media (max-width:560px){.mrow{grid-template-columns:1fr 80px auto}.mrow .note{grid-column:1/-1;order:3}}
+.btn{font:inherit;font-weight:600;font-size:13.5px;border-radius:6px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--sunk)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+.btn.primary:hover{background:var(--primary-2)}
+.btn.ghost{border-color:transparent;background:none;color:var(--primary);padding:6px 8px}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;align-items:center}
+.x{border:none;background:none;color:var(--faint);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px}
+.note-line{font-size:12.5px;color:var(--muted);margin:10px 0 0}
+.range{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}
+.range fieldset{border:1px solid var(--line);border-radius:8px;padding:8px 12px 12px;margin:0;display:flex;gap:8px;min-width:0;background:var(--sunk)}
+.range legend{font-size:12.5px;font-weight:700;color:var(--ink);padding:0 4px}
+.range .f{flex:1}
+.taken{border-radius:6px;padding:9px 12px;font-size:13px;margin-top:14px;background:var(--gold-soft);color:var(--gold)}
+/* weekly table, same columns as the school's template */
+table.wk{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
+table.wk th,table.wk td{border:1px solid var(--line);padding:6px 7px;text-align:center;vertical-align:middle}
+table.wk thead th{background:var(--sunk);font-weight:700;font-size:12px}
+table.wk thead tr:first-child th.grp{background:var(--primary-soft);color:var(--primary)}
+table.wk td.par{font-weight:600;text-align:right;white-space:nowrap}
+table.wk td.par small{display:block;color:var(--faint);font-weight:400;font-size:11px}
+table.wk td.nt{text-align:right;font-weight:600;color:var(--bad);font-size:12px;max-width:180px}
+table.wk td.lbl{text-align:right;color:var(--muted);font-size:12px}
+table.wk tr.off td{background:var(--bad-soft)}
+table.wk tr.rev td.lbl{font-style:italic}
+table.wk tr.past td.par::after{content:"";}
+table.wk td.num{font-weight:700;font-variant-numeric:tabular-nums}
+table.wk input[type=checkbox]{width:18px;height:18px;accent-color:var(--ok)}
+table.wk input.why{font-size:12px;padding:4px 6px;min-width:110px}
+table.wk tfoot td{font-weight:700;background:var(--sunk)}
+.done-yes{color:var(--ok);font-weight:700} .done-no{color:var(--bad);font-weight:700}
+
+/* badges & rings */
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:99px;padding:2px 9px;background:var(--sunk);color:var(--muted);white-space:nowrap;border:1px solid var(--line)}
+.chip.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.chip.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.chip.gold{background:var(--gold-soft);color:var(--gold);border-color:transparent}
+.chip.ok::before{content:"✓"} .chip.bad::before{content:"!"}
+.ring{position:relative;display:inline-grid;place-items:center;flex:none}
+.ring svg{display:block;transform:rotate(-90deg)}
+.ring .v{position:absolute;inset:0;display:grid;place-items:center;font-weight:700;font-variant-numeric:tabular-nums}
+.dot{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+
+/* ledger */
+.ledger{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}
+.ledger-top{display:flex;align-items:center;gap:16px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:7px 10px;font-size:13.5px;margin:0;flex:1}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums;text-align:left}
+.status{border-radius:6px;padding:10px 12px;font-size:13px;margin-top:14px;border:1px solid transparent}
+.status.ok{background:var(--ok-soft);color:var(--ok)} .status.warn{background:var(--bad-soft);color:var(--bad)}
+.status b{display:block;font-size:14px}
+.subj-tag{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13px}
+
+/* plan banner + schedule cards */
+.banner{background:linear-gradient(135deg,var(--primary-2),var(--primary));color:#fff;border-radius:8px 8px 0 0;padding:16px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-end}
+.banner h2{margin:0;font-size:19px;font-weight:700;color:#fff}
+.banner .meta{font-size:13px;opacity:.9}
+.seg{display:inline-flex;background:rgba(255,255,255,.18);border-radius:8px;padding:3px}
+.seg button{font:inherit;font-size:13px;border:none;background:none;color:#fff;padding:5px 12px;cursor:pointer;border-radius:6px}
+.seg button[aria-pressed="true"]{background:#fff;color:#1d2939;font-weight:600}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.sched{padding:6px 16px 16px}
+.divider{display:flex;justify-content:center;margin:16px 0 8px}
+.divider span{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:4px 14px;font-size:12.5px;font-weight:600;color:var(--primary);box-shadow:var(--shadow)}
+.divider span small{color:var(--faint);font-weight:500;margin-inline-start:6px}
+.month-title{font-size:17px;font-weight:700;margin:22px 0 4px;display:flex;align-items:center;gap:10px}
+.month-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;border-radius:8px;padding:10px 12px;margin-bottom:8px;border-inline-start:5px solid var(--c);background:var(--tc)}
+.card .when{display:flex;flex-direction:column;align-items:center;min-width:52px;padding-inline-end:12px;border-inline-end:1px dashed color-mix(in srgb,var(--c) 45%,transparent)}
+.card .when b{font-size:15px;font-weight:700;color:var(--c)}
+.card .when small{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.card .what{min-width:0}
+.card .what b{display:block;font-weight:600;font-size:14px}
+.card .what small{color:var(--muted);font-size:12px}
+.card .hrs{display:grid;place-items:center;min-width:38px;height:38px;border-radius:50%;background:var(--card);color:var(--ink);font-weight:700;font-size:12px;box-shadow:var(--shadow);font-variant-numeric:tabular-nums}
+.card.rev{--c:var(--faint);--tc:var(--sunk)} .card.rev .what b{color:var(--muted);font-weight:500}
+.card.off{--c:var(--bad);--tc:var(--bad-soft)} .card.off .what b{color:var(--bad)}
+.card.mar{background-image:repeating-linear-gradient(135deg,transparent 0 10px,color-mix(in srgb,var(--gold) 10%,transparent) 10px 20px)}
+@media (max-width:520px){.card .when{min-width:44px;padding-inline-end:8px}}
+.cal-wrap{overflow-x:auto}
+.cal{display:grid;grid-template-columns:repeat(6,minmax(96px,1fr));gap:4px;min-width:620px}
+.cal .dh{font-size:12px;font-weight:600;color:var(--muted);text-align:center;padding:4px}
+.cell{min-height:78px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--card)}
+.cell .n{display:flex;justify-content:space-between;color:var(--faint);font-variant-numeric:tabular-nums}
+.cell.out{background:none;border-style:dashed;opacity:.45}
+.cell.hol{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.cell.learn{background:var(--tc);border-color:transparent;border-inline-start:3px solid var(--c)}
+.cell.mar{background:var(--gold-soft);border-color:transparent;border-inline-start:3px solid var(--gold)}
+.cell .c{margin-top:2px;font-weight:600;line-height:1.3}
+
+/* dashboard */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{display:flex;align-items:center;gap:14px;padding:16px}
+.kpi .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;flex:none}
+.kpi .ic svg{width:22px;height:22px}
+.kpi b{display:block;font-size:24px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi small{color:var(--muted);font-size:12.5px}
+.prow{display:grid;grid-template-columns:36px minmax(0,1fr) 52px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.prow:last-child{border-bottom:none}
+.prow:hover .pname{color:var(--primary)}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;background:var(--c)}
+.pname{font-weight:600;font-size:13.5px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.pname small{color:var(--muted);font-weight:400}
+.bar{height:6px;border-radius:99px;background:var(--sunk);margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--c)}
+.pct{justify-self:end;font-size:12px;font-weight:700;border-radius:99px;padding:2px 8px;color:#fff;font-variant-numeric:tabular-nums}
+.donut-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap;justify-content:center}
+.legend{display:flex;flex-direction:column;gap:8px;font-size:13px;min-width:150px}
+.legend div{display:flex;align-items:center;gap:8px}
+.legend b{margin-inline-start:auto;font-variant-numeric:tabular-nums}
+.tl{list-style:none;margin:0;padding:0;position:relative}
+.tl::before{content:"";position:absolute;right:15px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl li{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;padding:6px 0;position:relative}
+.tl .bul{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--c);font-size:12px;font-weight:700;z-index:1}
+.tl b{font-size:13px;font-weight:600}
+.tl small{display:block;color:var(--muted);font-size:12px}
+table.list{width:100%;border-collapse:collapse;font-size:13.5px}
+table.list th{text-align:right;font-size:12px;color:var(--muted);font-weight:600;background:var(--sunk);border-bottom:1px solid var(--line);padding:9px 10px;white-space:nowrap}
+table.list td{border-bottom:1px solid var(--line);padding:9px 10px;vertical-align:middle;font-variant-numeric:tabular-nums}
+table.list tr.click{cursor:pointer} table.list tr.click:hover td{background:var(--sunk)}
+.tbl{overflow-x:auto}
+.empty{border:1px dashed var(--line);border-radius:8px;padding:28px;text-align:center;color:var(--muted);background:var(--sunk)}
+.toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--canvas);padding:9px 16px;border-radius:8px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
+.confirm{display:inline-flex;gap:6px;align-items:center;font-size:12.5px}
+.holcard{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border-radius:8px;border-inline-start:5px solid var(--bad);background:var(--bad-soft);margin-bottom:8px}
+.holcard .d{font-weight:700;color:var(--bad);text-align:center;min-width:70px;font-size:13px}
+.holcard b{display:block}
+.holcard small{color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><div class="mark">כ״ר</div><div><b>מתכנן הספק</b><small>כנפי רוח · תשפ״ז</small></div></div>
+    <div class="me" id="me"><img id="meAv" alt=""><div><b id="meName">מורה</b><small id="meRole">מחובר</small></div></div>
+    <h6>ניווט</h6>
+    <nav class="nav" role="tablist" id="tabs">
+      <button role="tab" data-v="new" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>תוכנית חדשה</button>
+      <button role="tab" data-v="mine" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg>התוכניות שלי<span class="count" id="mineCount" hidden></span></button>
+      <button role="tab" data-v="team" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>לוח בקרה – צוות</button>
+      <button role="tab" data-v="cal" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>לוח חופשות</button>
+    </nav>
+    <div class="rail-foot">חופשות לפי לוח משרד החינוך<br>יסודי · סיום השנה 30.6.2027</div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div><div class="crumb" id="crumb">מתכנן הספק / תוכנית חדשה</div><h1 id="pageTitle">תוכנית חדשה</h1></div>
+      <div class="today" id="today"></div>
+    </header>
+
+    <div class="content">
+      <!-- NEW PLAN -->
+      <section class="view" id="v-new">
+        <div class="steps" id="steps">
+          <button data-s="1" aria-current="step"><b>1</b>מה לומדים</button>
+          <button data-s="2"><b>2</b>מתי לומדים</button>
+          <button data-s="3"><b>3</b>התוכנית</button>
+        </div>
+        <div class="wgrid">
+          <div style="min-width:0">
+            <div class="w" id="s1">
+              <div class="w-h"><h2>מה לומדים</h2></div>
+              <div class="w-b">
+                <p class="hint">בחרו מקצוע וספר, מאיפה ממשיכים ועד היכן רוצים להגיע השנה.</p>
+                <div class="fields">
+                  <label class="f">שם המורה<input id="teacher" placeholder="לדוגמה: הרב יוסף לוי"></label>
+                  <label class="f">שכבה<select id="grade"></select></label>
+                  <label class="f">כיתה מסוימת (לא חובה)<input id="cls" placeholder="התוכנית היא שכבתית"></label>
+                </div>
+                <h3>מקצוע</h3>
+                <div class="subj-pick" id="subjPick"></div>
+                <select id="subject" hidden aria-hidden="true" tabindex="-1"></select>
+                <div class="fields" style="margin-top:14px">
+                  <label class="f" id="bookWrap">ספר / מסכת<select id="book"></select></label>
+                </div>
+                <div id="otherWrap" hidden>
+                  <h3>רשימת נושאים</h3>
+                  <p class="hint">נושא אחד בכל שורה, לפי סדר הלימוד. אפשר לציין שעות לנושא אחרי קו: דקדוק – שם התואר | 3</p>
+                  <textarea id="otherText"></textarea>
+                </div>
+                <div id="takenNote"></div>
+                <div class="range" id="rangeWrap">
+                  <fieldset><legend>ממשיכים מ־</legend><label class="f"><span class="cl1">פרק</span><select id="sC"></select></label><label class="f sub"><span class="cl2">פסוק</span><select id="sV"></select></label></fieldset>
+                  <fieldset><legend>עד־ (כולל)</legend><label class="f"><span class="cl1">פרק</span><select id="eC"></select></label><label class="f sub"><span class="cl2">פסוק</span><select id="eV"></select></label></fieldset>
+                  <fieldset><legend>קצב</legend><label class="f"><span id="paceLbl">פסוקים לשעה</span><input id="pace" type="number" min="0.05" step="0.05"></label></fieldset>
+                </div>
+                <p class="note-line" id="paceHint"></p>
+                <div class="actions"><button class="btn primary" data-go="2">המשך למערכת השעות ←</button></div>
+              </div>
+            </div>
+
+            <div class="w" id="s2" hidden>
+              <div class="w-h"><h2>מתי לומדים</h2></div>
+              <div class="w-b">
+                <p class="hint">החופשות של משרד החינוך כבר מסומנות ולא ייספרו. מלאו כמה שעות יש לכם בכל יום בשבוע.</p>
+                <div class="fields">
+                  <label class="f">תאריך התחלה<input type="date" id="startDate"></label>
+                  <label class="f">תאריך סיום<input type="date" id="endDate"></label>
+                </div>
+                <h3>שעות שבועיות</h3>
+                <div class="days" id="days"></div>
+                <h3>ימי מרתון ותגבור</h3>
+                <p class="hint">יום מרוכז או שעות נוספות בתאריך מסוים (שישי, שבוע סיום, יום עיון).</p>
+                <div class="row-list" id="marathons"></div>
+                <div class="actions" style="margin-top:8px"><button class="btn" id="addMar">+ יום מרתון</button></div>
+                <h3>ימים שהשיעור לא יתקיים</h3>
+                <p class="hint">טיול, יום שיא, מבחן, ישיבת צוות – תאריכים שבהם השיעור שלכם יורד.</p>
+                <div class="row-list" id="blocked"></div>
+                <div class="actions" style="margin-top:8px"><button class="btn" id="addBlk">+ יום ללא שיעור</button></div>
+                <div class="actions"><button class="btn" data-go="1">→ חזרה</button><button class="btn primary" data-go="3">הצג את התוכנית ←</button></div>
+              </div>
+            </div>
+
+            <div class="w" id="s3" hidden>
+              <div class="banner">
+                <div><h2 id="planTitle">התוכנית</h2><div class="meta" id="planMeta"></div></div>
+                <div class="seg" role="group" aria-label="תצוגה"><button data-mode="week" aria-pressed="true">טבלה שבועית</button><button data-mode="list" aria-pressed="false">כרטיסים</button><button data-mode="cal" aria-pressed="false">לוח חודשי</button></div>
+              </div>
+              <div class="toolbar">
+                <button class="btn primary" id="saveBtn">שמירה במערכת</button>
+                <button class="btn" id="docxBtn">הורדה ל־Word</button>
+                <button class="btn" id="copyBtn">העתקה</button>
+                <button class="btn ghost" data-go="2">עריכת המערכת</button>
+                <button class="btn ghost" id="newBtn">תוכנית חדשה</button>
+              </div>
+              <p class="note-line" id="saveNote" style="padding:0 16px"></p>
+              <div class="sched" id="planOut"></div>
+            </div>
+          </div>
+          <aside class="w ledger" id="ledgerW"><div class="w-h"><h2>בנק השעות</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="w-b" id="ledger" aria-live="polite"></div></aside>
+        </div>
+      </section>
+
+      <!-- MINE -->
+      <section class="view" id="v-mine" hidden>
+        <div class="w"><div class="w-h"><h2>התוכניות שלי</h2></div><div class="w-b"><p class="hint">כל מקצוע וכיתה נשמרים כתוכנית נפרדת. לחיצה פותחת לעריכה.</p><div id="mineOut"></div></div></div>
+      </section>
+
+      <!-- TEAM -->
+      <section class="view" id="v-team" hidden>
+        <div class="w"><div class="w-b" style="padding-block:12px"><div class="fields">
+          <label class="f">שכבה<select id="tGrade"><option value="">כל השכבות</option></select></label>
+          <label class="f">מקצוע<select id="tSubj"><option value="">כל המקצועות</option></select></label>
+        </div></div></div>
+        <div id="teamOut"></div>
+        <div class="w" id="teamPlan" hidden></div>
+      </section>
+
+      <!-- HOLIDAYS -->
+      <section class="view" id="v-cal" hidden>
+        <div class="wgrid2">
+          <div class="w"><div class="w-h"><h2>חופשות ומועדים</h2></div><div class="w-b">
+            <p class="hint">ימים אלה אינם נספרים בשום תוכנית. לפי לוח החופשות של משרד החינוך לבתי ספר יסודיים.</p>
+            <div id="holOut"></div></div></div>
+          <div class="w" id="holAdmin" hidden><div class="w-h"><h2>הוספת יום חופש בית־ספרי</h2></div><div class="w-b">
+            <div class="fields">
+              <label class="f">מתאריך<input type="date" id="hFrom"></label>
+              <label class="f">עד תאריך<input type="date" id="hTo"></label>
+              <label class="f">שם<input id="hName" placeholder="לדוגמה: יום הורים"></label>
+            </div>
+            <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13.5px"><input type="checkbox" id="hEvent" style="width:auto"> יום לימודים רגיל – רק להערה בטבלה (תעודות, יום תחפושות)</label>
+            <div class="actions"><button class="btn primary" id="hAdd">הוספה ללוח</button></div></div></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const DATA = {"M":{"ברכות":[5,8,6,7,5,8,5,8,5],"פאה":[6,8,8,11,8,11,8,9],"דמאי":[4,5,6,7,11,12,8],"כלאים":[9,11,7,9,8,9,8,6,10],"שביעית":[8,10,10,10,9,6,7,11,9,9],"תרומות":[10,6,9,13,9,6,7,12,7,12,10],"מעשרות":[8,8,10,6,8],"מעשר שני":[7,10,13,12,15],"חלה":[9,8,10,11],"ערלה":[9,17,9],"ביכורים":[11,11,12,5],"שבת":[11,7,6,2,4,10,4,7,7,6,6,6,7,4,3,8,8,3,6,5,3,6,5,5],"עירובין":[10,6,9,11,9,10,11,11,4,15],"פסחים":[7,8,8,9,10,6,13,8,11,9],"שקלים":[7,5,4,9,6,6,7,8],"יומא":[8,7,11,6,7,8,5,9],"סוכה":[11,9,15,10,8],"ביצה":[10,10,8,7,7],"ראש השנה":[9,9,8,9],"תענית":[7,10,9,8],"מגילה":[11,6,6,10],"מועד קטן":[10,5,9],"חגיגה":[8,7,8],"יבמות":[4,10,10,13,6,6,6,6,6,9,7,6,13,9,10,7],"כתובות":[10,10,9,12,9,7,10,8,9,6,6,4,11],"נדרים":[4,5,11,8,6,10,9,7,10,8,12],"נזיר":[7,10,7,7,7,11,4,2,5],"סוטה":[9,6,8,5,5,4,8,7,15],"גיטין":[6,7,8,9,9,7,9,10,10],"קידושין":[10,10,13,14],"בבא קמא":[4,6,11,9,7,6,7,7,12,10],"בבא מציעא":[8,11,12,12,11,8,11,9,13,6],"בבא בתרא":[6,14,8,9,11,8,4,8,10,8],"סנהדרין":[6,5,8,5,5,6,11,7,6,6,6],"מכות":[10,8,16],"שבועות":[7,5,11,13,5,7,8,6],"עדיות":[14,10,12,12,7,3,9,7],"עבודה זרה":[9,7,10,12,12],"אבות":[18,16,18,22,23,11],"הוריות":[5,7,8],"זבחים":[4,5,6,6,8,7,6,12,7,8,8,6,8,10],"מנחות":[4,5,7,5,9,7,6,7,9,9,9,5,11],"חולין":[7,10,7,7,5,7,6,6,8,4,2,5],"בכורות":[7,9,4,10,6,12,7,10,8],"ערכין":[4,6,5,4,6,5,5,7,8],"תמורה":[6,3,5,4,6,5,6],"כריתות":[7,6,10,3,8,9],"מעילה":[4,9,8,6,5,6],"תמיד":[4,5,9,3,6,3,4],"מדות":[9,6,8,7,4],"קינים":[4,5,6],"כלים":[9,8,8,4,11,4,6,11,8,8,9,8,8,8,6,8,17,9,10,7,3,10,5,17,9,9,12,10,8,4],"אהלות":[8,7,7,3,7,7,6,6,16,7,9,8,6,7,10,5,5,10],"נגעים":[6,5,8,11,5,8,5,10,3,10,12,7,12,13],"פרה":[4,5,11,4,9,5,12,11,9,6,9,11],"טהרות":[9,8,8,13,9,10,9,9,9,8],"מקוואות":[8,10,4,5,6,11,7,5,7,8],"נדה":[7,7,7,7,9,14,5,4,11,8],"מכשירין":[6,11,8,10,11,8],"זבים":[6,4,3,7,12],"טבול יום":[5,8,6,7],"ידים":[5,4,5,8],"עוקצים":[6,10,12]},"B":{"ברכות":64,"שבת":157,"עירובין":105,"פסחים":121,"יומא":88,"סוכה":56,"ביצה":40,"ראש השנה":35,"תענית":31,"מגילה":32,"מועד קטן":29,"חגיגה":27,"יבמות":122,"כתובות":112,"נדרים":91,"נזיר":66,"סוטה":49,"גיטין":90,"קידושין":82,"בבא קמא":119,"בבא מציעא":119,"בבא בתרא":176,"סנהדרין":113,"מכות":24,"שבועות":49,"עבודה זרה":76,"הוריות":14,"זבחים":120,"מנחות":110,"חולין":142,"בכורות":61,"ערכין":34,"תמורה":34,"כריתות":28,"מעילה":22,"נדה":73},"D":{"2026-08-25":"י״ב אלול תשפ״ו","2026-08-26":"י״ג אלול תשפ״ו","2026-08-27":"י״ד אלול תשפ״ו","2026-08-28":"ט״ו אלול תשפ״ו","2026-08-29":"ט״ז אלול תשפ״ו","2026-08-30":"י״ז אלול תשפ״ו","2026-08-31":"י״ח אלול תשפ״ו","2026-09-01":"י״ט אלול תשפ״ו","2026-09-02":"כ׳ אלול תשפ״ו","2026-09-03":"כ״א אלול תשפ״ו","2026-09-04":"כ״ב אלול תשפ״ו","2026-09-05":"כ״ג אלול תשפ״ו","2026-09-06":"כ״ד אלול תשפ״ו","2026-09-07":"כ״ה אלול תשפ״ו","2026-09-08":"כ״ו אלול תשפ״ו","2026-09-09":"כ״ז אלול תשפ״ו","2026-09-10":"כ״ח אלול תשפ״ו","2026-09-11":"כ״ט אלול תשפ״ו","2026-09-12":"א׳ תשרי תשפ״ז","2026-09-13":"ב׳ תשרי תשפ״ז","2026-09-14":"ג׳ תשרי תשפ״ז","2026-09-15":"ד׳ תשרי תשפ״ז","2026-09-16":"ה׳ תשרי תשפ״ז","2026-09-17":"ו׳ תשרי תשפ״ז","2026-09-18":"ז׳ תשרי תשפ״ז","2026-09-19":"ח׳ תשרי תשפ״ז","2026-09-20":"ט׳ תשרי תשפ״ז","2026-09-21":"י׳ תשרי תשפ״ז","2026-09-22":"י״א תשרי תשפ״ז","2026-09-23":"י״ב תשרי תשפ״ז","2026-09-24":"י״ג תשרי תשפ״ז","2026-09-25":"י״ד תשרי תשפ״ז","2026-09-26":"ט״ו תשרי תשפ״ז","2026-09-27":"ט״ז תשרי תשפ״ז","2026-09-28":"י״ז תשרי תשפ״ז","2026-09-29":"י״ח תשרי תשפ״ז","2026-09-30":"י״ט תשרי תשפ״ז","2026-10-01":"כ׳ תשרי תשפ״ז","2026-10-02":"כ״א תשרי תשפ״ז","2026-10-03":"כ״ב תשרי תשפ״ז","2026-10-04":"כ״ג תשרי תשפ״ז","2026-10-05":"כ״ד תשרי תשפ״ז","2026-10-06":"כ״ה תשרי תשפ״ז","2026-10-07":"כ״ו תשרי תשפ״ז","2026-10-08":"כ״ז תשרי תשפ״ז","2026-10-09":"כ״ח תשרי תשפ״ז","2026-10-10":"כ״ט תשרי תשפ״ז","2026-10-11":"ל׳ תשרי תשפ״ז","2026-10-12":"א׳ חשון תשפ״ז","2026-10-13":"ב׳ חשון תשפ״ז","2026-10-14":"ג׳ חשון תשפ״ז","2026-10-15":"ד׳ חשון תשפ״ז","2026-10-16":"ה׳ חשון תשפ״ז","2026-10-17":"ו׳ חשון תשפ״ז","2026-10-18":"ז׳ חשון תשפ״ז","2026-10-19":"ח׳ חשון תשפ״ז","2026-10-20":"ט׳ חשון תשפ״ז","2026-10-21":"י׳ חשון תשפ״ז","2026-10-22":"י״א חשון תשפ״ז","2026-10-23":"י״ב חשון תשפ״ז","2026-10-24":"י״ג חשון תשפ״ז","2026-10-25":"י״ד חשון תשפ״ז","2026-10-26":"ט״ו חשון תשפ״ז","2026-10-27":"ט״ז חשון תשפ״ז","2026-10-28":"י״ז חשון תשפ״ז","2026-10-29":"י״ח חשון תשפ״ז","2026-10-30":"י״ט חשון תשפ״ז","2026-10-31":"כ׳ חשון תשפ״ז","2026-11-01":"כ״א חשון תשפ״ז","2026-11-02":"כ״ב חשון תשפ״ז","2026-11-03":"כ״ג חשון תשפ״ז","2026-11-04":"כ״ד חשון תשפ״ז","2026-11-05":"כ״ה חשון תשפ״ז","2026-11-06":"כ״ו חשון תשפ״ז","2026-11-07":"כ״ז חשון תשפ״ז","2026-11-08":"כ״ח חשון תשפ״ז","2026-11-09":"כ״ט חשון תשפ״ז","2026-11-10":"ל׳ חשון תשפ״ז","2026-11-11":"א׳ כסלו תשפ״ז","2026-11-12":"ב׳ כסלו תשפ״ז","2026-11-13":"ג׳ כסלו תשפ״ז","2026-11-14":"ד׳ כסלו תשפ״ז","2026-11-15":"ה׳ כסלו תשפ״ז","2026-11-16":"ו׳ כסלו תשפ״ז","2026-11-17":"ז׳ כסלו תשפ״ז","2026-11-18":"ח׳ כסלו תשפ״ז","2026-11-19":"ט׳ כסלו תשפ״ז","2026-11-20":"י׳ כסלו תשפ״ז","2026-11-21":"י״א כסלו תשפ״ז","2026-11-22":"י״ב כסלו תשפ״ז","2026-11-23":"י״ג כסלו תשפ״ז","2026-11-24":"י״ד כסלו תשפ״ז","2026-11-25":"ט״ו כסלו תשפ״ז","2026-11-26":"ט״ז כסלו תשפ״ז","2026-11-27":"י״ז כסלו תשפ״ז","2026-11-28":"י״ח כסלו תשפ״ז","2026-11-29":"י״ט כסלו תשפ״ז","2026-11-30":"כ׳ כסלו תשפ״ז","2026-12-01":"כ״א כסלו תשפ״ז","2026-12-02":"כ״ב כסלו תשפ״ז","2026-12-03":"כ״ג כסלו תשפ״ז","2026-12-04":"כ״ד כסלו תשפ״ז","2026-12-05":"כ״ה כסלו תשפ״ז","2026-12-06":"כ״ו כסלו תשפ״ז","2026-12-07":"כ״ז כסלו תשפ״ז","2026-12-08":"כ״ח כסלו תשפ״ז","2026-12-09":"כ״ט כסלו תשפ״ז","2026-12-10":"ל׳ כסלו תשפ״ז","2026-12-11":"א׳ טבת תשפ״ז","2026-12-12":"ב׳ טבת תשפ״ז","2026-12-13":"ג׳ טבת תשפ״ז","2026-12-14":"ד׳ טבת תשפ״ז","2026-12-15":"ה׳ טבת תשפ״ז","2026-12-16":"ו׳ טבת תשפ״ז","2026-12-17":"ז׳ טבת תשפ״ז","2026-12-18":"ח׳ טבת תשפ״ז","2026-12-19":"ט׳ טבת תשפ״ז","2026-12-20":"י׳ טבת תשפ״ז","2026-12-21":"י״א טבת תשפ״ז","2026-12-22":"י״ב טבת תשפ״ז","2026-12-23":"י״ג טבת תשפ״ז","2026-12-24":"י״ד טבת תשפ״ז","2026-12-25":"ט״ו טבת תשפ״ז","2026-12-26":"ט״ז טבת תשפ״ז","2026-12-27":"י״ז טבת תשפ״ז","2026-12-28":"י״ח טבת תשפ״ז","2026-12-29":"י״ט טבת תשפ״ז","2026-12-30":"כ׳ טבת תשפ״ז","2026-12-31":"כ״א טבת תשפ״ז","2027-01-01":"כ״ב טבת תשפ״ז","2027-01-02":"כ״ג טבת תשפ״ז","2027-01-03":"כ״ד טבת תשפ״ז","2027-01-04":"כ״ה טבת תשפ״ז","2027-01-05":"כ״ו טבת תשפ״ז","2027-01-06":"כ״ז טבת תשפ״ז","2027-01-07":"כ״ח טבת תשפ״ז","2027-01-08":"כ״ט טבת תשפ״ז","2027-01-09":"א׳ שבט תשפ״ז","2027-01-10":"ב׳ שבט תשפ״ז","2027-01-11":"ג׳ שבט תשפ״ז","2027-01-12":"ד׳ שבט תשפ״ז","2027-01-13":"ה׳ שבט תשפ״ז","2027-01-14":"ו׳ שבט תשפ״ז","2027-01-15":"ז׳ שבט תשפ״ז","2027-01-16":"ח׳ שבט תשפ״ז","2027-01-17":"ט׳ שבט תשפ״ז","2027-01-18":"י׳ שבט תשפ״ז","2027-01-19":"י״א שבט תשפ״ז","2027-01-20":"י״ב שבט תשפ״ז","2027-01-21":"י״ג שבט תשפ״ז","2027-01-22":"י״ד שבט תשפ״ז","2027-01-23":"ט״ו שבט תשפ״ז","2027-01-24":"ט״ז שבט תשפ״ז","2027-01-25":"י״ז שבט תשפ״ז","2027-01-26":"י״ח שבט תשפ״ז","2027-01-27":"י״ט שבט תשפ״ז","2027-01-28":"כ׳ שבט תשפ״ז","2027-01-29":"כ״א שבט תשפ״ז","2027-01-30":"כ״ב שבט תשפ״ז","2027-01-31":"כ״ג שבט תשפ״ז","2027-02-01":"כ״ד שבט תשפ״ז","2027-02-02":"כ״ה שבט תשפ״ז","2027-02-03":"כ״ו שבט תשפ״ז","2027-02-04":"כ״ז שבט תשפ״ז","2027-02-05":"כ״ח שבט תשפ״ז","2027-02-06":"כ״ט שבט תשפ״ז","2027-02-07":"ל׳ שבט תשפ״ז","2027-02-08":"א׳ אדר א׳ תשפ״ז","2027-02-09":"ב׳ אדר א׳ תשפ״ז","2027-02-10":"ג׳ אדר א׳ תשפ״ז","2027-02-11":"ד׳ אדר א׳ תשפ״ז","2027-02-12":"ה׳ אדר א׳ תשפ״ז","2027-02-13":"ו׳ אדר א׳ תשפ״ז","2027-02-14":"ז׳ אדר א׳ תשפ״ז","2027-02-15":"ח׳ אדר א׳ תשפ״ז","2027-02-16":"ט׳ אדר א׳ תשפ״ז","2027-02-17":"י׳ אדר א׳ תשפ״ז","2027-02-18":"י״א אדר א׳ תשפ״ז","2027-02-19":"י״ב אדר א׳ תשפ״ז","2027-02-20":"י״ג אדר א׳ תשפ״ז","2027-02-21":"י״ד אדר א׳ תשפ״ז","2027-02-22":"ט״ו אדר א׳ תשפ״ז","2027-02-23":"ט״ז אדר א׳ תשפ״ז","2027-02-24":"י״ז אדר א׳ תשפ״ז","2027-02-25":"י״ח אדר א׳ תשפ״ז","2027-02-26":"י״ט אדר א׳ תשפ״ז","2027-02-27":"כ׳ אדר א׳ תשפ״ז","2027-02-28":"כ״א אדר א׳ תשפ״ז","2027-03-01":"כ״ב אדר א׳ תשפ״ז","2027-03-02":"כ״ג אדר א׳ תשפ״ז","2027-03-03":"כ״ד אדר א׳ תשפ״ז","2027-03-04":"כ״ה אדר א׳ תשפ״ז","2027-03-05":"כ״ו אדר א׳ תשפ״ז","2027-03-06":"כ״ז אדר א׳ תשפ״ז","2027-03-07":"כ״ח אדר א׳ תשפ״ז","2027-03-08":"כ״ט אדר א׳ תשפ״ז","2027-03-09":"ל׳ אדר א׳ תשפ״ז","2027-03-10":"א׳ אדר ב׳ תשפ״ז","2027-03-11":"ב׳ אדר ב׳ תשפ״ז","2027-03-12":"ג׳ אדר ב׳ תשפ״ז","2027-03-13":"ד׳ אדר ב׳ תשפ״ז","2027-03-14":"ה׳ אדר ב׳ תשפ״ז","2027-03-15":"ו׳ אדר ב׳ תשפ״ז","2027-03-16":"ז׳ אדר ב׳ תשפ״ז","2027-03-17":"ח׳ אדר ב׳ תשפ״ז","2027-03-18":"ט׳ אדר ב׳ תשפ״ז","2027-03-19":"י׳ אדר ב׳ תשפ״ז","2027-03-20":"י״א אדר ב׳ תשפ״ז","2027-03-21":"י״ב אדר ב׳ תשפ״ז","2027-03-22":"י״ג אדר ב׳ תשפ״ז","2027-03-23":"י״ד אדר ב׳ תשפ״ז","2027-03-24":"ט״ו אדר ב׳ תשפ״ז","2027-03-25":"ט״ז אדר ב׳ תשפ״ז","2027-03-26":"י״ז אדר ב׳ תשפ״ז","2027-03-27":"י״ח אדר ב׳ תשפ״ז","2027-03-28":"י״ט אדר ב׳ תשפ״ז","2027-03-29":"כ׳ אדר ב׳ תשפ״ז","2027-03-30":"כ״א אדר ב׳ תשפ״ז","2027-03-31":"כ״ב אדר ב׳ תשפ״ז","2027-04-01":"כ״ג אדר ב׳ תשפ״ז","2027-04-02":"כ״ד אדר ב׳ תשפ״ז","2027-04-03":"כ״ה אדר ב׳ תשפ״ז","2027-04-04":"כ״ו אדר ב׳ תשפ״ז","2027-04-05":"כ״ז אדר ב׳ תשפ״ז","2027-04-06":"כ״ח אדר ב׳ תשפ״ז","2027-04-07":"כ״ט אדר ב׳ תשפ״ז","2027-04-08":"א׳ ניסן תשפ״ז","2027-04-09":"ב׳ ניסן תשפ״ז","2027-04-10":"ג׳ ניסן תשפ״ז","2027-04-11":"ד׳ ניסן תשפ״ז","2027-04-12":"ה׳ ניסן תשפ״ז","2027-04-13":"ו׳ ניסן תשפ״ז","2027-04-14":"ז׳ ניסן תשפ״ז","2027-04-15":"ח׳ ניסן תשפ״ז","2027-04-16":"ט׳ ניסן תשפ״ז","2027-04-17":"י׳ ניסן תשפ״ז","2027-04-18":"י״א ניסן תשפ״ז","2027-04-19":"י״ב ניסן תשפ״ז","2027-04-20":"י״ג ניסן תשפ״ז","2027-04-21":"י״ד ניסן תשפ״ז","2027-04-22":"ט״ו ניסן תשפ״ז","2027-04-23":"ט״ז ניסן תשפ״ז","2027-04-24":"י״ז ניסן תשפ״ז","2027-04-25":"י״ח ניסן תשפ״ז","2027-04-26":"י״ט ניסן תשפ״ז","2027-04-27":"כ׳ ניסן תשפ״ז","2027-04-28":"כ״א ניסן תשפ״ז","2027-04-29":"כ״ב ניסן תשפ״ז","2027-04-30":"כ״ג ניסן תשפ״ז","2027-05-01":"כ״ד ניסן תשפ״ז","2027-05-02":"כ״ה ניסן תשפ״ז","2027-05-03":"כ״ו ניסן תשפ״ז","2027-05-04":"כ״ז ניסן תשפ״ז","2027-05-05":"כ״ח ניסן תשפ״ז","2027-05-06":"כ״ט ניסן תשפ״ז","2027-05-07":"ל׳ ניסן תשפ״ז","2027-05-08":"א׳ אייר תשפ״ז","2027-05-09":"ב׳ אייר תשפ״ז","2027-05-10":"ג׳ אייר תשפ״ז","2027-05-11":"ד׳ אייר תשפ״ז","2027-05-12":"ה׳ אייר תשפ״ז","2027-05-13":"ו׳ אייר תשפ״ז","2027-05-14":"ז׳ אייר תשפ״ז","2027-05-15":"ח׳ אייר תשפ״ז","2027-05-16":"ט׳ אייר תשפ״ז","2027-05-17":"י׳ אייר תשפ״ז","2027-05-18":"י״א אייר תשפ״ז","2027-05-19":"י״ב אייר תשפ״ז","2027-05-20":"י״ג אייר תשפ״ז","2027-05-21":"י״ד אייר תשפ״ז","2027-05-22":"ט״ו אייר תשפ״ז","2027-05-23":"ט״ז אייר תשפ״ז","2027-05-24":"י״ז אייר תשפ״ז","2027-05-25":"י״ח אייר תשפ״ז","2027-05-26":"י״ט אייר תשפ״ז","2027-05-27":"כ׳ אייר תשפ״ז","2027-05-28":"כ״א אייר תשפ״ז","2027-05-29":"כ״ב אייר תשפ״ז","2027-05-30":"כ״ג אייר תשפ״ז","2027-05-31":"כ״ד אייר תשפ״ז","2027-06-01":"כ״ה אייר תשפ״ז","2027-06-02":"כ״ו אייר תשפ״ז","2027-06-03":"כ״ז אייר תשפ״ז","2027-06-04":"כ״ח אייר תשפ״ז","2027-06-05":"כ״ט אייר תשפ״ז","2027-06-06":"א׳ סיון תשפ״ז","2027-06-07":"ב׳ סיון תשפ״ז","2027-06-08":"ג׳ סיון תשפ״ז","2027-06-09":"ד׳ סיון תשפ״ז","2027-06-10":"ה׳ סיון תשפ״ז","2027-06-11":"ו׳ סיון תשפ״ז","2027-06-12":"ז׳ סיון תשפ״ז","2027-06-13":"ח׳ סיון תשפ״ז","2027-06-14":"ט׳ סיון תשפ״ז","2027-06-15":"י׳ סיון תשפ״ז","2027-06-16":"י״א סיון תשפ״ז","2027-06-17":"י״ב סיון תשפ״ז","2027-06-18":"י״ג סיון תשפ״ז","2027-06-19":"י״ד סיון תשפ״ז","2027-06-20":"ט״ו סיון תשפ״ז","2027-06-21":"ט״ז סיון תשפ״ז","2027-06-22":"י״ז סיון תשפ״ז","2027-06-23":"י״ח סיון תשפ״ז","2027-06-24":"י״ט סיון תשפ״ז","2027-06-25":"כ׳ סיון תשפ״ז","2027-06-26":"כ״א סיון תשפ״ז","2027-06-27":"כ״ב סיון תשפ״ז","2027-06-28":"כ״ג סיון תשפ״ז","2027-06-29":"כ״ד סיון תשפ״ז","2027-06-30":"כ״ה סיון תשפ״ז","2027-07-01":"כ״ו סיון תשפ״ז","2027-07-02":"כ״ז סיון תשפ״ז","2027-07-03":"כ״ח סיון תשפ״ז","2027-07-04":"כ״ט סיון תשפ״ז","2027-07-05":"ל׳ סיון תשפ״ז","2027-07-06":"א׳ תמוז תשפ״ז","2027-07-07":"ב׳ תמוז תשפ״ז","2027-07-08":"ג׳ תמוז תשפ״ז","2027-07-09":"ד׳ תמוז תשפ״ז","2027-07-10":"ה׳ תמוז תשפ״ז","2027-07-11":"ו׳ תמוז תשפ״ז","2027-07-12":"ז׳ תמוז תשפ״ז","2027-07-13":"ח׳ תמוז תשפ״ז","2027-07-14":"ט׳ תמוז תשפ״ז","2027-07-15":"י׳ תמוז תשפ״ז","2027-07-16":"י״א תמוז תשפ״ז","2027-07-17":"י״ב תמוז תשפ״ז","2027-07-18":"י״ג תמוז תשפ״ז","2027-07-19":"י״ד תמוז תשפ״ז","2027-07-20":"ט״ו תמוז תשפ״ז","2027-07-21":"ט״ז תמוז תשפ״ז","2027-07-22":"י״ז תמוז תשפ״ז","2027-07-23":"י״ח תמוז תשפ״ז","2027-07-24":"י״ט תמוז תשפ״ז","2027-07-25":"כ׳ תמוז תשפ״ז","2027-07-26":"כ״א תמוז תשפ״ז","2027-07-27":"כ״ב תמוז תשפ״ז","2027-07-28":"כ״ג תמוז תשפ״ז","2027-07-29":"כ״ד תמוז תשפ״ז","2027-07-30":"כ״ה תמוז תשפ״ז","2027-07-31":"כ״ו תמוז תשפ״ז","2027-08-01":"כ״ז תמוז תשפ״ז","2027-08-02":"כ״ח תמוז תשפ״ז","2027-08-03":"כ״ט תמוז תשפ״ז","2027-08-04":"א׳ אב תשפ״ז","2027-08-05":"ב׳ אב תשפ״ז","2027-08-06":"ג׳ אב תשפ״ז","2027-08-07":"ד׳ אב תשפ״ז","2027-08-08":"ה׳ אב תשפ״ז","2027-08-09":"ו׳ אב תשפ״ז","2027-08-10":"ז׳ אב תשפ״ז","2027-08-11":"ח׳ אב תשפ״ז","2027-08-12":"ט׳ אב תשפ״ז","2027-08-13":"י׳ אב תשפ״ז","2027-08-14":"י״א אב תשפ״ז","2027-08-15":"י״ב אב תשפ״ז","2027-08-16":"י״ג אב תשפ״ז","2027-08-17":"י״ד אב תשפ״ז","2027-08-18":"ט״ו אב תשפ״ז","2027-08-19":"ט״ז אב תשפ״ז","2027-08-20":"י״ז אב תשפ״ז","2027-08-21":"י״ח אב תשפ״ז","2027-08-22":"י״ט אב תשפ״ז","2027-08-23":"כ׳ אב תשפ״ז","2027-08-24":"כ״א אב תשפ״ז","2027-08-25":"כ״ב אב תשפ״ז","2027-08-26":"כ״ג אב תשפ״ז","2027-08-27":"כ״ד אב תשפ״ז","2027-08-28":"כ״ה אב תשפ״ז","2027-08-29":"כ״ו אב תשפ״ז","2027-08-30":"כ״ז אב תשפ״ז"},"P":{"2026-08-29":"כי תבוא","2026-09-05":"נצבים-וילך","2026-09-19":"האזינו","2026-10-10":"בראשית","2026-10-17":"נח","2026-10-24":"לך לך","2026-10-31":"וירא","2026-11-07":"חיי שרה","2026-11-14":"תולדות","2026-11-21":"ויצא","2026-11-28":"וישלח","2026-12-05":"וישב","2026-12-12":"מקץ","2026-12-19":"ויגש","2026-12-26":"ויחי","2027-01-02":"שמות","2027-01-09":"וארא","2027-01-16":"בא","2027-01-23":"בשלח","2027-01-30":"יתרו","2027-02-06":"משפטים","2027-02-13":"תרומה","2027-02-20":"תצוה","2027-02-27":"כי תשא","2027-03-06":"ויקהל","2027-03-13":"פקודי","2027-03-20":"ויקרא","2027-03-27":"צו","2027-04-03":"שמיני","2027-04-10":"תזריע","2027-04-17":"מצרע","2027-05-01":"אחרי מות","2027-05-08":"קדשים","2027-05-15":"אמור","2027-05-22":"בהר","2027-05-29":"בחקתי","2027-06-05":"במדבר","2027-06-12":"נשא","2027-06-19":"בהעלתך","2027-06-26":"שלח לך","2027-07-03":"קרח","2027-07-10":"חקת","2027-07-17":"בלק","2027-07-24":"פינחס","2027-07-31":"מטות-מסעי","2027-08-07":"דברים","2027-08-14":"ואתחנן","2027-08-21":"עקב","2027-08-28":"ראה"},"V":{"בראשית":[31,25,24,26,32,22,24,22,29,32,32,20,18,24,21,16,27,33,38,18,34,24,20,67,34,35,46,22,35,43,54,33,20,31,29,43,36,30,23,23,57,38,34,34,28,34,31,22,33,26],"שמות":[22,25,22,31,23,30,29,28,35,29,10,51,22,31,27,36,16,27,25,23,37,30,33,18,40,37,21,43,46,38,18,35,23,35,35,38,29,31,43,38],"ויקרא":[17,16,17,35,26,23,38,36,24,20,47,8,59,57,33,34,16,30,37,27,24,33,44,23,55,46,34],"במדבר":[54,34,51,49,31,27,89,26,23,36,35,16,33,45,41,35,28,32,22,29,35,41,30,25,19,65,23,31,39,17,54,42,56,29,34,13],"דברים":[46,37,29,49,30,25,26,20,29,22,32,31,19,29,23,22,20,22,21,20,23,29,26,22,19,19,26,69,28,20,30,52,29,12],"יהושע":[18,24,17,24,15,27,26,35,27,43,23,24,33,15,63,10,18,28,51,9,45,34,16,33],"שופטים":[36,23,31,24,31,40,25,35,57,18,40,15,25,20,20,31,13,31,30,48,25],"רות":[22,23,18,22],"שמואל א":[28,36,21,22,12,21,17,22,27,27,15,25,23,52,35,23,58,30,24,42,16,23,28,23,43,25,12,25,11,31,13],"שמואל ב":[27,32,39,12,25,23,29,18,13,19,27,31,39,33,37,23,29,32,44,26,22,51,39,25],"מלכים א":[53,46,28,20,32,38,51,66,28,29,43,33,34,31,34,34,24,46,21,43,29,54],"מלכים ב":[18,25,27,44,27,33,20,29,37,36,20,22,25,29,38,20,41,37,37,21,26,20,37,20,30],"ישעיהו":[31,22,26,6,30,13,25,23,20,34,16,6,22,32,9,14,14,7,25,6,17,25,18,23,12,21,13,29,24,33,9,20,24,17,10,22,38,22,8,31,29,25,28,28,25,13,15,22,26,11,23,15,12,17,13,12,21,14,21,22,11,12,19,11,25,24],"ירמיהו":[19,37,25,31,31,30,34,23,25,25,23,17,27,22,21,21,27,23,15,18,14,30,40,10,38,24,22,17,32,24,40,44,26,22,19,32,21,28,18,16,18,22,13,30,5,28,7,47,39,46,64,34],"איכה":[22,22,66,22,22],"אסתר":[22,23,15,17,14,14,10,17,32,3],"קהלת":[18,26,22,17,19,12,29,17,18,20,10,14],"שיר השירים":[17,17,11,16,16,12,14,14],"יחזקאל":[28,10,27,17,17,14,27,18,11,22,25,28,23,23,8,63,24,32,14,44,37,31,49,27,17,21,36,26,21,26,18,32,33,31,15,38,28,23,29,49,26,20,27,31,25,24,23,35],"דניאל":[21,49,100,34,30,29,28,27,27,21,45,13,64,42],"הושע":[9,25,5,19,15,11,16,14,17,15,11,15,15,10],"יואל":[20,27,5,21],"עמוס":[15,16,15,13,27,14,17,14,15],"עובדיה":[21],"יונה":[16,11,10,11],"מיכה":[16,13,12,14,14,16,20],"נחום":[14,14,19],"חבקוק":[17,20,19],"צפניה":[18,15,20],"חגי":[15,23],"זכריה":[17,17,10,14,11,15,14,23,17,12,17,14,9,21],"מלאכי":[14,17,24]},"SS":{"2027-03-06":"שקלים","2027-03-20":"זכור","2027-03-27":"פרה","2027-04-03":"החודש","2027-04-17":"הגדול"},"EV":{"2026-11-09":"חג הסיגד","2026-12-20":"עשרה בטבת","2027-01-23":"ט״ו בשבט","2027-02-07":"ר״ח אדר א׳","2027-02-08":"ר״ח אדר א׳","2027-02-21":"פורים קטן","2027-03-09":"ר״ח אדר ב׳","2027-03-10":"ר״ח אדר ב׳","2027-03-22":"תענית אסתר","2027-05-04":"יום השואה","2027-05-11":"יום הזיכרון","2027-06-04":"יום ירושלים"}};
+{const fix={'מצרע':'מצורע','בחקתי':'בחוקותי','בהעלתך':'בהעלותך','תצוה':'תצווה','פינחס':'פנחס','שלח לך':'שלח','קדשים':'קדושים','אחרי מות':'אחרי'};for(const k in DATA.P)DATA.P[k]=DATA.P[k].split('-').map(x=>fix[x]||x).join('-')}
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function g(n){const o=['','א','ב','ג','ד','ה','ו','ז','ח','ט'],t=['','י','כ','ל','מ','נ','ס','ע','פ','צ'],h=['','ק','ר','ש','ת'];let s='',x=n;while(x>=400){s+='ת';x-=400}if(x>=100){s+=h[Math.floor(x/100)];x%=100}if(x===15)return s+'טו';if(x===16)return s+'טז';return s+t[Math.floor(x/10)]+o[x%10]}
+const WD=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'], WDL=['ראשון','שני','שלישי','רביעי','חמישי','שישי'];
+const GRADES=['א','ב','ג','ד','ה','ו','ז','ח'];
+const MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+
+/* ---------- books ---------- */
+const TORAH={'בראשית':50,'שמות':40,'ויקרא':27,'במדבר':36,'דברים':34};
+const PARASHOT={
+ 'בראשית':[['בראשית',1,1],['נח',6,9],['לך לך',12,1],['וירא',18,1],['חיי שרה',23,1],['תולדות',25,19],['ויצא',28,10],['וישלח',32,4],['וישב',37,1],['מקץ',41,1],['ויגש',44,18],['ויחי',47,28]],
+ 'שמות':[['שמות',1,1],['וארא',6,2],['בא',10,1],['בשלח',13,17],['יתרו',18,1],['משפטים',21,1],['תרומה',25,1],['תצוה',27,20],['כי תשא',30,11],['ויקהל',35,1],['פקודי',38,21]],
+ 'ויקרא':[['ויקרא',1,1],['צו',6,1],['שמיני',9,1],['תזריע',12,1],['מצורע',14,1],['אחרי מות',16,1],['קדושים',19,1],['אמור',21,1],['בהר',25,1],['בחקותי',26,3]],
+ 'במדבר':[['במדבר',1,1],['נשא',4,21],['בהעלותך',8,1],['שלח',13,1],['קרח',16,1],['חקת',19,1],['בלק',22,2],['פנחס',25,10],['מטות',30,2],['מסעי',33,1]],
+ 'דברים':[['דברים',1,1],['ואתחנן',3,23],['עקב',7,12],['ראה',11,26],['שופטים',16,18],['כי תצא',21,10],['כי תבוא',26,1],['נצבים',29,9],['וילך',31,1],['האזינו',32,1],['וזאת הברכה',33,1]]};
+const NAVI={'יהושע':24,'שופטים':21,'שמואל א':31,'שמואל ב':24,'מלכים א':22,'מלכים ב':25,'ישעיהו':66,'ירמיהו':52,'יחזקאל':48,'הושע':14,'יואל':4,'עמוס':9,'עובדיה':1,'יונה':4,'מיכה':7,'נחום':3,'חבקוק':3,'צפניה':3,'חגי':2,'זכריה':14,'מלאכי':3};
+const KETUVIM={'תהלים':150,'משלי':31,'איוב':42,'שיר השירים':8,'רות':4,'איכה':5,'קהלת':12,'אסתר':10,'דניאל':12,'עזרא':10,'נחמיה':13,'דברי הימים א':29,'דברי הימים ב':36};
+const SUBJECTS={
+  torah:{label:'חומש',unit:'פסוקים',pace:8,cols:['פרק','פסוק'],groups:[['',Object.keys(TORAH)]]},
+  navi:{label:'נביא',unit:'פסוקים',pace:12,cols:['פרק','פסוק'],groups:[['נביאים',Object.keys(NAVI)],['כתובים',Object.keys(KETUVIM)]]},
+  mishna:{label:'משנה',unit:'משניות',pace:1,cols:['פרק','משנה'],groups:[['',Object.keys(DATA.M)]]},
+  gemara:{label:'גמרא',unit:'עמודים',pace:0.25,cols:['דף','עמוד'],groups:[['',Object.keys(DATA.B)]]},
+  other:{label:'אחר (רשימה חופשית)',unit:'נושאים',pace:1,cols:['נושא',''],groups:[]}
+};
+/* books in נביא/כתובים without verse data fall back to whole chapters */
+const hasVerses=(subject,book)=>(subject==='torah'||subject==='navi')&&!!DATA.V[book];
+const unitName=(subject,book)=>(subject==='navi'&&!hasVerses(subject,book))?'פרקים':SUBJECTS[subject].unit;
+const defaultPace=(subject,book)=>(subject==='navi'&&!hasVerses(subject,book))?0.5:SUBJECTS[subject].pace;
+function units(subject,book,otherText){
+  const U=[];
+  if(hasVerses(subject,book)){
+    const ps=PARASHOT[book]||[];
+    DATA.V[book].forEach((n,ci)=>{const c=ci+1;for(let v=1;v<=n;v++){let grp='';if(subject==='torah'){for(const p of ps)if(p[1]<c||(p[1]===c&&p[2]<=v))grp='פרשת '+p[0]}U.push({c,v,cl:g(c),vl:g(v),label:`פרק ${g(c)} פסוק ${g(v)}`,short:`${g(c)},${g(v)}`,group:grp,fine:true})}});
+  }
+  else if(subject==='navi'){const n=NAVI[book]||KETUVIM[book]||0;for(let c=1;c<=n;c++)U.push({c,cl:g(c),vl:'',label:'פרק '+g(c),short:g(c)})}
+  else if(subject==='mishna'){(DATA.M[book]||[]).forEach((cnt,i)=>{for(let j=1;j<=cnt;j++)U.push({c:i+1,v:j,cl:g(i+1),vl:g(j),label:`פרק ${g(i+1)} משנה ${g(j)}`,short:`${g(i+1)},${g(j)}`,group:'פרק '+g(i+1)})})}
+  else if(subject==='gemara'){const last=DATA.B[book]||0;for(let d=2;d<=last;d++){U.push({c:d,v:1,cl:g(d),vl:'א',label:`דף ${g(d)} ע״א`,short:`${g(d)}.`});U.push({c:d,v:2,cl:g(d),vl:'ב',label:`דף ${g(d)} ע״ב`,short:`${g(d)}:`})}}
+  else{String(otherText||'').split('\n').map(s=>s.trim()).filter(Boolean).forEach((line,i)=>{const m=line.split('|');const h=parseFloat(m[1]);U.push({c:i+1,cl:m[0].trim(),vl:'',label:m[0].trim(),short:m[0].trim(),hours:h>0?h:null})})}
+  return U;
+}
+/* label for a run of units, e.g. "פרק ג, ה–יב" or "ג,ה – ד,יב" */
+function rangeLabel(U,s,e){
+  const a=U[s],b=U[e];if(!a||!b)return '';
+  if(s===e)return a.label;
+  if(a.fine||a.v){
+    if(a.c===b.c){const unitW=a.fine?'פס׳':(a.vl==='א'||a.vl==='ב')?'':'משניות';return a.vl==='א'||a.vl==='ב'?`דף ${a.cl}`:`פרק ${a.cl}, ${unitW} ${a.vl}–${b.vl}`.replace(',  ',', ')}
+    return `${a.short} – ${b.short}`;
+  }
+  return `${a.label} – ${b.short}`;
+}
+
+/* ---------- calendar ---------- */
+const DEFAULT_HOL=[
+ {from:'2026-12-06',to:'2026-12-11',name:'חופשת חנוכה'},
+ {from:'2027-03-23',to:'2027-03-24',name:'פורים ושושן פורים'},
+ {from:'2027-04-13',to:'2027-04-28',name:'חופשת פסח'},
+ {from:'2027-05-12',to:'2027-05-12',name:'יום העצמאות'},
+ {from:'2027-05-25',to:'2027-05-25',name:'ל״ג בעומר'},
+ {from:'2027-06-10',to:'2027-06-11',name:'חג השבועות'}];
+const YEAR_END='2027-06-30';
+let schoolHol=[]; // added by school admin, stored in db
+const allHol=()=>[...DEFAULT_HOL,...schoolHol.filter(h=>h.off!==false)].sort((a,b)=>a.from.localeCompare(b.from));
+const schoolEvents=()=>schoolHol.filter(h=>h.off===false);
+const ms=iso=>Date.UTC(+iso.slice(0,4),+iso.slice(5,7)-1,+iso.slice(8,10));
+const iso=t=>new Date(t).toISOString().slice(0,10);
+const add=(s,n)=>iso(ms(s)+n*864e5);
+const dow=s=>new Date(ms(s)).getUTCDay();
+const heb=s=>DATA.D[s]||'';
+const greg=s=>`${+s.slice(8,10)}.${+s.slice(5,7)}`;
+const gregFull=s=>`${+s.slice(8,10)}.${+s.slice(5,7)}.${s.slice(0,4)}`;
+function holidayOn(d,hol){return hol.find(h=>d>=h.from&&d<=h.to)}
+const todayIso=(()=>{const n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`})();
+const r2=x=>Math.round(x*100)/100;
+
+/* ---------- engine ---------- */
+function compute(S,hol){
+  const U=units(S.subject,S.book,S.otherText);
+  const a=Math.max(0,Math.min(S.startIdx|0,U.length-1)), b=Math.max(a,Math.min(S.endIdx??U.length-1,U.length-1));
+  const span=U.slice(a,b+1);
+  // cost per unit in hours
+  const pace=Math.max(0.01,+S.pace||1);
+  const cost=span.map(u=>u.hours||1/pace);
+  const needed=cost.reduce((x,y)=>x+y,0);
+  const cum=[0];cost.forEach(c=>cum.push(cum[cum.length-1]+c));
+  const posAt=h=>{ // hours -> fractional unit position
+    if(h>=needed)return span.length;let i=0;while(i<span.length&&cum[i+1]<=h+1e-9)i++;return i+(h-cum[i])/cost[i]};
+  const items=[];let used=0,available=0,finishDate=null;
+  const mar={};(S.marathons||[]).forEach(m=>{if(m.date&&+m.hours>0)mar[m.date]=(mar[m.date]||0)+(+m.hours)});
+  const blk={};(S.blocked||[]).forEach(x=>{if(x.date)blk[x.date]=x.note||'השיעור לא מתקיים'});
+  const seenHol=new Set();
+  if(!S.startDate||!S.endDate||S.endDate<S.startDate)return {U,span,items,needed,available:0,finishDate:null,a,b};
+  for(let d=S.startDate;d<=S.endDate;d=add(d,1)){
+    const w=dow(d);if(w===6)continue;
+    const h=holidayOn(d,hol);
+    if(h){if(!seenHol.has(h)){seenHol.add(h);items.push({type:'hol',date:d,name:h.name,to:h.to})}continue}
+    let hrs=(+S.days?.[w]||0);
+    if(blk[d]){if(hrs>0)items.push({type:'blk',date:d,name:blk[d]});hrs=0}
+    const mh=mar[d]||0;hrs+=mh;
+    if(hrs<=0)continue;
+    available+=hrs;
+    const p0=posAt(used),p1=posAt(used+hrs);
+    let it={type:'lesson',date:d,hours:hrs,mar:mh>0};
+    if(used>=needed-1e-9){it.rev=true;it.text='חזרה, העמקה ומבחנים'}
+    else if(span[0].fine){
+      // verse-level: whole verses per lesson, no overlaps
+      const u0=Math.min(span.length-1,Math.round(p0)),u1=Math.max(u0,Math.min(span.length-1,Math.round(p1)-1));
+      it.u0=u0;it.u1=u1;it.n=u1-u0+1;
+      it.text=rangeLabel(span,u0,u1)+` (${it.n} פס׳)`;
+      it.group=span[u0].group||'';
+      if(used+hrs>=needed-1e-9&&!finishDate){finishDate=d;it.finish=true}
+    }
+    else{
+      const u0=Math.floor(p0+1e-9),u1=Math.max(u0,Math.ceil(p1-1e-9)-1);
+      const cont=p0-u0>1e-6, part=p1<u1+1-1e-6;
+      it.u0=u0;it.u1=u1;
+      if(u0===u1){it.text=span[u0].label+(cont?' (המשך)':(part?' (התחלה)':''))}
+      else it.text=`${span[u0].label}${cont?' (המשך)':''} – ${span[u1].short}${part?' (התחלה)':''}`;
+      it.group=span[u0].group||'';
+      if(used+hrs>=needed-1e-9&&!finishDate){finishDate=d;it.finish=true}
+    }
+    used+=hrs;items.push(it);
+  }
+  return {U,span,items,needed,available,finishDate,a,b};
+}
+function verdict(R){
+  const gap=R.available-R.needed;
+  if(R.span.length===0)return {ok:false,title:'אין יחידות לימוד',text:'בחרו ספר או הוסיפו נושאים.'};
+  if(gap>=0)return {ok:true,title:'יש מספיק שעות',text:`מסיימים ב${heb(R.finishDate)} (${gregFull(R.finishDate)}). נשארות ${r2(gap)} שעות לחזרה ולמבחנים.`};
+  return {ok:false,title:`חסרות ${r2(-gap)} שעות`,text:''};
+}
+/* week rows in the shape of the school's template: פרשה | מ־ | עד־ | מס׳ | הערות | ביצוע */
+const sundayOf=d=>add(d,-dow(d));
+function weeks(P,R,hol){
+  const out=[];if(!P.startDate||!P.endDate||P.endDate<P.startDate)return out;
+  const byWeek={};R.items.forEach(it=>{const k=sundayOf(it.date);(byWeek[k]=byWeek[k]||[]).push(it)});
+  const ev=schoolEvents();
+  for(let sun=sundayOf(P.startDate);sun<=P.endDate;sun=add(sun,7)){
+    const sat=add(sun,6);let par=DATA.P[sat]||'';
+    if(par&&DATA.SS[sat])par+=' – '+DATA.SS[sat];
+    const notes=[];
+    // holidays touching this week, written like "ג׳–ד׳ פורים"
+    hol.forEach(h=>{if(h.to<sun||h.from>add(sun,5))return;const a=h.from<sun?sun:h.from,b=h.to>add(sun,5)?add(sun,5):h.to;
+      if(h.from<sun&&h.to>add(sun,5))notes.push(h.name);else notes.push(a===b?`${WD[dow(a)]} ${h.name}`:`${WD[dow(a)]}–${WD[dow(b)]} ${h.name}`)});
+    const evd={};for(let i=0;i<6;i++){const d=add(sun,i);if(DATA.EV[d])DATA.EV[d].split(', ').forEach(n=>(evd[n]=evd[n]||[]).push(i))}
+    Object.entries(evd).forEach(([n,ds])=>notes.push(ds.length>1?`${WD[ds[0]]}–${WD[ds[ds.length-1]]} ${n}`:`${WD[ds[0]]} ${n}`));
+    for(let i=0;i<6;i++){const d=add(sun,i);ev.forEach(e=>{if(d>=e.from&&d<=e.to&&(d===e.from||i===0))notes.push(`${WD[i]} ${e.name}`)})}
+    if(!par){const h=hol.find(h=>h.from<=sat&&h.to>=sun);par=h?h.name:'שבוע '+greg(sun)}
+    const its=byWeek[sun]||[];
+    its.filter(i=>i.type==='blk').forEach(i=>notes.push(`${WD[dow(i.date)]} ${i.name}`));
+    const les=its.filter(i=>i.type==='lesson'&&!i.rev&&i.u0!=null);
+    const rev=its.some(i=>i.type==='lesson'&&i.rev);
+    if(its.some(i=>i.mar))notes.push('יום מרתון');
+    const di=x=>WD.indexOf(x.split(/[ –]/)[0]);
+    let row={sun,par,notes:[...new Set(notes)].sort((a,b)=>di(a)-di(b)),hours:its.reduce((a,i)=>a+(i.hours||0),0)};
+    if(les.length){const s=Math.min(...les.map(i=>i.u0)),e=Math.max(...les.map(i=>i.u1));const A=R.span[s],B=R.span[e];
+      Object.assign(row,{s,e,fromC:A.cl,fromV:A.vl,toC:B.cl,toV:B.vl,n:e-s+1,label:rangeLabel(R.span,s,e)});}
+    else if(rev)row.rev=true;
+    out.push(row);
+  }
+  return out;
+}
+
+/* ---------- state ---------- */
+const blank=()=>({id:null,v:2,teacher:'',grade:'ו',cls:'',subject:'navi',book:'מלכים א',startIdx:0,endIdx:null,pace:12,otherText:'',
+  startDate:todayIso<'2026-09-01'||todayIso>YEAR_END?'2026-11-01':todayIso,endDate:YEAR_END,days:{0:1,1:0,2:1,3:0,4:1,5:0},marathons:[],blocked:[],progress:{}});
+let S=blank(),step=1,mode='week';
+let db=null,uid=null,canWrite=null,isAdmin=false,myDoc={plans:{}},team=[],mineLoaded=false,teamLoaded=false;
+try{const saved=JSON.parse(localStorage.getItem('planner-draft')||'null');if(saved&&saved.subject&&saved.v===2)S={...S,...saved}}catch(e){}
+const persistDraft=()=>{try{localStorage.setItem('planner-draft',JSON.stringify(S))}catch(e){}};
+
+/* ---------- form ---------- */
+function fillSelect(sel,opts,val){sel.innerHTML=opts;if(val!=null)sel.value=val}
+function initForm(){
+  fillSelect($('#grade'),GRADES.map(x=>`<option value="${x}">כיתה ${x}׳</option>`).join(''),S.grade);
+  fillSelect($('#subject'),Object.entries(SUBJECTS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join(''),S.subject);
+  $('#tGrade').innerHTML='<option value="">כל השכבות</option>'+GRADES.map(x=>`<option value="${x}">כיתה ${x}׳</option>`).join('');
+  $('#tSubj').innerHTML='<option value="">כל המקצועות</option>'+Object.entries(SUBJECTS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+  $('#teacher').value=S.teacher;$('#cls').value=S.cls;$('#otherText').value=S.otherText;$('#pace').value=S.pace;
+  $('#startDate').value=S.startDate;$('#endDate').value=S.endDate;
+  ['#startDate','#endDate','#hFrom','#hTo'].forEach(s=>{$(s).min='2026-09-01';$(s).max='2027-08-31'});
+  fillBooks();renderDays();renderRows();
+}
+function fillBooks(){
+  const sub=SUBJECTS[S.subject];
+  $('#bookWrap').hidden=S.subject==='other';$('#otherWrap').hidden=S.subject!=='other';
+  if(S.subject!=='other'){
+    const html=sub.groups.map(([lbl,list])=>{const o=list.map(b=>`<option>${b}</option>`).join('');return lbl?`<optgroup label="${lbl}">${o}</optgroup>`:o}).join('');
+    const all=sub.groups.flatMap(x=>x[1]);if(!all.includes(S.book))S.book=all[0];
+    fillSelect($('#book'),html,S.book);
+  }
+  fillRange();
+}
+let CUR_U=[];
+function fillRange(){
+  const U=CUR_U=units(S.subject,S.book,S.otherText);
+  $('#rangeWrap').style.display=U.length?'':'none';
+  if(S.endIdx==null||S.endIdx>=U.length)S.endIdx=S.subject==='gemara'?Math.min(U.length-1,(S.startIdx|0)+39):U.length-1;
+  if(S.startIdx>=U.length)S.startIdx=0;
+  const [c1,c2]=SUBJECTS[S.subject].cols;const two=U.length&&U[0].vl!=='';
+  $$('.cl1').forEach(x=>x.textContent=c1);$$('.cl2').forEach(x=>x.textContent=c2);$$('.range .sub').forEach(x=>x.hidden=!two);
+  // chapter-level options, grouped by parasha for חומש
+  const firstIdx={};let lastG=null,html='';
+  U.forEach((u,i)=>{if(firstIdx[u.c]!=null)return;firstIdx[u.c]=i;if(u.group&&u.group!==lastG){if(lastG!==null)html+='</optgroup>';html+=`<optgroup label="${esc(u.group)}">`;lastG=u.group}html+=`<option value="${u.c}">${esc(S.subject==='other'?u.cl:c1+' '+u.cl)}</option>`});
+  if(lastG!==null)html+='</optgroup>';
+  fillSelect($('#sC'),html,U[S.startIdx]?.c);fillSelect($('#eC'),html,U[S.endIdx]?.c);
+  fillSub('s');fillSub('e');
+  const unit=unitName(S.subject,S.book);
+  $('#paceLbl').textContent=`${unit} לשעת לימוד`;
+  const p=+S.pace||1;
+  $('#paceHint').textContent=S.subject==='other'?'נושא בלי שעות מוגדרות יקבל שעות לפי הקצב.':(p<1?`כלומר יחידה אחת בכל ${r2(1/p)} שעות לימוד.`:`כלומר ${r2(p)} ${unit} בכל שעת לימוד.`);
+  renderTaken();
+}
+function fillSub(w){
+  const idx=w==='s'?S.startIdx:S.endIdx,c=CUR_U[idx]?.c;
+  const opts=CUR_U.map((u,i)=>u.c===c?`<option value="${i}">${esc(u.vl)}</option>`:'').join('');
+  fillSelect($('#'+w+'V'),opts,idx);
+}
+function setIdx(w,i){
+  if(w==='s'){S.startIdx=i;if(S.endIdx<i)S.endIdx=i}else{S.endIdx=i;if(S.startIdx>i)S.startIdx=i}
+  $('#sC').value=CUR_U[S.startIdx].c;$('#eC').value=CUR_U[S.endIdx].c;fillSub('s');fillSub('e');changed();
+}
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='sC'||t.id==='eC'){const c=+t.value||t.value;let i=CUR_U.findIndex(u=>String(u.c)===String(c));
+    if(t.id==='eC'){let j=i;while(j+1<CUR_U.length&&String(CUR_U[j+1].c)===String(c))j++;i=j}setIdx(t.id[0],i)}
+  if(t.id==='sV'||t.id==='eV')setIdx(t.id[0],+t.value);
+});
+function renderTaken(){
+  const el=$('#takenNote');if(!el)return;
+  const others=[];team.forEach(t=>{if(t.uid===uid)return;Object.values(t.plans||{}).forEach(p=>{if(p.grade===S.grade&&p.subject===S.subject)others.push(p)})});
+  el.innerHTML=others.length?`<div class="taken">כבר נשמרה תוכנית ${esc(SUBJECTS[S.subject].label)} לשכבה ${esc(S.grade)}׳: ${others.map(p=>esc(p.teacher||'מורה')+(p.subject!=='other'?' ('+esc(p.book)+')':'')).join(', ')}. התוכניות שכבתיות, כדאי לתאם לפני שבונים עוד אחת.</div>`:'';
+}
+function renderDays(){
+  $('#days').innerHTML=WDL.map((n,i)=>{const h=+S.days[i]||0;return `<div class="day ${h>0?'on':''}"><span>${n}</span><input type="number" min="0" max="8" step="0.5" id="day${i}" data-day="${i}" value="${h}" aria-label="שעות ביום ${n}"></div>`}).join('');
+}
+function rowHtml(kind,x,i){
+  if(kind==='mar')return `<div class="mrow"><input type="date" min="2026-09-01" max="2027-08-31" id="m-d-${i}" data-k="mar" data-i="${i}" data-f="date" value="${esc(x.date)}" aria-label="תאריך"><input type="number" min="0.5" step="0.5" id="m-h-${i}" data-k="mar" data-i="${i}" data-f="hours" value="${esc(x.hours)}" aria-label="שעות"><input class="note" id="m-n-${i}" data-k="mar" data-i="${i}" data-f="note" value="${esc(x.note||'')}" placeholder="הערה"><button class="x" data-del="mar" data-i="${i}" aria-label="מחיקה">×</button></div>`;
+  return `<div class="mrow"><input type="date" min="2026-09-01" max="2027-08-31" id="b-d-${i}" data-k="blk" data-i="${i}" data-f="date" value="${esc(x.date)}" aria-label="תאריך"><span class="dt" style="color:var(--muted);font-size:13px">${x.date?heb(x.date):''}</span><input class="note" id="b-n-${i}" data-k="blk" data-i="${i}" data-f="note" value="${esc(x.note||'')}" placeholder="סיבה (טיול, יום שיא…)"><button class="x" data-del="blk" data-i="${i}" aria-label="מחיקה">×</button></div>`;
+}
+function renderRows(){
+  $('#marathons').innerHTML=S.marathons.length?S.marathons.map((x,i)=>rowHtml('mar',x,i)).join(''):'<p class="note-line" style="margin:0">אין ימי מרתון.</p>';
+  $('#blocked').innerHTML=S.blocked.length?S.blocked.map((x,i)=>rowHtml('blk',x,i)).join(''):'<p class="note-line" style="margin:0">לא הוגדרו ימים כאלה.</p>';
+}
+function goStep(n){step=n;[1,2,3].forEach(k=>$('#s'+k).hidden=k!==n);$$('#steps button').forEach(b=>b.toggleAttribute('aria-current',+b.dataset.s===n));if(n===3)b3();renderLedger();$('#steps').scrollIntoView({block:'nearest'})}
+$$('#steps button').forEach(b=>{b.onclick=()=>goStep(+b.dataset.s)});
+document.addEventListener('click',e=>{const go=e.target.closest('[data-go]');if(go)goStep(+go.dataset.go);
+  const del=e.target.closest('[data-del]');if(del){(del.dataset.del==='mar'?S.marathons:S.blocked).splice(+del.dataset.i,1);renderRows();changed()}});
+$('#addMar').onclick=()=>{S.marathons.push({date:'',hours:3,note:''});renderRows()};
+$('#addBlk').onclick=()=>{S.blocked.push({date:'',note:''});renderRows()};
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.day!=null){S.days[t.dataset.day]=+t.value||0;t.parentElement.classList.toggle('on',+t.value>0);return changed()}
+  if(t.dataset.k){const arr=t.dataset.k==='mar'?S.marathons:S.blocked;arr[+t.dataset.i][t.dataset.f]=t.dataset.f==='hours'?+t.value:t.value;
+    if(t.dataset.k==='blk'&&t.dataset.f==='date'){const sp=t.parentElement.querySelector('.dt');if(sp)sp.textContent=heb(t.value)}return changed()}
+  const map={teacher:'teacher',cls:'cls',pace:'pace',startDate:'startDate',endDate:'endDate',otherText:'otherText'};
+  if(map[t.id]){S[t.id]=t.id==='pace'?+t.value:t.value;if(t.id==='otherText'||t.id==='pace')fillRange();changed()}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='grade'){S.grade=t.value;changed()}
+  if(t.id==='subject'){S.subject=t.value;S.startIdx=0;S.endIdx=null;fillBooks();S.pace=defaultPace(S.subject,S.book);$('#pace').value=S.pace;fillRange();changed()}
+  if(t.id==='book'){S.book=t.value;S.startIdx=0;S.endIdx=null;S.pace=defaultPace(S.subject,S.book);$('#pace').value=S.pace;fillRange();changed()}
+  if(t.id==='grade')renderTaken();
+});
+let dirty=false;
+function changed(){dirty=true;persistDraft();renderLedger();if(step===3)b3()}
+
+/* ---------- visual helpers ---------- */
+const SC=k=>`var(--s-${k||'other'})`, TC=k=>`var(--t-${k||'other'})`;
+function ring(pct,size,color,label,stroke){
+  const sw=stroke||Math.max(5,size/9),r=(size-sw)/2,c=2*Math.PI*r,p=Math.max(0,Math.min(100,pct));
+  return `<span class="ring" style="width:${size}px;height:${size}px" role="img" aria-label="${esc(label||Math.round(p)+'%')}"><svg width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--sunk)" stroke-width="${sw}"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${c*p/100} ${c}"/></svg><span class="v" style="font-size:${Math.round(size/4.6)}px">${Math.round(pct)}%</span></span>`;
+}
+const cover=s=>s&&s.needed?Math.min(100,s.available/s.needed*100):0;
+function renderSubjPick(){
+  $('#subjPick').innerHTML=Object.entries(SUBJECTS).map(([k,v])=>`<button type="button" data-subj="${k}" aria-pressed="${S.subject===k}" style="color:${S.subject===k?SC(k):''}"><i style="background:${SC(k)}"></i><span style="color:var(--ink)">${v.label.replace(' (רשימה חופשית)','')}</span></button>`).join('');
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-subj]');if(!b)return;const sel=$('#subject');sel.value=b.dataset.subj;sel.dispatchEvent(new Event('change',{bubbles:true}));renderSubjPick()});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-min]');if(b){const w=b.closest('.w');w.classList.toggle('min');b.textContent=w.classList.contains('min')?'+':'−'}});
+
+/* ---------- ledger ---------- */
+function renderLedger(){
+  const R=compute(S,allHol()),v=verdict(R);
+  const pct=R.needed?R.available/R.needed*100:0;
+  const unit=SUBJECTS[S.subject].unit;
+  let tip='';
+  if(!v.ok&&R.span.length&&R.available>0){
+    const needPace=R.span.length/R.available;const gap=R.needed-R.available;
+    tip=`<p class="note-line">אפשר לסגור את הפער: קצב של ${r2(needPace)} ${unit} לשעה, ${Math.ceil(gap/3)} ימי מרתון של 3 שעות, או עוד ${r2(gap/Math.max(1,weeksLeft()))} שעות בשבוע.</p>`;
+  }
+  $('#ledger').innerHTML=`<div class="subj-tag" style="margin-bottom:12px"><span class="dot" style="background:${SC(S.subject)}"></span>${esc(SUBJECTS[S.subject].label)}${S.subject!=='other'?' · '+esc(S.book):''}<span class="chip">${R.span.length} ${unit}</span></div>
+   <div class="ledger-top">${ring(Math.min(pct,100),96,v.ok?'var(--ok)':'var(--bad)',`כיסוי ${Math.round(pct)}% מהשעות הנדרשות`)}
+   <dl class="kv"><dt>שעות זמינות</dt><dd>${r2(R.available)}</dd><dt>שעות נדרשות</dt><dd>${r2(R.needed)}</dd><dt>שעות בשבוע</dt><dd>${r2(Object.values(S.days).reduce((x,y)=>x+(+y||0),0))}</dd><dt>עד</dt><dd>${S.endDate?greg(S.endDate):''}</dd></dl></div>
+   <div class="status ${v.ok?'ok':'warn'}"><b>${v.title}</b>${v.text}</div>${tip}`;
+}
+function weeksLeft(){if(!S.startDate||!S.endDate)return 1;return Math.max(1,(ms(S.endDate)-ms(S.startDate))/864e5/7-3)}
+
+/* ---------- plan rendering ---------- */
+function planHTML(P,R,m){
+  if(!R.items.length)return '<div class="empty">אין שיעורים בטווח התאריכים. בדקו את המערכת השבועית ואת התאריכים.</div>';
+  return m==='cal'?calHTML(P,R):m==='week'?weekHTML(P,R,P===S):listHTML(P,R);
+}
+function weekHTML(P,R,editable){
+  const W=weeks(P,R,allHol()),[c1,c2]=SUBJECTS[P.subject].cols,unit=unitName(P.subject,P.book),pg=P.progress||{};
+  const two=R.span.length&&R.span[0].vl!=='';
+  const rows=W.map(w=>{
+    const past=w.sun<=todayIso,st=pg[w.sun]||{};
+    const off=!w.label&&!w.rev&&w.notes.length;
+    const exec=editable
+      ?`<td><input type="checkbox" id="pg-d-${w.sun}" data-pg="${w.sun}" ${st.d?'checked':''} aria-label="הספקתי בשבוע ${esc(w.par)}" ${w.label?'':'disabled'}></td><td><input class="why" id="pg-w-${w.sun}" data-pgw="${w.sun}" value="${esc(st.w||'')}" placeholder="${w.label&&past?'מדוע לא?':''}" aria-label="מדוע לא"></td>`
+      :`<td>${st.d?'<span class="done-yes">✓</span>':(w.label&&past&&st.w?'<span class="done-no">✗</span>':'')}</td><td style="font-size:12px">${esc(st.w||'')}</td>`;
+    return `<tr class="${off?'off':''} ${w.rev?'rev':''}"><td class="par">${esc(w.par)}<small>${greg(w.sun)} · ${heb(w.sun).split(' ').slice(0,2).join(' ')}</small></td>`+
+      (w.label?`<td>${esc(w.fromC)}</td>${two?`<td>${esc(w.fromV)}</td>`:''}<td>${esc(w.toC)}</td>${two?`<td>${esc(w.toV)}</td>`:''}<td class="num">${w.n}</td>`
+        :`<td colspan="${two?5:3}" class="lbl">${w.rev?'חזרה, העמקה ומבחנים':''}</td>`)+
+      `<td class="nt">${w.notes.map(esc).join('<br>')}</td>${exec}</tr>`}).join('');
+  const total=R.span.length?`${rangeLabel(R.span,0,R.span.length-1)} · ${R.span.length} ${unit}`:'';
+  return `<p class="note-line" style="margin:12px 0 8px">אותם טורים כמו בטופס של הרכז. ${editable?'סמנו "הספקתי" בכל שבוע – זה נשמר אוטומטית בתוכנית שמורה.':''}</p><div class="tbl"><table class="wk"><thead>
+   <tr><th rowspan="3">שבוע<br>פרשה</th><th class="grp" colspan="${two?5:3}">התכנון</th><th rowspan="3">הערות</th><th class="grp" colspan="2">ביצוע</th></tr>
+   <tr><th colspan="${two?2:1}">מ־</th><th colspan="${two?2:1}">עד־</th><th rowspan="2">מס׳ ${esc(unit)}</th><th rowspan="2">הספקתי</th><th rowspan="2">מדוע לא?</th></tr>
+   <tr><th>${c1}</th>${two?`<th>${c2}</th>`:''}<th>${c1}</th>${two?`<th>${c2}</th>`:''}</tr></thead>
+   <tbody>${rows}</tbody><tfoot><tr><td colspan="${two?9:7}" style="text-align:right">הספק שנתי: ${esc(total)}</td></tr></tfoot></table></div>`;
+}
+let pgTimer=null;
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset.pg){S.progress=S.progress||{};S.progress[t.dataset.pg]={...(S.progress[t.dataset.pg]||{}),d:t.checked};pgChanged()}});
+document.addEventListener('input',e=>{const t=e.target;if(t.dataset.pgw){S.progress=S.progress||{};S.progress[t.dataset.pgw]={...(S.progress[t.dataset.pgw]||{}),w:t.value};pgChanged()}});
+function pgChanged(){persistDraft();clearTimeout(pgTimer);if(S.id&&db&&uid)pgTimer=setTimeout(()=>savePlan(true),1500)}
+function listHTML(P,R){
+  let html='',curMonth='',curWeek='';const st=`--c:${SC(P.subject)};--tc:${TC(P.subject)}`;
+  for(const it of R.items){
+    const mk=it.date.slice(0,7);
+    if(mk!==curMonth){curMonth=mk;curWeek='';html+=`<div class="month-title">${MONTHS[+mk.slice(5)-1]} ${mk.slice(0,4)}</div>`}
+    const sun=add(it.date,-dow(it.date));
+    if(sun!==curWeek){curWeek=sun;const par=DATA.P[add(sun,6)];html+=`<div class="divider"><span>${par?'פרשת '+esc(par):'שבוע '+greg(sun)}<small>${heb(sun).split(' ').slice(0,2).join(' ')}</small></span></div>`}
+    const when=`<div class="when"><b>${WD[dow(it.date)]}</b><small>${greg(it.date)}</small></div>`;
+    if(it.type==='hol'){html+=`<div class="card off">${when}<div class="what"><b>${esc(it.name)}</b><small>${heb(it.date)}${it.to!==it.date?' – '+heb(it.to):''}</small></div><span class="chip bad">חופשה</span></div>`;continue}
+    if(it.type==='blk'){html+=`<div class="card off">${when}<div class="what"><b>${esc(it.name)}</b><small>${heb(it.date)}</small></div><span class="chip bad">אין שיעור</span></div>`;continue}
+    const sub=[heb(it.date),it.group&&P.subject==='torah'?it.group:''].filter(Boolean).map(esc).join(' · ');
+    html+=`<div class="card ${it.rev?'rev':''} ${it.mar?'mar':''}" style="${st}">${when}<div class="what"><b>${esc(it.text)}</b><small>${sub}</small>${it.mar||it.finish?`<div class="chips" style="margin-top:4px">${it.mar?'<span class="chip gold">מרתון</span>':''}${it.finish?'<span class="chip ok">סיום החומר</span>':''}</div>`:''}</div><span class="hrs" title="שעות">${r2(it.hours)}ש׳</span></div>`;
+  }
+  return html;
+}
+function calHTML(P,R){
+  const byDate={};R.items.forEach(it=>{if(it.type!=='hol')byDate[it.date]=it});
+  const hol=allHol();let html='';const st=`--c:${SC(P.subject)};--tc:${TC(P.subject)}`;
+  let m=P.startDate.slice(0,7);const endM=P.endDate.slice(0,7);
+  while(m<=endM){
+    const first=m+'-01';let d=add(first,-dow(first));
+    html+=`<div class="month-title">${MONTHS[+m.slice(5)-1]} ${m.slice(0,4)}</div><div class="cal-wrap"><div class="cal">${WDL.map(n=>`<div class="dh">${n}</div>`).join('')}`;
+    while(true){
+      for(let w=0;w<7;w++,d=add(d,1)){
+        if(w===6)continue;
+        const inM=d.slice(0,7)===m, inR=d>=P.startDate&&d<=P.endDate;const h=holidayOn(d,hol);const it=byDate[d];
+        let cls='cell',c='';
+        if(!inM||!inR)cls+=' out';
+        else if(h){cls+=' hol';c=esc(h.name)}
+        else if(it&&it.type==='blk'){cls+=' hol';c=esc(it.name)}
+        else if(it){cls+=it.mar?' mar':' learn';c=esc(it.text)}
+        html+=`<div class="${cls}" style="${st}"><div class="n"><span>${+d.slice(8)}</span><span>${inM?(heb(d).split(' ')[0]||''):''}</span></div><div class="c">${inM&&inR?c:''}</div></div>`;
+      }
+      if(d.slice(0,7)>m)break;
+    }
+    html+='</div></div>';
+    const [y,mo]=m.split('-').map(Number);m=mo===12?`${y+1}-01`:`${y}-${String(mo+1).padStart(2,'0')}`;
+  }
+  return html;
+}
+function metaLine(P){return [P.teacher&&('מורה: '+P.teacher),'כיתה '+P.grade+'׳'+(P.cls?P.cls:''),SUBJECTS[P.subject].label+(P.subject!=='other'?' · '+P.book:'')].filter(Boolean).map(esc).join(' · ')}
+function b3(){
+  const R=compute(S,allHol());const v=verdict(R);
+  $('#planTitle').textContent=`תוכנית ${SUBJECTS[S.subject].label}${S.subject!=='other'?' – '+S.book:''}`;
+  $('#planMeta').innerHTML=metaLine(S)+(R.span.length?` · ${esc(R.span[0].label)} עד ${esc(R.span[R.span.length-1].label)}`:'');
+  $('#planOut').innerHTML=(v.ok?'':`<div class="status warn" style="margin:12px 0 4px"><b>${v.title}</b>התוכנית מציגה עד היכן תגיעו בשעות הקיימות. אפשר להוסיף ימי מרתון או להעלות קצב בשלב 2.</div>`)+planHTML(S,R,mode);
+}
+$$('.seg button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));b3()});
+$('#newBtn').onclick=()=>{S=blank();initForm();persistDraft();goStep(1);toast('נפתחה תוכנית חדשה')};
+
+/* ---------- export ---------- */
+function planText(P){
+  const R=compute(P,allHol()),W=weeks(P,R,allHol()),[c1,c2]=SUBJECTS[P.subject].cols,u=unitName(P.subject,P.book);
+  const lines=[`שם המלמד: ${P.teacher||''}\tכיתה: ${P.grade}׳${P.cls||''}`,['שבוע פרשה',`מ־${c1}`,`מ־${c2}`,`עד־${c1}`,`עד־${c2}`,`מס׳ ${u}`,'הערות','הספקתי','מדוע לא?'].join('\t')];
+  W.forEach(w=>lines.push([w.par,w.fromC||'',w.fromV||'',w.toC||'',w.toV||'',w.n||(w.rev?'חזרה':''),w.notes.join(', '),(P.progress||{})[w.sun]?.d?'✓':'',(P.progress||{})[w.sun]?.w||''].join('\t')));
+  lines.push(`הספק שנתי: ${R.span.length?rangeLabel(R.span,0,R.span.length-1)+' · '+R.span.length+' '+u:''}`);
+  return lines.join('\n');
+}
+$('#copyBtn').onclick=async()=>{try{await navigator.clipboard.writeText(planText(S));toast('הועתק – אפשר להדביק לטבלה ב־Word או באקסל')}catch(e){toast('ההעתקה לא זמינה כאן')}};
+function loadScript(src){return new Promise((res,rej)=>{if(window.docx)return res();const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+let downloads=null;
+/* Word file laid out like the coordinator's template: A4 portrait, merged header rows, one row per week */
+$('#docxBtn').onclick=async()=>{
+  if(!downloads){toast('ההורדה אינה זמינה בתצוגה הזאת');return}
+  const btn=$('#docxBtn');btn.disabled=true;btn.textContent='מכין קובץ…';
+  try{
+    await loadScript('https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js');
+    const D=window.docx,R=compute(S,allHol()),W=weeks(S,R,allHol()),[c1,c2]=SUBJECTS[S.subject].cols,u=unitName(S.subject,S.book),pg=S.progress||{};
+    const two=R.span.length&&R.span[0].vl!=='';
+    const T=(text,o={})=>new D.Paragraph({bidirectional:true,alignment:o.align||D.AlignmentType.CENTER,spacing:{before:0,after:0},children:[new D.TextRun({text:String(text??''),rightToLeft:true,font:'David',size:o.size||20,bold:!!o.bold,italics:!!o.it})]});
+    const cell=(t,o={})=>new D.TableCell({children:String(t??'').split('\n').map(x=>T(x,o)),rowSpan:o.rs,columnSpan:o.cs,verticalAlign:D.VerticalAlign.CENTER,shading:o.fill?{fill:o.fill,type:D.ShadingType.CLEAR,color:'auto'}:undefined,width:o.w?{size:o.w,type:D.WidthType.DXA}:undefined});
+    const H={bold:true,fill:'D9D9D9'};
+    const head=[
+      new D.TableRow({tableHeader:true,children:[cell('שבוע\nפרשה',{...H,rs:3,w:1511}),cell('התכנון',{...H,it:true,cs:two?5:3}),cell('הערות',{...H,rs:3,w:2535}),cell('ביצוע',{...H,cs:2})]}),
+      new D.TableRow({tableHeader:true,children:[cell('מ-',{...H,it:true,cs:two?2:1}),cell('עד-',{...H,it:true,cs:two?2:1}),cell(`מס' ${u}`,{...H,it:true,rs:2,w:900}),cell('הספקתי',{...H,rs:2,w:900}),cell('מדוע לא?',{...H,rs:2,w:1100})]}),
+      new D.TableRow({tableHeader:true,children:[c1,two?c2:null,c1,two?c2:null].filter(x=>x!==null).map(x=>cell(x,{...H,it:true,w:two?700:1400}))})];
+    const body=W.map(w=>new D.TableRow({cantSplit:true,children:[
+      cell(w.par,{bold:true}),
+      ...(w.label?[w.fromC,two?w.fromV:null,w.toC,two?w.toV:null].filter(x=>x!==null).map(x=>cell(x)).concat([cell(w.n)])
+        :[cell(w.rev?'חזרה, העמקה ומבחנים':'',{cs:two?5:3,it:true})]),
+      cell(w.notes.join('\n'),{bold:true,size:18}),cell(pg[w.sun]?.d?'✓':''),cell(pg[w.sun]?.w||'',{size:18})]}));
+    const total=R.span.length?`${rangeLabel(R.span,0,R.span.length-1)} (${R.span.length} ${u})`:'';
+    const doc=new D.Document({sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:851,right:1080,bottom:993,left:1080}}},children:[
+      T(`תכנית שנתית תשפ״ז – ${SUBJECTS[S.subject].label}${S.subject!=='other'?' '+S.book:''}`,{bold:true,size:28}),
+      T(`שם המלמד: ${S.teacher||'_______________'}        כיתה: ${S.grade}׳${S.cls||''}`,{size:24}),T(''),
+      new D.Table({visuallyRightToLeft:true,layout:D.TableLayoutType.FIXED,width:{size:9746,type:D.WidthType.DXA},columnWidths:two?[1511,700,700,700,700,900,2535,900,1100]:[1511,1400,1400,900,2535,900,1100],rows:[...head,...body]}),
+      T(''),T(`הספק שנתי: ${total}`,{bold:true,size:24,align:D.AlignmentType.RIGHT})]}]});
+    const blob=await D.Packer.toBlob(doc);
+    await downloads.save({filename:`תכנית ${SUBJECTS[S.subject].label} ${S.subject!=='other'?S.book:''} שכבה ${S.grade}.docx`.replace(/\s+/g,' '),data:blob});
+    toast('הקובץ נשמר');
+  }catch(e){if(e&&e.code==='declined')toast('ההורדה בוטלה');else toast('לא הצלחנו להכין את הקובץ')}
+  finally{btn.disabled=false;btn.textContent='הורדה ל־Word'}
+};
+
+/* ---------- storage (db) ---------- */
+function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
+function summary(P){const R=compute(P,allHol());const v=verdict(R);const W=weeks(P,R,allHol()).filter(w=>w.label&&w.sun<=todayIso);const pg=P.progress||{};
+  return {available:r2(R.available),needed:r2(R.needed),ok:v.ok,finish:R.finishDate||null,from:R.span[0]?.label||'',to:R.span[R.span.length-1]?.label||'',count:R.span.length,unit:unitName(P.subject,P.book),past:W.length,done:W.filter(w=>pg[w.sun]?.d).length}}
+const pick=P=>({v:2,progress:P.progress||{},teacher:P.teacher,grade:P.grade,cls:P.cls,subject:P.subject,book:P.book,startIdx:P.startIdx,endIdx:P.endIdx,pace:P.pace,otherText:P.otherText,startDate:P.startDate,endDate:P.endDate,days:P.days,marathons:P.marathons,blocked:P.blocked});
+$('#saveBtn').onclick=()=>savePlan(false);
+async function savePlan(quiet){
+  if(quiet){try{const plans={...(myDoc.plans||{})};plans[S.id]={...pick(S),summary:summary(S),updatedAt:new Date().toISOString()};await db.doc('plans/'+uid).set({teacher:S.teacher,updatedAt:new Date().toISOString(),plans});$('#saveNote').textContent='המעקב נשמר.'}catch(e){$('#saveNote').textContent='שמירת המעקב נכשלה. לחצו "שמירה במערכת".'}return}
+  if(!db||!uid){$('#saveNote').textContent='השמירה זמינה למורים שנכנסו עם חשבון ויש להם הרשאת עריכה לעמוד. בינתיים אפשר להוריד את התוכנית ל־Word.';return}
+  if(!S.teacher.trim()){$('#teacher').focus();goStep(1);toast('נא למלא שם מורה לפני השמירה');return}
+  const btn=$('#saveBtn');btn.disabled=true;
+  try{
+    if(!S.id)S.id='p'+Date.now().toString(36);
+    const plans={...(myDoc.plans||{})};plans[S.id]={...pick(S),summary:summary(S),updatedAt:new Date().toISOString()};
+    await db.doc('plans/'+uid).set({teacher:S.teacher,updatedAt:new Date().toISOString(),plans});
+    persistDraft();$('#saveNote').textContent='';toast('התוכנית נשמרה');
+  }catch(e){
+    if(e&&e.code==='invalid_argument')$('#saveNote').textContent='אין לך הרשאה לשמור כאן. בקשו מבעל העמוד לשתף אתכם כ־Contributor (משתתף).';
+    else toast('השמירה נכשלה. נסו שוב בעוד רגע.');
+  }finally{btn.disabled=false}
+}
+const subjLbl=p=>esc(SUBJECTS[p.subject]?.label.replace(' (רשימה חופשית)',''))+(p.subject!=='other'?' · '+esc(p.book):'');
+const statusChip=s=>s?.ok?'<span class="chip ok">מסתדר</span>':`<span class="chip bad">חסרות ${r2((s?.needed||0)-(s?.available||0))} ש׳</span>`;
+function prow(p,attr){
+  const pc=cover(p.summary);
+  return `<div class="prow" ${attr} role="button" tabindex="0"><span class="av" style="--c:${SC(p.subject)}">${esc(p.grade)}${esc(String(p.cls||'').slice(0,2))}</span><div style="min-width:0"><div class="pname"><span>${subjLbl(p)}</span><small>${esc(p.teacher||'')}${p.summary?.finish?' · מסיים '+heb(p.summary.finish).split(' ').slice(0,2).join(' '):''}${p.summary?.past?` · בוצע ${p.summary.done}/${p.summary.past}`:''}</small></div><div class="bar"><i style="width:${pc}%;--c:${SC(p.subject)}"></i></div></div><span class="pct" style="background:${p.summary?.ok?'var(--ok)':'var(--bad)'}">${Math.round(pc)}%</span></div>`;
+}
+function renderMine(){
+  const el=$('#mineOut');
+  if(!db||!uid){el.innerHTML='<div class="empty">כדי לשמור ולראות תוכניות, היכנסו עם החשבון שלכם בעמוד הזה.</div>';return}
+  if(!mineLoaded){el.innerHTML='<div class="empty">טוען את התוכניות שלך…</div>';return}
+  const list=Object.entries(myDoc.plans||{}).sort((a,b)=>(b[1].updatedAt||'').localeCompare(a[1].updatedAt||''));
+  const cnt=$('#mineCount');cnt.hidden=!list.length;cnt.textContent=list.length;
+  if(!list.length){el.innerHTML='<div class="empty">עוד לא שמרת תוכניות. בנו תוכנית בלשונית "תוכנית חדשה" ולחצו "שמירה במערכת".</div>';return}
+  el.innerHTML=`<div class="tbl"><table class="list"><thead><tr><th>כיתה</th><th>מקצוע</th><th>טווח</th><th>כיסוי</th><th>מצב</th><th>עודכן</th><th></th></tr></thead><tbody>${list.map(([id,p])=>`<tr class="click" data-open="${esc(id)}"><td><span class="av" style="--c:${SC(p.subject)};width:30px;height:30px;font-size:12px">${esc(p.grade)}${esc(String(p.cls||'').slice(0,2))}</span></td><td><span class="subj-tag"><span class="dot" style="background:${SC(p.subject)}"></span>${subjLbl(p)}</span></td><td>${esc(p.summary?.from)} – ${esc(p.summary?.to)}</td><td>${ring(cover(p.summary),40,p.summary?.ok?'var(--ok)':'var(--bad)','',5)}</td><td>${statusChip(p.summary)}</td><td>${p.updatedAt?greg(p.updatedAt.slice(0,10)):''}</td><td><span class="confirm"><button class="btn ghost danger" data-delplan="${esc(id)}">מחיקה</button></span></td></tr>`).join('')}</tbody></table></div>`;
+}
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('.prow')){e.preventDefault();e.target.click()}});
+document.addEventListener('click',async e=>{
+  const dp=e.target.closest('[data-delplan]');
+  if(dp){e.stopPropagation();const id=dp.dataset.delplan;dp.parentElement.innerHTML=`למחוק? <button class="btn ghost danger" data-delyes="${esc(id)}">כן, למחוק</button><button class="btn ghost" data-delno>ביטול</button>`;return}
+  if(e.target.closest('[data-delno]')){e.stopPropagation();renderMine();return}
+  const dy=e.target.closest('[data-delyes]');
+  if(dy){e.stopPropagation();const plans={...(myDoc.plans||{})};delete plans[dy.dataset.delyes];try{await db.doc('plans/'+uid).set({teacher:myDoc.teacher||'',updatedAt:new Date().toISOString(),plans});toast('התוכנית נמחקה');if(S.id===dy.dataset.delyes)S.id=null}catch(err){toast('המחיקה נכשלה')}return}
+  const op=e.target.closest('[data-open]');
+  if(op){const p=myDoc.plans[op.dataset.open];if(p){S={...blank(),...p,id:op.dataset.open};delete S.summary;delete S.updatedAt;initForm();persistDraft();showView('new');goStep(3)}return}
+  const ot=e.target.closest('[data-team]');
+  if(ot){const [u,id]=ot.dataset.team.split('|');const t=team.find(x=>x.uid===u);const p=t?.plans?.[id];if(p)showTeamPlan(p);return}
+});
+const ICON={doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/></svg>',ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l5 5 9-10"/></svg>',bad:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7v6M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>'};
+function donut(parts,size){
+  const total=parts.reduce((a,b)=>a+b.n,0)||1,r=size/2-12,c=2*Math.PI*r,gap=parts.filter(p=>p.n).length>1?3:0;let off=0;
+  const arcs=parts.filter(p=>p.n).map(p=>{const len=c*p.n/total;const s=`<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${p.c}" stroke-width="22" stroke-dasharray="${Math.max(0,len-gap)} ${c}" stroke-dashoffset="${-off}"><title>${esc(p.l)}: ${p.n}</title></circle>`;off+=len;return s}).join('');
+  return `<svg width="${size}" height="${size}" style="transform:rotate(-90deg);flex:none" role="img" aria-label="התפלגות תוכניות לפי מקצוע">${arcs}</svg>`;
+}
+function renderTeam(){
+  const el=$('#teamOut');
+  if(!db){el.innerHTML='<div class="w"><div class="w-b"><div class="empty">לוח הבקרה זמין למי שנכנס עם חשבון בעמוד הזה.</div></div></div>';return}
+  if(!teamLoaded){el.innerHTML='<div class="w"><div class="w-b"><div class="empty">טוען את תוכניות הצוות…</div></div></div>';return}
+  const fg=$('#tGrade').value,fs=$('#tSubj').value;
+  const allRows=[];team.forEach(t=>Object.entries(t.plans||{}).forEach(([id,p])=>allRows.push({u:t.uid,id,p})));
+  const rows=allRows.filter(({p})=>(!fg||p.grade===fg)&&(!fs||p.subject===fs));
+  rows.sort((a,b)=>GRADES.indexOf(a.p.grade)-GRADES.indexOf(b.p.grade)||String(a.p.cls).localeCompare(String(b.p.cls)));
+  const n=rows.length,okN=rows.filter(r=>r.p.summary?.ok).length,avg=n?rows.reduce((a,r)=>a+cover(r.p.summary),0)/n:0;
+  const kpi=(ic,bg,fg,val,lbl)=>`<div class="w kpi"><span class="ic" style="background:${bg};color:${fg}">${ic}</span><div><b>${val}</b><small>${lbl}</small></div></div>`;
+  let html=`<div class="kpis">${kpi(ICON.doc,'var(--primary-soft)','var(--primary)',n,'תוכניות שנשמרו')}${kpi(ICON.ok,'var(--ok-soft)','var(--ok)',okN,'מסתדרות עד סוף השנה')}${kpi(ICON.bad,'var(--bad-soft)','var(--bad)',n-okN,'חסרות שעות')}<div class="w kpi">${ring(avg,52,'var(--primary)','כיסוי ממוצע',6)}<div><b style="font-size:18px">כיסוי ממוצע</b><small>שעות זמינות מול נדרשות</small></div></div></div>`;
+  if(!n){el.innerHTML=html+`<div class="w"><div class="w-b"><div class="empty">עוד לא נשמרו תוכניות${fg||fs?' בסינון הזה':''}. כשמורים ישמרו תוכנית היא תופיע כאן.</div></div></div>`;return}
+  const bySubj=Object.keys(SUBJECTS).map(k=>({k,l:SUBJECTS[k].label.replace(' (רשימה חופשית)',''),c:SC(k),n:rows.filter(r=>r.p.subject===k).length}));
+  const recent=[...rows].sort((a,b)=>(b.p.updatedAt||'').localeCompare(a.p.updatedAt||'')).slice(0,6);
+  const byCov=[...rows].sort((a,b)=>cover(a.p.summary)-cover(b.p.summary));
+  html+=`<div class="wgrid2">
+    <div class="w"><div class="w-h"><h2>כיסוי שעות לפי תוכנית</h2><div class="tools"><span class="chip">מהנמוך לגבוה</span><button data-min aria-label="מזעור">−</button></div></div><div class="w-b" style="padding-block:6px">${byCov.map(r=>prow(r.p,`data-team="${esc(r.u+'|'+r.id)}"`)).join('')}</div></div>
+    <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+      <div class="w"><div class="w-h"><h2>תוכניות לפי מקצוע</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="w-b"><div class="donut-wrap">${donut(bySubj,150)}<div class="legend">${bySubj.filter(s=>s.n).map(s=>`<div><span class="dot" style="background:${s.c}"></span>${s.l}<b>${s.n}</b></div>`).join('')}</div></div></div></div>
+      <div class="w"><div class="w-h"><h2>עדכונים אחרונים</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="w-b"><ul class="tl">${recent.map(r=>`<li><span class="bul" style="--c:${SC(r.p.subject)}">${esc(r.p.grade)}</span><div><b>${esc(r.p.teacher||'מורה')} עדכן/ה ${subjLbl(r.p)}</b><small>${r.p.updatedAt?gregFull(r.p.updatedAt.slice(0,10))+' · '+r.p.updatedAt.slice(11,16):''}</small></div></li>`).join('')}</ul></div></div>
+    </div></div>
+  <div class="w"><div class="w-h"><h2>חלוקת העבודה – שכבה × מקצוע</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="tbl"><table class="list"><thead><tr><th>שכבה</th>${['torah','navi','mishna','gemara'].map(k=>`<th><span class="subj-tag"><span class="dot" style="background:${SC(k)}"></span>${SUBJECTS[k].label}</span></th>`).join('')}</tr></thead><tbody>${GRADES.filter(gr=>!fg||gr===fg).map(gr=>`<tr><td><b>${gr}׳</b></td>${['torah','navi','mishna','gemara'].map(k=>{const ps=allRows.filter(r=>r.p.grade===gr&&r.p.subject===k);return `<td>${ps.length?ps.map(r=>`<div data-team="${esc(r.u+'|'+r.id)}" style="cursor:pointer;margin:2px 0">${statusChip(r.p.summary).replace(/>[^<]*</,'>'+esc(r.p.teacher||'מורה')+'<')}</div>`).join(''):'<span class="chip">פנוי</span>'}</td>`}).join('')}</tr>`).join('')}</tbody></table></div></div>
+  <div class="w"><div class="w-h"><h2>כל התוכניות</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="tbl"><table class="list"><thead><tr><th>מורה</th><th>כיתה</th><th>מקצוע</th><th>טווח</th><th>זמינות / נדרשות</th><th>סיום משוער</th><th>מצב</th><th>מעקב ביצוע</th><th>עודכן</th></tr></thead><tbody>${rows.map(({u,id,p})=>`<tr class="click" data-team="${esc(u+'|'+id)}"><td>${esc(p.teacher)}</td><td>${esc(p.grade)}׳${esc(p.cls||'')}</td><td><span class="subj-tag"><span class="dot" style="background:${SC(p.subject)}"></span>${subjLbl(p)}</span></td><td>${esc(p.summary?.from)} – ${esc(p.summary?.to)}</td><td>${p.summary?.available} / ${p.summary?.needed}</td><td>${p.summary?.finish?heb(p.summary.finish):'—'}</td><td>${statusChip(p.summary)}</td><td>${p.summary?.past?`${p.summary.done}/${p.summary.past} שבועות`:'—'}</td><td>${p.updatedAt?greg(p.updatedAt.slice(0,10)):''}</td></tr>`).join('')}</tbody></table></div></div>`;
+  el.innerHTML=html;
+}
+$('#tGrade').onchange=renderTeam;$('#tSubj').onchange=renderTeam;
+function showTeamPlan(p){
+  const el=$('#teamPlan');const R=compute(p,allHol());const v=verdict(R);
+  el.hidden=false;
+  el.innerHTML=`<div class="banner"><div><h2>תוכנית ${esc(SUBJECTS[p.subject].label)}${p.subject!=='other'?' – '+esc(p.book):''}</h2><div class="meta">${metaLine(p)}</div></div><button class="btn" id="closeTeam">סגירה</button></div><div class="sched"><div class="status ${v.ok?'ok':'warn'}" style="margin:12px 0 4px"><b>${v.title}</b>${v.text||`זמינות ${r2(R.available)} שעות מתוך ${r2(R.needed)} נדרשות.`}</div>${planHTML(p,R,'list')}</div>`;
+  $('#closeTeam').onclick=()=>{el.hidden=true};el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+/* holidays view */
+function renderHol(){
+  const own=new Set(schoolHol.map(h=>h.from+h.name));
+  const days=h=>{let n=0;for(let d=h.from;d<=h.to;d=add(d,1))if(dow(d)!==6)n++;return n};
+  $('#holOut').innerHTML=[...allHol(),...schoolEvents()].sort((a,b)=>a.from.localeCompare(b.from)).map(h=>`<div class="holcard" ${h.off===false?'style="--bad:var(--gold);background:var(--gold-soft)"':''}><div class="d">${greg(h.from)}${h.to!==h.from?'<br>'+greg(h.to):''}</div><div><b>${esc(h.name)}</b><small>${heb(h.from)}${h.to!==h.from?' – '+heb(h.to):''}${h.off===false?' · יום לימודים':' · '+days(h)+' ימי לימודים'}</small></div>${h.off===false?'<span class="chip gold">אירוע</span> ':''}${own.has(h.from+h.name)?(isAdmin?`<button class="btn ghost danger" data-hdel="${esc(h.from+h.name)}">הסרה</button>`:'<span class="chip">בית ספרי</span>'):'<span class="chip">משרד החינוך</span>'}</div>`).join('')+`<div class="holcard" style="--bad:var(--primary);border-inline-start-color:var(--primary);background:var(--primary-soft)"><div class="d" style="color:var(--primary)">${greg(YEAR_END)}</div><div><b>סיום שנת הלימודים</b><small>${heb(YEAR_END)} · יסודי</small></div><span class="chip">משרד החינוך</span></div>`;
+  $('#holAdmin').hidden=!isAdmin||!db;
+}
+async function saveSchoolHol(list){try{await db.doc('settings/school').set({holidays:list,updatedAt:new Date().toISOString()});toast('לוח החופשות עודכן')}catch(e){toast('העדכון נכשל')}}
+$('#hAdd').onclick=()=>{const f=$('#hFrom').value,t=$('#hTo').value||f,n=$('#hName').value.trim();if(!f||!n){toast('נא למלא תאריך ושם');return}if(t<f){toast('תאריך הסיום לפני ההתחלה');return}saveSchoolHol([...schoolHol,{from:f,to:t,name:n,off:!$('#hEvent').checked}]);$('#hName').value=''};
+document.addEventListener('click',e=>{const d=e.target.closest('[data-hdel]');if(d)saveSchoolHol(schoolHol.filter(h=>h.from+h.name!==d.dataset.hdel))});
+
+/* ---------- tabs ---------- */
+const TITLES={new:'תוכנית חדשה',mine:'התוכניות שלי',team:'לוח בקרה – צוות',cal:'לוח חופשות תשפ״ז'};
+function showView(v){$$('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v));['new','mine','team','cal'].forEach(k=>$('#v-'+k).hidden=k!==v);$('#pageTitle').textContent=TITLES[v];$('#crumb').textContent='מתכנן הספק / '+TITLES[v];if(v==='mine')renderMine();if(v==='team')renderTeam();if(v==='cal')renderHol()}
+$$('#tabs button').forEach(b=>b.onclick=()=>showView(b.dataset.v));
+
+/* ---------- boot ---------- */
+$('#today').innerHTML=`<span class="dot" style="background:var(--primary)"></span>${heb(todayIso)||''} · ${gregFull(todayIso)}`;
+$('#me').hidden=true;
+initForm();renderSubjPick();renderLedger();
+(async()=>{
+  const use=window.claude?.use;if(!use)return;
+  try{downloads=await window.claude.use('downloads')}catch(e){}
+  if(!downloads)$('#docxBtn').hidden=true;
+  let user=null;try{user=await window.claude.use('user')}catch(e){}
+  if(user){uid=await user.id();isAdmin=await user.canEdit();canWrite=await user.can('data.write');
+    try{const me=await user.me();$('#meAv').src=me.avatarUrl;$('#meName').textContent=me.name||'מורה';$('#meRole').textContent=me.isOwner||me.canEdit?'הנהלה':'מורה';$('#me').hidden=false;if(me.name&&!S.teacher){S.teacher=me.name;$('#teacher').value=me.name}}catch(e){}}
+  try{db=await window.claude.use('db')}catch(e){}
+  if(!db)return;
+  db.doc('settings/school').onSnapshot(s=>{schoolHol=(s.exists&&Array.isArray(s.data().holidays))?s.data().holidays:[];renderLedger();if(step===3)b3();renderHol()},()=>{});
+  if(uid){const t=setTimeout(()=>{if(!mineLoaded){mineLoaded=true;renderMine()}},10000);
+    db.doc('plans/'+uid).onSnapshot(s=>{clearTimeout(t);mineLoaded=true;myDoc=s.exists?s.data():{plans:{}};renderMine()},()=>{clearTimeout(t);mineLoaded=true;renderMine()})}
+  const t2=setTimeout(()=>{if(!teamLoaded){teamLoaded=true;renderTeam()}},10000);
+  db.collection('plans').onSnapshot(q=>{clearTimeout(t2);teamLoaded=true;team=q.docs.map(d=>({uid:d.id,...d.data()}));renderTeam();renderTaken()},()=>{clearTimeout(t2);teamLoaded=true;renderTeam()});
+  renderHol();
+})();
+</script>
