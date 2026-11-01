@@ -20,7 +20,7 @@
     docSubs.forEach(function(f){f(snap(owner.id,mine?mine.data:null))});
     colSubs.forEach(function(f){var docs=(cache||[]).map(function(r){return snap(r.id,r.data)});f({docs:docs,size:docs.length,empty:!docs.length})});
   }
-  async function refresh(){try{cache=await rpc('list_plans',{code:code});emit()}catch(e){}}
+  async function refresh(){try{cache=await rpc('list_plans',{code:code,owner_id:owner.id,owner_key:owner.key});emit()}catch(e){}}
   async function refreshSettings(){try{settings=await rpc('get_settings',{code:code});setSubs.forEach(function(f){f(snap('school',settings))})}catch(e){}}
   var db={
     doc:function(p){
@@ -28,7 +28,7 @@
         set:async function(d){await rpc('save_settings',{code:code,holidays:d.holidays||[]});await refreshSettings()},
         onSnapshot:function(f){setSubs.push(f);if(settings)f(snap('school',settings));else refreshSettings();return function(){}}};
       return {
-        set:async function(d){await rpc('save_plans',{code:code,owner_id:owner.id,owner_key:owner.key,payload:d});await refresh()},
+        set:async function(d){await rpc('save_plans',{code:code,owner_id:p.split('/')[1]||owner.id,owner_key:owner.key,payload:d});await refresh()},
         onSnapshot:function(f){docSubs.push(f);if(cache)emit();else refresh();return function(){}}};
     },
     collection:function(){return {onSnapshot:function(f){colSubs.push(f);if(cache)emit();else refresh();return function(){}}}}

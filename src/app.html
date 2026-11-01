@@ -764,11 +764,11 @@ function metaLine(P){return [P.teacher&&('מורה: '+P.teacher),'כיתה '+P.g
 function b3(){
   const R=compute(S,allHol());const v=verdict(R);
   $('#planTitle').textContent=`תוכנית ${SUBJECTS[S.subject].label}${S.subject!=='other'?' – '+S.book:''}`;
-  $('#planMeta').innerHTML=metaLine(S)+(R.span.length?` · ${esc(R.span[0].label)} עד ${esc(R.span[R.span.length-1].label)}`:'');
+  $('#planMeta').innerHTML=(S._owner?'<b>עריכה כרכז · </b>':'')+metaLine(S)+(R.span.length?` · ${esc(R.span[0].label)} עד ${esc(R.span[R.span.length-1].label)}`:'');
   $('#planOut').innerHTML=(v.ok?'':`<div class="status warn" style="margin:12px 0 4px"><b>${v.title}</b>התוכנית מציגה עד היכן תגיעו בשעות הקיימות. אפשר להוסיף ימי מרתון או להעלות קצב בשלב 2.</div>`)+planHTML(S,R,mode);
 }
 $$('.seg button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));b3()});
-$('#newBtn').onclick=()=>{S=blank();initForm();persistDraft();goStep(1);toast('נפתחה תוכנית חדשה')};
+$('#newBtn').onclick=()=>{S=blank();delete S._owner;initForm();persistDraft();goStep(1);toast('נפתחה תוכנית חדשה')};
 
 /* ---------- export ---------- */
 function planText(P){
@@ -820,15 +820,19 @@ function summary(P){const R=compute(P,allHol());const v=verdict(R);const W=weeks
   return {available:r2(R.available),needed:r2(R.needed),ok:v.ok,finish:R.finishDate||null,from:R.span[0]?.label||'',to:R.span[R.span.length-1]?.label||'',count:R.span.length,unit:unitName(P.subject,P.book),past:W.length,done:W.filter(w=>pg[w.sun]?.d).length}}
 const pick=P=>({v:2,progress:P.progress||{},teacher:P.teacher,grade:P.grade,cls:P.cls,subject:P.subject,book:P.book,startIdx:P.startIdx,endIdx:P.endIdx,pace:P.pace,otherText:P.otherText,startDate:P.startDate,endDate:P.endDate,days:P.days,marathons:P.marathons,blocked:P.blocked});
 $('#saveBtn').onclick=()=>savePlan(false);
+async function writePlan(){
+  const target=S._owner||uid,base=target===uid?myDoc:(team.find(t=>t.uid===target)||{plans:{}});
+  const plans={...(base.plans||{})};const {_owner,...clean}=S;plans[S.id]={...pick(clean),summary:summary(S),updatedAt:new Date().toISOString()};
+  await db.doc('plans/'+target).set({teacher:target===uid?S.teacher:(base.teacher||S.teacher),updatedAt:new Date().toISOString(),plans});
+}
 async function savePlan(quiet){
-  if(quiet){try{const plans={...(myDoc.plans||{})};plans[S.id]={...pick(S),summary:summary(S),updatedAt:new Date().toISOString()};await db.doc('plans/'+uid).set({teacher:S.teacher,updatedAt:new Date().toISOString(),plans});$('#saveNote').textContent='המעקב נשמר.'}catch(e){$('#saveNote').textContent='שמירת המעקב נכשלה. לחצו "שמירה במערכת".'}return}
+  if(quiet){try{await writePlan();$('#saveNote').textContent='המעקב נשמר.'}catch(e){$('#saveNote').textContent='שמירת המעקב נכשלה. לחצו "שמירה במערכת".'}return}
   if(!db||!uid){$('#saveNote').textContent='השמירה זמינה למורים שנכנסו עם חשבון ויש להם הרשאת עריכה לעמוד. בינתיים אפשר להוריד את התוכנית ל־Word.';return}
   if(!S.teacher.trim()){$('#teacher').focus();goStep(1);toast('נא למלא שם מורה לפני השמירה');return}
   const btn=$('#saveBtn');btn.disabled=true;
   try{
     if(!S.id)S.id='p'+Date.now().toString(36);
-    const plans={...(myDoc.plans||{})};plans[S.id]={...pick(S),summary:summary(S),updatedAt:new Date().toISOString()};
-    await db.doc('plans/'+uid).set({teacher:S.teacher,updatedAt:new Date().toISOString(),plans});
+    await writePlan();
     persistDraft();$('#saveNote').textContent='';toast('התוכנית נשמרה');
   }catch(e){
     if(e&&e.code==='invalid_argument')$('#saveNote').textContent='אין לך הרשאה לשמור כאן. בקשו מבעל העמוד לשתף אתכם כ־Contributor (משתתף).';
@@ -860,7 +864,7 @@ document.addEventListener('click',async e=>{
   const op=e.target.closest('[data-open]');
   if(op){const p=myDoc.plans[op.dataset.open];if(p){S={...blank(),...p,id:op.dataset.open};delete S.summary;delete S.updatedAt;initForm();persistDraft();showView('new');goStep(3)}return}
   const ot=e.target.closest('[data-team]');
-  if(ot){const [u,id]=ot.dataset.team.split('|');const t=team.find(x=>x.uid===u);const p=t?.plans?.[id];if(p)showTeamPlan(p);return}
+  if(ot){const [u,id]=ot.dataset.team.split('|');const t=team.find(x=>x.uid===u);const p=t?.plans?.[id];if(p&&isAdmin)showTeamPlan(p,u,id);return}
 });
 const ICON={doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/></svg>',ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l5 5 9-10"/></svg>',bad:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7v6M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>'};
 function donut(parts,size){
@@ -876,6 +880,10 @@ function renderTeam(){
   const allRows=[];team.forEach(t=>Object.entries(t.plans||{}).forEach(([id,p])=>allRows.push({u:t.uid,id,p})));
   const rows=allRows.filter(({p})=>(!fg||p.grade===fg)&&(!fs||p.subject===fs));
   rows.sort((a,b)=>GRADES.indexOf(a.p.grade)-GRADES.indexOf(b.p.grade)||String(a.p.cls).localeCompare(String(b.p.cls)));
+  if(!isAdmin){
+    el.innerHTML=`<div class="w"><div class="w-h"><h2>חלוקת העבודה – שכבה × מקצוע</h2></div><div class="w-b" style="padding-bottom:4px"><p class="hint">מי בונה תוכנית לאיזו שכבה ובאיזה מקצוע, כדי לא לעבוד פעמיים. לוח הבקרה המלא פתוח לרכז.</p></div><div class="tbl"><table class="list"><thead><tr><th>שכבה</th>${['torah','navi','mishna','gemara'].map(k=>`<th><span class="subj-tag"><span class="dot" style="background:${SC(k)}"></span>${SUBJECTS[k].label}</span></th>`).join('')}</tr></thead><tbody>${GRADES.filter(gr=>!fg||gr===fg).map(gr=>`<tr><td><b>${gr}׳</b></td>${['torah','navi','mishna','gemara'].map(k=>{const ps=allRows.filter(r=>r.p.grade===gr&&r.p.subject===k);return `<td>${ps.length?[...new Set(ps.map(r=>r.p.teacher||'מורה'))].map(t=>`<span class="chip" style="margin:2px">${esc(t)}</span>`).join(''):'<span class="chip" style="opacity:.6">פנוי</span>'}</td>`}).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+    return;
+  }
   const n=rows.length,okN=rows.filter(r=>r.p.summary?.ok).length,avg=n?rows.reduce((a,r)=>a+cover(r.p.summary),0)/n:0;
   const kpi=(ic,bg,fg,val,lbl)=>`<div class="w kpi"><span class="ic" style="background:${bg};color:${fg}">${ic}</span><div><b>${val}</b><small>${lbl}</small></div></div>`;
   let html=`<div class="kpis">${kpi(ICON.doc,'var(--primary-soft)','var(--primary)',n,'תוכניות שנשמרו')}${kpi(ICON.ok,'var(--ok-soft)','var(--ok)',okN,'מסתדרות עד סוף השנה')}${kpi(ICON.bad,'var(--bad-soft)','var(--bad)',n-okN,'חסרות שעות')}<div class="w kpi">${ring(avg,52,'var(--primary)','כיסוי ממוצע',6)}<div><b style="font-size:18px">כיסוי ממוצע</b><small>שעות זמינות מול נדרשות</small></div></div></div>`;
@@ -894,11 +902,12 @@ function renderTeam(){
   el.innerHTML=html;
 }
 $('#tGrade').onchange=renderTeam;$('#tSubj').onchange=renderTeam;
-function showTeamPlan(p){
+function showTeamPlan(p,u,id){
   const el=$('#teamPlan');const R=compute(p,allHol());const v=verdict(R);
   el.hidden=false;
-  el.innerHTML=`<div class="banner"><div><h2>תוכנית ${esc(SUBJECTS[p.subject].label)}${p.subject!=='other'?' – '+esc(p.book):''}</h2><div class="meta">${metaLine(p)}</div></div><button class="btn" id="closeTeam">סגירה</button></div><div class="sched"><div class="status ${v.ok?'ok':'warn'}" style="margin:12px 0 4px"><b>${v.title}</b>${v.text||`זמינות ${r2(R.available)} שעות מתוך ${r2(R.needed)} נדרשות.`}</div>${planHTML(p,R,'list')}</div>`;
+  el.innerHTML=`<div class="banner"><div><h2>תוכנית ${esc(SUBJECTS[p.subject].label)}${p.subject!=='other'?' – '+esc(p.book):''}</h2><div class="meta">${metaLine(p)}</div></div><div class="chips">${isAdmin?'<button class="btn" id="editTeam">עריכה (רכז)</button>':''}<button class="btn" id="closeTeam">סגירה</button></div></div><div class="sched"><div class="status ${v.ok?'ok':'warn'}" style="margin:12px 0 4px"><b>${v.title}</b>${v.text||`זמינות ${r2(R.available)} שעות מתוך ${r2(R.needed)} נדרשות.`}</div>${planHTML(p,R,'list')}</div>`;
   $('#closeTeam').onclick=()=>{el.hidden=true};el.scrollIntoView({behavior:'smooth',block:'start'});
+  const eb=$('#editTeam');if(eb)eb.onclick=()=>{S={...blank(),...p,id,_owner:u===uid?undefined:u};delete S.summary;delete S.updatedAt;initForm();el.hidden=true;showView('new');goStep(3)};
 }
 /* holidays view */
 function renderHol(){
@@ -927,6 +936,7 @@ initForm();renderSubjPick();renderLedger();
   let user=null;try{user=await window.claude.use('user')}catch(e){}
   if(user){uid=await user.id();isAdmin=await user.canEdit();canWrite=await user.can('data.write');
     try{const me=await user.me();$('#meAv').src=me.avatarUrl;$('#meName').textContent=me.name||'מורה';$('#meRole').textContent=me.isOwner||me.canEdit?'הנהלה':'מורה';$('#me').hidden=false;if(me.name&&!S.teacher){S.teacher=me.name;$('#teacher').value=me.name}}catch(e){}}
+  if(!isAdmin){const t=$('[data-v="team"]');t.lastChild.textContent='חלוקת עבודה';TITLES.team='חלוקת עבודה';$('#tSubj').closest('label').hidden=true}
   try{db=await window.claude.use('db')}catch(e){}
   if(!db)return;
   db.doc('settings/school').onSnapshot(s=>{schoolHol=(s.exists&&Array.isArray(s.data().holidays))?s.data().holidays:[];renderLedger();if(step===3)b3();renderHol()},()=>{});
