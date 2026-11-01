@@ -250,6 +250,102 @@ table.list tr.click{cursor:pointer} table.list tr.click:hover td{background:var(
 .holcard .d{font-weight:700;color:var(--bad);text-align:center;min-width:70px;font-size:13px}
 .holcard b{display:block}
 .holcard small{color:var(--muted)}
+
+/* ===== v2 look: schedule-app gradients, soft rounded tiles, colored rings ===== */
+:root{--grad:linear-gradient(135deg,#4a95ff 0%,#2f6fd6 50%,#5b4fd6 100%);--grad-ok:linear-gradient(135deg,#2bb673,#14804a);--grad-bad:linear-gradient(135deg,#ff7a7a,#d93848);--grad-violet:linear-gradient(135deg,#a77ef0,#6a45c9);--grad-amber:linear-gradient(135deg,#ffb347,#e8772e);--lift:0 2px 6px rgba(16,24,40,.05),0 10px 28px rgba(16,24,40,.07)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--lift:0 2px 8px rgba(0,0,0,.45)}}
+:root[data-theme="dark"]{--lift:0 2px 8px rgba(0,0,0,.45)}
+body{font-size:15px}
+.rail{background:linear-gradient(180deg,var(--rail) 0%,color-mix(in srgb,var(--rail) 82%,#2f3f8f) 100%)}
+.nav button{border-radius:12px;padding:11px 12px}
+.nav button[aria-selected="true"]{background:var(--grad);box-shadow:0 6px 16px rgba(47,111,214,.35)}
+.nav button[aria-selected="true"]::after{display:none}
+.mark{border-radius:12px;box-shadow:0 4px 12px rgba(47,111,214,.45)}
+.topbar{border-bottom:none;background:color-mix(in srgb,var(--canvas) 70%,var(--card));backdrop-filter:blur(8px)}
+.today{background:var(--card);border:none;box-shadow:var(--shadow)}
+.w{border-radius:18px;border:none;box-shadow:var(--lift)}
+.w-h{border-bottom:none;padding:16px 18px 4px}
+.w-h h2{font-size:16.5px}
+.w-b{padding:14px 18px 18px}
+.btn{border-radius:10px;transition:transform .12s,box-shadow .12s}
+.btn.primary{background:var(--grad);border:none;box-shadow:0 4px 12px rgba(47,111,214,.3)}
+.btn.primary:hover{background:var(--grad);transform:translateY(-1px);box-shadow:0 6px 16px rgba(47,111,214,.4)}
+input,select,textarea{border-radius:10px;background:var(--sunk);border-color:transparent}
+input:focus,select:focus,textarea:focus{background:var(--card);border-color:var(--primary)}
+/* hero */
+.hero{position:relative;overflow:hidden;background:var(--grad);color:#fff;border-radius:22px;padding:22px 24px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;box-shadow:0 12px 30px rgba(47,111,214,.28)}
+.hero::before,.hero::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.09);pointer-events:none}
+.hero::before{width:260px;height:260px;left:-60px;top:-120px}.hero::after{width:180px;height:180px;left:120px;bottom:-110px}
+.hero h2{margin:0;font-size:clamp(20px,3.2vw,26px);font-weight:800;color:#fff;text-wrap:balance}
+.hero p{margin:4px 0 14px;opacity:.9;font-size:14px}
+.hero .hstats{display:flex;flex-wrap:wrap;gap:8px;position:relative;z-index:1}
+.hero .hs{background:rgba(255,255,255,.17);border-radius:12px;padding:8px 12px;font-size:13px;line-height:1.3}
+.hero .hs b{display:block;font-size:17px;font-weight:700}
+.hero .ring .v{color:#fff}
+.hero .ring circle:first-child{stroke:rgba(255,255,255,.22)}
+.hero .yr{position:relative;z-index:1;text-align:center;font-size:12px;opacity:.95}
+@media (max-width:560px){.hero{grid-template-columns:minmax(0,1fr)}.hero .yr{display:flex;align-items:center;gap:10px;text-align:right}}
+/* stepper as pills */
+.steps{background:none;border:none;box-shadow:none;gap:8px}
+.steps button{border:none;border-radius:14px;background:var(--card);box-shadow:var(--lift);padding:12px}
+.steps button[aria-current="step"]{background:var(--grad);color:#fff}
+.steps button[aria-current="step"] b{background:#fff;color:var(--primary);border:none}
+/* subject tiles */
+.subj-pick{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.subj-pick button{flex-direction:column;align-items:flex-start;gap:10px;padding:14px;border:none;border-radius:16px;background:var(--tc);box-shadow:none;transition:transform .12s,box-shadow .12s}
+.subj-pick button:hover{transform:translateY(-2px)}
+.subj-pick button .ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--c);color:#fff}
+.subj-pick button .ic svg{width:20px;height:20px}
+.subj-pick button span{font-weight:700;color:var(--ink)}
+.subj-pick button small{font-weight:400;color:var(--muted);font-size:12px;margin-top:-6px}
+.subj-pick button[aria-pressed="true"]{background:var(--c);box-shadow:0 8px 20px color-mix(in srgb,var(--c) 40%,transparent)}
+.subj-pick button[aria-pressed="true"] span,.subj-pick button[aria-pressed="true"] small{color:#fff}
+.subj-pick button[aria-pressed="true"] .ic{background:rgba(255,255,255,.22)}
+.range fieldset{border:none;border-radius:14px}
+.day{border:none;border-radius:14px;background:var(--sunk);transition:background .15s}
+.day.on{background:var(--grad);color:#fff}
+.day.on input{color:var(--ink)}
+/* ledger */
+.ledger .status{border-radius:12px}
+/* plan */
+.banner{border-radius:18px 18px 0 0;padding:20px;position:relative;overflow:hidden}
+.banner::after{content:"";position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.1);left:-50px;top:-90px;pointer-events:none}
+.banner>*{position:relative;z-index:1}
+.toolbar{border-bottom:none;padding:14px 16px 0}
+.card{border-radius:16px;padding:12px 14px;border-inline-start-width:6px;transition:transform .12s,box-shadow .12s}
+.card:hover{transform:translateX(-2px);box-shadow:var(--shadow)}
+.card .hrs{width:42px;height:42px;font-size:12.5px}
+.divider span{border:none;background:var(--primary-soft);box-shadow:none}
+table.wk{border-collapse:separate;border-spacing:0;border-radius:14px;overflow:hidden}
+table.wk th,table.wk td{border:none;border-bottom:1px solid var(--line);border-inline-start:1px solid var(--line)}
+table.wk thead th{background:var(--sunk)}
+table.wk thead tr:first-child th.grp{background:var(--grad);color:#fff}
+table.wk tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--sunk) 55%,transparent)}
+table.wk tr.off td{background:var(--bad-soft)!important}
+table.wk input[type=checkbox]{width:20px;height:20px}
+/* dashboard */
+.kpi{border-radius:18px;color:#fff;box-shadow:var(--lift)}
+.kpis .kpi:nth-child(1){background:var(--grad)}
+.kpis .kpi:nth-child(2){background:var(--grad-ok)}
+.kpis .kpi:nth-child(3){background:var(--grad-bad)}
+.kpis .kpi:nth-child(4){background:var(--grad-violet)}
+.kpi .ic{background:rgba(255,255,255,.2)!important;color:#fff!important}
+.kpi small{color:rgba(255,255,255,.88)}
+.kpis .kpi .ring circle:first-child{stroke:rgba(255,255,255,.25)}
+.kpis .kpi .ring circle+circle{stroke:#fff}
+.kpis .kpi .ring .v{color:#fff}
+.prow{border-bottom:none;border-radius:12px;padding:9px 8px}
+.prow:hover{background:var(--sunk)}
+.bar{height:8px}
+.holcard{border-radius:14px}
+.empty{border:none;border-radius:16px}
+/* ring draw-in */
+.ring circle+circle{animation:ringIn 1s ease-out both}
+@keyframes ringIn{from{stroke-dasharray:0 1000}}
+.view{animation:fadeUp .35s ease-out both}
+#teamOut{display:flex;flex-direction:column;gap:18px}
+.steps{margin-bottom:0}
+@keyframes fadeUp{from{opacity:.4;transform:translateY(6px)}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -276,6 +372,7 @@ table.list tr.click{cursor:pointer} table.list tr.click:hover td{background:var(
     <div class="content">
       <!-- NEW PLAN -->
       <section class="view" id="v-new">
+        <div class="hero" id="hero"></div>
         <div class="steps" id="steps">
           <button data-s="1" aria-current="step"><b>1</b>מה לומדים</button>
           <button data-s="2"><b>2</b>מתי לומדים</button>
@@ -637,7 +734,7 @@ function renderRows(){
   $('#marathons').innerHTML=S.marathons.length?S.marathons.map((x,i)=>rowHtml('mar',x,i)).join(''):'<p class="note-line" style="margin:0">אין ימי מרתון.</p>';
   $('#blocked').innerHTML=S.blocked.length?S.blocked.map((x,i)=>rowHtml('blk',x,i)).join(''):'<p class="note-line" style="margin:0">לא הוגדרו ימים כאלה.</p>';
 }
-function goStep(n){step=n;[1,2,3].forEach(k=>$('#s'+k).hidden=k!==n);$$('#steps button').forEach(b=>b.toggleAttribute('aria-current',+b.dataset.s===n));if(n===3)b3();renderLedger();$('#steps').scrollIntoView({block:'nearest'})}
+function goStep(n){step=n;[1,2,3].forEach(k=>$('#s'+k).hidden=k!==n);$$('#steps button').forEach(b=>+b.dataset.s===n?b.setAttribute('aria-current','step'):b.removeAttribute('aria-current'));if(n===3)b3();renderLedger();$('#steps').scrollIntoView({block:'nearest'})}
 $$('#steps button').forEach(b=>{b.onclick=()=>goStep(+b.dataset.s)});
 document.addEventListener('click',e=>{const go=e.target.closest('[data-go]');if(go)goStep(+go.dataset.go);
   const del=e.target.closest('[data-del]');if(del){(del.dataset.del==='mar'?S.marathons:S.blocked).splice(+del.dataset.i,1);renderRows();changed()}});
@@ -660,6 +757,7 @@ document.addEventListener('change',e=>{
 });
 let dirty=false;
 function changed(){dirty=true;persistDraft();renderLedger();if(step===3)b3()}
+document.addEventListener('change',e=>{if(e.target.id==='teacher')renderHero()});
 
 /* ---------- visual helpers ---------- */
 const SC=k=>`var(--s-${k||'other'})`, TC=k=>`var(--t-${k||'other'})`;
@@ -668,8 +766,29 @@ function ring(pct,size,color,label,stroke){
   return `<span class="ring" style="width:${size}px;height:${size}px" role="img" aria-label="${esc(label||Math.round(p)+'%')}"><svg width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--sunk)" stroke-width="${sw}"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${c*p/100} ${c}"/></svg><span class="v" style="font-size:${Math.round(size/4.6)}px">${Math.round(pct)}%</span></span>`;
 }
 const cover=s=>s&&s.needed?Math.min(100,s.available/s.needed*100):0;
+const SICON={
+ torah:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3v18M18 3v18M6 6h12M6 18h12"/><circle cx="6" cy="3" r="1"/><circle cx="18" cy="3" r="1"/></svg>',
+ navi:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 7h6"/></svg>',
+ mishna:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>',
+ gemara:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H3zM21 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z"/></svg>',
+ other:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>'};
+function renderHero(){
+  const el=$('#hero');if(!el)return;
+  const h=new Date().getHours(),greet=h<5?'לילה טוב':h<12?'בוקר טוב':h<17?'צהריים טובים':h<21?'ערב טוב':'לילה טוב';
+  const name=(S.teacher||meName||'').trim();
+  // school days elapsed this year (Sun–Fri, minus holidays)
+  const hol=allHol();let tot=0,done=0;for(let d='2026-09-01';d<=YEAR_END;d=add(d,1)){if(dow(d)===6||holidayOn(d,hol))continue;tot++;if(d<=todayIso)done++}
+  const pct=tot?done/tot*100:0,left=tot-done,weeks=Math.ceil(left/6);
+  const next=hol.find(x=>x.from>todayIso);const days=next?Math.round((ms(next.from)-ms(todayIso))/864e5):0;
+  const mineN=Object.keys(myDoc.plans||{}).length;
+  el.innerHTML=`<div style="position:relative;z-index:1;min-width:0"><h2>${greet}${name?', '+esc(name):''}</h2><p>${heb(todayIso)} · בואו נתכנן את השנה כך שנגיע לסיום בשמחה.</p>
+   <div class="hstats"><div class="hs"><b>${weeks}</b>שבועות לסוף השנה</div>${next?`<div class="hs"><b>${days} ימים</b>עד ${esc(next.name)}</div>`:''}<div class="hs"><b>${mineN}</b>${mineN===1?'תוכנית שמורה':'תוכניות שמורות'}</div></div></div>
+   <div class="yr">${ring(pct,92,'#fff','השנה עברה '+Math.round(pct)+'%',9)}<div>מהשנה מאחורינו</div></div>`;
+}
+let meName='';
 function renderSubjPick(){
-  $('#subjPick').innerHTML=Object.entries(SUBJECTS).map(([k,v])=>`<button type="button" data-subj="${k}" aria-pressed="${S.subject===k}" style="color:${S.subject===k?SC(k):''}"><i style="background:${SC(k)}"></i><span style="color:var(--ink)">${v.label.replace(' (רשימה חופשית)','')}</span></button>`).join('');
+  const SUB={torah:'פרק ופסוק',navi:'פרק ופסוק',mishna:'פרק ומשנה',gemara:'דף ועמוד',other:'רשימה חופשית'};
+  $('#subjPick').innerHTML=Object.entries(SUBJECTS).map(([k,v])=>`<button type="button" data-subj="${k}" aria-pressed="${S.subject===k}" style="--c:${SC(k)};--tc:${TC(k)}"><span class="ic">${SICON[k]}</span><span>${v.label.replace(' (רשימה חופשית)','')}</span><small>${SUB[k]}</small></button>`).join('');
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-subj]');if(!b)return;const sel=$('#subject');sel.value=b.dataset.subj;sel.dispatchEvent(new Event('change',{bubbles:true}));renderSubjPick()});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-min]');if(b){const w=b.closest('.w');w.classList.toggle('min');b.textContent=w.classList.contains('min')?'+':'−'}});
@@ -928,20 +1047,20 @@ $$('#tabs button').forEach(b=>b.onclick=()=>showView(b.dataset.v));
 /* ---------- boot ---------- */
 $('#today').innerHTML=`<span class="dot" style="background:var(--primary)"></span>${heb(todayIso)||''} · ${gregFull(todayIso)}`;
 $('#me').hidden=true;
-initForm();renderSubjPick();renderLedger();
+initForm();renderSubjPick();renderLedger();renderHero();
 (async()=>{
   const use=window.claude?.use;if(!use)return;
   try{downloads=await window.claude.use('downloads')}catch(e){}
   if(!downloads)$('#docxBtn').hidden=true;
   let user=null;try{user=await window.claude.use('user')}catch(e){}
   if(user){uid=await user.id();isAdmin=await user.canEdit();canWrite=await user.can('data.write');
-    try{const me=await user.me();$('#meAv').src=me.avatarUrl;$('#meName').textContent=me.name||'מורה';$('#meRole').textContent=me.isOwner||me.canEdit?'הנהלה':'מורה';$('#me').hidden=false;if(me.name&&!S.teacher){S.teacher=me.name;$('#teacher').value=me.name}}catch(e){}}
+    try{const me=await user.me();$('#meAv').src=me.avatarUrl;$('#meName').textContent=me.name||'מורה';meName=me.name||'';renderHero();$('#meRole').textContent=me.isOwner||me.canEdit?'הנהלה':'מורה';$('#me').hidden=false;if(me.name&&!S.teacher){S.teacher=me.name;$('#teacher').value=me.name}}catch(e){}}
   if(!isAdmin){const t=$('[data-v="team"]');t.lastChild.textContent='חלוקת עבודה';TITLES.team='חלוקת עבודה';$('#tSubj').closest('label').hidden=true}
   try{db=await window.claude.use('db')}catch(e){}
   if(!db)return;
   db.doc('settings/school').onSnapshot(s=>{schoolHol=(s.exists&&Array.isArray(s.data().holidays))?s.data().holidays:[];renderLedger();if(step===3)b3();renderHol()},()=>{});
   if(uid){const t=setTimeout(()=>{if(!mineLoaded){mineLoaded=true;renderMine()}},10000);
-    db.doc('plans/'+uid).onSnapshot(s=>{clearTimeout(t);mineLoaded=true;myDoc=s.exists?s.data():{plans:{}};renderMine()},()=>{clearTimeout(t);mineLoaded=true;renderMine()})}
+    db.doc('plans/'+uid).onSnapshot(s=>{clearTimeout(t);mineLoaded=true;myDoc=s.exists?s.data():{plans:{}};renderMine();renderHero()},()=>{clearTimeout(t);mineLoaded=true;renderMine()})}
   const t2=setTimeout(()=>{if(!teamLoaded){teamLoaded=true;renderTeam()}},10000);
   db.collection('plans').onSnapshot(q=>{clearTimeout(t2);teamLoaded=true;team=q.docs.map(d=>({uid:d.id,...d.data()}));renderTeam();renderTaken()},()=>{clearTimeout(t2);teamLoaded=true;renderTeam()});
   renderHol();
