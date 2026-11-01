@@ -10,10 +10,11 @@
     if(!r.ok){var e=new Error((j&&j.message)||'error');e.code='unavailable';throw e}
     return j;
   }
-  /* same id for "הרב יוסף לוי" / "יוסף לוי" / extra spaces */
   function normName(n){return String(n||'').replace(/["'״׳`]/g,'').replace(/^\s*(הרב|הר'|ר')\s+/,'').replace(/\s+/g,' ').trim()}
-  async function nameId(n){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(normName(n)));return 'n'+Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('').slice(0,40)}
-  var owner={id:null,name:ls('planner-name')||''};
+  /* identity = phone number: 050-1234567, 0501234567 and +972501234567 are the same teacher; only a hash is stored */
+  function normPhone(p){var d=String(p||'').replace(/\D/g,'');if(d.indexOf('972')===0)d='0'+d.slice(3);return d}
+  async function phoneId(p){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('tel:'+normPhone(p)));return 'p'+Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('').slice(0,40)}
+  var owner={id:ls('planner-id')||null,name:ls('planner-name')||''};
   function snap(id,data){return {id:id,exists:!!data,data:function(){return data},metadata:{fromCache:false,hasPendingWrites:false}}}
   var cache=null,settings=null,docSubs=[],colSubs=[],setSubs=[];
   function emit(){
@@ -45,22 +46,28 @@
     function ask(){
       var box=document.createElement('div');box.id='gate';
       box.innerHTML='<div class="gate-card"><div class="mark">כ״ר</div><h1>מתכנן הספק · תשפ״ז</h1><p>כנפי רוח · תכנון שנתי בלימודי הקודש</p><form id="gateForm">'+
-        '<label class="f">איך קוראים לך?<input id="gateName" autocomplete="name" placeholder="לדוגמה: הרב יוסף לוי" required></label>'+
+        '<label class="f">מספר הטלפון שלך<input id="gatePhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="050-1234567" dir="ltr" style="text-align:right" required></label>'+
+        '<label class="f">השם שלך<input id="gateName" autocomplete="name" placeholder="לדוגמה: הרב יוסף לוי" required></label>'+
+        '<p class="note-line" style="margin:0">עם אותו מספר נכנסים מכל מחשב או טלפון ורואים את אותן תוכניות.</p>'+
         '<button class="btn primary" type="submit">יאללה, מתחילים</button><p class="note-line" id="gateMsg" role="alert" style="margin:0"></p></form></div>';
       document.body.appendChild(box);
+      var P=document.getElementById('gatePhone'),N=document.getElementById('gateName'),M=document.getElementById('gateMsg');
+      // known number -> fill the name it was saved with
+      P.addEventListener('change',async function(){if(normPhone(P.value).length<9)return;var id=await phoneId(P.value);try{var list=await rpc('list_plans',{code:CODE});var r=list.find(function(x){return x.id===id});if(r&&r.data&&r.data.teacher&&!N.value){N.value=r.data.teacher;M.textContent='שמחים לראות אותך שוב!'}}catch(e){}});
       document.getElementById('gateForm').addEventListener('submit',async function(e){e.preventDefault();
-        var n=document.getElementById('gateName').value.trim();
-        if(normName(n).length<2){document.getElementById('gateMsg').textContent='נא לכתוב את השם המלא.';return}
-        owner.name=n;owner.id=await nameId(n);ls('planner-name',n);box.remove();resolve()});
-      setTimeout(function(){var i=document.getElementById('gateName');if(i)i.focus()},50);
+        var ph=normPhone(P.value),n=N.value.trim();
+        if(!/^0[2-9][0-9]{7,8}$/.test(ph)){M.textContent='נא לכתוב מספר טלפון תקין.';return}
+        if(normName(n).length<2){M.textContent='נא לכתוב את השם המלא.';return}
+        owner.name=n;owner.id=await phoneId(ph);ls('planner-name',n);ls('planner-id',owner.id);box.remove();resolve()});
+      setTimeout(function(){P.focus()},50);
     }
-    async function start(){if(owner.name){owner.id=await nameId(owner.name);resolve()}else ask()}
+    async function start(){if(owner.id&&owner.id.charAt(0)==='p'&&owner.name)resolve();else ask()}
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
   });
   window.claude={standalone:true,use:async function(n){await ready;return {db:db,user:user,downloads:downloads}[n]||null}};
 
   ready.then(function(){
     var foot=document.querySelector('.rail-foot');
-    if(foot){var b=document.createElement('button');b.className='btn ghost';b.style.cssText='color:var(--rail-ink);padding:6px 0;margin-top:8px';b.textContent='לא '+owner.name+'? החלפת שם';b.onclick=function(){ls('planner-name',null);location.reload()};foot.appendChild(document.createElement('br'));foot.appendChild(b)}
+    if(foot){var b=document.createElement('button');b.className='btn ghost';b.style.cssText='color:var(--rail-ink);padding:6px 0;margin-top:8px';b.textContent='לא '+owner.name+'? יציאה';b.onclick=function(){ls('planner-name',null);ls('planner-id',null);location.reload()};foot.appendChild(document.createElement('br'));foot.appendChild(b)}
   });
 })();
