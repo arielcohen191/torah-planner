@@ -1050,7 +1050,8 @@ $('#docxBtn').onclick=async()=>{
 function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
 function summary(P){const R=compute(P,allHol());const v=verdict(R);const W=weeks(P,R,allHol()).filter(w=>w.label&&w.sun<=todayIso);const pg=P.progress||{};
   return {available:r2(R.available),needed:r2(R.needed),ok:v.ok,finish:R.finishDate||null,from:R.span[0]?.label||'',to:R.span[R.span.length-1]?.label||'',count:R.span.length,unit:unitName(P.subject,P.book),past:W.length,done:W.filter(w=>pg[w.sun]?.d).length}}
-const pick=P=>({v:2,progress:P.progress||{},more:P.more||[],mode:P.mode||'seq',scope:P.scope||'pace',teacher:P.teacher,grade:P.grade,cls:P.cls,subject:P.subject,book:P.book,startIdx:P.startIdx,endIdx:P.endIdx,pace:P.pace,otherText:P.otherText,startDate:P.startDate,endDate:P.endDate,days:P.days,marathons:P.marathons,blocked:P.blocked});
+const clsNorm=c=>String(c||'').replace(/^\s*[א-ח]\s*['׳"]?\s*/,'').trim();
+const pick=P=>({v:2,progress:P.progress||{},more:P.more||[],mode:P.mode||'seq',scope:P.scope||'pace',teacher:P.teacher,grade:P.grade,cls:clsNorm(P.cls),subject:P.subject,book:P.book,startIdx:P.startIdx,endIdx:P.endIdx,pace:P.pace,otherText:P.otherText,startDate:P.startDate,endDate:P.endDate,days:P.days,marathons:P.marathons,blocked:P.blocked});
 $('#saveBtn').onclick=()=>savePlan(false);
 /* what makes a plan "the same plan": grade, class, subject, mode and books. Change any of them → it is saved as a new plan */
 const planKey=P=>[P.grade,String(P.cls||'').trim(),P.subject,P.subject==='torah'?(P.mode||'seq'):'',P.subject==='other'?'':booksOf(P).join('+')].join('|');
