@@ -443,7 +443,7 @@ table.wk input[type=checkbox]{width:20px;height:20px}
                   <div class="row-list" id="moreWrap" style="margin-top:14px"></div>
                   <div class="actions" style="margin-top:10px"><button class="btn" type="button" id="addBook">+ ממשיכים לספר נוסף השנה</button></div>
                 </div>
-                <div class="actions"><button class="btn primary" data-go="2">המשך למערכת השעות ←</button></div>
+                <div class="actions"><button class="btn primary" data-go="2">המשך למערכת השעות ←</button><button class="btn ghost" type="button" id="newBtn1">+ תוכנית חדשה (ריקה)</button></div>
               </div>
             </div>
 
@@ -1103,7 +1103,8 @@ function b3(){
 }
 $$('.seg button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));b3()});
 $('#cloneBtn').onclick=()=>{const was=S.cls;S={...S,id:null,cls:'',progress:{}};delete S._owner;initForm();persistDraft();goStep(2);setTimeout(()=>$('#cls2').focus(),50);toast('נוצר עותק'+(was?' של כיתה '+was:'')+'. מלאו מספר כיתה ומערכת שעות, ושמרו.')};
-$('#newBtn').onclick=()=>{S=blank();delete S._owner;initForm();persistDraft();goStep(1);toast('נפתחה תוכנית חדשה')};
+$('#newBtn1').onclick=()=>$('#newBtn').click();
+$('#newBtn').onclick=()=>{S={...blank(),teacher:S.teacher,grade:S.grade};delete S._owner;initForm();renderSubjPick();persistDraft();goStep(1);toast('נפתחה תוכנית חדשה. התוכניות השמורות נשארו ב"התוכניות שלי".')};
 
 /* ---------- export ---------- */
 function planText(P){
@@ -1155,9 +1156,13 @@ function summary(P){const R=compute(P,allHol());const v=verdict(R);const W=weeks
   return {available:r2(R.available),needed:r2(R.needed),ok:v.ok,finish:R.finishDate||null,from:R.span[0]?.label||'',to:R.span[R.span.length-1]?.label||'',count:R.span.length,unit:unitName(P.subject,P.book),past:W.length,done:W.filter(w=>pg[w.sun]?.d).length}}
 const pick=P=>({v:2,progress:P.progress||{},more:P.more||[],mode:P.mode||'seq',scope:P.scope||'pace',teacher:P.teacher,grade:P.grade,cls:P.cls,subject:P.subject,book:P.book,startIdx:P.startIdx,endIdx:P.endIdx,pace:P.pace,otherText:P.otherText,startDate:P.startDate,endDate:P.endDate,days:P.days,marathons:P.marathons,blocked:P.blocked});
 $('#saveBtn').onclick=()=>savePlan(false);
+/* what makes a plan "the same plan": grade, class, subject, mode and books. Change any of them → it is saved as a new plan */
+const planKey=P=>[P.grade,String(P.cls||'').trim(),P.subject,P.subject==='torah'?(P.mode||'seq'):'',P.subject==='other'?'':booksOf(P).join('+')].join('|');
 async function writePlan(){
   const target=S._owner||uid,base=target===uid?myDoc:(team.find(t=>t.uid===target)||{plans:{}});
-  const plans={...(base.plans||{})};const {_owner,...clean}=S;plans[S.id]={...pick(clean),summary:summary(S),updatedAt:new Date().toISOString()};
+  const plans={...(base.plans||{})};
+  if(S.id&&plans[S.id]&&planKey(plans[S.id])!==planKey(S)){S.id=null}
+  if(!S.id){const same=Object.entries(plans).find(([,p])=>planKey(p)===planKey(S));S.id=same?same[0]:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}const {_owner,...clean}=S;plans[S.id]={...pick(clean),summary:summary(S),updatedAt:new Date().toISOString()};
   await db.doc('plans/'+target).set({teacher:target===uid?S.teacher:(base.teacher||S.teacher),updatedAt:new Date().toISOString(),plans});
 }
 async function savePlan(quiet){
@@ -1166,9 +1171,9 @@ async function savePlan(quiet){
   if(!S.teacher.trim()){$('#teacher').focus();goStep(1);toast('נא למלא שם מורה לפני השמירה');return}
   const btn=$('#saveBtn');btn.disabled=true;
   try{
-    if(!S.id)S.id='p'+Date.now().toString(36);
+    const wasId=S.id;
     await writePlan();
-    persistDraft();$('#saveNote').textContent='';toast('התוכנית נשמרה');
+    persistDraft();$('#saveNote').textContent='';toast(wasId===S.id?'התוכנית עודכנה':'נשמרה כתוכנית חדשה ✓ התוכניות הקודמות לא נגעו');
   }catch(e){
     if(e&&e.code==='invalid_argument')$('#saveNote').textContent='לא ניתן לשמור: השם הזה רשום עם קוד אישי אחר. צאו והיכנסו מחדש עם הקוד הנכון.';
     else toast('השמירה נכשלה. נסו שוב בעוד רגע.');
