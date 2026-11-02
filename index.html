@@ -136,6 +136,9 @@ input[type=number]{font-variant-numeric:tabular-nums}
 .note-line{font-size:12.5px;color:var(--muted);margin:10px 0 0}
 .range{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}
 .range fieldset{border:1px solid var(--line);border-radius:8px;padding:8px 12px 12px;margin:0;display:flex;gap:8px;min-width:0;background:var(--sunk)}
+.more-row{border:none;border-radius:14px;background:var(--sunk);padding:8px 12px 12px;margin:0;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:end}
+.more-row legend{font-size:12.5px;font-weight:700;padding:0 4px}
+@media (max-width:560px){.more-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}.more-row label:first-of-type{grid-column:1/-1}}
 .range legend{font-size:12.5px;font-weight:700;color:var(--ink);padding:0 4px}
 .range .f{flex:1}
 .taken{border-radius:6px;padding:9px 12px;font-size:13px;margin-top:14px;background:var(--gold-soft);color:var(--gold)}
@@ -296,7 +299,7 @@ input:focus,select:focus,textarea:focus{background:var(--card);border-color:var(
 .steps button[aria-current="step"]{background:var(--grad);color:#fff}
 .steps button[aria-current="step"] b{background:#fff;color:var(--primary);border:none}
 /* subject tiles */
-.subj-pick{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.subj-pick{grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px}
 .subj-pick button{flex-direction:column;align-items:flex-start;gap:10px;padding:14px;border:none;border-radius:16px;background:var(--tc);box-shadow:none;transition:transform .12s,box-shadow .12s}
 .subj-pick button:hover{transform:translateY(-2px)}
 .subj-pick button .ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--c);color:#fff}
@@ -360,6 +363,12 @@ table.wk input[type=checkbox]{width:20px;height:20px}
 .gate-card{background:var(--card);border-radius:22px;padding:30px 26px;width:min(400px,100%);box-shadow:0 20px 60px rgba(20,30,80,.35);text-align:center}
 .gate-card .mark{margin:0 auto 12px}.gate-card h1{margin:0;font-size:20px}.gate-card p{color:var(--muted);margin:4px 0 18px;font-size:13.5px}
 .gate-card form{display:flex;flex-direction:column;gap:12px;text-align:right}.gate-card .btn{justify-content:center}
+.topbar{flex-wrap:wrap}
+.userchip{font:inherit;display:inline-flex;align-items:center;gap:8px;border:none;background:var(--card);box-shadow:var(--shadow);border-radius:99px;padding:4px 6px 4px 12px;cursor:pointer;color:var(--ink);max-width:100%}
+.userchip .uav{width:26px;height:26px;border-radius:50%;background:var(--grad,#2f6fd6);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+.userchip .unm{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.userchip .usw{font-size:12px;color:var(--primary);font-weight:600;white-space:nowrap}
+.userchip[data-armed] .usw{color:var(--bad)}
 </style>
 </head>
 <body>
@@ -421,6 +430,10 @@ table.wk input[type=checkbox]{width:20px;height:20px}
                   <fieldset><legend>קצב</legend><label class="f"><span id="paceLbl">פסוקים לשעה</span><input id="pace" type="number" min="0.05" step="0.05"></label></fieldset>
                 </div>
                 <p class="note-line" id="paceHint"></p>
+                <div id="moreBlock">
+                  <div class="row-list" id="moreWrap" style="margin-top:14px"></div>
+                  <div class="actions" style="margin-top:10px"><button class="btn" type="button" id="addBook">+ ממשיכים לספר נוסף השנה</button></div>
+                </div>
                 <div class="actions"><button class="btn primary" data-go="2">המשך למערכת השעות ←</button></div>
               </div>
             </div>
@@ -433,6 +446,8 @@ table.wk input[type=checkbox]{width:20px;height:20px}
                   <label class="f">תאריך התחלה<input type="date" id="startDate"></label>
                   <label class="f">תאריך סיום<input type="date" id="endDate"></label>
                 </div>
+                <div class="fields" style="margin-top:12px"><label class="f">לאיזו כיתה המערכת הזו?<input id="cls2" placeholder="לדוגמה: 1 (עבור ו׳1)"></label></div>
+                <p class="note-line">מלמדים כמה כיתות באותה שכבה? אחרי השמירה לוחצים "+ אותה תוכנית לכיתה נוספת" ומעדכנים רק את המערכת.</p>
                 <h3>שעות שבועיות</h3>
                 <div class="days" id="days"></div>
                 <h3>ימי מרתון ותגבור</h3>
@@ -457,6 +472,7 @@ table.wk input[type=checkbox]{width:20px;height:20px}
                 <button class="btn" id="docxBtn">הורדה ל־Word</button>
                 <button class="btn" id="copyBtn">העתקה</button>
                 <button class="btn ghost" data-go="2">עריכת המערכת</button>
+                <button class="btn" id="cloneBtn" title="אותו חומר, מערכת שעות אחרת">+ אותה תוכנית לכיתה נוספת</button>
                 <button class="btn ghost" id="newBtn">תוכנית חדשה</button>
               </div>
               <p class="note-line" id="saveNote" style="padding:0 16px"></p>
@@ -574,6 +590,14 @@ table.wk input[type=checkbox]{width:20px;height:20px}
   window.claude={standalone:true,use:async function(n){await ready;return {db:db,user:user,downloads:downloads}[n]||null}};
 
   ready.then(function(){
+    /* always-visible user chip in the top bar (desktop and phone) */
+    var tb=document.querySelector('.topbar'),td=document.getElementById('today');
+    if(tb&&td){var wrap=document.createElement('div');wrap.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end';
+      var chip=document.createElement('button');chip.type='button';chip.className='userchip';chip.title='החלפת משתמש';
+      chip.innerHTML='<span class="uav"></span><span class="unm"></span><span class="usw">החלפה</span>';
+      chip.querySelector('.uav').textContent=(normName(owner.name)[0]||'?');chip.querySelector('.unm').textContent=owner.name;
+      chip.onclick=function(){if(chip.dataset.armed){ls('planner-name',null);ls('planner-id',null);location.reload();return}chip.dataset.armed='1';chip.querySelector('.usw').textContent='ללחוץ שוב ליציאה';setTimeout(function(){delete chip.dataset.armed;chip.querySelector('.usw').textContent='החלפה'},3500)};
+      td.parentNode.insertBefore(wrap,td);wrap.appendChild(chip);wrap.appendChild(td);}
     var foot=document.querySelector('.rail-foot');
     if(foot){var b=document.createElement('button');b.className='btn ghost';b.style.cssText='color:var(--rail-ink);padding:6px 0;margin-top:8px';b.textContent='לא '+owner.name+'? יציאה';b.onclick=function(){ls('planner-name',null);ls('planner-id',null);location.reload()};foot.appendChild(document.createElement('br'));foot.appendChild(b)}
   });
@@ -622,15 +646,34 @@ function units(subject,book,otherText){
   else{String(otherText||'').split('\n').map(s=>s.trim()).filter(Boolean).forEach((line,i)=>{const m=line.split('|');const h=parseFloat(m[1]);U.push({c:i+1,cl:m[0].trim(),vl:'',label:m[0].trim(),short:m[0].trim(),hours:h>0?h:null})})}
   return U;
 }
+const booksOf=P=>[P.book,...((P.subject==='other'?[]:P.more)||[]).filter(m=>m&&m.book).map(m=>m.book)];
+const booksLabel=P=>P.subject==='other'?'':booksOf(P).join(' + ');
+const chaptersOf=(subject,book)=>{const seen=new Set(),out=[];units(subject,book).forEach(u=>{if(!seen.has(u.c)){seen.add(u.c);out.push({c:u.c,cl:u.cl})}});return out};
+/* the plan's full run of units: main book range, then any further books learned the same year */
+function spanOf(P){
+  const U=units(P.subject,P.book,P.otherText);
+  const a=Math.max(0,Math.min(P.startIdx|0,U.length-1)), b=Math.max(a,Math.min(P.endIdx??U.length-1,U.length-1));
+  let span=U.slice(a,b+1);
+  const more=(P.subject==='other'?[]:(P.more||[])).filter(m=>m&&m.book);
+  if(more.length){
+    const tag=(arr,bk)=>arr.map(u=>({...u,bk,s0:u.short,label:bk+' '+u.label,short:bk+' '+u.short}));
+    span=tag(span,P.book);
+    more.forEach(m=>{const V=units(P.subject,m.book);if(!V.length)return;const fc=m.fromC??V[0].c,tc=m.toC??V[V.length-1].c;
+      const s=V.findIndex(u=>u.c==fc);let e=-1;V.forEach((u,i)=>{if(u.c==tc)e=i});
+      if(s>=0&&e>=s)span=span.concat(tag(V.slice(s,e+1),m.book))});
+  }
+  return {U,a,b,span};
+}
 /* label for a run of units, e.g. "פרק ג, ה–יב" or "ג,ה – ד,יב" */
 function rangeLabel(U,s,e){
   const a=U[s],b=U[e];if(!a||!b)return '';
   if(s===e)return a.label;
+  const bp=a.bk?a.bk+' ':'';
   if(a.fine||a.v){
-    if(a.c===b.c){const unitW=a.fine?'פס׳':(a.vl==='א'||a.vl==='ב')?'':'משניות';return a.vl==='א'||a.vl==='ב'?`דף ${a.cl}`:`פרק ${a.cl}, ${unitW} ${a.vl}–${b.vl}`.replace(',  ',', ')}
-    return `${a.short} – ${b.short}`;
+    if(a.c===b.c&&a.bk===b.bk){const unitW=a.fine?'פס׳':(a.vl==='א'||a.vl==='ב')?'':'משניות';return a.vl==='א'||a.vl==='ב'?`${bp}דף ${a.cl}`:`${bp}פרק ${a.cl}, ${unitW} ${a.vl}–${b.vl}`.replace(',  ',', ')}
+    return `${a.short} – ${a.bk&&a.bk===b.bk?b.s0:b.short}`;
   }
-  return `${a.label} – ${b.short}`;
+  return `${a.label} – ${a.bk&&a.bk===b.bk?b.s0:b.short}`;
 }
 
 /* ---------- calendar ---------- */
@@ -658,9 +701,7 @@ const r2=x=>Math.round(x*100)/100;
 
 /* ---------- engine ---------- */
 function compute(S,hol){
-  const U=units(S.subject,S.book,S.otherText);
-  const a=Math.max(0,Math.min(S.startIdx|0,U.length-1)), b=Math.max(a,Math.min(S.endIdx??U.length-1,U.length-1));
-  const span=U.slice(a,b+1);
+  const {U,a,b,span}=spanOf(S);
   // cost per unit in hours
   const pace=Math.max(0.01,+S.pace||1);
   const cost=span.map(u=>u.hours||1/pace);
@@ -717,7 +758,7 @@ const sundayOf=d=>add(d,-dow(d));
 function weeks(P,R,hol){
   const out=[];if(!P.startDate||!P.endDate||P.endDate<P.startDate)return out;
   const byWeek={};R.items.forEach(it=>{const k=sundayOf(it.date);(byWeek[k]=byWeek[k]||[]).push(it)});
-  const ev=schoolEvents();
+  const ev=schoolEvents();let lastBk=null;
   for(let sun=sundayOf(P.startDate);sun<=P.endDate;sun=add(sun,7)){
     const sat=add(sun,6);let par=DATA.P[sat]||'';
     if(par&&DATA.SS[sat])par+=' – '+DATA.SS[sat];
@@ -737,7 +778,7 @@ function weeks(P,R,hol){
     const di=x=>WD.indexOf(x.split(/[ –]/)[0]);
     let row={sun,par,notes:[...new Set(notes)].sort((a,b)=>di(a)-di(b)),hours:its.reduce((a,i)=>a+(i.hours||0),0)};
     if(les.length){const s=Math.min(...les.map(i=>i.u0)),e=Math.max(...les.map(i=>i.u1));const A=R.span[s],B=R.span[e];
-      Object.assign(row,{s,e,fromC:A.cl,fromV:A.vl,toC:B.cl,toV:B.vl,n:e-s+1,label:rangeLabel(R.span,s,e)});}
+      Object.assign(row,{s,e,fromC:(A.bk&&A.bk!==lastBk?A.bk+' ':'')+A.cl,fromV:A.vl,toC:(B.bk&&B.bk!==A.bk?B.bk+' ':'')+B.cl,toV:B.vl,n:e-s+1,label:rangeLabel(R.span,s,e)});lastBk=B.bk;}
     else if(rev)row.rev=true;
     out.push(row);
   }
@@ -745,7 +786,7 @@ function weeks(P,R,hol){
 }
 
 /* ---------- state ---------- */
-const blank=()=>({id:null,v:2,teacher:'',grade:'ו',cls:'',subject:'navi',book:'מלכים א',startIdx:0,endIdx:null,pace:12,otherText:'',
+const blank=()=>({id:null,v:2,more:[],teacher:'',grade:'ו',cls:'',subject:'navi',book:'מלכים א',startIdx:0,endIdx:null,pace:12,otherText:'',
   startDate:todayIso<'2026-09-01'||todayIso>YEAR_END?'2026-11-01':todayIso,endDate:YEAR_END,days:{0:1,1:0,2:1,3:0,4:1,5:0},marathons:[],blocked:[],progress:{}});
 let S=blank(),step=1,mode='week';
 let db=null,uid=null,canWrite=null,isAdmin=false,myDoc={plans:{}},team=[],mineLoaded=false,teamLoaded=false;
@@ -759,7 +800,7 @@ function initForm(){
   fillSelect($('#subject'),Object.entries(SUBJECTS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join(''),S.subject);
   $('#tGrade').innerHTML='<option value="">כל השכבות</option>'+GRADES.map(x=>`<option value="${x}">כיתה ${x}׳</option>`).join('');
   $('#tSubj').innerHTML='<option value="">כל המקצועות</option>'+Object.entries(SUBJECTS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
-  $('#teacher').value=S.teacher;$('#cls').value=S.cls;$('#otherText').value=S.otherText;$('#pace').value=S.pace;
+  $('#teacher').value=S.teacher;$('#cls').value=S.cls;$('#cls2').value=S.cls||'';$('#otherText').value=S.otherText;$('#pace').value=S.pace;
   $('#startDate').value=S.startDate;$('#endDate').value=S.endDate;
   ['#startDate','#endDate','#hFrom','#hTo'].forEach(s=>{$(s).min='2026-09-01';$(s).max='2027-08-31'});
   fillBooks();renderDays();renderRows();
@@ -774,6 +815,24 @@ function fillBooks(){
   }
   fillRange();
 }
+function renderMore(){
+  const blk=$('#moreBlock');if(!blk)return;blk.hidden=S.subject==='other';if(blk.hidden)return;
+  S.more=S.more||[];
+  const fine=hasVerses(S.subject,S.book),all=SUBJECTS[S.subject].groups.flatMap(x=>x[1]).filter(b=>hasVerses(S.subject,b)===fine);
+  $('#moreWrap').innerHTML=S.more.map((m,i)=>{const ch=chaptersOf(S.subject,m.book),[c1]=SUBJECTS[S.subject].cols;
+    const opt=v=>ch.map(c=>`<option value="${c.c}" ${String(c.c)===String(v)?'selected':''}>${c1} ${c.cl}</option>`).join('');
+    return `<fieldset class="more-row"><legend>ואחר כך: ספר ${i+2}</legend><label class="f">ספר<select id="mb-${i}" data-mk="book" data-mi="${i}">${all.map(b=>`<option ${b===m.book?'selected':''}>${b}</option>`).join('')}</select></label><label class="f">מ־<select id="mf-${i}" data-mk="fromC" data-mi="${i}">${opt(m.fromC)}</select></label><label class="f">עד (כולל)<select id="mt-${i}" data-mk="toC" data-mi="${i}">${opt(m.toC)}</select></label><button type="button" class="x" data-mdel="${i}" aria-label="הסרת הספר">×</button></fieldset>`}).join('');
+}
+function newMore(){const all=SUBJECTS[S.subject].groups.flatMap(x=>x[1]),last=(S.more||[]).length?S.more[S.more.length-1].book:S.book;
+  const fine=hasVerses(S.subject,S.book),cand=all.filter(b=>hasVerses(S.subject,b)===fine);let i=cand.indexOf(last);const book=cand[Math.min(cand.length-1,i+1)]||cand[0];
+  const ch=chaptersOf(S.subject,book);return {book,fromC:ch[0].c,toC:ch[ch.length-1].c}}
+document.addEventListener('click',e=>{
+  if(e.target.closest('#addBook')){S.more=[...(S.more||[]),newMore()];renderMore();changed();return}
+  const d=e.target.closest('[data-mdel]');if(d){S.more.splice(+d.dataset.mdel,1);renderMore();changed()}});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset.mk==null)return;const m=S.more[+t.dataset.mi];
+  if(t.dataset.mk==='book'){const ch=chaptersOf(S.subject,t.value);Object.assign(m,{book:t.value,fromC:ch[0].c,toC:ch[ch.length-1].c})}
+  else{m[t.dataset.mk]=+t.value||t.value;if(m.toC<m.fromC){if(t.dataset.mk==='fromC')m.toC=m.fromC;else m.fromC=m.toC}}
+  renderMore();changed()});
 let CUR_U=[];
 function fillRange(){
   const U=CUR_U=units(S.subject,S.book,S.otherText);
@@ -792,7 +851,7 @@ function fillRange(){
   $('#paceLbl').textContent=`${unit} לשעת לימוד`;
   const p=+S.pace||1;
   $('#paceHint').textContent=S.subject==='other'?'נושא בלי שעות מוגדרות יקבל שעות לפי הקצב.':(p<1?`כלומר יחידה אחת בכל ${r2(1/p)} שעות לימוד.`:`כלומר ${r2(p)} ${unit} בכל שעת לימוד.`);
-  renderTaken();
+  renderTaken();renderMore();
 }
 function fillSub(w){
   const idx=w==='s'?S.startIdx:S.endIdx,c=CUR_U[idx]?.c;
@@ -835,13 +894,14 @@ document.addEventListener('input',e=>{
   if(t.dataset.day!=null){S.days[t.dataset.day]=+t.value||0;t.parentElement.classList.toggle('on',+t.value>0);return changed()}
   if(t.dataset.k){const arr=t.dataset.k==='mar'?S.marathons:S.blocked;arr[+t.dataset.i][t.dataset.f]=t.dataset.f==='hours'?+t.value:t.value;
     if(t.dataset.k==='blk'&&t.dataset.f==='date'){const sp=t.parentElement.querySelector('.dt');if(sp)sp.textContent=heb(t.value)}return changed()}
-  const map={teacher:'teacher',cls:'cls',pace:'pace',startDate:'startDate',endDate:'endDate',otherText:'otherText'};
+  if(t.id==='cls2'||t.id==='cls'){S.cls=t.value;$(t.id==='cls'?'#cls2':'#cls').value=t.value;return changed()}
+  const map={teacher:'teacher',pace:'pace',startDate:'startDate',endDate:'endDate',otherText:'otherText'};
   if(map[t.id]){S[t.id]=t.id==='pace'?+t.value:t.value;if(t.id==='otherText'||t.id==='pace')fillRange();changed()}
 });
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='grade'){S.grade=t.value;changed()}
-  if(t.id==='subject'){S.subject=t.value;S.startIdx=0;S.endIdx=null;fillBooks();S.pace=defaultPace(S.subject,S.book);$('#pace').value=S.pace;fillRange();changed()}
+  if(t.id==='subject'){S.subject=t.value;S.startIdx=0;S.endIdx=null;S.more=[];fillBooks();S.pace=defaultPace(S.subject,S.book);$('#pace').value=S.pace;fillRange();changed()}
   if(t.id==='book'){S.book=t.value;S.startIdx=0;S.endIdx=null;S.pace=defaultPace(S.subject,S.book);$('#pace').value=S.pace;fillRange();changed()}
   if(t.id==='grade')renderTaken();
 });
@@ -893,7 +953,7 @@ function renderLedger(){
     const needPace=R.span.length/R.available;const gap=R.needed-R.available;
     tip=`<p class="note-line">אפשר לסגור את הפער: קצב של ${r2(needPace)} ${unit} לשעה, ${Math.ceil(gap/3)} ימי מרתון של 3 שעות, או עוד ${r2(gap/Math.max(1,weeksLeft()))} שעות בשבוע.</p>`;
   }
-  $('#ledger').innerHTML=`<div class="subj-tag" style="margin-bottom:12px"><span class="dot" style="background:${SC(S.subject)}"></span>${esc(SUBJECTS[S.subject].label)}${S.subject!=='other'?' · '+esc(S.book):''}<span class="chip">${R.span.length} ${unit}</span></div>
+  $('#ledger').innerHTML=`<div class="subj-tag" style="margin-bottom:12px"><span class="dot" style="background:${SC(S.subject)}"></span>${esc(SUBJECTS[S.subject].label)}${S.subject!=='other'?' · '+esc(booksLabel(S)):''}<span class="chip">${R.span.length} ${unit}</span></div>
    <div class="ledger-top">${ring(Math.min(pct,100),96,v.ok?'var(--ok)':'var(--bad)',`כיסוי ${Math.round(pct)}% מהשעות הנדרשות`)}
    <dl class="kv"><dt>שעות זמינות</dt><dd>${r2(R.available)}</dd><dt>שעות נדרשות</dt><dd>${r2(R.needed)}</dd><dt>שעות בשבוע</dt><dd>${r2(Object.values(S.days).reduce((x,y)=>x+(+y||0),0))}</dd><dt>עד</dt><dd>${S.endDate?greg(S.endDate):''}</dd></dl></div>
    <div class="status ${v.ok?'ok':'warn'}"><b>${v.title}</b>${v.text}</div>${tip}`;
@@ -969,14 +1029,15 @@ function calHTML(P,R){
   }
   return html;
 }
-function metaLine(P){return [P.teacher&&('מורה: '+P.teacher),'כיתה '+P.grade+'׳'+(P.cls?P.cls:''),SUBJECTS[P.subject].label+(P.subject!=='other'?' · '+P.book:'')].filter(Boolean).map(esc).join(' · ')}
+function metaLine(P){return [P.teacher&&('מורה: '+P.teacher),'כיתה '+P.grade+'׳'+(P.cls?P.cls:''),SUBJECTS[P.subject].label+(P.subject!=='other'?' · '+booksLabel(P):'')].filter(Boolean).map(esc).join(' · ')}
 function b3(){
   const R=compute(S,allHol());const v=verdict(R);
-  $('#planTitle').textContent=`תוכנית ${SUBJECTS[S.subject].label}${S.subject!=='other'?' – '+S.book:''}`;
+  $('#planTitle').textContent=`תוכנית ${SUBJECTS[S.subject].label}${S.subject!=='other'?' – '+booksLabel(S):''}`;
   $('#planMeta').innerHTML=(S._owner?'<b>עריכת תוכנית של מורה אחר · </b>':'')+metaLine(S)+(R.span.length?` · ${esc(R.span[0].label)} עד ${esc(R.span[R.span.length-1].label)}`:'');
   $('#planOut').innerHTML=(v.ok?'':`<div class="status warn" style="margin:12px 0 4px"><b>${v.title}</b>התוכנית מציגה עד היכן תגיעו בשעות הקיימות. אפשר להוסיף ימי מרתון או להעלות קצב בשלב 2.</div>`)+planHTML(S,R,mode);
 }
 $$('.seg button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));b3()});
+$('#cloneBtn').onclick=()=>{const was=S.cls;S={...S,id:null,cls:'',progress:{}};delete S._owner;initForm();persistDraft();goStep(2);setTimeout(()=>$('#cls2').focus(),50);toast('נוצר עותק'+(was?' של כיתה '+was:'')+'. מלאו מספר כיתה ומערכת שעות, ושמרו.')};
 $('#newBtn').onclick=()=>{S=blank();delete S._owner;initForm();persistDraft();goStep(1);toast('נפתחה תוכנית חדשה')};
 
 /* ---------- export ---------- */
@@ -1012,12 +1073,12 @@ $('#docxBtn').onclick=async()=>{
       cell(w.notes.join('\n'),{bold:true,size:18}),cell(pg[w.sun]?.d?'✓':''),cell(pg[w.sun]?.w||'',{size:18})]}));
     const total=R.span.length?`${rangeLabel(R.span,0,R.span.length-1)} (${R.span.length} ${u})`:'';
     const doc=new D.Document({sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:851,right:1080,bottom:993,left:1080}}},children:[
-      T(`תכנית שנתית תשפ״ז – ${SUBJECTS[S.subject].label}${S.subject!=='other'?' '+S.book:''}`,{bold:true,size:28}),
+      T(`תכנית שנתית תשפ״ז – ${SUBJECTS[S.subject].label}${S.subject!=='other'?' '+booksLabel(S):''}`,{bold:true,size:28}),
       T(`שם המלמד: ${S.teacher||'_______________'}        כיתה: ${S.grade}׳${S.cls||''}`,{size:24}),T(''),
       new D.Table({visuallyRightToLeft:true,layout:D.TableLayoutType.FIXED,width:{size:9746,type:D.WidthType.DXA},columnWidths:two?[1511,700,700,700,700,900,2535,900,1100]:[1511,1400,1400,900,2535,900,1100],rows:[...head,...body]}),
       T(''),T(`הספק שנתי: ${total}`,{bold:true,size:24,align:D.AlignmentType.RIGHT})]}]});
     const blob=await D.Packer.toBlob(doc);
-    await downloads.save({filename:`תכנית ${SUBJECTS[S.subject].label} ${S.subject!=='other'?S.book:''} שכבה ${S.grade}.docx`.replace(/\s+/g,' '),data:blob});
+    await downloads.save({filename:`תכנית ${SUBJECTS[S.subject].label} ${S.subject!=='other'?booksOf(S).join(' ו'):''} שכבה ${S.grade}${S.cls||''}.docx`.replace(/\s+/g,' '),data:blob});
     toast('הקובץ נשמר');
   }catch(e){if(e&&e.code==='declined')toast('ההורדה בוטלה');else toast('לא הצלחנו להכין את הקובץ')}
   finally{btn.disabled=false;btn.textContent='הורדה ל־Word'}
@@ -1027,7 +1088,7 @@ $('#docxBtn').onclick=async()=>{
 function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
 function summary(P){const R=compute(P,allHol());const v=verdict(R);const W=weeks(P,R,allHol()).filter(w=>w.label&&w.sun<=todayIso);const pg=P.progress||{};
   return {available:r2(R.available),needed:r2(R.needed),ok:v.ok,finish:R.finishDate||null,from:R.span[0]?.label||'',to:R.span[R.span.length-1]?.label||'',count:R.span.length,unit:unitName(P.subject,P.book),past:W.length,done:W.filter(w=>pg[w.sun]?.d).length}}
-const pick=P=>({v:2,progress:P.progress||{},teacher:P.teacher,grade:P.grade,cls:P.cls,subject:P.subject,book:P.book,startIdx:P.startIdx,endIdx:P.endIdx,pace:P.pace,otherText:P.otherText,startDate:P.startDate,endDate:P.endDate,days:P.days,marathons:P.marathons,blocked:P.blocked});
+const pick=P=>({v:2,progress:P.progress||{},more:P.more||[],teacher:P.teacher,grade:P.grade,cls:P.cls,subject:P.subject,book:P.book,startIdx:P.startIdx,endIdx:P.endIdx,pace:P.pace,otherText:P.otherText,startDate:P.startDate,endDate:P.endDate,days:P.days,marathons:P.marathons,blocked:P.blocked});
 $('#saveBtn').onclick=()=>savePlan(false);
 async function writePlan(){
   const target=S._owner||uid,base=target===uid?myDoc:(team.find(t=>t.uid===target)||{plans:{}});
@@ -1048,7 +1109,7 @@ async function savePlan(quiet){
     else toast('השמירה נכשלה. נסו שוב בעוד רגע.');
   }finally{btn.disabled=false}
 }
-const subjLbl=p=>esc(SUBJECTS[p.subject]?.label.replace(' (רשימה חופשית)',''))+(p.subject!=='other'?' · '+esc(p.book):'');
+const subjLbl=p=>esc(SUBJECTS[p.subject]?.label.replace(' (רשימה חופשית)',''))+(p.subject!=='other'?' · '+esc(booksLabel(p)):'');
 const statusChip=s=>s?.ok?'<span class="chip ok">מסתדר</span>':`<span class="chip bad">חסרות ${r2((s?.needed||0)-(s?.available||0))} ש׳</span>`;
 function prow(p,attr){
   const pc=cover(p.summary);
@@ -1114,7 +1175,7 @@ $('#tGrade').onchange=renderTeam;$('#tSubj').onchange=renderTeam;
 function showTeamPlan(p,u,id){
   const el=$('#teamPlan');const R=compute(p,allHol());const v=verdict(R);
   el.hidden=false;
-  el.innerHTML=`<div class="banner"><div><h2>תוכנית ${esc(SUBJECTS[p.subject].label)}${p.subject!=='other'?' – '+esc(p.book):''}</h2><div class="meta">${metaLine(p)}</div></div><div class="chips">${isAdmin?'<button class="btn" id="editTeam">עריכה</button>':''}<button class="btn" id="closeTeam">סגירה</button></div></div><div class="sched"><div class="status ${v.ok?'ok':'warn'}" style="margin:12px 0 4px"><b>${v.title}</b>${v.text||`זמינות ${r2(R.available)} שעות מתוך ${r2(R.needed)} נדרשות.`}</div>${planHTML(p,R,'list')}</div>`;
+  el.innerHTML=`<div class="banner"><div><h2>תוכנית ${esc(SUBJECTS[p.subject].label)}${p.subject!=='other'?' – '+esc(booksLabel(p)):''}</h2><div class="meta">${metaLine(p)}</div></div><div class="chips">${isAdmin?'<button class="btn" id="editTeam">עריכה</button>':''}<button class="btn" id="closeTeam">סגירה</button></div></div><div class="sched"><div class="status ${v.ok?'ok':'warn'}" style="margin:12px 0 4px"><b>${v.title}</b>${v.text||`זמינות ${r2(R.available)} שעות מתוך ${r2(R.needed)} נדרשות.`}</div>${planHTML(p,R,'list')}</div>`;
   $('#closeTeam').onclick=()=>{el.hidden=true};el.scrollIntoView({behavior:'smooth',block:'start'});
   const eb=$('#editTeam');if(eb)eb.onclick=()=>{S={...blank(),...p,id,_owner:u===uid?undefined:u};delete S.summary;delete S.updatedAt;initForm();el.hidden=true;showView('new');goStep(3)};
 }

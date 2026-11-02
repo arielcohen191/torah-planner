@@ -67,6 +67,14 @@
   window.claude={standalone:true,use:async function(n){await ready;return {db:db,user:user,downloads:downloads}[n]||null}};
 
   ready.then(function(){
+    /* always-visible user chip in the top bar (desktop and phone) */
+    var tb=document.querySelector('.topbar'),td=document.getElementById('today');
+    if(tb&&td){var wrap=document.createElement('div');wrap.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end';
+      var chip=document.createElement('button');chip.type='button';chip.className='userchip';chip.title='החלפת משתמש';
+      chip.innerHTML='<span class="uav"></span><span class="unm"></span><span class="usw">החלפה</span>';
+      chip.querySelector('.uav').textContent=(normName(owner.name)[0]||'?');chip.querySelector('.unm').textContent=owner.name;
+      chip.onclick=function(){if(chip.dataset.armed){ls('planner-name',null);ls('planner-id',null);location.reload();return}chip.dataset.armed='1';chip.querySelector('.usw').textContent='ללחוץ שוב ליציאה';setTimeout(function(){delete chip.dataset.armed;chip.querySelector('.usw').textContent='החלפה'},3500)};
+      td.parentNode.insertBefore(wrap,td);wrap.appendChild(chip);wrap.appendChild(td);}
     var foot=document.querySelector('.rail-foot');
     if(foot){var b=document.createElement('button');b.className='btn ghost';b.style.cssText='color:var(--rail-ink);padding:6px 0;margin-top:8px';b.textContent='לא '+owner.name+'? יציאה';b.onclick=function(){ls('planner-name',null);ls('planner-id',null);location.reload()};foot.appendChild(document.createElement('br'));foot.appendChild(b)}
   });

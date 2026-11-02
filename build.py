@@ -18,6 +18,12 @@ gate_css = """<style>
 .gate-card{background:var(--card);border-radius:22px;padding:30px 26px;width:min(400px,100%);box-shadow:0 20px 60px rgba(20,30,80,.35);text-align:center}
 .gate-card .mark{margin:0 auto 12px}.gate-card h1{margin:0;font-size:20px}.gate-card p{color:var(--muted);margin:4px 0 18px;font-size:13.5px}
 .gate-card form{display:flex;flex-direction:column;gap:12px;text-align:right}.gate-card .btn{justify-content:center}
+.topbar{flex-wrap:wrap}
+.userchip{font:inherit;display:inline-flex;align-items:center;gap:8px;border:none;background:var(--card);box-shadow:var(--shadow);border-radius:99px;padding:4px 6px 4px 12px;cursor:pointer;color:var(--ink);max-width:100%}
+.userchip .uav{width:26px;height:26px;border-radius:50%;background:var(--grad,#2f6fd6);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+.userchip .unm{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.userchip .usw{font-size:12px;color:var(--primary);font-weight:600;white-space:nowrap}
+.userchip[data-armed] .usw{color:var(--bad)}
 </style>"""
 shim = '<script>window.PLANNER_CFG=' + json.dumps(cfg) + ';</script>\n<script>\n' + (root / 'src/shim.js').read_text() + '</script>\n'
 body = body.replace('<script>\nconst DATA', shim + '<script>\nconst DATA', 1)
