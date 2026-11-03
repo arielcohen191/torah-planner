@@ -193,6 +193,8 @@ table.tt td:hover .addhint,table.tt td:focus-within .addhint{opacity:.8}
 .slot:hover .sx,.slot:focus-visible .sx{opacity:1}
 .slot .sx:hover{background:var(--bad-soft);color:var(--bad)}
 @media (hover:none){.slot .sx{opacity:.8}}
+table.tt td.hol{background:repeating-linear-gradient(135deg,var(--bad-soft) 0 8px,var(--card) 8px 16px)}
+table.tt th.holh em{display:block;font-style:normal;font-size:11px;color:var(--bad);font-weight:600}
 /* sync + name gate */
 .topacts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
 .mebtn{font:inherit;border:none;cursor:pointer;color:var(--ink)}
@@ -272,7 +274,7 @@ table.list .bar i{right:0}
         <div class="hero" id="hero"></div>
         <div class="w" id="weekW"><div class="w-h"><h2 id="weekTitle">מערכת השבוע</h2><div class="actions"><button class="btn sm" id="wkPrev" type="button">→ שבוע קודם</button><button class="btn sm" id="wkToday" type="button">השבוע</button><button class="btn sm" id="wkNext" type="button">שבוע הבא ←</button></div></div><div class="w-b"><div class="tt-wrap" id="tt"></div><p class="hint" style="margin-top:8px">לחיצה על משבצת ריקה משבצת בה סיירת. לחיצה על סיירת קיימת מראה את התלמידים שיוצאים.</p></div></div>
         <div class="wgrid">
-          <div class="w"><div class="w-h"><h2>יציאות</h2><span class="hint">לחיצה על שם = הבא בתור · ✕ = הסרה</span></div><div class="w-b" id="outList"></div></div>
+          <div class="w"><div class="w-h"><h2 id="listTitle">יציאות השבוע</h2><span class="hint">לחיצה על שם = הבא בתור · ✕ = הסרה</span></div><div class="w-b" id="outList"></div></div>
           <div class="side">
             <div class="w"><div class="w-h"><h2>יציאה חדשה</h2></div><div class="w-b">
               <div class="lbl" style="margin-top:0">מתי</div>
@@ -373,7 +375,8 @@ const iso=d=>{const z=new Date(d);z.setMinutes(z.getMinutes()-z.getTimezoneOffse
 function sample(){return {classes:[],students:[],patrols:[],rules:[],outings:[],sample:false}}
 
 /* ---- weekly timetable: rows = school hours, columns = Sun–Fri ---- */
-let WK=0;const HOURS=[1,2,3,4,5,6];
+let WK=0;
+const weekStart=()=>{const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-d.getDay()+WK*7);return iso(d)};const HOURS=[1,2,3,4,5,6];
 const HOUR_TIMES={1:'\u20668:00–9:05\u2069',2:'\u20669:20–10:05\u2069',3:'\u206610:30–11:15\u2069',4:'\u206611:15–11:55\u2069',5:'\u206612:10–12:55\u2069',6:'\u206612:55–13:25\u2069'};
 const hourNum=h=>{const m=String(h||'').match(/\d+/);return m?+m[0]:0};
 function renderWeek(){
@@ -387,12 +390,12 @@ function renderWeek(){
   document.getElementById('weekTitle').textContent=`מערכת השבוע · ${f(dates[0])} עד ${f(dates[5])}`;
   const slot=o=>{const p=pat(o.patrol),cls=Object.keys(o.picks),n=Object.values(o.picks).flat().map(id=>(stu(id)||{}).name).filter(Boolean);
     return `<button type="button" class="slot ${o.done?'done':''} ${isAct(p)?'act':''}" data-go="${o.id}" style="--c:${p.color}" title="${esc(n.join(', ')||'אין תלמידים משובצים')}"><b>${esc(p.name)}</b><span>${cls.map(esc).join(', ')}${n.length?'':' · ⚠'}</span><i class="sx" data-del-o="${o.id}" role="button" aria-label="מחיקת השיבוץ" title="מחיקת השיבוץ">✕</i></button>`};
-  document.getElementById('tt').innerHTML=`<table class="tt"><thead><tr><th></th>${dates.map((d,i)=>`<th class="${d===today?'now':''}">${DAYS[i]}<small>${f(d)}</small></th>`).join('')}</tr></thead><tbody>
-    ${rows.map(h=>`<tr><th>${h?'שעה '+h:'ללא שעה'}${HOUR_TIMES[h]?`<small>${HOUR_TIMES[h]}</small>`:''}</th>${dates.map(d=>`<td class="${d===today?'now':''}" data-d="${d}" data-h="${h}" title="לחיצה: שיבוץ בשעה הזו">${(by[d+'|'+h]||[]).map(slot).join('')}<button type="button" class="addhint" aria-label="שיבוץ נוסף בשעה הזו">+</button></td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  document.getElementById('tt').innerHTML=`<table class="tt"><thead><tr><th></th>${dates.map((d,i)=>`<th class="${d===today?'now':''} ${holOn(d)?'holh':''}">${DAYS[i]}<small>${f(d)}</small>${holOn(d)?`<em>${esc(holOn(d))}</em>`:''}</th>`).join('')}</tr></thead><tbody>
+    ${rows.map(h=>`<tr><th>${h?'שעה '+h:'ללא שעה'}${HOUR_TIMES[h]?`<small>${HOUR_TIMES[h]}</small>`:''}</th>${dates.map(d=>`<td class="${d===today?'now':''} ${holOn(d)?'hol':''}" data-d="${d}" data-h="${h}" title="לחיצה: שיבוץ בשעה הזו">${(by[d+'|'+h]||[]).map(slot).join('')}<button type="button" class="addhint" aria-label="שיבוץ נוסף בשעה הזו">+</button></td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
-document.getElementById('wkPrev').addEventListener('click',()=>{WK--;renderWeek()});
-document.getElementById('wkNext').addEventListener('click',()=>{WK++;if(WK>2)toast('יציאות קבועות משובצות רק שבועיים קדימה');renderWeek()});
-document.getElementById('wkToday').addEventListener('click',()=>{WK=0;renderWeek()});
+document.getElementById('wkPrev').addEventListener('click',()=>{WK--;renderOut()});
+document.getElementById('wkNext').addEventListener('click',()=>{WK++;renderOut()});
+document.getElementById('wkToday').addEventListener('click',()=>{WK=0;renderOut()});
 document.getElementById('tt').addEventListener('click',e=>{
   const x=e.target.closest('[data-del-o]');if(x){e.stopPropagation();openDel(x.dataset.delO);return}
   const b=e.target.closest('[data-go]');
@@ -417,8 +420,10 @@ function openCell(d,h){
   document.getElementById('cellTitle').textContent=`יום ${DAYS[dt.getDay()]}, ${dt.getDate()}.${dt.getMonth()+1}`;
   document.getElementById('cellSub').textContent=h?`שעה ${h}${HOUR_TIMES[h]?' · '+HOUR_TIMES[h]:''}`:'ללא שעה קבועה';
   const here=S.outings.filter(o=>o.date===d&&hourNum(o.hour)===h&&!isAct(pat(o.patrol)));
+  const hn=holOn(d);
   const tk=document.getElementById('cellTaken');tk.hidden=!here.length;
-  tk.textContent=here.length?`כבר יוצאת בשעה הזו: ${here.map(o=>pat(o.patrol).name).join(', ')}. לפי הנוהל לא מוציאים שתי סיירות באותו שיעור.`:'';
+  tk.hidden=!here.length&&!hn;
+  tk.textContent=(hn?`${hn}: אין לימודים ביום הזה. שיבוץ קבוע ידלג עליו אוטומטית. `:'')+(here.length?`כבר יוצאת בשעה הזו: ${here.map(o=>pat(o.patrol).name).join(', ')}. לפי הנוהל לא מוציאים שתי סיירות באותו שיעור.`:'');
   const opt=p=>`<option value="${p.id}">${esc(p.name)}</option>`,sel=document.getElementById('cPatrol');
   sel.innerHTML=`<optgroup label="סיירות">${S.patrols.filter(p=>!isAct(p)).map(opt).join('')}</optgroup><optgroup label="פעילויות קבועות">${S.patrols.filter(isAct).map(opt).join('')}</optgroup>`;
   cClasses();cSync();document.getElementById('cellGate').hidden=false;sel.focus();
@@ -524,6 +529,7 @@ function askName(){const m=document.getElementById('nameGate');document.getEleme
 function showMe(){document.getElementById('meBtn').textContent=ME?'👤 '+ME:'👤 מי אני?'}
 async function boot(){
   setStatus('busy','טוען…');
+  try{const h=await rpc('get_settings',{code:'open'});SCHOOL_HOL=((h&&h.holidays)||[]).filter(x=>x&&x.from&&x.off!==false)}catch(e){}
   try{const r=await rpc('get_sayarot');S=norm(r.data);VER=r.version;setStatus('ok','מחובר')}
   catch(e){setStatus('bad','אין חיבור לשרת')}
   renderAll();showMe();if(!ME)askName();
@@ -556,7 +562,7 @@ document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',(
 /* ---- outings ---- */
 function renderHero(){
   const today=iso(new Date());
-  const up=S.outings.filter(o=>o.date>=today&&!o.done);
+  const wkEnd=addDays(today,7);const up=S.outings.filter(o=>o.date>=today&&o.date<=wkEnd&&!o.done);
   const kids=new Set();up.forEach(o=>Object.values(o.picks).flat().forEach(k=>kids.add(k)));
   const next=[...up].sort((a,b)=>a.date<b.date?-1:1)[0];
   const {tot}=counts(S);let gap=0;
@@ -564,7 +570,7 @@ function renderHero(){
   const nd=next?new Date(next.date+'T12:00'):null;
   $('#hero').innerHTML=`<h2>${next?`היציאה הבאה: ${esc(pat(next.patrol).name)}`:'אין יציאות מתוכננות'}</h2>
     <p>${next?`יום ${DAYS[nd.getDay()]}, ${nd.getDate()}.${nd.getMonth()+1} · ${Object.keys(next.picks).map(esc).join(', ')}`:'צרו יציאה חדשה בצד, והמערכת תבחר את התלמידים.'}</p>
-    <div class="hstats"><div class="hs"><b>${up.length}</b>יציאות קרובות</div><div class="hs"><b>${kids.size}</b>תלמידים משובצים</div><div class="hs"><b>${S.patrols.filter(p=>!isAct(p)).length}</b>סיירות</div><div class="hs"><b>${gap}</b>פער מקסימלי בכיתה</div></div>`;
+    <div class="hstats"><div class="hs"><b>${up.length}</b>יציאות בשבוע הקרוב</div><div class="hs"><b>${kids.size}</b>תלמידים משובצים</div><div class="hs"><b>${S.patrols.filter(p=>!isAct(p)).length}</b>סיירות</div><div class="hs"><b>${gap}</b>פער מקסימלי בכיתה</div></div>`;
   $('#outCount').textContent=up.length||'';
 }
 function renderNew(){
@@ -632,25 +638,45 @@ $('#nGo').addEventListener('click',()=>{
 });
 
 /* recurring outings: generated HORIZON days ahead; rotation counts every matching day since start, so a cancelled day doesn't shift the cycle */
-const HORIZON=14;
+/* school year + holidays (same list as מתכנן הספק; school additions come from its settings) */
+const YEAR_END='2027-06-30';
+const DEFAULT_HOL=[
+ {from:'2026-12-06',to:'2026-12-11',name:'חופשת חנוכה'},
+ {from:'2027-03-23',to:'2027-03-24',name:'פורים ושושן פורים'},
+ {from:'2027-04-13',to:'2027-04-28',name:'חופשת פסח'},
+ {from:'2027-05-12',to:'2027-05-12',name:'יום העצמאות'},
+ {from:'2027-05-25',to:'2027-05-25',name:'ל״ג בעומר'},
+ {from:'2027-06-10',to:'2027-06-11',name:'חג השבועות'}];
+let SCHOOL_HOL=[];
+const holOn=d=>{for(const h of [...DEFAULT_HOL,...SCHOOL_HOL])if(d>=h.from&&d<=(h.to||h.from))return h.name;return null};
 function addDays(s,n){const d=new Date(s+'T12:00');d.setDate(d.getDate()+n);return iso(d)}
 const dow=s=>new Date(s+'T12:00').getDay();
 function ruleDays(r){return r.days||(r.day!=null?[+r.day]:[])}
+/* Generates every rule through the end of the year. Holidays get no outing and don't use a turn:
+   the class whose turn fell on a holiday goes on the next school day. A day cancelled by hand ("skip") keeps its turn. */
 function ensureRecurring(){
-  /* fill from this week's Sunday, so days already past this week still show in the timetable */
-  S.rules=S.rules||[];const now=new Date(),wk0=iso(new Date(now.getFullYear(),now.getMonth(),now.getDate()-now.getDay(),12)),until=addDays(iso(now),HORIZON);let added=0;
+  S.rules=S.rules||[];const now=new Date(),today=iso(now),wk0=iso(new Date(now.getFullYear(),now.getMonth(),now.getDate()-now.getDay(),12));let added=0,changed=0;
   for(const r of S.rules){
     if(!S.patrols.some(p=>p.id===r.patrol))continue;
-    const days=ruleDays(r);let k=0;
-    for(let d=r.start;d<=until;d=addDays(d,1)){
-      if(!days.includes(dow(d)))continue;
-      const idx=k++;
-      if(d<wk0||(r.skip||[]).includes(d)||S.outings.some(o=>o.rule===r.id&&o.date===d))continue;
-      const cls=r.who==='all'?r.classes:[r.classes[idx%r.classes.length]];
-      const o=makeOuting(S,r.patrol,d,cls);o.rule=r.id;o.hour=r.hour;S.outings.push(o);added++;
+    const days=ruleDays(r),want={};let k=0;
+    for(let d=r.start;d<=YEAR_END;d=addDays(d,1)){
+      if(!days.includes(dow(d))||holOn(d))continue;
+      const idx=k++;if(d<wk0||(r.skip||[]).includes(d))continue;
+      want[d]=r.who==='all'?r.classes:[r.classes[idx%r.classes.length]];
+    }
+    /* reconcile future, not-done outings of this rule with what the rule wants now */
+    S.outings=S.outings.filter(o=>{
+      if(o.rule!==r.id||o.done||o.date<today)return true;
+      if(!want[o.date]){changed++;return false}
+      if(Object.keys(o.picks).join()!==want[o.date].join()){o.picks=makeOuting(S,r.patrol,o.date,want[o.date],o.id).picks;changed++}
+      if((o.hour||'')!==(r.hour||'')){o.hour=r.hour;changed++}
+      return true});
+    for(const d in want){
+      if(S.outings.some(o=>o.rule===r.id&&o.date===d))continue;
+      const o=makeOuting(S,r.patrol,d,want[d]);o.rule=r.id;o.hour=r.hour;S.outings.push(o);added++;
     }
   }
-  if(added)save();return added;
+  if(added||changed)save();return added;  if(added)save();return added;
 }
 function daysLabel(r){const d=ruleDays(r);
   if(r.freq==='daily'){const s=[...d].sort();const cont=s.every((x,i)=>!i||x===s[i-1]+1);return cont&&s.length>2?`כל יום ${DAYS[s[0]]}–${DAYS[s[s.length-1]]}`:'בימים '+s.map(x=>DAYS[x]).join(', ')}
@@ -681,7 +707,9 @@ $('#rules').addEventListener('click',e=>{
   save();renderOut();renderStu();toast('היציאה הקבועה הופסקה, והיציאות העתידיות שלה נמחקו')});
 
 function renderOut(){
-  const list=[...S.outings].sort((a,b)=>a.date<b.date?-1:1);
+  const w0=weekStart(),w5=addDays(w0,5);
+  document.getElementById('listTitle').textContent=WK===0?'יציאות השבוע':`יציאות בשבוע ${+w0.slice(8)}.${+w0.slice(5,7)}`;
+  const list=S.outings.filter(o=>o.date>=w0&&o.date<=w5).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:hourNum(a.hour)-hourNum(b.hour));
   const today=iso(new Date());let lastM='';
   $('#outList').innerHTML=list.length?list.map(o=>{
     const p=pat(o.patrol),d=new Date(o.date+'T12:00'),m=MONTHS[d.getMonth()]+' '+d.getFullYear();
@@ -701,7 +729,7 @@ function renderOut(){
         <button class="btn sm" data-act="done" data-o="${o.id}">${o.done?'בטל סימון':'✓ בוצע'}</button>
         <button class="btn sm ghost" data-act="redo" data-o="${o.id}">שבץ מחדש</button>
         <button class="btn sm ghost danger" data-act="del" data-o="${o.id}">מחק</button>
-      </div></div>`}).join(''):'<div class="empty">עוד אין יציאות. צרו יציאה ראשונה בצד.</div>';
+      </div></div>`}).join(''):'<div class="empty">אין יציאות בשבוע הזה. לחצו על משבצת במערכת כדי לשבץ.</div>';
   renderHero();renderFair();renderRules();renderWeek();
 }
 $('#outList').addEventListener('click',e=>{
