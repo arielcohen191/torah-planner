@@ -188,6 +188,11 @@ table.tt td:hover .addhint,table.tt td:focus-within .addhint{opacity:.8}
 .cell-card{text-align:right;width:min(440px,100%);max-height:calc(100vh - 40px);overflow:auto}
 .cell-card h2,.cell-card>p{text-align:center}
 .taken{border-radius:10px;padding:9px 12px;font-size:13px;background:var(--gold-soft);color:var(--gold)}
+.slot{position:relative;padding-inline-end:22px}
+.slot .sx{position:absolute;top:3px;inset-inline-end:3px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:10px;color:var(--muted);background:var(--card);opacity:0;transition:opacity .15s}
+.slot:hover .sx,.slot:focus-visible .sx{opacity:1}
+.slot .sx:hover{background:var(--bad-soft);color:var(--bad)}
+@media (hover:none){.slot .sx{opacity:.8}}
 /* sync + name gate */
 .topacts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
 .mebtn{font:inherit;border:none;cursor:pointer;color:var(--ink)}
@@ -340,6 +345,13 @@ table.list .bar i{right:0}
   <div class="lbl" id="cClsLbl">כיתות</div><div class="pick" id="cClasses"></div>
   <div class="actions"><button class="btn primary" id="cGo" style="flex:1;justify-content:center">שבץ</button><button class="btn" type="button" id="cCancel">ביטול</button></div>
 </form></div>
+<div class="gate" id="delGate" hidden><div class="gate-card cell-card">
+  <h2>מחיקת שיבוץ</h2><p id="delSub"></p>
+  <div class="actions" style="flex-direction:column;align-items:stretch">
+    <button class="btn primary" type="button" id="delOne" style="justify-content:center">מחק רק את היציאה הזו</button>
+    <button class="btn danger" type="button" id="delAll" style="justify-content:center">מחק את כל השבועות (הפסק את הקבוע)</button>
+    <button class="btn" type="button" id="delCancel" style="justify-content:center">ביטול</button>
+  </div></div></div>
 <div class="gate" id="nameGate" hidden><form class="gate-card" id="nameForm"><div class="mark" style="margin:0 auto 12px">כ״ר</div><h2>סיירות שכבת ו׳</h2><p>כולם רואים ומעדכנים את אותו לוח. השם שלכם מופיע ליד כל עדכון.</p><label class="f">השם שלך<input id="meName" placeholder="לדוגמה: הרב אריאל" autocomplete="name"></label><button class="btn primary" style="justify-content:center">כניסה</button></form></div>
 
 <script>
@@ -374,14 +386,16 @@ function renderWeek(){
   const f=s=>{const d=new Date(s+'T12:00');return d.getDate()+'.'+(d.getMonth()+1)};
   document.getElementById('weekTitle').textContent=`מערכת השבוע · ${f(dates[0])} עד ${f(dates[5])}`;
   const slot=o=>{const p=pat(o.patrol),cls=Object.keys(o.picks),n=Object.values(o.picks).flat().map(id=>(stu(id)||{}).name).filter(Boolean);
-    return `<button type="button" class="slot ${o.done?'done':''} ${isAct(p)?'act':''}" data-go="${o.id}" style="--c:${p.color}" title="${esc(n.join(', ')||'אין תלמידים משובצים')}"><b>${esc(p.name)}</b><span>${cls.map(esc).join(', ')}${n.length?'':' · ⚠'}</span></button>`};
+    return `<button type="button" class="slot ${o.done?'done':''} ${isAct(p)?'act':''}" data-go="${o.id}" style="--c:${p.color}" title="${esc(n.join(', ')||'אין תלמידים משובצים')}"><b>${esc(p.name)}</b><span>${cls.map(esc).join(', ')}${n.length?'':' · ⚠'}</span><i class="sx" data-del-o="${o.id}" role="button" aria-label="מחיקת השיבוץ" title="מחיקת השיבוץ">✕</i></button>`};
   document.getElementById('tt').innerHTML=`<table class="tt"><thead><tr><th></th>${dates.map((d,i)=>`<th class="${d===today?'now':''}">${DAYS[i]}<small>${f(d)}</small></th>`).join('')}</tr></thead><tbody>
     ${rows.map(h=>`<tr><th>${h?'שעה '+h:'ללא שעה'}${HOUR_TIMES[h]?`<small>${HOUR_TIMES[h]}</small>`:''}</th>${dates.map(d=>`<td class="${d===today?'now':''}" data-d="${d}" data-h="${h}" title="לחיצה: שיבוץ בשעה הזו">${(by[d+'|'+h]||[]).map(slot).join('')}<button type="button" class="addhint" aria-label="שיבוץ נוסף בשעה הזו">+</button></td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
 document.getElementById('wkPrev').addEventListener('click',()=>{WK--;renderWeek()});
 document.getElementById('wkNext').addEventListener('click',()=>{WK++;if(WK>2)toast('יציאות קבועות משובצות רק שבועיים קדימה');renderWeek()});
 document.getElementById('wkToday').addEventListener('click',()=>{WK=0;renderWeek()});
-document.getElementById('tt').addEventListener('click',e=>{const b=e.target.closest('[data-go]');
+document.getElementById('tt').addEventListener('click',e=>{
+  const x=e.target.closest('[data-del-o]');if(x){e.stopPropagation();openDel(x.dataset.delO);return}
+  const b=e.target.closest('[data-go]');
   if(!b){const td=e.target.closest('td[data-d]');if(td)openCell(td.dataset.d,+td.dataset.h);return}
   const c=document.getElementById('o-'+b.dataset.go);if(!c)return;c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.remove('flash');void c.offsetWidth;c.classList.add('flash')});
 
@@ -424,6 +438,28 @@ document.getElementById('cellForm').addEventListener('submit',e=>{e.preventDefau
     const n=ensureRecurring();toast(`${pat(pid).name} שובצה כל יום ${DAYS[dow(C.d)]}${hour?' '+hour:''} · ${n} יציאות קרובות`)}
   document.getElementById('cellGate').hidden=true;save();renderOut();renderStu();
 });
+
+/* ---- delete from the timetable ---- */
+let DEL=null;
+function openDel(id){
+  const o=S.outings.find(x=>x.id===id);if(!o)return;DEL=o;
+  const p=pat(o.patrol),d=new Date(o.date+'T12:00'),r=o.rule&&(S.rules||[]).find(x=>x.id===o.rule);
+  document.getElementById('delSub').textContent=`${p.name} · יום ${DAYS[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}${o.hour?' · '+o.hour:''} · ${Object.keys(o.picks).join(', ')}`;
+  document.getElementById('delAll').hidden=!r;
+  document.getElementById('delOne').textContent=r?'מחק רק את השבוע הזה':'מחק את השיבוץ';
+  document.getElementById('delGate').hidden=false;
+}
+const closeDel=()=>{document.getElementById('delGate').hidden=true;DEL=null};
+document.getElementById('delCancel').addEventListener('click',closeDel);
+document.getElementById('delGate').addEventListener('click',e=>{if(e.target.id==='delGate')closeDel()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&DEL)closeDel()});
+document.getElementById('delOne').addEventListener('click',()=>{const o=DEL;if(!o)return;
+  const r=o.rule&&(S.rules||[]).find(x=>x.id===o.rule);if(r){r.skip=r.skip||[];r.skip.push(o.date)}
+  S.outings=S.outings.filter(x=>x!==o);closeDel();save();renderOut();renderStu();toast(r?'השיבוץ בוטל לשבוע הזה בלבד':'השיבוץ נמחק')});
+document.getElementById('delAll').addEventListener('click',()=>{const o=DEL;if(!o||!o.rule)return;
+  const today=iso(new Date());S.rules=S.rules.filter(r=>r.id!==o.rule);
+  S.outings=S.outings.filter(x=>!(x.rule===o.rule&&!x.done&&x.date>=today)&&x!==o);
+  closeDel();save();renderOut();renderStu();toast('השיבוץ הקבוע הופסק, וכל היציאות הבאות שלו נמחקו')});
 
 /* fairness */
 function counts(st,exceptId){
