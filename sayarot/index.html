@@ -162,7 +162,8 @@ table.tt{width:100%;min-width:720px;border-collapse:separate;border-spacing:4px;
 table.tt th{font-size:12.5px;font-weight:700;color:var(--muted);padding:6px 4px;text-align:center}
 table.tt thead th small{display:block;font-weight:500;color:var(--faint);font-variant-numeric:tabular-nums}
 table.tt thead th.now{color:var(--primary)}
-table.tt tbody th{width:64px;white-space:nowrap}
+table.tt tbody th{width:84px;white-space:nowrap}
+table.tt tbody th small{display:block;font-weight:500;color:var(--faint);font-size:11px;font-variant-numeric:tabular-nums;direction:ltr}
 table.tt td{background:var(--sunk);border-radius:10px;height:46px;padding:4px;vertical-align:top}
 table.tt td.now{background:var(--primary-soft)}
 .slot{font:inherit;display:flex;flex-direction:column;width:100%;text-align:right;border:none;border-inline-start:4px solid var(--c);border-radius:8px;background:color-mix(in srgb,var(--c) 14%,var(--card));color:var(--ink);padding:4px 7px;cursor:pointer;margin-bottom:3px}
@@ -271,7 +272,7 @@ table.list .bar i{right:0}
                 <label class="f" style="grid-column:1/-1">סיירת<select id="nPatrol"></select></label>
                 <label class="f" id="fDate">תאריך<input type="date" id="nDate"></label>
                 <label class="f" id="fDay" hidden>יום בשבוע<select id="nDay"><option value="0">ראשון</option><option value="1">שני</option><option value="2">שלישי</option><option value="3">רביעי</option><option value="4">חמישי</option><option value="5">שישי</option></select></label>
-                <label class="f">שעה<select id="nHour"><option value="">ללא שעה קבועה</option><option value="שעה 1">שעה 1</option><option value="שעה 2">שעה 2</option><option value="שעה 3">שעה 3</option><option value="שעה 4">שעה 4</option><option value="שעה 5">שעה 5</option><option value="שעה 6">שעה 6</option><option value="שעה 7">שעה 7</option><option value="שעה 8">שעה 8</option></select></label>
+                <label class="f">שעה<select id="nHour"><option value="">ללא שעה קבועה</option><option value="שעה 1">שעה 1 · 8:00–9:05</option><option value="שעה 2">שעה 2 · 9:20–10:05</option><option value="שעה 3">שעה 3 · 10:30–11:15</option><option value="שעה 4">שעה 4 · 11:15–11:55</option><option value="שעה 5">שעה 5 · 12:10–12:55</option><option value="שעה 6">שעה 6 · 12:55–13:25</option></select></label>
                 <label class="f" id="fStart" hidden>החל מתאריך<input type="date" id="nStart"></label>
               </div>
               <div id="fDays" hidden><div class="lbl">באילו ימים</div><div class="pick" id="nDays"></div></div>
@@ -332,20 +333,22 @@ const iso=d=>{const z=new Date(d);z.setMinutes(z.getMinutes()-z.getTimezoneOffse
 function sample(){return {classes:[],students:[],patrols:[],rules:[],outings:[],sample:false}}
 
 /* ---- weekly timetable: rows = school hours, columns = Sun–Fri ---- */
-let WK=0;const HOURS=[1,2,3,4,5,6,7,8];
+let WK=0;const HOURS=[1,2,3,4,5,6];
+const HOUR_TIMES={1:'8:00–9:05',2:'9:20–10:05',3:'10:30–11:15',4:'11:15–11:55',5:'12:10–12:55',6:'12:55–13:25'};
 const hourNum=h=>{const m=String(h||'').match(/\d+/);return m?+m[0]:0};
 function renderWeek(){
   const sun=new Date();sun.setHours(12,0,0,0);sun.setDate(sun.getDate()-sun.getDay()+WK*7);
   const dates=[0,1,2,3,4,5].map(i=>{const d=new Date(sun);d.setDate(d.getDate()+i);return iso(d)});
   const today=iso(new Date()),by={};
   S.outings.forEach(o=>{if(dates.includes(o.date)){const k=o.date+'|'+hourNum(o.hour);(by[k]=by[k]||[]).push(o)}});
-  const rows=dates.some(d=>by[d+'|0'])?[...HOURS,0]:HOURS;
+  const extra=[...new Set(Object.keys(by).map(k=>+k.split('|')[1]))].filter(h=>h&&!HOURS.includes(h)).sort((x,y)=>x-y);
+  const rows=[...HOURS,...extra,...(dates.some(d=>by[d+'|0'])?[0]:[])];
   const f=s=>{const d=new Date(s+'T12:00');return d.getDate()+'.'+(d.getMonth()+1)};
   document.getElementById('weekTitle').textContent=`מערכת השבוע · ${f(dates[0])} עד ${f(dates[5])}`;
   const slot=o=>{const p=pat(o.patrol),cls=Object.keys(o.picks),n=Object.values(o.picks).flat().map(id=>(stu(id)||{}).name).filter(Boolean);
     return `<button type="button" class="slot ${o.done?'done':''}" data-go="${o.id}" style="--c:${p.color}" title="${esc(n.join(', ')||'אין תלמידים משובצים')}"><b>${esc(p.name)}</b><span>${cls.map(esc).join(', ')}${n.length?'':' · ⚠'}</span></button>`};
   document.getElementById('tt').innerHTML=`<table class="tt"><thead><tr><th></th>${dates.map((d,i)=>`<th class="${d===today?'now':''}">${DAYS[i]}<small>${f(d)}</small></th>`).join('')}</tr></thead><tbody>
-    ${rows.map(h=>`<tr><th>${h?'שעה '+h:'ללא שעה'}</th>${dates.map(d=>`<td class="${d===today?'now':''}">${(by[d+'|'+h]||[]).map(slot).join('')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    ${rows.map(h=>`<tr><th>${h?'שעה '+h:'ללא שעה'}${HOUR_TIMES[h]?`<small>${HOUR_TIMES[h]}</small>`:''}</th>${dates.map(d=>`<td class="${d===today?'now':''}">${(by[d+'|'+h]||[]).map(slot).join('')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
 document.getElementById('wkPrev').addEventListener('click',()=>{WK--;renderWeek()});
 document.getElementById('wkNext').addEventListener('click',()=>{WK++;if(WK>2)toast('יציאות קבועות משובצות רק שבועיים קדימה');renderWeek()});
@@ -577,7 +580,7 @@ function renderOut(){
     const rule=o.rule&&(S.rules||[]).find(r=>r.id===o.rule);
     const kind=rule?`<span class="chip">⟳ ${rule.freq==='daily'?'יומית':'שבועית'}${rule.who==='all'?'':' בסבב'}</span>`:'';
     return head+`<div class="card ${o.done?'done':''}" id="o-${o.id}" style="--c:${p.color}">
-      <div class="when"><b>${d.getDate()}.${d.getMonth()+1}</b><small>יום ${DAYS[d.getDay()]}</small>${o.hour?`<small>${esc(o.hour)}</small>`:''}</div>
+      <div class="when"><b>${d.getDate()}.${d.getMonth()+1}</b><small>יום ${DAYS[d.getDay()]}</small>${o.hour?`<small>${esc(o.hour)}${HOUR_TIMES[hourNum(o.hour)]?' · '+HOUR_TIMES[hourNum(o.hour)]:''}</small>`:''}</div>
       <div class="what"><div class="ttl">${esc(p.name)} ${kind} ${team} ${st}</div>
         <div class="cls">${Object.entries(o.picks).map(([c,ids])=>{
           const free=S.students.filter(s=>s.cls===c&&!ids.includes(s.id));
