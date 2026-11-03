@@ -173,6 +173,11 @@ table.tt td.now{background:var(--primary-soft)}
 .slot.done{opacity:.6}
 .card.flash{animation:flash 1.4s ease-out}
 @keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--c)}100%{box-shadow:none}}
+/* activities (not patrols) */
+.sec-h{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.sec-h h2{margin:0;font-size:17px}
+.sec-h .btn{margin-inline-start:auto}
+.slot.act{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--c) 10%,var(--card)) 0 6px,var(--card) 6px 12px);border-inline-start-style:dashed}
 /* sync + name gate */
 .topacts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
 .mebtn{font:inherit;border:none;cursor:pointer;color:var(--ink)}
@@ -234,7 +239,7 @@ table.list .bar i{right:0}
     <h6>ניווט</h6>
     <nav class="nav" role="tablist">
       <button role="tab" data-tab="out" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>לוח יציאות<span class="count" id="outCount"></span></button>
-      <button role="tab" data-tab="pat" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg>סיירות</button>
+      <button role="tab" data-tab="pat" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg>סיירות ופעילויות</button>
       <button role="tab" data-tab="stu" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c1.9.6 3.1 2.5 3.5 5.5"/></svg>תלמידים</button>
     </nav>
     <div class="rail-foot" id="railFoot">לוח משותף לצוות שכבת ו׳</div>
@@ -289,8 +294,10 @@ table.list .bar i{right:0}
 
       <!-- PATROLS -->
       <section class="view" id="tab-pat" hidden>
+        <div class="sec-h"><h2>סיירות</h2><button class="btn primary sm" id="addPatrol">+ סיירת חדשה</button></div>
         <div class="grid2" id="patList"></div>
-        <div><button class="btn primary" id="addPatrol">+ סיירת חדשה</button></div>
+        <div class="sec-h"><h2>פעילויות קבועות</h2><span class="hint">לא סיירות, למשל גינון ותגבור. מופיעות במערכת כדי לראות מי יוצא מהכיתה.</span><button class="btn sm" id="addAct">+ פעילות חדשה</button></div>
+        <div class="grid2" id="actList"></div>
       </section>
 
       <!-- STUDENTS -->
@@ -346,7 +353,7 @@ function renderWeek(){
   const f=s=>{const d=new Date(s+'T12:00');return d.getDate()+'.'+(d.getMonth()+1)};
   document.getElementById('weekTitle').textContent=`מערכת השבוע · ${f(dates[0])} עד ${f(dates[5])}`;
   const slot=o=>{const p=pat(o.patrol),cls=Object.keys(o.picks),n=Object.values(o.picks).flat().map(id=>(stu(id)||{}).name).filter(Boolean);
-    return `<button type="button" class="slot ${o.done?'done':''}" data-go="${o.id}" style="--c:${p.color}" title="${esc(n.join(', ')||'אין תלמידים משובצים')}"><b>${esc(p.name)}</b><span>${cls.map(esc).join(', ')}${n.length?'':' · ⚠'}</span></button>`};
+    return `<button type="button" class="slot ${o.done?'done':''} ${isAct(p)?'act':''}" data-go="${o.id}" style="--c:${p.color}" title="${esc(n.join(', ')||'אין תלמידים משובצים')}"><b>${esc(p.name)}</b><span>${cls.map(esc).join(', ')}${n.length?'':' · ⚠'}</span></button>`};
   document.getElementById('tt').innerHTML=`<table class="tt"><thead><tr><th></th>${dates.map((d,i)=>`<th class="${d===today?'now':''}">${DAYS[i]}<small>${f(d)}</small></th>`).join('')}</tr></thead><tbody>
     ${rows.map(h=>`<tr><th>${h?'שעה '+h:'ללא שעה'}${HOUR_TIMES[h]?`<small>${HOUR_TIMES[h]}</small>`:''}</th>${dates.map(d=>`<td class="${d===today?'now':''}">${(by[d+'|'+h]||[]).map(slot).join('')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
@@ -436,7 +443,7 @@ function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show')
 function memberships(id){return S.patrols.filter(p=>p.mode==='team'&&(p.members||[]).includes(id))}
 function armConfirm(b,label){if(b.dataset.sure)return true;b.dataset.sure=1;b.textContent=label||'בטוח? לחץ שוב';setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;renderAll()}},3500);return false}
 
-const TITLES={out:'לוח יציאות',pat:'סיירות',stu:'תלמידים'};
+const TITLES={out:'לוח יציאות',pat:'סיירות ופעילויות',stu:'תלמידים'};
 document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.nav button').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
   for(const t in TITLES) $('#tab-'+t).hidden=t!==b.dataset.tab;
@@ -455,12 +462,13 @@ function renderHero(){
   const nd=next?new Date(next.date+'T12:00'):null;
   $('#hero').innerHTML=`<h2>${next?`היציאה הבאה: ${esc(pat(next.patrol).name)}`:'אין יציאות מתוכננות'}</h2>
     <p>${next?`יום ${DAYS[nd.getDay()]}, ${nd.getDate()}.${nd.getMonth()+1} · ${Object.keys(next.picks).map(esc).join(', ')}`:'צרו יציאה חדשה בצד, והמערכת תבחר את התלמידים.'}</p>
-    <div class="hstats"><div class="hs"><b>${up.length}</b>יציאות קרובות</div><div class="hs"><b>${kids.size}</b>תלמידים משובצים</div><div class="hs"><b>${S.patrols.length}</b>סיירות</div><div class="hs"><b>${gap}</b>פער מקסימלי בכיתה</div></div>`;
+    <div class="hstats"><div class="hs"><b>${up.length}</b>יציאות קרובות</div><div class="hs"><b>${kids.size}</b>תלמידים משובצים</div><div class="hs"><b>${S.patrols.filter(p=>!isAct(p)).length}</b>סיירות</div><div class="hs"><b>${gap}</b>פער מקסימלי בכיתה</div></div>`;
   $('#outCount').textContent=up.length||'';
 }
 function renderNew(){
   const sel=$('#nPatrol'),cur=sel.value;
-  sel.innerHTML=S.patrols.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  const opt=p=>`<option value="${p.id}">${esc(p.name)}</option>`;
+  sel.innerHTML=`<optgroup label="סיירות">${S.patrols.filter(p=>!isAct(p)).map(opt).join('')}</optgroup><optgroup label="פעילויות קבועות">${S.patrols.filter(isAct).map(opt).join('')}</optgroup>`;
   if(S.patrols.some(p=>p.id===cur))sel.value=cur;
   if(!F.editing)syncClasses();
   if(!$('#nDate').value)$('#nDate').value=iso(new Date());
@@ -581,7 +589,7 @@ function renderOut(){
     const kind=rule?`<span class="chip">⟳ ${rule.freq==='daily'?'יומית':'שבועית'}${rule.who==='all'?'':' בסבב'}</span>`:'';
     return head+`<div class="card ${o.done?'done':''}" id="o-${o.id}" style="--c:${p.color}">
       <div class="when"><b>${d.getDate()}.${d.getMonth()+1}</b><small>יום ${DAYS[d.getDay()]}</small>${o.hour?`<small>${esc(o.hour)}${HOUR_TIMES[hourNum(o.hour)]?' · '+HOUR_TIMES[hourNum(o.hour)]:''}</small>`:''}</div>
-      <div class="what"><div class="ttl">${esc(p.name)} ${kind} ${team} ${st}</div>
+      <div class="what"><div class="ttl">${esc(p.name)} ${isAct(p)?'<span class="chip">פעילות, לא סיירת</span>':''} ${kind} ${team} ${st}</div>
         <div class="cls">${Object.entries(o.picks).map(([c,ids])=>{
           const free=S.students.filter(s=>s.cls===c&&!ids.includes(s.id));
           return `<div class="cl"><b>${esc(c)}</b>${ids.length?'':'<span class="chip gold">אין חברי סיירת בכיתה — הוסיפו בלשונית סיירות</span>'}${ids.map(id=>{const s=stu(id);return s?`<button class="kid" data-o="${o.id}" data-c="${esc(c)}" data-s="${id}" title="החלפה בבא בתור">${esc(s.name)}<span class="x" data-x title="הסרה מהיציאה">✕</span></button>`:''}).join('')}
@@ -626,24 +634,28 @@ function renderFair(){
 }
 
 /* ---- patrols ---- */
+const isAct=p=>p&&p.kind==='activity';
+const kindWord=p=>isAct(p)?'הפעילות':'הסיירת';
 function renderPat(){
-  $('#patList').innerHTML=S.patrols.map(p=>`<div class="w" data-p="${p.id}" style="--c:${p.color}">
-    <div class="w-h"><div style="display:flex;gap:10px;align-items:center;flex:1;min-width:0"><span class="pi">${icon(p.icon)}</span><input class="pname" id="pn-${p.id}" data-f="name" value="${esc(p.name)}" aria-label="שם הסיירת"></div></div>
+  const card=p=>`<div class="w" data-p="${p.id}" style="--c:${p.color}">
+    <div class="w-h"><div style="display:flex;gap:10px;align-items:center;flex:1;min-width:0"><span class="pi">${icon(p.icon)}</span><input class="pname" id="pn-${p.id}" data-f="name" value="${esc(p.name)}" aria-label="שם"></div></div>
     <div class="w-b">
       <div class="fields">
 
         <div class="f"><span style="font-size:12.5px;font-weight:600;color:var(--muted)">צבע</span><div class="swatches">${COLORS.map(c=>`<button type="button" data-color="${c}" style="--c:${c}" aria-pressed="${c===p.color}" aria-label="צבע"></button>`).join('')}</div></div>
       </div>
-      <div class="lbl">כיתות שיש להן סיירת</div>
+      <div class="lbl">כיתות שמשתתפות</div>
       <div class="pick">${S.classes.map((c,i)=>`<label><input type="checkbox" id="pc-${p.id}-${i}" data-f="cls" value="${esc(c)}" ${p.classes.includes(c)?'checked':''}>${esc(c)}</label>`).join('')}</div>
-      <div class="lbl">חברי הסיירת</div>
+      <div class="lbl">${isAct(p)?"משתתפים":"חברי הסיירת"}</div>
 
 
 
 
       ${teamHtml(p)}
-      <div class="actions" style="margin-top:14px"><button class="btn sm ghost danger" data-del="${p.id}">מחק סיירת</button></div>
-    </div></div>`).join('');
+      <div class="actions" style="margin-top:14px"><button class="btn sm ghost" data-kind="${p.id}">${isAct(p)?'העבר לסיירות':'העבר לפעילויות'}</button><button class="btn sm ghost danger" data-del="${p.id}">מחק ${kindWord(p)}</button></div>
+    </div></div>`;
+  $('#patList').innerHTML=S.patrols.filter(p=>!isAct(p)).map(card).join('')||'<div class="empty">אין סיירות</div>';
+  $('#actList').innerHTML=S.patrols.filter(isAct).map(card).join('')||'<div class="empty">אין עדיין פעילויות קבועות</div>';
 }
 function teamHtml(p){
   const m=p.members||[];
@@ -668,8 +680,10 @@ function patEdit(e){
   save();if(e.type==='change'){renderNew();renderOut()}
 }
 $('#patList').addEventListener('input',patEdit);
+$('#actList').addEventListener('input',patEdit);
 $('#patList').addEventListener('change',patEdit);
-$('#patList').addEventListener('click',e=>{
+$('#actList').addEventListener('change',patEdit);
+function patClick(e){
   const card=e.target.closest('[data-p]');if(!card)return;
   const p=S.patrols.find(x=>x.id===card.dataset.p);
   const sw=e.target.closest('[data-color]');
@@ -685,12 +699,21 @@ $('#patList').addEventListener('click',e=>{
     }
     save();renderPat();renderStu();toast(added?`צורפו ${added} תלמידים, קודם מי שבפחות צוותים`:'הצוות כבר מלא');return}
   const del=e.target.closest('[data-del]');
-  if(del){if(!armConfirm(del))return;S.patrols=S.patrols.filter(x=>x!==p);save();renderAll();toast('הסיירת נמחקה')}
-});
+  if(del){if(!armConfirm(del))return;S.patrols=S.patrols.filter(x=>x!==p);save();renderAll();toast(isAct(p)?'הפעילות נמחקה':'הסיירת נמחקה');return}
+  const kb=e.target.closest('[data-kind]');
+  if(kb){p.kind=isAct(p)?'sayeret':'activity';save();renderAll();toast(isAct(p)?'הועבר לפעילויות קבועות':'הועבר לסיירות')}
+}
+$('#patList').addEventListener('click',patClick);
+$('#actList').addEventListener('click',patClick);
 $('#addPatrol').addEventListener('click',()=>{
   const n=S.patrols.length;
   S.patrols.push({id:uid(),name:'סיירת חדשה',color:COLORS[n%COLORS.length],icon:Object.keys(ICONS)[n%Object.keys(ICONS).length],per:1,classes:[...S.classes],mode:'team',members:[],team:3});
   save();renderAll();toast('נוספה סיירת');
+});
+$('#addAct').addEventListener('click',()=>{
+  const n=S.patrols.length;
+  S.patrols.push({id:uid(),name:'פעילות חדשה',kind:'activity',color:COLORS[n%COLORS.length],icon:'flag',per:1,classes:[...S.classes],mode:'team',members:[],team:3});
+  save();renderAll();toast('נוספה פעילות');
 });
 
 /* ---- students ---- */
