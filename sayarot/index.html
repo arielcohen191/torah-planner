@@ -156,6 +156,22 @@ select.add{width:auto;font-size:12.5px;padding:3px 8px;border-radius:99px;backgr
 .frow .rng{justify-self:end;font-size:12px;font-weight:700;border-radius:99px;padding:2px 8px;font-variant-numeric:tabular-nums;background:var(--ok-soft);color:var(--ok)}
 .frow .rng.warn{background:var(--gold-soft);color:var(--gold)}
 
+/* weekly timetable */
+.tt-wrap{overflow-x:auto}
+table.tt{width:100%;min-width:720px;border-collapse:separate;border-spacing:4px;table-layout:fixed}
+table.tt th{font-size:12.5px;font-weight:700;color:var(--muted);padding:6px 4px;text-align:center}
+table.tt thead th small{display:block;font-weight:500;color:var(--faint);font-variant-numeric:tabular-nums}
+table.tt thead th.now{color:var(--primary)}
+table.tt tbody th{width:64px;white-space:nowrap}
+table.tt td{background:var(--sunk);border-radius:10px;height:46px;padding:4px;vertical-align:top}
+table.tt td.now{background:var(--primary-soft)}
+.slot{font:inherit;display:flex;flex-direction:column;width:100%;text-align:right;border:none;border-inline-start:4px solid var(--c);border-radius:8px;background:color-mix(in srgb,var(--c) 14%,var(--card));color:var(--ink);padding:4px 7px;cursor:pointer;margin-bottom:3px}
+.slot:hover{box-shadow:0 0 0 2px var(--c)}
+.slot b{font-size:12px;font-weight:700;line-height:1.3}
+.slot span{font-size:11.5px;color:var(--muted)}
+.slot.done{opacity:.6}
+.card.flash{animation:flash 1.4s ease-out}
+@keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--c)}100%{box-shadow:none}}
 /* sync + name gate */
 .topacts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
 .mebtn{font:inherit;border:none;cursor:pointer;color:var(--ink)}
@@ -233,6 +249,7 @@ table.list .bar i{right:0}
       <!-- OUTINGS -->
       <section class="view" id="tab-out">
         <div class="hero" id="hero"></div>
+        <div class="w" id="weekW"><div class="w-h"><h2 id="weekTitle">מערכת השבוע</h2><div class="actions"><button class="btn sm" id="wkPrev" type="button">→ שבוע קודם</button><button class="btn sm" id="wkToday" type="button">השבוע</button><button class="btn sm" id="wkNext" type="button">שבוע הבא ←</button></div></div><div class="w-b"><div class="tt-wrap" id="tt"></div><p class="hint" style="margin-top:8px">לחיצה על סיירת בטבלה מראה את התלמידים שיוצאים.</p></div></div>
         <div class="wgrid">
           <div class="w"><div class="w-h"><h2>יציאות</h2><span class="hint">לחיצה על שם = הבא בתור · ✕ = הסרה</span></div><div class="w-b" id="outList"></div></div>
           <div class="side">
@@ -254,7 +271,7 @@ table.list .bar i{right:0}
                 <label class="f" style="grid-column:1/-1">סיירת<select id="nPatrol"></select></label>
                 <label class="f" id="fDate">תאריך<input type="date" id="nDate"></label>
                 <label class="f" id="fDay" hidden>יום בשבוע<select id="nDay"><option value="0">ראשון</option><option value="1">שני</option><option value="2">שלישי</option><option value="3">רביעי</option><option value="4">חמישי</option><option value="5">שישי</option></select></label>
-                <label class="f">שעה<input id="nHour" placeholder="למשל: שעה 4"></label>
+                <label class="f">שעה<select id="nHour"><option value="">ללא שעה קבועה</option><option value="שעה 1">שעה 1</option><option value="שעה 2">שעה 2</option><option value="שעה 3">שעה 3</option><option value="שעה 4">שעה 4</option><option value="שעה 5">שעה 5</option><option value="שעה 6">שעה 6</option><option value="שעה 7">שעה 7</option><option value="שעה 8">שעה 8</option></select></label>
                 <label class="f" id="fStart" hidden>החל מתאריך<input type="date" id="nStart"></label>
               </div>
               <div id="fDays" hidden><div class="lbl">באילו ימים</div><div class="pick" id="nDays"></div></div>
@@ -313,6 +330,28 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 const iso=d=>{const z=new Date(d);z.setMinutes(z.getMinutes()-z.getTimezoneOffset());return z.toISOString().slice(0,10)};
 
 function sample(){return {classes:[],students:[],patrols:[],rules:[],outings:[],sample:false}}
+
+/* ---- weekly timetable: rows = school hours, columns = Sun–Fri ---- */
+let WK=0;const HOURS=[1,2,3,4,5,6,7,8];
+const hourNum=h=>{const m=String(h||'').match(/\d+/);return m?+m[0]:0};
+function renderWeek(){
+  const sun=new Date();sun.setHours(12,0,0,0);sun.setDate(sun.getDate()-sun.getDay()+WK*7);
+  const dates=[0,1,2,3,4,5].map(i=>{const d=new Date(sun);d.setDate(d.getDate()+i);return iso(d)});
+  const today=iso(new Date()),by={};
+  S.outings.forEach(o=>{if(dates.includes(o.date)){const k=o.date+'|'+hourNum(o.hour);(by[k]=by[k]||[]).push(o)}});
+  const rows=dates.some(d=>by[d+'|0'])?[...HOURS,0]:HOURS;
+  const f=s=>{const d=new Date(s+'T12:00');return d.getDate()+'.'+(d.getMonth()+1)};
+  document.getElementById('weekTitle').textContent=`מערכת השבוע · ${f(dates[0])} עד ${f(dates[5])}`;
+  const slot=o=>{const p=pat(o.patrol),cls=Object.keys(o.picks),n=Object.values(o.picks).flat().map(id=>(stu(id)||{}).name).filter(Boolean);
+    return `<button type="button" class="slot ${o.done?'done':''}" data-go="${o.id}" style="--c:${p.color}" title="${esc(n.join(', ')||'אין תלמידים משובצים')}"><b>${esc(p.name)}</b><span>${cls.map(esc).join(', ')}${n.length?'':' · ⚠'}</span></button>`};
+  document.getElementById('tt').innerHTML=`<table class="tt"><thead><tr><th></th>${dates.map((d,i)=>`<th class="${d===today?'now':''}">${DAYS[i]}<small>${f(d)}</small></th>`).join('')}</tr></thead><tbody>
+    ${rows.map(h=>`<tr><th>${h?'שעה '+h:'ללא שעה'}</th>${dates.map(d=>`<td class="${d===today?'now':''}">${(by[d+'|'+h]||[]).map(slot).join('')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+document.getElementById('wkPrev').addEventListener('click',()=>{WK--;renderWeek()});
+document.getElementById('wkNext').addEventListener('click',()=>{WK++;if(WK>2)toast('יציאות קבועות משובצות רק שבועיים קדימה');renderWeek()});
+document.getElementById('wkToday').addEventListener('click',()=>{WK=0;renderWeek()});
+document.getElementById('tt').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(!b)return;
+  const c=document.getElementById('o-'+b.dataset.go);if(!c)return;c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.remove('flash');void c.offsetWidth;c.classList.add('flash')});
 
 /* fairness */
 function counts(st,exceptId){
@@ -537,7 +576,7 @@ function renderOut(){
     const team='';
     const rule=o.rule&&(S.rules||[]).find(r=>r.id===o.rule);
     const kind=rule?`<span class="chip">⟳ ${rule.freq==='daily'?'יומית':'שבועית'}${rule.who==='all'?'':' בסבב'}</span>`:'';
-    return head+`<div class="card ${o.done?'done':''}" style="--c:${p.color}">
+    return head+`<div class="card ${o.done?'done':''}" id="o-${o.id}" style="--c:${p.color}">
       <div class="when"><b>${d.getDate()}.${d.getMonth()+1}</b><small>יום ${DAYS[d.getDay()]}</small>${o.hour?`<small>${esc(o.hour)}</small>`:''}</div>
       <div class="what"><div class="ttl">${esc(p.name)} ${kind} ${team} ${st}</div>
         <div class="cls">${Object.entries(o.picks).map(([c,ids])=>{
@@ -549,7 +588,7 @@ function renderOut(){
         <button class="btn sm ghost" data-act="redo" data-o="${o.id}">שבץ מחדש</button>
         <button class="btn sm ghost danger" data-act="del" data-o="${o.id}">מחק</button>
       </div></div>`}).join(''):'<div class="empty">עוד אין יציאות. צרו יציאה ראשונה בצד.</div>';
-  renderHero();renderFair();renderRules();
+  renderHero();renderFair();renderRules();renderWeek();
 }
 $('#outList').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
