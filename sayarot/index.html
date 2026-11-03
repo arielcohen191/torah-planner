@@ -434,7 +434,11 @@ document.getElementById('cellForm').addEventListener('submit',e=>{e.preventDefau
   if(!pid||!cls.length){toast('בחרו סיירת ולפחות כיתה אחת');return}
   const hour=C.h?'שעה '+C.h:'';
   if(C.freq==='once'){const o=makeOuting(S,pid,C.d,cls);o.hour=hour;S.outings.push(o);toast(`${pat(pid).name} שובצה ל־${C.d.slice(8)*1}.${C.d.slice(5,7)*1}`)}
-  else{S.rules=S.rules||[];S.rules.push({id:uid(),patrol:pid,freq:'weekly',who:C.who,days:[dow(C.d)],hour,classes:cls,start:C.d,skip:[]});
+  else{S.rules=S.rules||[];
+    const dup=S.rules.find(r=>r.patrol===pid&&ruleDays(r).includes(dow(C.d))&&(r.hour||'')===hour);
+    if(dup){toast(`${pat(pid).name} כבר משובצת כל יום ${DAYS[dow(C.d)]}${hour?' '+hour:''}. לשינוי: "עריכה" ברשימת היציאות הקבועות.`);return}
+    const wkStart=addDays(C.d,-dow(C.d));
+    S.rules.push({id:uid(),patrol:pid,freq:'weekly',who:C.who,days:[dow(C.d)],hour,classes:cls,start:wkStart,skip:[]});
     const n=ensureRecurring();toast(`${pat(pid).name} שובצה כל יום ${DAYS[dow(C.d)]}${hour?' '+hour:''} · ${n} יציאות קרובות`)}
   document.getElementById('cellGate').hidden=true;save();renderOut();renderStu();
 });
@@ -633,14 +637,15 @@ function addDays(s,n){const d=new Date(s+'T12:00');d.setDate(d.getDate()+n);retu
 const dow=s=>new Date(s+'T12:00').getDay();
 function ruleDays(r){return r.days||(r.day!=null?[+r.day]:[])}
 function ensureRecurring(){
-  S.rules=S.rules||[];const today=iso(new Date()),until=addDays(today,HORIZON);let added=0;
+  /* fill from this week's Sunday, so days already past this week still show in the timetable */
+  S.rules=S.rules||[];const now=new Date(),wk0=iso(new Date(now.getFullYear(),now.getMonth(),now.getDate()-now.getDay(),12)),until=addDays(iso(now),HORIZON);let added=0;
   for(const r of S.rules){
     if(!S.patrols.some(p=>p.id===r.patrol))continue;
     const days=ruleDays(r);let k=0;
     for(let d=r.start;d<=until;d=addDays(d,1)){
       if(!days.includes(dow(d)))continue;
       const idx=k++;
-      if(d<today||(r.skip||[]).includes(d)||S.outings.some(o=>o.rule===r.id&&o.date===d))continue;
+      if(d<wk0||(r.skip||[]).includes(d)||S.outings.some(o=>o.rule===r.id&&o.date===d))continue;
       const cls=r.who==='all'?r.classes:[r.classes[idx%r.classes.length]];
       const o=makeOuting(S,r.patrol,d,cls);o.rule=r.id;o.hour=r.hour;S.outings.push(o);added++;
     }
