@@ -178,6 +178,16 @@ table.tt td.now{background:var(--primary-soft)}
 .sec-h h2{margin:0;font-size:17px}
 .sec-h .btn{margin-inline-start:auto}
 .slot.act{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--c) 10%,var(--card)) 0 6px,var(--card) 6px 12px);border-inline-start-style:dashed}
+/* cell scheduling */
+table.tt td{cursor:pointer;position:relative}
+table.tt td:hover{box-shadow:inset 0 0 0 2px var(--primary-soft)}
+table.tt td .addhint{position:absolute;inset-inline-start:4px;bottom:2px;font:inherit;font-weight:700;color:var(--primary);background:none;border:none;opacity:0;font-size:15px;cursor:pointer;padding:0 4px;border-radius:6px}
+table.tt td:has(.slot) .addhint{opacity:.55;position:static;display:block;margin-inline-start:auto;line-height:1}
+table.tt td:hover .addhint,table.tt td:focus-within .addhint{opacity:.8}
+@media (hover:none){table.tt td:not(:has(.slot)) .addhint{opacity:.35}}
+.cell-card{text-align:right;width:min(440px,100%);max-height:calc(100vh - 40px);overflow:auto}
+.cell-card h2,.cell-card>p{text-align:center}
+.taken{border-radius:10px;padding:9px 12px;font-size:13px;background:var(--gold-soft);color:var(--gold)}
 /* sync + name gate */
 .topacts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
 .mebtn{font:inherit;border:none;cursor:pointer;color:var(--ink)}
@@ -255,7 +265,7 @@ table.list .bar i{right:0}
       <!-- OUTINGS -->
       <section class="view" id="tab-out">
         <div class="hero" id="hero"></div>
-        <div class="w" id="weekW"><div class="w-h"><h2 id="weekTitle">מערכת השבוע</h2><div class="actions"><button class="btn sm" id="wkPrev" type="button">→ שבוע קודם</button><button class="btn sm" id="wkToday" type="button">השבוע</button><button class="btn sm" id="wkNext" type="button">שבוע הבא ←</button></div></div><div class="w-b"><div class="tt-wrap" id="tt"></div><p class="hint" style="margin-top:8px">לחיצה על סיירת בטבלה מראה את התלמידים שיוצאים.</p></div></div>
+        <div class="w" id="weekW"><div class="w-h"><h2 id="weekTitle">מערכת השבוע</h2><div class="actions"><button class="btn sm" id="wkPrev" type="button">→ שבוע קודם</button><button class="btn sm" id="wkToday" type="button">השבוע</button><button class="btn sm" id="wkNext" type="button">שבוע הבא ←</button></div></div><div class="w-b"><div class="tt-wrap" id="tt"></div><p class="hint" style="margin-top:8px">לחיצה על משבצת ריקה משבצת בה סיירת. לחיצה על סיירת קיימת מראה את התלמידים שיוצאים.</p></div></div>
         <div class="wgrid">
           <div class="w"><div class="w-h"><h2>יציאות</h2><span class="hint">לחיצה על שם = הבא בתור · ✕ = הסרה</span></div><div class="w-b" id="outList"></div></div>
           <div class="side">
@@ -277,7 +287,7 @@ table.list .bar i{right:0}
                 <label class="f" style="grid-column:1/-1">סיירת<select id="nPatrol"></select></label>
                 <label class="f" id="fDate">תאריך<input type="date" id="nDate"></label>
                 <label class="f" id="fDay" hidden>יום בשבוע<select id="nDay"><option value="0">ראשון</option><option value="1">שני</option><option value="2">שלישי</option><option value="3">רביעי</option><option value="4">חמישי</option><option value="5">שישי</option></select></label>
-                <label class="f">שעה<select id="nHour"><option value="">ללא שעה קבועה</option><option value="שעה 1">שעה 1 · 8:00–9:05</option><option value="שעה 2">שעה 2 · 9:20–10:05</option><option value="שעה 3">שעה 3 · 10:30–11:15</option><option value="שעה 4">שעה 4 · 11:15–11:55</option><option value="שעה 5">שעה 5 · 12:10–12:55</option><option value="שעה 6">שעה 6 · 12:55–13:25</option></select></label>
+                <label class="f">שעה<select id="nHour"><option value="">ללא שעה קבועה</option><option value="שעה 1">שעה 1 · ⁦8:00–9:05⁩</option><option value="שעה 2">שעה 2 · ⁦9:20–10:05⁩</option><option value="שעה 3">שעה 3 · ⁦10:30–11:15⁩</option><option value="שעה 4">שעה 4 · ⁦11:15–11:55⁩</option><option value="שעה 5">שעה 5 · ⁦12:10–12:55⁩</option><option value="שעה 6">שעה 6 · ⁦12:55–13:25⁩</option></select></label>
                 <label class="f" id="fStart" hidden>החל מתאריך<input type="date" id="nStart"></label>
               </div>
               <div id="fDays" hidden><div class="lbl">באילו ימים</div><div class="pick" id="nDays"></div></div>
@@ -319,6 +329,17 @@ table.list .bar i{right:0}
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="gate" id="cellGate" hidden><form class="gate-card cell-card" id="cellForm">
+  <h2 id="cellTitle">שיבוץ</h2><p id="cellSub"></p>
+  <div class="taken" id="cellTaken" hidden></div>
+  <label class="f">סיירת או פעילות<select id="cPatrol"></select></label>
+  <div class="lbl">לכמה זמן</div>
+  <div class="seg3 two" id="cFreq"><button type="button" data-v="once" aria-pressed="true"><b>רק הפעם</b><small>בתאריך הזה בלבד</small></button><button type="button" data-v="weekly" aria-pressed="false"><b>כל שבוע</b><small>באותו יום ושעה</small></button></div>
+  <div id="cWhoWrap" hidden><div class="lbl">מי יוצא</div>
+  <div class="seg3 two" id="cWho"><button type="button" data-v="rotate" aria-pressed="true"><b>כיתה אחת בסבב</b><small>מתחלפות משבוע לשבוע</small></button><button type="button" data-v="all" aria-pressed="false"><b>כל הכיתות יחד</b><small>הסיירת מכל הכיתות</small></button></div></div>
+  <div class="lbl" id="cClsLbl">כיתות</div><div class="pick" id="cClasses"></div>
+  <div class="actions"><button class="btn primary" id="cGo" style="flex:1;justify-content:center">שבץ</button><button class="btn" type="button" id="cCancel">ביטול</button></div>
+</form></div>
 <div class="gate" id="nameGate" hidden><form class="gate-card" id="nameForm"><div class="mark" style="margin:0 auto 12px">כ״ר</div><h2>סיירות שכבת ו׳</h2><p>כולם רואים ומעדכנים את אותו לוח. השם שלכם מופיע ליד כל עדכון.</p><label class="f">השם שלך<input id="meName" placeholder="לדוגמה: הרב אריאל" autocomplete="name"></label><button class="btn primary" style="justify-content:center">כניסה</button></form></div>
 
 <script>
@@ -341,7 +362,7 @@ function sample(){return {classes:[],students:[],patrols:[],rules:[],outings:[],
 
 /* ---- weekly timetable: rows = school hours, columns = Sun–Fri ---- */
 let WK=0;const HOURS=[1,2,3,4,5,6];
-const HOUR_TIMES={1:'8:00–9:05',2:'9:20–10:05',3:'10:30–11:15',4:'11:15–11:55',5:'12:10–12:55',6:'12:55–13:25'};
+const HOUR_TIMES={1:'\u20668:00–9:05\u2069',2:'\u20669:20–10:05\u2069',3:'\u206610:30–11:15\u2069',4:'\u206611:15–11:55\u2069',5:'\u206612:10–12:55\u2069',6:'\u206612:55–13:25\u2069'};
 const hourNum=h=>{const m=String(h||'').match(/\d+/);return m?+m[0]:0};
 function renderWeek(){
   const sun=new Date();sun.setHours(12,0,0,0);sun.setDate(sun.getDate()-sun.getDay()+WK*7);
@@ -355,13 +376,54 @@ function renderWeek(){
   const slot=o=>{const p=pat(o.patrol),cls=Object.keys(o.picks),n=Object.values(o.picks).flat().map(id=>(stu(id)||{}).name).filter(Boolean);
     return `<button type="button" class="slot ${o.done?'done':''} ${isAct(p)?'act':''}" data-go="${o.id}" style="--c:${p.color}" title="${esc(n.join(', ')||'אין תלמידים משובצים')}"><b>${esc(p.name)}</b><span>${cls.map(esc).join(', ')}${n.length?'':' · ⚠'}</span></button>`};
   document.getElementById('tt').innerHTML=`<table class="tt"><thead><tr><th></th>${dates.map((d,i)=>`<th class="${d===today?'now':''}">${DAYS[i]}<small>${f(d)}</small></th>`).join('')}</tr></thead><tbody>
-    ${rows.map(h=>`<tr><th>${h?'שעה '+h:'ללא שעה'}${HOUR_TIMES[h]?`<small>${HOUR_TIMES[h]}</small>`:''}</th>${dates.map(d=>`<td class="${d===today?'now':''}">${(by[d+'|'+h]||[]).map(slot).join('')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    ${rows.map(h=>`<tr><th>${h?'שעה '+h:'ללא שעה'}${HOUR_TIMES[h]?`<small>${HOUR_TIMES[h]}</small>`:''}</th>${dates.map(d=>`<td class="${d===today?'now':''}" data-d="${d}" data-h="${h}" title="לחיצה: שיבוץ בשעה הזו">${(by[d+'|'+h]||[]).map(slot).join('')}<button type="button" class="addhint" aria-label="שיבוץ נוסף בשעה הזו">+</button></td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
 document.getElementById('wkPrev').addEventListener('click',()=>{WK--;renderWeek()});
 document.getElementById('wkNext').addEventListener('click',()=>{WK++;if(WK>2)toast('יציאות קבועות משובצות רק שבועיים קדימה');renderWeek()});
 document.getElementById('wkToday').addEventListener('click',()=>{WK=0;renderWeek()});
-document.getElementById('tt').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(!b)return;
+document.getElementById('tt').addEventListener('click',e=>{const b=e.target.closest('[data-go]');
+  if(!b){const td=e.target.closest('td[data-d]');if(td)openCell(td.dataset.d,+td.dataset.h);return}
   const c=document.getElementById('o-'+b.dataset.go);if(!c)return;c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.remove('flash');void c.offsetWidth;c.classList.add('flash')});
+
+/* ---- schedule from a timetable cell ---- */
+const C={d:null,h:0,freq:'once',who:'rotate'};
+function cSync(){
+  document.querySelectorAll('#cFreq button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===C.freq?'true':'false'));
+  document.querySelectorAll('#cWho button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===C.who?'true':'false'));
+  document.getElementById('cWhoWrap').hidden=C.freq!=='weekly';
+  document.getElementById('cClsLbl').textContent=C.freq==='weekly'&&C.who==='rotate'?'כיתות בסבב, לפי הסדר (מתחילים מהראשונה)':'כיתות שיוצאות';
+  document.getElementById('cGo').textContent=C.freq==='weekly'?'שבץ כל שבוע':'שבץ רק הפעם';
+}
+function cClasses(){const p=pat(document.getElementById('cPatrol').value);
+  document.getElementById('cClasses').innerHTML=S.classes.map((c,i)=>`<label><input type="checkbox" id="cc${i}" value="${esc(c)}" ${(p.classes||[]).includes(c)?'checked':''}>${esc(c)}</label>`).join('')}
+function openCell(d,h){
+  if(!S.patrols.length){toast('קודם צריך להגדיר סיירות');return}
+  Object.assign(C,{d,h,freq:'once',who:'rotate'});
+  const dt=new Date(d+'T12:00');
+  document.getElementById('cellTitle').textContent=`יום ${DAYS[dt.getDay()]}, ${dt.getDate()}.${dt.getMonth()+1}`;
+  document.getElementById('cellSub').textContent=h?`שעה ${h}${HOUR_TIMES[h]?' · '+HOUR_TIMES[h]:''}`:'ללא שעה קבועה';
+  const here=S.outings.filter(o=>o.date===d&&hourNum(o.hour)===h&&!isAct(pat(o.patrol)));
+  const tk=document.getElementById('cellTaken');tk.hidden=!here.length;
+  tk.textContent=here.length?`כבר יוצאת בשעה הזו: ${here.map(o=>pat(o.patrol).name).join(', ')}. לפי הנוהל לא מוציאים שתי סיירות באותו שיעור.`:'';
+  const opt=p=>`<option value="${p.id}">${esc(p.name)}</option>`,sel=document.getElementById('cPatrol');
+  sel.innerHTML=`<optgroup label="סיירות">${S.patrols.filter(p=>!isAct(p)).map(opt).join('')}</optgroup><optgroup label="פעילויות קבועות">${S.patrols.filter(isAct).map(opt).join('')}</optgroup>`;
+  cClasses();cSync();document.getElementById('cellGate').hidden=false;sel.focus();
+}
+document.getElementById('cPatrol').addEventListener('change',cClasses);
+document.getElementById('cFreq').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b){C.freq=b.dataset.v;cSync()}});
+document.getElementById('cWho').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b){C.who=b.dataset.v;cSync()}});
+document.getElementById('cCancel').addEventListener('click',()=>{document.getElementById('cellGate').hidden=true});
+document.getElementById('cellGate').addEventListener('click',e=>{if(e.target.id==='cellGate')e.currentTarget.hidden=true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('cellGate').hidden=true});
+document.getElementById('cellForm').addEventListener('submit',e=>{e.preventDefault();
+  const pid=document.getElementById('cPatrol').value,cls=[...document.querySelectorAll('#cClasses input:checked')].map(i=>i.value);
+  if(!pid||!cls.length){toast('בחרו סיירת ולפחות כיתה אחת');return}
+  const hour=C.h?'שעה '+C.h:'';
+  if(C.freq==='once'){const o=makeOuting(S,pid,C.d,cls);o.hour=hour;S.outings.push(o);toast(`${pat(pid).name} שובצה ל־${C.d.slice(8)*1}.${C.d.slice(5,7)*1}`)}
+  else{S.rules=S.rules||[];S.rules.push({id:uid(),patrol:pid,freq:'weekly',who:C.who,days:[dow(C.d)],hour,classes:cls,start:C.d,skip:[]});
+    const n=ensureRecurring();toast(`${pat(pid).name} שובצה כל יום ${DAYS[dow(C.d)]}${hour?' '+hour:''} · ${n} יציאות קרובות`)}
+  document.getElementById('cellGate').hidden=true;save();renderOut();renderStu();
+});
 
 /* fairness */
 function counts(st,exceptId){
