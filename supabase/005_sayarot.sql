@@ -1,0 +1,5 @@
+-- סיירות שכבת ו׳ (sayarot/index.html): מצב משותף אחד, גישה פתוחה כמו קובץ שיתופי.
+-- applied in Supabase as migration "sayarot_shared_state"
+-- table public.sayarot_state(id=1, data jsonb, version int, updated_by, updated_at), RLS on, no policies
+-- get_sayarot() -> {data, version, updated_by, updated_at}
+-- save_sayarot(payload, expected_version, who) -> {ok:true, version} | {ok:false, data, version, ...}  (optimistic concurrency)

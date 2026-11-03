@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>סיירות כנפי רוח</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Frank+Ruhl+Libre:wght@700;900&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}
+/* Layout: same admin console as מתכנן הספק — dark rail on the right, soft top bar, gradient hero, rounded widgets; each patrol is a colored schedule card */
+:root{
+  --canvas:#eef1f6; --card:#ffffff; --sunk:#f4f6fa; --line:#e1e6ee; --ink:#1d2939; --muted:#667085; --faint:#98a2b3;
+  --rail:#1c2636; --rail-2:#243245; --rail-ink:#c9d3e2; --rail-dim:#7d8aa0;
+  --primary:#2f6fd6; --primary-2:#4f8df0; --primary-ink:#ffffff; --primary-soft:#e6efff;
+  --ok:#14804a; --ok-soft:#dff5e8; --bad:#c8323f; --bad-soft:#fde5e7; --gold:#a35a00; --gold-soft:#fff1d6;
+  --grad:linear-gradient(135deg,#4a95ff 0%,#2f6fd6 50%,#5b4fd6 100%);
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --lift:0 2px 6px rgba(16,24,40,.05),0 10px 28px rgba(16,24,40,.07);
+  --f-ui:"Rubik","Segoe UI",Arial,sans-serif; --f-brand:"Frank Ruhl Libre","Times New Roman",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --canvas:#0e131b; --card:#171e2a; --sunk:#1d2533; --line:#293446; --ink:#e7ecf4; --muted:#9aa5b8; --faint:#6c788c;
+  --rail:#0a0f16; --rail-2:#151d29; --rail-ink:#c9d3e2; --rail-dim:#76839a;
+  --primary:#4a86e8; --primary-2:#6a9cf0; --primary-ink:#0b1320; --primary-soft:#1b2a44;
+  --ok:#5fd394; --ok-soft:#153024; --bad:#f2808a; --bad-soft:#3a1c21; --gold:#f0b860; --gold-soft:#33281a;
+  --shadow:0 1px 2px rgba(0,0,0,.4); --lift:0 2px 8px rgba(0,0,0,.45); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --canvas:#0e131b; --card:#171e2a; --sunk:#1d2533; --line:#293446; --ink:#e7ecf4; --muted:#9aa5b8; --faint:#6c788c;
+  --rail:#0a0f16; --rail-2:#151d29; --rail-ink:#c9d3e2; --rail-dim:#76839a;
+  --primary:#4a86e8; --primary-2:#6a9cf0; --primary-ink:#0b1320; --primary-soft:#1b2a44;
+  --ok:#5fd394; --ok-soft:#153024; --bad:#f2808a; --bad-soft:#3a1c21; --gold:#f0b860; --gold-soft:#33281a;
+  --shadow:0 1px 2px rgba(0,0,0,.4); --lift:0 2px 8px rgba(0,0,0,.45); color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{background:var(--canvas);color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.5;direction:rtl}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--rail)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+
+/* shell */
+.app{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh}
+.rail{background:linear-gradient(180deg,var(--rail) 0%,color-mix(in srgb,var(--rail) 82%,#2f3f8f) 100%);color:var(--rail-ink);position:sticky;top:env(safe-area-inset-top,0px);height:100vh;overflow-y:auto;display:flex;flex-direction:column;padding-right:env(safe-area-inset-right,0px)}
+.brand{display:flex;align-items:center;gap:10px;padding:18px 16px;border-bottom:1px solid var(--rail-2)}
+.mark{width:38px;height:38px;border-radius:12px;background:var(--grad);display:grid;place-items:center;color:#fff;font-family:var(--f-brand);font-weight:900;font-size:17px;flex:none;box-shadow:0 4px 12px rgba(47,111,214,.45)}
+.brand b{display:block;color:#fff;font-size:16px;font-weight:700;line-height:1.2}
+.brand small{color:var(--rail-dim);font-size:12px}
+.rail h6{margin:16px 16px 6px;font-size:11px;font-weight:600;color:var(--rail-dim);letter-spacing:.06em}
+.nav{display:flex;flex-direction:column;gap:2px;padding:0 8px}
+.nav button{font:inherit;display:flex;align-items:center;gap:10px;width:100%;text-align:right;background:none;border:none;color:var(--rail-ink);padding:11px 12px;border-radius:12px;cursor:pointer}
+.nav button svg{width:18px;height:18px;flex:none;opacity:.85}
+.nav button:hover{background:var(--rail-2)}
+.nav button[aria-selected="true"]{background:var(--grad);color:#fff;font-weight:600;box-shadow:0 6px 16px rgba(47,111,214,.35)}
+.nav .count{margin-inline-start:auto;font-size:11px;font-weight:700;background:rgba(255,255,255,.2);color:#fff;border-radius:99px;padding:1px 7px}
+.rail-foot{margin-top:auto;padding:14px 16px;font-size:12px;color:var(--rail-dim);border-top:1px solid var(--rail-2)}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{background:color-mix(in srgb,var(--canvas) 70%,var(--card));backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:20px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.topbar h1{margin:0;font-size:19px;font-weight:700}
+.crumb{font-size:12px;color:var(--faint)}
+.today{font-size:13px;color:var(--muted);background:var(--card);box-shadow:var(--shadow);border-radius:99px;padding:5px 12px;white-space:nowrap}
+.content{padding-block:20px 48px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:20px}
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .brand{border:none;padding:12px 4px}
+  .rail h6,.rail-foot{display:none}
+  .nav{flex-direction:row;overflow-x:auto;padding:0 0 10px;width:100%}
+  .nav button{white-space:nowrap;width:auto}
+  .topbar{position:static;padding-right:max(16px,env(safe-area-inset-right,0px));padding-left:max(16px,env(safe-area-inset-left,0px))}
+  .content{padding-right:max(16px,env(safe-area-inset-right,0px));padding-left:max(16px,env(safe-area-inset-left,0px))}
+}
+
+/* widgets */
+.view{display:flex;flex-direction:column;gap:18px}
+.w{background:var(--card);border-radius:18px;box-shadow:var(--lift);min-width:0}
+.w-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:16px 18px 4px;flex-wrap:wrap}
+.w-h h2{margin:0;font-size:16.5px;font-weight:700}
+.w-b{padding:14px 18px 18px}
+.wgrid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start}
+.side{display:flex;flex-direction:column;gap:18px}
+@media (max-width:1100px){.wgrid{grid-template-columns:minmax(0,1fr)}}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;align-items:start}
+@media (max-width:400px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.hint{color:var(--muted);font-size:13px;margin:0}
+
+/* hero */
+.hero{position:relative;overflow:hidden;background:var(--grad);color:#fff;border-radius:22px;padding:22px 24px;box-shadow:0 12px 30px rgba(47,111,214,.28)}
+.hero::before,.hero::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.09);pointer-events:none}
+.hero::before{width:260px;height:260px;left:-60px;top:-120px}.hero::after{width:180px;height:180px;left:120px;bottom:-110px}
+.hero>*{position:relative;z-index:1}
+.hero h2{margin:0;font-size:clamp(20px,3.2vw,26px);font-weight:800;text-wrap:balance}
+.hero p{margin:4px 0 14px;opacity:.9;font-size:14px}
+.hstats{display:flex;flex-wrap:wrap;gap:8px}
+.hs{background:rgba(255,255,255,.17);border-radius:12px;padding:8px 12px;font-size:13px;line-height:1.3}
+.hs b{display:block;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* forms */
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:600;color:var(--muted);min-width:0}
+input,select{font:inherit;font-size:14.5px;color:var(--ink);background:var(--sunk);border:1px solid transparent;border-radius:10px;padding:8px 10px;width:100%;min-width:0}
+input:focus,select:focus{background:var(--card);border-color:var(--primary)}
+input[type=number]{font-variant-numeric:tabular-nums}
+input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--primary)}
+.lbl{font-size:12.5px;font-weight:600;color:var(--muted);margin:14px 0 6px}
+.btn{font:inherit;font-weight:600;font-size:13.5px;border-radius:10px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);display:inline-flex;align-items:center;gap:6px;transition:transform .12s,box-shadow .12s}
+.btn:hover{background:var(--sunk)}
+.btn.primary{background:var(--grad);border:none;color:#fff;box-shadow:0 4px 12px rgba(47,111,214,.3)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(47,111,214,.4)}
+.btn.ghost{border-color:transparent;background:none;color:var(--primary);padding:6px 8px}
+.btn.danger{color:var(--bad)}
+.btn.sm{font-size:12.5px;padding:5px 10px}
+.btn.wide{width:100%;justify-content:center;margin-top:16px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pick{display:flex;flex-wrap:wrap;gap:6px}
+.pick label{display:inline-flex;align-items:center;gap:6px;border-radius:12px;background:var(--sunk);padding:7px 12px;font-weight:600;font-size:13.5px;cursor:pointer;border:2px solid transparent}
+.pick label:has(input:checked){border-color:var(--primary);background:var(--primary-soft)}
+.pick input{margin:0}
+
+/* patrol icon tile */
+.pi{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--c);color:#fff;flex:none;box-shadow:0 4px 12px color-mix(in srgb,var(--c) 40%,transparent)}
+.pi svg{width:20px;height:20px}
+.pdot{width:10px;height:10px;border-radius:3px;display:inline-block;background:var(--c);flex:none}
+
+/* outing cards (schedule-card style) */
+.month-title{font-size:15px;font-weight:700;margin:14px 0 8px;display:flex;align-items:center;gap:10px}
+.month-title:first-child{margin-top:0}
+.month-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:start;border-radius:16px;padding:12px 14px;margin-bottom:10px;border-inline-start:6px solid var(--c);background:color-mix(in srgb,var(--c) 10%,var(--card))}
+.card .when{display:flex;flex-direction:column;align-items:center;min-width:52px;padding-inline-end:12px;border-inline-end:1px dashed color-mix(in srgb,var(--c) 45%,transparent);align-self:stretch;justify-content:center}
+.card .when b{font-size:17px;font-weight:700;color:var(--c);font-variant-numeric:tabular-nums}
+.card .when small{font-size:11.5px;color:var(--muted)}
+.card .what{min-width:0}
+.card .ttl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:700;font-size:15px}
+.card.done{opacity:.72}
+.cls{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.cl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.cl > b{font-size:12px;font-weight:700;color:var(--muted);min-width:34px}
+.kid{font:inherit;font-size:13px;font-weight:500;background:var(--card);border:none;border-radius:99px;padding:3px 6px 3px 12px;color:var(--ink);cursor:pointer;box-shadow:var(--shadow);display:inline-flex;align-items:center;gap:6px}
+.kid:hover{box-shadow:0 0 0 2px var(--c,var(--primary))}
+.kid .x{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--sunk);color:var(--faint);font-size:10px}
+.kid .x:hover{background:var(--bad-soft);color:var(--bad)}
+select.add{width:auto;font-size:12.5px;padding:3px 8px;border-radius:99px;background:none;border:1px dashed var(--faint);color:var(--muted);cursor:pointer}
+.acts{display:flex;flex-direction:column;gap:4px}
+@media (max-width:560px){.card{grid-template-columns:auto minmax(0,1fr)}.acts{grid-column:1/-1;flex-direction:row;flex-wrap:wrap}.card .when{min-width:44px;padding-inline-end:8px}}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:99px;padding:2px 9px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.ok::before{content:"✓"}
+.chip.gold{background:var(--gold-soft);color:var(--gold)}
+.chip.tchip{background:color-mix(in srgb,var(--c) 15%,var(--card));color:var(--ink)}
+
+/* fairness */
+.frow{display:grid;grid-template-columns:42px minmax(0,1fr) 54px;gap:10px;align-items:center;padding:8px 0}
+.frow b{font-size:13.5px}
+.bar{height:8px;border-radius:99px;background:var(--sunk);overflow:hidden;position:relative}
+.bar i{position:absolute;top:0;bottom:0;border-radius:99px;background:var(--grad)}
+.frow .rng{justify-self:end;font-size:12px;font-weight:700;border-radius:99px;padding:2px 8px;font-variant-numeric:tabular-nums;background:var(--ok-soft);color:var(--ok)}
+.frow .rng.warn{background:var(--gold-soft);color:var(--gold)}
+
+/* sync + name gate */
+.topacts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+.mebtn{font:inherit;border:none;cursor:pointer;color:var(--ink)}
+.sync[data-k="ok"]{color:var(--ok)}.sync[data-k="bad"]{color:var(--bad)}.sync[data-k="warn"]{color:var(--gold)}
+.gate{position:fixed;inset:0;z-index:50;background:rgba(14,19,27,.55);display:grid;place-items:center;padding:20px}
+.gate-card{background:var(--card);border-radius:22px;padding:28px 24px;width:min(380px,100%);box-shadow:var(--lift);display:flex;flex-direction:column;gap:12px;text-align:center}
+.gate-card h2{margin:0;font-size:20px}.gate-card p{margin:0;color:var(--muted);font-size:13.5px}.gate-card .f{text-align:right}
+/* outing type + recurring list */
+.seg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.seg3 button{font:inherit;text-align:center;border:2px solid transparent;border-radius:12px;background:var(--sunk);padding:8px 4px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;gap:1px;min-width:0}
+.seg3.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.seg3 button b{font-size:13px}
+.seg3 button small{color:var(--muted);font-size:11px}
+.seg3 button[aria-pressed="true"]{background:var(--grad);color:#fff}
+.seg3 button[aria-pressed="true"] small{color:rgba(255,255,255,.85)}
+.rule{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.rule:last-child{border-bottom:none}
+.rule .pdot{margin-top:6px}
+.rule b{display:block;font-size:14px}
+.rule small{color:var(--muted);font-size:12px;line-height:1.5}
+/* patrol settings */
+.team{display:flex;flex-direction:column;gap:8px;background:var(--sunk);border-radius:14px;padding:12px;margin-top:12px}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mode label{display:flex;flex-direction:column;gap:2px;border:2px solid transparent;border-radius:14px;background:var(--sunk);padding:10px 12px;cursor:pointer;font-weight:700;font-size:13.5px}
+.mode label small{color:var(--muted);font-weight:400;font-size:12px}
+.mode label:has(input:checked){border-color:var(--c);background:color-mix(in srgb,var(--c) 10%,var(--card))}
+.mode input{position:absolute;opacity:0;pointer-events:none}
+.swatches{display:flex;gap:6px}
+.swatches button{width:24px;height:24px;border-radius:8px;border:2px solid transparent;background:var(--c);cursor:pointer}
+.swatches button[aria-pressed="true"]{border-color:var(--ink)}
+.pname{flex:1;font-weight:700;font-size:15px}
+
+/* students table */
+.tbl{overflow-x:auto}
+table.list{width:100%;border-collapse:collapse;font-size:13.5px}
+table.list th{text-align:right;font-size:12px;color:var(--muted);font-weight:600;background:var(--sunk);padding:8px 10px;white-space:nowrap}
+table.list th:first-child{border-radius:0 10px 10px 0} table.list th:last-child{border-radius:10px 0 0 10px}
+table.list td{border-bottom:1px solid var(--line);padding:7px 10px;vertical-align:middle;font-variant-numeric:tabular-nums}
+table.list tr:last-child td{border-bottom:none}
+table.list tr.off td{opacity:.45}
+table.list .bar{width:80px}
+table.list .bar i{right:0}
+.av{width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;font-weight:700;font-size:12px;color:#fff;background:var(--grad);margin-inline-end:8px;vertical-align:middle}
+.x2{border:none;background:none;color:var(--faint);font-size:15px;cursor:pointer;padding:4px 8px;border-radius:6px}
+.x2:hover{background:var(--bad-soft);color:var(--bad)}
+.empty{border-radius:16px;padding:28px;text-align:center;color:var(--muted);background:var(--sunk)}
+.toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--canvas);padding:9px 16px;border-radius:10px;font-weight:600;z-index:20;max-width:calc(100% - 32px);opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.view{animation:fadeUp .35s ease-out both}
+@keyframes fadeUp{from{opacity:.4;transform:translateY(6px)}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><div class="mark">כ״ר</div><div><b>סיירות</b><small>כנפי רוח · שכבת ו׳</small></div></div>
+    <h6>ניווט</h6>
+    <nav class="nav" role="tablist">
+      <button role="tab" data-tab="out" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>לוח יציאות<span class="count" id="outCount"></span></button>
+      <button role="tab" data-tab="pat" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg>סיירות</button>
+      <button role="tab" data-tab="stu" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c1.9.6 3.1 2.5 3.5 5.5"/></svg>תלמידים</button>
+    </nav>
+    <div class="rail-foot" id="railFoot">לוח משותף לצוות שכבת ו׳</div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div><div class="crumb" id="crumb">סיירות / לוח יציאות</div><h1 id="pageTitle">לוח יציאות</h1></div>
+      <div class="topacts"><span class="today sync" id="sync" data-k="busy">טוען…</span><button class="today mebtn" id="meBtn" type="button">👤</button><div class="today" id="today"></div></div>
+    </header>
+
+    <div class="content">
+      <!-- OUTINGS -->
+      <section class="view" id="tab-out">
+        <div class="hero" id="hero"></div>
+        <div class="wgrid">
+          <div class="w"><div class="w-h"><h2>יציאות</h2><span class="hint">לחיצה על שם = הבא בתור · ✕ = הסרה</span></div><div class="w-b" id="outList"></div></div>
+          <div class="side">
+            <div class="w"><div class="w-h"><h2>יציאה חדשה</h2></div><div class="w-b">
+              <div class="lbl" style="margin-top:0">מתי</div>
+              <div class="seg3" id="nFreq" role="group" aria-label="תדירות">
+                <button type="button" data-v="once" aria-pressed="true"><b>חד־פעמית</b><small>תאריך אחד</small></button>
+                <button type="button" data-v="weekly" aria-pressed="false"><b>כל שבוע</b><small>יום קבוע</small></button>
+                <button type="button" data-v="daily" aria-pressed="false"><b>כל יום</b><small>ימים קבועים</small></button>
+              </div>
+              <div id="whoWrap" hidden>
+                <div class="lbl">מי יוצא</div>
+                <div class="seg3 two" id="nWho" role="group" aria-label="מי יוצא">
+                  <button type="button" data-v="rotate" aria-pressed="true"><b>כיתה אחת בסבב</b><small>הסיירת של כיתה אחת בכל פעם</small></button>
+                  <button type="button" data-v="all" aria-pressed="false"><b>כל הכיתות יחד</b><small>הסיירת מכל הכיתות</small></button>
+                </div>
+              </div>
+              <div class="fields" style="margin-top:12px">
+                <label class="f" style="grid-column:1/-1">סיירת<select id="nPatrol"></select></label>
+                <label class="f" id="fDate">תאריך<input type="date" id="nDate"></label>
+                <label class="f" id="fDay" hidden>יום בשבוע<select id="nDay"><option value="0">ראשון</option><option value="1">שני</option><option value="2">שלישי</option><option value="3">רביעי</option><option value="4">חמישי</option><option value="5">שישי</option></select></label>
+                <label class="f">שעה<input id="nHour" placeholder="למשל: שעה 4"></label>
+                <label class="f" id="fStart" hidden>החל מתאריך<input type="date" id="nStart"></label>
+              </div>
+              <div id="fDays" hidden><div class="lbl">באילו ימים</div><div class="pick" id="nDays"></div></div>
+              <div class="lbl" id="clsLbl">כיתות</div>
+              <div class="pick" id="nClasses"></div>
+              <div class="actions" style="margin-top:16px"><button class="btn primary" id="nGo" style="flex:1;justify-content:center">שבץ</button><button class="btn" id="nCancel" hidden>ביטול עריכה</button></div>
+              <p class="hint" style="margin-top:10px" id="nHint"></p>
+            </div></div>
+            <div class="w"><div class="w-h"><h2>יציאות קבועות</h2></div><div class="w-b" id="rules"></div></div>
+            <div class="w"><div class="w-h"><h2>הוגנות לפי כיתה</h2></div><div class="w-b" id="fair"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PATROLS -->
+      <section class="view" id="tab-pat" hidden>
+        <div class="grid2" id="patList"></div>
+        <div><button class="btn primary" id="addPatrol">+ סיירת חדשה</button></div>
+      </section>
+
+      <!-- STUDENTS -->
+      <section class="view" id="tab-stu" hidden>
+        <div class="w"><div class="w-b">
+          <div class="fields" style="align-items:end">
+            <label class="f">כיתה<select id="sClass"></select></label>
+            <label class="f" style="grid-column:span 2">שמות תלמידים (אפשר כמה, מופרדים בפסיק)<input id="sName" placeholder="יוסף כהן, דוד לוי"></label>
+            <button class="btn primary" id="sAdd">הוסף תלמידים</button>
+          </div>
+          <div class="actions" style="margin-top:12px">
+            <input id="cName" placeholder="כיתה חדשה, למשל ו׳5" style="max-width:200px">
+            <button class="btn" id="cAdd">+ הוסף כיתה</button>
+          </div>
+        </div></div>
+        <div class="grid2" id="stuList"></div>
+      </section>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="gate" id="nameGate" hidden><form class="gate-card" id="nameForm"><div class="mark" style="margin:0 auto 12px">כ״ר</div><h2>סיירות שכבת ו׳</h2><p>כולם רואים ומעדכנים את אותו לוח. השם שלכם מופיע ליד כל עדכון.</p><label class="f">השם שלך<input id="meName" placeholder="לדוגמה: הרב אריאל" autocomplete="name"></label><button class="btn primary" style="justify-content:center">כניסה</button></form></div>
+
+<script>
+const KEY='sayarot-v6';
+const COLORS=['#2f6fd6','#d4631a','#1f9d6b','#8a4fd1','#d6457f','#c8941a','#1f8fa8'];
+const ICONS={
+  broom:'<path d="M14 3l-4 9M6 13h10l2 8H4z"/>',
+  leaf:'<path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15M5 19l7-7"/>',
+  book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5"/>',
+  ball:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+  flag:'<path d="M5 21V4M5 4h12l-2 4 2 4H5"/>',
+  pen:'<path d="M4 20l4-1 11-11-3-3L5 16zM14 6l3 3"/>',
+  flask:'<path d="M9 3h6M10 3v6l-5 10a1 1 0 0 0 1 2h12a1 1 0 0 0 1-2l-5-10V3M7 15h10"/>',
+  heart:'<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>',
+  shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>'};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const iso=d=>{const z=new Date(d);z.setMinutes(z.getMinutes()-z.getTimezoneOffset());return z.toISOString().slice(0,10)};
+
+function sample(){return {classes:[],students:[],patrols:[],rules:[],outings:[],sample:false}}
+
+/* fairness */
+function counts(st,exceptId){
+  const tot={},per={},last={};
+  for(const o of st.outings){ if(o.id===exceptId)continue;
+    for(const c in o.picks)for(const sid of o.picks[c]){
+      tot[sid]=(tot[sid]||0)+1;
+      const k=sid+'|'+o.patrol;per[k]=(per[k]||0)+1;
+      if(!last[sid]||o.date>last[sid])last[sid]=o.date;}}
+  return {tot,per,last};
+}
+function pool(st,cls,patrolId){
+  const p=st.patrols.find(p=>p.id===patrolId);
+  const all=st.students.filter(s=>s.cls===cls);
+  if(!p||p.mode!=='team')return all;
+  return all.filter(s=>(p.members||[]).includes(s.id));
+}
+function ranked(st,cls,patrol,exclude,exceptId){
+  const {tot,per,last}=counts(st,exceptId);
+  return pool(st,cls,patrol).filter(s=>!s.off&&!exclude.includes(s.id))
+    .map(s=>({s,a:per[s.id+'|'+patrol]||0,b:tot[s.id]||0,c:last[s.id]||'',r:Math.random()}))
+    .sort((x,y)=>x.a-y.a||x.b-y.b||(x.c<y.c?-1:x.c>y.c?1:0)||x.r-y.r).map(x=>x.s);
+}
+function makeOuting(st,patrolId,date,classes,keepId){
+  const p=st.patrols.find(p=>p.id===patrolId);
+  const o={id:keepId||uid(),patrol:patrolId,date,picks:{},done:false};
+  for(const c of classes){const r=ranked(st,c,patrolId,[],o.id);o.picks[c]=(p.mode==='team'?r:r.slice(0,p.per)).map(s=>s.id)}
+  return o;
+}
+
+/* ---- shared data in Supabase (project torah-planner, table sayarot_state). Open access, like a shared file. ---- */
+const CFG={url:'https://onocjgbtensczpdbeanf.supabase.co',key:'sb_publishable_JpV-E-qPnV9ZdnRnY9Kv8Q_TaRzCnyc'};
+async function rpc(fn,args){
+  const r=await fetch(CFG.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:CFG.key,Authorization:'Bearer '+CFG.key,'Content-Type':'application/json'},body:JSON.stringify(args||{})});
+  const t=await r.text(),j=t?JSON.parse(t):null;if(!r.ok)throw new Error((j&&j.message)||'error');return j;
+}
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+const norm=d=>{d=d||{};return {classes:d.classes||[],students:d.students||[],patrols:d.patrols||[],rules:d.rules||[],outings:d.outings||[],sample:false}};
+let S=sample(),VER=0,saving=false,dirty=false,saveT=null,ME=ls('sayarot-name')||'';
+function setStatus(k,t){const el=document.getElementById('sync');if(el){el.dataset.k=k;el.textContent=t}}
+function save(){dirty=true;clearTimeout(saveT);saveT=setTimeout(flush,500);setStatus('busy','שומר…')}
+async function flush(){
+  if(saving){saveT=setTimeout(flush,400);return}
+  saving=true;dirty=false;
+  try{
+    const r=await rpc('save_sayarot',{payload:S,expected_version:VER,who:ME||null});
+    if(r.ok){VER=r.version;setStatus('ok','נשמר ✓')}
+    else{S=norm(r.data);VER=r.version;renderAll();setStatus('warn','רוענן');toast(`${r.updated_by||'מישהו אחר'} עדכן בדיוק עכשיו. הנתונים רועננו, חזרו על הפעולה האחרונה.`)}
+  }catch(e){dirty=true;setStatus('bad','אין חיבור, מנסה שוב…');saveT=setTimeout(flush,5000)}
+  saving=false;
+}
+async function pull(){
+  if(saving||dirty)return;
+  try{const r=await rpc('get_sayarot');if(r.version!==VER){S=norm(r.data);VER=r.version;renderAll();setStatus('ok',r.updated_by?'עודכן ע״י '+r.updated_by:'עודכן')}}
+  catch(e){setStatus('bad','אין חיבור')}
+}
+function askName(){const m=document.getElementById('nameGate');document.getElementById('meName').value=ME;m.hidden=false;document.getElementById('meName').focus()}
+function showMe(){document.getElementById('meBtn').textContent=ME?'👤 '+ME:'👤 מי אני?'}
+async function boot(){
+  setStatus('busy','טוען…');
+  try{const r=await rpc('get_sayarot');S=norm(r.data);VER=r.version;setStatus('ok','מחובר')}
+  catch(e){setStatus('bad','אין חיבור לשרת')}
+  renderAll();showMe();if(!ME)askName();
+  setInterval(()=>{if(!document.hidden)pull()},15000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
+  document.getElementById('meBtn').addEventListener('click',askName);
+  document.getElementById('nameForm').addEventListener('submit',e=>{e.preventDefault();ME=document.getElementById('meName').value.trim();ls('sayarot-name',ME);document.getElementById('nameGate').hidden=true;showMe()});
+}
+
+/* UI helpers */
+const $=s=>document.querySelector(s);
+const esc=t=>String(t).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const icon=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]||ICONS.flag}</svg>`;
+const stu=id=>S.students.find(s=>s.id===id);
+const pat=id=>S.patrols.find(p=>p.id===id)||{name:'סיירת שנמחקה',color:'#98a2b3',icon:'flag'};
+const DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800)}
+function memberships(id){return S.patrols.filter(p=>p.mode==='team'&&(p.members||[]).includes(id))}
+function armConfirm(b,label){if(b.dataset.sure)return true;b.dataset.sure=1;b.textContent=label||'בטוח? לחץ שוב';setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;renderAll()}},3500);return false}
+
+const TITLES={out:'לוח יציאות',pat:'סיירות',stu:'תלמידים'};
+document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.nav button').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
+  for(const t in TITLES) $('#tab-'+t).hidden=t!==b.dataset.tab;
+  $('#pageTitle').textContent=TITLES[b.dataset.tab];$('#crumb').textContent='סיירות / '+TITLES[b.dataset.tab];
+}));
+{const d=new Date();$('#today').textContent=`יום ${DAYS[d.getDay()]}, ${d.getDate()} ב${MONTHS[d.getMonth()]}`}
+
+/* ---- outings ---- */
+function renderHero(){
+  const today=iso(new Date());
+  const up=S.outings.filter(o=>o.date>=today&&!o.done);
+  const kids=new Set();up.forEach(o=>Object.values(o.picks).flat().forEach(k=>kids.add(k)));
+  const next=[...up].sort((a,b)=>a.date<b.date?-1:1)[0];
+  const {tot}=counts(S);let gap=0;
+  S.classes.forEach(c=>{const v=S.students.filter(s=>s.cls===c&&!s.off).map(s=>tot[s.id]||0);if(v.length)gap=Math.max(gap,Math.max(...v)-Math.min(...v))});
+  const nd=next?new Date(next.date+'T12:00'):null;
+  $('#hero').innerHTML=`<h2>${next?`היציאה הבאה: ${esc(pat(next.patrol).name)}`:'אין יציאות מתוכננות'}</h2>
+    <p>${next?`יום ${DAYS[nd.getDay()]}, ${nd.getDate()}.${nd.getMonth()+1} · ${Object.keys(next.picks).map(esc).join(', ')}`:'צרו יציאה חדשה בצד, והמערכת תבחר את התלמידים.'}</p>
+    <div class="hstats"><div class="hs"><b>${up.length}</b>יציאות קרובות</div><div class="hs"><b>${kids.size}</b>תלמידים משובצים</div><div class="hs"><b>${S.patrols.length}</b>סיירות</div><div class="hs"><b>${gap}</b>פער מקסימלי בכיתה</div></div>`;
+  $('#outCount').textContent=up.length||'';
+}
+function renderNew(){
+  const sel=$('#nPatrol'),cur=sel.value;
+  sel.innerHTML=S.patrols.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  if(S.patrols.some(p=>p.id===cur))sel.value=cur;
+  if(!F.editing)syncClasses();
+  if(!$('#nDate').value)$('#nDate').value=iso(new Date());
+  if(!$('#nStart').value)$('#nStart').value=iso(new Date());
+  if(!$('#nDays').children.length)renderDays([0,1,2,3,4]);
+  syncForm();
+}
+function syncClasses(){
+  const p=S.patrols.find(p=>p.id===$('#nPatrol').value);
+  $('#nClasses').innerHTML=S.classes.map((c,i)=>`<label><input type="checkbox" id="nc${i}" value="${esc(c)}" ${p&&p.classes.includes(c)?'checked':''}>${esc(c)}</label>`).join('');
+}
+/* form state: freq once|weekly|daily, who rotate|all; editing = rule id */
+let F={freq:'once',who:'rotate',editing:null};
+const DAYS_SCHOOL=[0,1,2,3,4,5];
+function syncForm(){
+  document.querySelectorAll('#nFreq button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===F.freq?'true':'false'));
+  document.querySelectorAll('#nWho button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===F.who?'true':'false'));
+  const rec=F.freq!=='once';
+  $('#whoWrap').hidden=!rec;$('#fDate').hidden=rec;$('#fStart').hidden=!rec;
+  $('#fDay').hidden=F.freq!=='weekly';$('#fDays').hidden=F.freq!=='daily';
+  $('#clsLbl').textContent=rec&&F.who==='rotate'?'כיתות בסבב, לפי הסדר':'כיתות שיוצאות';
+  $('#nGo').textContent=F.editing?'עדכן יציאה קבועה':rec?'צור יציאה קבועה':'שבץ יציאה';
+  $('#nCancel').hidden=!F.editing;
+  $('#nHint').textContent=!rec?'יוצאים חברי הסיירת מהכיתות המסומנות, בתאריך אחד.'
+    :F.who==='rotate'?(F.freq==='daily'?'בכל יום מהימים המסומנים יוצאת הסיירת של כיתה אחת, והכיתות מתחלפות לפי הסדר מיום ליום.':'בכל שבוע יוצאת הסיירת של כיתה אחת, והכיתות מתחלפות לפי הסדר משבוע לשבוע.')
+    :'בכל פעם יוצאים חברי הסיירת מכל הכיתות המסומנות.';
+}
+function renderDays(sel){
+  $('#nDays').innerHTML=DAYS_SCHOOL.map(d=>`<label><input type="checkbox" id="nd${d}" value="${d}" ${sel.includes(d)?'checked':''}>${DAYS[d]}</label>`).join('');
+}
+$('#nFreq').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;F.freq=b.dataset.v;syncForm()});
+$('#nWho').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;F.who=b.dataset.v;syncForm()});
+$('#nPatrol').addEventListener('change',()=>{if(!F.editing)syncClasses()});
+function resetForm(){F.editing=null;$('#nHour').value='';syncClasses();renderDays([0,1,2,3,4]);syncForm()}
+$('#nCancel').addEventListener('click',resetForm);
+$('#nGo').addEventListener('click',()=>{
+  const pid=$('#nPatrol').value,hour=$('#nHour').value.trim();
+  const cls=[...$('#nClasses').querySelectorAll('input:checked')].map(i=>i.value);
+  if(!pid||!cls.length){toast('בחרו סיירת ולפחות כיתה אחת');return}
+  if(F.freq==='once'){
+    const date=$('#nDate').value;if(!date){toast('בחרו תאריך');return}
+    const o=makeOuting(S,pid,date,cls);o.hour=hour;S.outings.push(o);toast('היציאה שובצה');
+  }else{
+    const days=F.freq==='weekly'?[+$('#nDay').value]:[...$('#nDays').querySelectorAll('input:checked')].map(i=>+i.value);
+    if(!days.length){toast('בחרו לפחות יום אחד');return}
+    S.rules=S.rules||[];
+    const data={patrol:pid,freq:F.freq,who:F.who,days,hour,classes:cls,start:$('#nStart').value||iso(new Date())};
+    if(F.editing){
+      const r=S.rules.find(x=>x.id===F.editing);Object.assign(r,data);
+      const today=iso(new Date());S.outings=S.outings.filter(o=>!(o.rule===r.id&&!o.done&&o.date>=today));
+      ensureRecurring();toast('היציאה הקבועה עודכנה, והיציאות הקרובות שובצו מחדש');
+    }else{
+      S.rules.push({id:uid(),...data,skip:[]});
+      const n=ensureRecurring();toast(`נוצרה יציאה קבועה · שובצו ${n} יציאות קרובות`);
+    }
+    F.editing=null;syncForm();
+  }
+  save();renderOut();renderStu();
+});
+
+/* recurring outings: generated HORIZON days ahead; rotation counts every matching day since start, so a cancelled day doesn't shift the cycle */
+const HORIZON=14;
+function addDays(s,n){const d=new Date(s+'T12:00');d.setDate(d.getDate()+n);return iso(d)}
+const dow=s=>new Date(s+'T12:00').getDay();
+function ruleDays(r){return r.days||(r.day!=null?[+r.day]:[])}
+function ensureRecurring(){
+  S.rules=S.rules||[];const today=iso(new Date()),until=addDays(today,HORIZON);let added=0;
+  for(const r of S.rules){
+    if(!S.patrols.some(p=>p.id===r.patrol))continue;
+    const days=ruleDays(r);let k=0;
+    for(let d=r.start;d<=until;d=addDays(d,1)){
+      if(!days.includes(dow(d)))continue;
+      const idx=k++;
+      if(d<today||(r.skip||[]).includes(d)||S.outings.some(o=>o.rule===r.id&&o.date===d))continue;
+      const cls=r.who==='all'?r.classes:[r.classes[idx%r.classes.length]];
+      const o=makeOuting(S,r.patrol,d,cls);o.rule=r.id;o.hour=r.hour;S.outings.push(o);added++;
+    }
+  }
+  if(added)save();return added;
+}
+function daysLabel(r){const d=ruleDays(r);
+  if(r.freq==='daily'){const s=[...d].sort();const cont=s.every((x,i)=>!i||x===s[i-1]+1);return cont&&s.length>2?`כל יום ${DAYS[s[0]]}–${DAYS[s[s.length-1]]}`:'בימים '+s.map(x=>DAYS[x]).join(', ')}
+  return 'כל יום '+DAYS[d[0]];}
+function renderRules(){
+  const R=S.rules||[];const today=iso(new Date());
+  $('#rules').innerHTML=R.length?R.map(r=>{const p=pat(r.patrol);
+    const nextO=S.outings.filter(o=>o.rule===r.id&&o.date>=today).sort((a,b)=>a.date<b.date?-1:1)[0];
+    const what=r.who==='all'?`כל הכיתות: ${r.classes.map(esc).join(', ')}`:`סבב: ${r.classes.map(esc).join(' ← ')}${nextO?` · הבאה: ${esc(Object.keys(nextO.picks)[0])}`:''}`;
+    return `<div class="rule" style="--c:${p.color}"><span class="pdot"></span><div style="min-width:0;flex:1"><b>${esc(p.name)}</b><small>${daysLabel(r)}${r.hour?' · '+esc(r.hour):''}<br>${what}</small></div>
+      <div class="acts"><button class="btn sm" data-edit="${r.id}">עריכה</button><button class="btn sm ghost danger" data-rule="${r.id}">הפסק</button></div></div>`}).join('')
+    :'<p class="hint">אין עדיין יציאות קבועות. בחרו "כל שבוע" או "כל יום" בטופס.</p>';
+}
+$('#rules').addEventListener('click',e=>{
+  const ed=e.target.closest('[data-edit]');
+  if(ed){const r=S.rules.find(x=>x.id===ed.dataset.edit);
+    F={freq:r.freq||'weekly',who:r.who||'rotate',editing:r.id};
+    $('#nPatrol').value=r.patrol;$('#nHour').value=r.hour||'';$('#nStart').value=r.start;
+    if(F.freq==='weekly')$('#nDay').value=String(ruleDays(r)[0]);renderDays(ruleDays(r));
+    $('#nClasses').innerHTML=S.classes.map((c,i)=>`<label><input type="checkbox" id="nc${i}" value="${esc(c)}" ${r.classes.includes(c)?'checked':''}>${esc(c)}</label>`).join('');
+    syncForm();$('#nPatrol').scrollIntoView({behavior:'smooth',block:'center'});toast('עורכים את '+pat(r.patrol).name);return}
+  const b=e.target.closest('[data-rule]');if(!b)return;
+  if(!armConfirm(b,'למחוק? לחץ שוב'))return;
+  const today=iso(new Date());
+  S.rules=S.rules.filter(r=>r.id!==b.dataset.rule);
+  S.outings=S.outings.filter(o=>!(o.rule===b.dataset.rule&&!o.done&&o.date>=today));
+  if(F.editing===b.dataset.rule)resetForm();
+  save();renderOut();renderStu();toast('היציאה הקבועה הופסקה, והיציאות העתידיות שלה נמחקו')});
+
+function renderOut(){
+  const list=[...S.outings].sort((a,b)=>a.date<b.date?-1:1);
+  const today=iso(new Date());let lastM='';
+  $('#outList').innerHTML=list.length?list.map(o=>{
+    const p=pat(o.patrol),d=new Date(o.date+'T12:00'),m=MONTHS[d.getMonth()]+' '+d.getFullYear();
+    const head=m!==lastM?`<div class="month-title">${m}</div>`:'';lastM=m;
+    const st=o.done?'<span class="chip ok">בוצע</span>':(o.date<today?'<span class="chip gold">עבר — לסמן?</span>':'');
+    const team='';
+    const rule=o.rule&&(S.rules||[]).find(r=>r.id===o.rule);
+    const kind=rule?`<span class="chip">⟳ ${rule.freq==='daily'?'יומית':'שבועית'}${rule.who==='all'?'':' בסבב'}</span>`:'';
+    return head+`<div class="card ${o.done?'done':''}" style="--c:${p.color}">
+      <div class="when"><b>${d.getDate()}.${d.getMonth()+1}</b><small>יום ${DAYS[d.getDay()]}</small>${o.hour?`<small>${esc(o.hour)}</small>`:''}</div>
+      <div class="what"><div class="ttl">${esc(p.name)} ${kind} ${team} ${st}</div>
+        <div class="cls">${Object.entries(o.picks).map(([c,ids])=>{
+          const free=S.students.filter(s=>s.cls===c&&!ids.includes(s.id));
+          return `<div class="cl"><b>${esc(c)}</b>${ids.length?'':'<span class="chip gold">אין חברי סיירת בכיתה — הוסיפו בלשונית סיירות</span>'}${ids.map(id=>{const s=stu(id);return s?`<button class="kid" data-o="${o.id}" data-c="${esc(c)}" data-s="${id}" title="החלפה בבא בתור">${esc(s.name)}<span class="x" data-x title="הסרה מהיציאה">✕</span></button>`:''}).join('')}
+          ${free.length?`<select class="add" data-o="${o.id}" data-c="${esc(c)}" aria-label="הוספת תלמיד מ${esc(c)}"><option value="">+ הוסף</option>${free.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>`:''}</div>`}).join('')}</div></div>
+      <div class="acts">
+        <button class="btn sm" data-act="done" data-o="${o.id}">${o.done?'בטל סימון':'✓ בוצע'}</button>
+        <button class="btn sm ghost" data-act="redo" data-o="${o.id}">שבץ מחדש</button>
+        <button class="btn sm ghost danger" data-act="del" data-o="${o.id}">מחק</button>
+      </div></div>`}).join(''):'<div class="empty">עוד אין יציאות. צרו יציאה ראשונה בצד.</div>';
+  renderHero();renderFair();renderRules();
+}
+$('#outList').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const o=S.outings.find(x=>x.id===b.dataset.o);if(!o)return;
+  if(b.classList.contains('kid')){
+    const c=b.dataset.c,ids=o.picks[c],sid=b.dataset.s;
+    if(e.target.closest('[data-x]')){ids.splice(ids.indexOf(sid),1);toast(stu(sid).name+' הוסר מהיציאה')}
+    else{const next=ranked(S,c,o.patrol,ids,o.id)[0];
+      if(!next){toast('אין מחליף זמין ב'+c);return}
+      ids[ids.indexOf(sid)]=next.id;toast(`${stu(sid).name} ← ${next.name}`)}
+  }else if(b.dataset.act==='done'){o.done=!o.done}
+  else if(b.dataset.act==='redo'){o.picks=makeOuting(S,o.patrol,o.date,Object.keys(o.picks),o.id).picks;toast('שובץ מחדש')}
+  else if(b.dataset.act==='del'){if(!armConfirm(b))return;
+    const r=o.rule&&(S.rules||[]).find(x=>x.id===o.rule);if(r){r.skip=r.skip||[];r.skip.push(o.date)}
+    S.outings=S.outings.filter(x=>x!==o);toast(r?'היציאה בוטלה לשבוע הזה בלבד':'היציאה נמחקה')}
+  save();renderOut();renderStu();
+});
+$('#outList').addEventListener('change',e=>{
+  const sel=e.target.closest('select.add');if(!sel||!sel.value)return;
+  const o=S.outings.find(x=>x.id===sel.dataset.o);o.picks[sel.dataset.c].push(sel.value);
+  toast(stu(sel.value).name+' שובץ ידנית');save();renderOut();renderStu();
+});
+
+function renderFair(){
+  const {tot}=counts(S);
+  const all=S.students.filter(s=>!s.off).map(s=>tot[s.id]||0);const top=Math.max(1,...all);
+  $('#fair').innerHTML=S.classes.map(c=>{
+    const v=S.students.filter(s=>s.cls===c&&!s.off).map(s=>tot[s.id]||0);
+    if(!v.length)return'';const mn=Math.min(...v),mx=Math.max(...v);
+    return `<div class="frow"><b>${esc(c)}</b><div class="bar" title="מינימום–מקסימום יציאות לתלמיד"><i style="right:${mn/top*100}%;left:${100-mx/top*100}%;min-width:8px"></i></div><span class="rng ${mx-mn>1?'warn':''}">${mn}–${mx}</span></div>`}).join('')
+    +'<p class="hint" style="margin-top:8px">הטווח מראה כמה יציאות יש לתלמיד שיצא הכי מעט ולזה שיצא הכי הרבה. פער של יותר מ־1 מסומן בכתום.</p>';
+}
+
+/* ---- patrols ---- */
+function renderPat(){
+  $('#patList').innerHTML=S.patrols.map(p=>`<div class="w" data-p="${p.id}" style="--c:${p.color}">
+    <div class="w-h"><div style="display:flex;gap:10px;align-items:center;flex:1;min-width:0"><span class="pi">${icon(p.icon)}</span><input class="pname" id="pn-${p.id}" data-f="name" value="${esc(p.name)}" aria-label="שם הסיירת"></div></div>
+    <div class="w-b">
+      <div class="fields">
+
+        <div class="f"><span style="font-size:12.5px;font-weight:600;color:var(--muted)">צבע</span><div class="swatches">${COLORS.map(c=>`<button type="button" data-color="${c}" style="--c:${c}" aria-pressed="${c===p.color}" aria-label="צבע"></button>`).join('')}</div></div>
+      </div>
+      <div class="lbl">כיתות שיש להן סיירת</div>
+      <div class="pick">${S.classes.map((c,i)=>`<label><input type="checkbox" id="pc-${p.id}-${i}" data-f="cls" value="${esc(c)}" ${p.classes.includes(c)?'checked':''}>${esc(c)}</label>`).join('')}</div>
+      <div class="lbl">חברי הסיירת</div>
+
+
+
+
+      ${teamHtml(p)}
+      <div class="actions" style="margin-top:14px"><button class="btn sm ghost danger" data-del="${p.id}">מחק סיירת</button></div>
+    </div></div>`).join('');
+}
+function teamHtml(p){
+  const m=p.members||[];
+  return `<div class="team">
+    <div class="actions"><label class="f" style="flex-direction:row;align-items:center;gap:8px">כמה מכל כיתה<input type="number" id="pt-${p.id}" min="1" max="20" data-f="team" value="${p.team||4}" style="width:70px"></label>
+    <button class="btn sm primary" data-fill="${p.id}">השלם צוות אוטומטית</button></div>
+    ${p.classes.map(c=>{const inC=S.students.filter(s=>s.cls===c);const mem=inC.filter(s=>m.includes(s.id));const free=inC.filter(s=>!m.includes(s.id));
+      return `<div class="cl"><b>${esc(c)}</b>${mem.map(s=>`<button class="kid" data-unm="${s.id}" title="הוצאה מהצוות">${esc(s.name)}<span class="x">✕</span></button>`).join('')||'<span class="hint">אין עדיין חברי צוות</span>'}
+      ${free.length?`<select class="add" data-addm="${p.id}" aria-label="הוספה לצוות"><option value="">+ הוסף</option>${free.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>`:''}</div>`}).join('')}
+  </div>`;
+}
+function patEdit(e){
+  const card=e.target.closest('[data-p]');if(!card)return;
+  const p=S.patrols.find(x=>x.id===card.dataset.p),t=e.target,f=t.dataset.f;
+  if(t.dataset.addm){if(e.type!=='change'||!t.value)return;
+    p.members.push(t.value);save();renderPat();renderStu();toast(stu(t.value).name+' צורף לצוות');return}
+  if(f==='mode'){if(e.type!=='change')return;p.mode=t.value;save();renderPat();renderStu();renderOut();return}
+  if(f==='name')p.name=t.value;
+  if(f==='per')p.per=Math.max(1,+t.value||1);
+  if(f==='team')p.team=Math.max(1,+t.value||1);
+  if(f==='cls'){p.classes=[...card.querySelectorAll('[data-f=cls]:checked')].map(i=>i.value);save();renderPat();renderNew();return}
+  save();if(e.type==='change'){renderNew();renderOut()}
+}
+$('#patList').addEventListener('input',patEdit);
+$('#patList').addEventListener('change',patEdit);
+$('#patList').addEventListener('click',e=>{
+  const card=e.target.closest('[data-p]');if(!card)return;
+  const p=S.patrols.find(x=>x.id===card.dataset.p);
+  const sw=e.target.closest('[data-color]');
+  if(sw){p.color=sw.dataset.color;save();renderPat();renderOut();return}
+  const un=e.target.closest('[data-unm]');
+  if(un){p.members=p.members.filter(x=>x!==un.dataset.unm);save();renderPat();renderStu();return}
+  if(e.target.closest('[data-fill]')){let added=0;
+    for(const c of p.classes){
+      const have=S.students.filter(s=>s.cls===c&&p.members.includes(s.id)).length;
+      S.students.filter(s=>s.cls===c&&!s.off&&!p.members.includes(s.id))
+        .map(s=>({s,k:memberships(s.id).length,r:Math.random()})).sort((a,b)=>a.k-b.k||a.r-b.r)
+        .slice(0,Math.max(0,(p.team||4)-have)).forEach(x=>{p.members.push(x.s.id);added++});
+    }
+    save();renderPat();renderStu();toast(added?`צורפו ${added} תלמידים, קודם מי שבפחות צוותים`:'הצוות כבר מלא');return}
+  const del=e.target.closest('[data-del]');
+  if(del){if(!armConfirm(del))return;S.patrols=S.patrols.filter(x=>x!==p);save();renderAll();toast('הסיירת נמחקה')}
+});
+$('#addPatrol').addEventListener('click',()=>{
+  const n=S.patrols.length;
+  S.patrols.push({id:uid(),name:'סיירת חדשה',color:COLORS[n%COLORS.length],icon:Object.keys(ICONS)[n%Object.keys(ICONS).length],per:1,classes:[...S.classes],mode:'team',members:[],team:3});
+  save();renderAll();toast('נוספה סיירת');
+});
+
+/* ---- students ---- */
+function renderStu(){
+  const cur=$('#sClass').value;
+  $('#sClass').innerHTML=S.classes.map(c=>`<option>${esc(c)}</option>`).join('');
+  if(S.classes.includes(cur))$('#sClass').value=cur;
+  const {tot,last}=counts(S);
+  const mx=Math.max(1,...Object.values(tot));
+  $('#stuList').innerHTML=S.classes.map(c=>{
+    const rows=S.students.filter(s=>s.cls===c).sort((a,b)=>(tot[a.id]||0)-(tot[b.id]||0)||a.name.localeCompare(b.name,'he'));
+    return `<div class="w"><div class="w-h"><h2>${esc(c)}</h2><span class="hint">${rows.length} תלמידים</span></div><div class="w-b"><div class="tbl"><table class="list">
+      <thead><tr><th>שם</th><th>צוותים</th><th>יציאות</th><th>אחרונה</th><th>זמין</th><th></th></tr></thead><tbody>
+      ${rows.length?rows.map(s=>{const n=tot[s.id]||0,l=last[s.id];return `<tr class="${s.off?'off':''}">
+        <td style="white-space:nowrap"><span class="av">${esc(s.name[0])}</span>${esc(s.name)}</td>
+        <td><span style="display:inline-flex;gap:4px">${memberships(s.id).map(p=>`<span class="pdot" style="--c:${p.color}" title="${esc(p.name)}"></span>`).join('')||'<span class="hint">—</span>'}</span></td>
+        <td><div style="display:flex;align-items:center;gap:8px"><b>${n}</b><div class="bar"><i style="width:${n/mx*100}%"></i></div></div></td>
+        <td>${l?(+l.slice(8))+'.'+(+l.slice(5,7)):'—'}</td>
+        <td><input type="checkbox" id="off-${s.id}" data-off="${s.id}" ${s.off?'':'checked'} aria-label="זמין"></td>
+        <td><button class="x2" data-rm="${s.id}" aria-label="הסרת תלמיד">✕</button></td></tr>`}).join(''):'<tr><td colspan="6" class="hint">אין תלמידים בכיתה</td></tr>'}
+      </tbody></table></div></div></div>`}).join('');
+}
+$('#stuList').addEventListener('change',e=>{const id=e.target.dataset.off;if(!id)return;stu(id).off=!e.target.checked;save();renderStu();renderFair()});
+$('#stuList').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(!b)return;
+  if(!armConfirm(b,'בטוח?'))return;
+  const id=b.dataset.rm;S.students=S.students.filter(s=>s.id!==id);
+  S.outings.forEach(o=>{for(const c in o.picks)o.picks[c]=o.picks[c].filter(x=>x!==id)});
+  S.patrols.forEach(p=>p.members=(p.members||[]).filter(x=>x!==id));
+  save();renderAll()});
+$('#sAdd').addEventListener('click',()=>{const names=$('#sName').value.split(/[,،\n]/).map(x=>x.trim()).filter(Boolean);
+  if(!names.length){toast('כתבו שם של תלמיד');return}
+  names.forEach(n=>S.students.push({id:uid(),name:n,cls:$('#sClass').value,off:false}));
+  $('#sName').value='';save();renderAll();toast(names.length>1?`נוספו ${names.length} תלמידים`:'התלמיד נוסף')});
+$('#cAdd').addEventListener('click',()=>{const c=$('#cName').value.trim();if(!c){toast('כתבו שם כיתה');return}if(S.classes.includes(c)){toast('הכיתה כבר קיימת');return}
+  S.classes.push(c);$('#cName').value='';save();renderAll();toast('נוספה כיתה '+c)});
+$('#reset')&&$('#reset').addEventListener('click',e=>{if(!armConfirm(e.currentTarget,'זה ימחק הכול. לחצו שוב'))return;
+  S=sample();save();renderAll();toast('הנתונים אופסו')});
+
+function renderAll(){ensureRecurring();renderNew();renderOut();renderPat();renderStu()}
+boot();
+</script>
+
+</body>
+</html>
