@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מילוי מקום · כנפי רוח</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@200;400;500;600;700&display=swap">
+<style>
+:root{--ground:#eef1f5;--card:#fff;--card-muted:#f5f7fa;--line:#dfe4ea;--ink:#1f2a37;--ink-muted:#5b6878;--rail:#26323f;--rail-ink:#c9d3de;
+--brand:#2f7fd6;--brand-dark:#1f5fa6;--blue:#4a8ec9;--green:#4f9a2a;--green-ink:#3f7d21;--orange:#c77700;--orange-ink:#a56300;--red:#c62a20;--active:#2fbf71;
+--r-sm:6px;--r-md:10px;--r-lg:14px;--shadow:0 1px 3px rgba(31,42,55,.10)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ground);color:var(--ink);font-family:Heebo,Assistant,system-ui,sans-serif;font-size:17px;line-height:1.5}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+.app{display:flex;min-height:100vh}
+nav.rail{flex:0 0 104px;background:var(--rail);display:flex;flex-direction:column;gap:8px;padding:24px 8px}
+.rail .brand{color:#fff;font-weight:700;font-size:15px;text-align:center;padding-bottom:16px;border-bottom:1px solid #3a4756;margin-bottom:4px}
+.rail button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border-radius:var(--r-md);background:none;border:0;color:var(--rail-ink);font-size:14px}
+.rail button[aria-current="page"]{background:var(--active);color:#fff;font-weight:600}
+.rail .spacer{flex:1}
+.rail .who{color:var(--rail-ink);font-size:13px;text-align:center}
+main{flex:1;min-width:0;padding:24px 32px 48px;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--card);border-radius:var(--r-md);box-shadow:var(--shadow)}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px}
+h1{margin:0;font-size:26px;line-height:34px;font-weight:700}
+h2{margin:0;font-size:20px;font-weight:600}
+.muted{color:var(--ink-muted)}
+.small{font-size:15px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 26px;border-radius:var(--r-md);border:0;background:var(--brand);color:#fff;font-size:18px;font-weight:600;text-decoration:none}
+.btn:hover{background:var(--brand-dark)}
+.btn.sec{background:#fff;color:var(--ink);border:1.5px solid #c9d1db}
+.btn.sec:hover{background:var(--card-muted)}
+.btn.ok{background:var(--green)}
+.btn.ok:hover{background:var(--green-ink)}
+.btn.sm{min-height:48px;padding:0 18px;font-size:17px}
+.btn.xs{min-height:44px;padding:0 14px;font-size:16px}
+.btn.wide{width:100%}
+.link{background:none;border:0;color:var(--brand);font-size:16px;padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.kpi{border-radius:var(--r-lg);padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:116px}
+.kpi b{display:block;font-size:20px;font-weight:600}.kpi span{font-size:15px}
+.kpi .n{font-size:64px;line-height:64px;font-weight:200}
+.k-red{background:var(--red)}.k-orange{background:var(--orange)}.k-green{background:var(--green)}.k-blue{background:var(--blue)}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start}
+.col{padding:16px;display:flex;flex-direction:column;gap:12px}
+.colhead{background:var(--brand);color:#fff;border-radius:var(--r-sm);padding:10px 16px;font-size:18px;font-weight:600;display:flex;justify-content:space-between}
+.item{background:var(--card-muted);border-radius:var(--r-sm);border-right:6px solid var(--line);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.item.s-open{border-right-color:var(--red)}.item.s-asking{border-right-color:var(--orange)}.item.s-assigned{border-right-color:var(--green)}.item.s-other{border-right-color:#8a96a4}
+.item .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.item .t b{font-size:18px;font-weight:600}
+.tag{font-size:14px;font-weight:600}
+.tag.open{color:var(--red)}.tag.asking{color:var(--orange-ink)}.tag.assigned{color:var(--green-ink)}.tag.other{color:var(--ink-muted)}
+.empty{color:var(--ink-muted);font-size:16px;padding:8px 4px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 16px;font-size:16px}
+.datebar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.seg{display:grid;gap:12px}
+.seg button{min-height:64px;border:1.5px solid #c9d1db;border-radius:var(--r-md);background:#fff;font-size:18px;font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+.form{max-width:780px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.box{padding:24px;display:flex;flex-direction:column;gap:14px}
+.num{color:var(--brand)}
+input[type=text],input[type=tel],input[type=date],input[type=email],select{min-height:56px;border:1.5px solid #c9d1db;border-radius:var(--r-md);padding:0 16px;font-size:18px;background:#fff;width:100%}
+input:focus,select:focus,button:focus-visible{outline:3px solid #9cc3ef;outline-offset:1px}
+.pick{display:flex;align-items:center;justify-content:space-between;min-height:56px;border:1.5px solid #c9d1db;border-radius:var(--r-md);background:#fff;padding:0 16px;font-size:18px;text-align:right;width:100%}
+.pick[aria-pressed="true"]{border:2px solid var(--brand);background:#eaf3fc}
+.picklist{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow:auto}
+.hours{display:flex;flex-wrap:wrap;gap:8px}
+.hours button{min-width:64px;min-height:52px;border:1.5px solid #c9d1db;border-radius:var(--r-md);background:#fff;font-size:17px}
+.hours button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+.check{display:flex;align-items:center;gap:12px;font-size:17px;min-height:48px}
+.check input{width:24px;height:24px}
+.preview{padding:20px 24px;border-right:6px solid var(--red);display:flex;flex-direction:column;gap:8px}
+.split{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.cands{flex:3 1 520px;min-width:0;padding:20px;display:flex;flex-direction:column;gap:18px}
+.side{flex:2 1 340px;min-width:0;padding:20px;display:flex;flex-direction:column;gap:14px;position:sticky;top:16px}
+.group{display:flex;flex-direction:column;gap:10px}
+.ghead{background:var(--brand);color:#fff;border-radius:var(--r-sm);padding:8px 16px;font-size:17px;font-weight:600}
+.cand{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--card-muted);border-radius:var(--r-sm);padding:12px 16px}
+.cand .who{flex:1 1 200px;display:flex;flex-direction:column;gap:2px}
+.cand .who b{font-size:18px;font-weight:600}
+.cand.declined{opacity:.6}.cand.declined b{text-decoration:line-through}
+.cand.chosen{background:#e9f5e2;outline:2px solid var(--green)}
+.star{display:inline-flex;align-items:center;gap:6px}
+.msg{background:var(--card-muted);border:1px solid var(--line);border-radius:var(--r-md);padding:16px;font-size:17px;line-height:27px;white-space:pre-line}
+.okline{display:flex;align-items:center;gap:10px;color:var(--green-ink);font-size:18px;font-weight:600}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:separate;border-spacing:0 8px;font-size:17px}
+th{text-align:right;color:var(--ink-muted);font-size:15px;font-weight:500;padding:4px 14px}
+td{padding:12px 14px;background:var(--card-muted);vertical-align:middle}
+td:first-child{border-right:6px solid var(--line);border-radius:0 var(--r-sm) var(--r-sm) 0}
+td:last-child{border-radius:var(--r-sm) 0 0 var(--r-sm)}
+tr.undone td:first-child{border-right-color:var(--red)}tr.done td:first-child{border-right-color:var(--green)}
+td select,td input{min-height:44px;font-size:16px;padding:0 10px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:14px 24px;border-radius:var(--r-md);font-size:17px;z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login .card{width:100%;max-width:440px;padding:32px;display:flex;flex-direction:column;gap:16px}
+.err{color:var(--red);font-weight:600}
+.loading{padding:40px;text-align:center;color:var(--ink-muted)}
+.holiday{padding:24px;font-size:18px}
+@media (max-width:900px){
+ .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cols{grid-template-columns:1fr}
+ .side{position:static}
+}
+@media (max-width:760px){
+ .app{flex-direction:column}
+ nav.rail{flex:0 0 auto;flex-direction:row;padding:6px;gap:4px;position:sticky;bottom:0;order:2;justify-content:space-around}
+ .rail .brand,.rail .spacer,.rail .who{display:none}
+ .rail button{flex:1;padding:8px 2px;font-size:13px}
+ main{padding:16px 14px 24px;order:1}
+ .topbar{padding:14px 16px}
+ .kpi{min-height:96px;padding:16px}.kpi .n{font-size:48px;line-height:48px}
+ .grid2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="root"><div class="loading">טוען…</div></div>
+<script>
+const CFG={url:'https://onocjgbtensczpdbeanf.supabase.co',key:'sb_publishable_JpV-E-qPnV9ZdnRnY9Kv8Q_TaRzCnyc'};
+async function rpc(fn,args){
+  const r=await fetch(CFG.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:CFG.key,Authorization:'Bearer '+CFG.key,'Content-Type':'application/json'},body:JSON.stringify(args||{})});
+  const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok){const m=(j&&j.message)||t;throw new Error(/no_access/.test(m)?'no_access':m)}
+  return j;
+}
+/* ---------- dates ---------- */
+const DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse=s=>new Date(s+'T12:00');
+const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return iso(d)};
+const today=()=>iso(new Date());
+const dow=s=>parse(s).getDay();
+const short=s=>{const d=parse(s);return d.getDate()+'.'+(d.getMonth()+1)};
+const longDate=s=>{const d=parse(s);let h='';try{h=new Intl.DateTimeFormat('he-u-ca-hebrew',{day:'numeric',month:'long'}).format(d)}catch(e){}
+  return 'יום '+DAYS[d.getDay()]+', '+d.toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'})+(h?' · '+h:'')};
+const monthStart=s=>s.slice(0,8)+'01';
+const monthEnd=s=>{const d=parse(monthStart(s));d.setMonth(d.getMonth()+1);d.setDate(0);return iso(d)};
+const monthName=s=>parse(s).toLocaleDateString('he-IL',{month:'long',year:'numeric'});
+const HOL=[['2026-12-06','2026-12-11','חופשת חנוכה'],['2027-03-23','2027-03-24','פורים'],['2027-04-13','2027-04-28','חופשת פסח'],['2027-05-12','2027-05-12','יום העצמאות'],['2027-05-25','2027-05-25','ל״ג בעומר'],['2027-06-10','2027-06-11','שבועות']];
+const holiday=s=>{for(const h of HOL)if(s>=h[0]&&s<=h[1])return h[2];return dow(s)===6?'שבת':null};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const firstName=n=>{const p=String(n).replace(/^הרב\s+/,'').split(' ');return p.length>1?p.slice(1).join(' '):p[0]};
+const greet=n=>/^הרב\s/.test(n)?'שלום הרב '+String(n).replace(/^הרב\s+/,'').split(' ')[0]:'שלום '+firstName(n);
+
+/* ---------- state ---------- */
+const S={phone:null,me:null,view:'board',date:null,loadedMonth:null,data:null,sel:null,lastAssigned:null,abs:{},payFilter:'undone',busy:false};
+try{S.phone=localStorage.getItem('milui_phone')}catch(e){}
+const root=document.getElementById('root');
+let toastT;function toast(m){let el=document.querySelector('.toast');if(!el){el=document.createElement('div');el.className='toast';el.setAttribute('role','status');document.body.appendChild(el)}el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,3200)}
+
+function schoolDay(s){let d=s;for(let i=0;i<10&&(dow(d)===6);i++)d=addDays(d,1);return d}
+S.date=schoolDay(today());
+
+async function load(force){
+  const m=monthStart(S.date);
+  if(!force&&S.loadedMonth===m&&S.data)return;
+  const d=await rpc('milui_state',{p_phone:S.phone,p_from:addDays(m,-7),p_to:addDays(monthEnd(S.date),7)});
+  d.T={};d.teachers.forEach(t=>d.T[t.id]=t);
+  d.slots=d.slots.map(a=>({id:a[0],tid:a[1],day:a[2],hour:a[3],kind:a[4],subject:a[5]||'',classes:a[6]||[],detail:a[7]||''}));
+  d.SL={};d.slots.forEach(s=>d.SL[s.id]=s);
+  d.byTD={};d.slots.forEach(s=>{(d.byTD[s.tid+'|'+s.day]=d.byTD[s.tid+'|'+s.day]||[]).push(s)});
+  d.knows={};d.slots.forEach(s=>s.classes.forEach(c=>{d.knows[s.tid+'|'+c]=1}));
+  S.data=d;S.me=d.me;S.loadedMonth=m;
+}
+const isLesson=s=>s.kind==='שיעור'||s.kind==='שיעור משותף';
+const lessonLabel=s=>'שעה '+s.hour+' · '+(s.subject||'שיעור')+' · '+s.classes.join(', ').replace(/' /g,'׳');
+const cls=c=>c.replace(/' /g,'׳');
+function absOn(date){return S.data.absences.filter(a=>a.date_from<=date&&(!a.date_to||a.date_to>=date))}
+function absentAt(tid,date,hour){return absOn(date).some(a=>a.teacher_id===tid&&(!a.hours||a.hours.includes(hour)))}
+function asg(date,slotId){return S.data.assignments.find(x=>x.date===date&&x.slot_id===slotId)}
+function openItems(date){
+  if(holiday(date))return[];
+  const out=[],d=dow(date);
+  for(const a of absOn(date)){
+    for(const s of (S.data.byTD[a.teacher_id+'|'+d]||[])){
+      if(!isLesson(s))continue; if(a.hours&&!a.hours.includes(s.hour))continue;
+      const x=asg(date,s.id);
+      out.push({slot:s,abs:a,row:x,status:x?x.status:'open'});
+    }
+  }
+  return out.sort((p,q)=>p.slot.hour-q.slot.hour);
+}
+
+/* ---------- rendering ---------- */
+const ICON={
+ board:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+ absence:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+ pay:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>',
+ teachers:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M15 15c3 0 6 1.6 6 4.5"/></svg>',
+ plus:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+ star:'<svg width="16" height="16" viewBox="0 0 24 24" fill="#c77700" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>',
+ ok:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M7 12.5l3.2 3.2L17 9"/></svg>'
+};
+function shell(inner){
+  const nav=[['board','לוח היום'],['absence','היעדרויות'],['pay','התחשבנות'],['teachers','מורים']];
+  const cur=S.view==='cand'?'board':S.view;
+  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand">מילוי מקום</div>'+
+   nav.map(([k,l])=>'<button data-go="'+k+'"'+(cur===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>').join('')+
+   '<div class="spacer"></div><div class="who">'+esc(S.me||'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+'</main></div>';
+}
+function render(){
+  if(!S.phone)return renderLogin();
+  if(!S.data){root.innerHTML='<div class="loading">טוען…</div>';return}
+  const v={board:viewBoard,cand:viewCand,absence:viewAbsence,pay:viewPay,teachers:viewTeachers}[S.view]||viewBoard;
+  root.innerHTML=shell(v());
+  const f=root.querySelector('[autofocus]');if(f)f.focus();
+}
+function renderLogin(err){
+  root.innerHTML='<div class="login"><form class="card" id="loginForm"><h1>מילוי מקום</h1><div class="muted">כנפי רוח · כניסה לצוות הניהול</div>'+
+   '<label for="ph" style="font-weight:600">מספר טלפון</label><input id="ph" name="tel" type="tel" inputmode="tel" autocomplete="tel" required autofocus>'+
+   (err?'<div class="err">'+esc(err)+'</div>':'')+'<button class="btn wide" type="submit">כניסה</button></form></div>';
+  root.querySelector('#ph').focus();
+}
+function kpi(cls,title,sub,n){return '<div class="kpi '+cls+'"><div><b>'+title+'</b><span>'+sub+'</span></div><span class="n">'+n+'</span></div>'}
+
+function viewBoard(){
+  const D=S.date,items=openItems(D),hol=holiday(D);
+  const open=items.filter(i=>i.status==='open'),asking=items.filter(i=>i.status==='asking'),done=items.filter(i=>i.status==='assigned'||i.status==='other');
+  const absT=[...new Map(absOn(D).map(a=>[a.teacher_id,a])).values()];
+  const T=S.data.T;
+  const card=i=>{
+    const s=i.slot,r=i.row,st=i.status;
+    const tag={open:'פתוח',asking:'בבירור',assigned:'שובץ',other:'טופל אחרת'}[st];
+    let body='<div class="small muted">במקום '+esc(T[s.tid].name)+'</div>';
+    if(st==='open')body+='<button class="btn sm wide" data-act="cand" data-slot="'+s.id+'">מצא מחליף</button>';
+    if(st==='asking')body+='<div>שאלנו את <b>'+esc(T[r.substitute_id]?.name)+'</b></div><div class="grid2"><button class="btn ok sm" data-act="yes" data-slot="'+s.id+'" data-tid="'+r.substitute_id+'">יכול/ה</button><button class="btn sec sm" data-act="no" data-slot="'+s.id+'" data-tid="'+r.substitute_id+'">לא יכול/ה</button></div>';
+    if(st==='assigned')body+='<div>ממלא/ת: <b>'+esc(T[r.substitute_id]?.name)+'</b>'+(r.from_permanent?' <span class="small muted">(קבוע)</span>':'')+'</div><button class="link" data-act="cand" data-slot="'+s.id+'">פרטים והודעה</button>';
+    if(st==='other')body+='<div>'+esc(r.other_note||'טופל אחרת')+'</div><button class="link" data-act="cand" data-slot="'+s.id+'">שינוי</button>';
+    return '<div class="item s-'+st+'"><div class="t"><b>'+esc(lessonLabel(s))+'</b><span class="tag '+st+'">'+tag+'</span></div>'+body+'</div>';
+  };
+  const col=(title,list,emptyTxt)=>'<div class="card col"><div class="colhead"><span>'+title+'</span><span>'+list.length+'</span></div>'+(list.length?list.map(card).join(''):'<div class="empty">'+emptyTxt+'</div>')+'</div>';
+  return '<header class="card topbar"><div><h1>לוח היום</h1><div class="muted">'+esc(longDate(D))+'</div></div>'+
+   '<button class="btn" data-go="absence">'+ICON.plus+'דיווח על מורה נעדר</button></header>'+
+   '<div class="datebar"><button class="btn sec sm" data-act="day" data-n="-1">→ יום קודם</button><button class="btn sec sm" data-act="today">היום</button><button class="btn sec sm" data-act="day" data-n="1">יום הבא ←</button>'+
+   '<label class="small muted" style="margin-inline-start:8px">או תאריך: <input type="date" data-act="pickdate" value="'+D+'" style="width:auto;min-height:48px"></label></div>'+
+   (hol?'<div class="card holiday">'+esc(hol)+': אין לימודים.</div>':
+   '<section class="kpis" aria-label="מצב היום">'+kpi('k-red','פתוחים','שיעורים בלי מורה',open.length)+kpi('k-orange','בבירור','מחכים לתשובה',asking.length)+kpi('k-green','שובצו','יש מחליף',done.length)+kpi('k-blue','נעדרים','מורים היום',absT.length)+'</section>'+
+   (absT.length?'<div class="chips"><b>נעדרים:</b>'+absT.map(a=>'<span class="chip">'+esc(T[a.teacher_id].name)+' · '+(a.date_to?(a.date_to===D?'היום בלבד':'עד '+short(a.date_to)):'עד שיחזור')+(a.hours?' · שעות '+a.hours.join(','):'')+'</span>').join('')+'</div>':'')+
+   (items.length?'<section class="cols" aria-label="שיעורים">'+col('פתוח: צריך מחליף',open,'אין שיעורים פתוחים. כל הכבוד!')+col('בבירור: מחכים לתשובה',asking,'אין')+col('שובץ: יש מחליף',done,'עדיין אין')+'</section>'
+   :'<div class="card holiday">אין היעדרויות ביום הזה. אם מישהו חסר, לחצו על "דיווח על מורה נעדר".</div>'));
+}
+
+/* ---------- candidates ---------- */
+const MEETING=/מליאה|ממ``י|מנהל|צוות מוביל|פדגוגי/;
+function candidates(date,slot){
+  const d=dow(date),h=slot.hour,T=S.data.T,cls0=slot.classes;
+  const busy=new Set(S.data.assignments.filter(x=>x.date===date&&x.slot_id!==slot.id&&(x.status==='assigned'||x.status==='asking')&&S.data.SL[x.slot_id]?.hour===h).map(x=>x.substitute_id));
+  const dec=new Set(S.data.declines.filter(x=>x.date===date&&x.slot_id===slot.id).map(x=>x.teacher_id));
+  const counts={},m0=monthStart(date),m1=monthEnd(date);
+  S.data.assignments.forEach(x=>{if(x.status==='assigned'&&x.substitute_id&&x.date>=m0&&x.date<=m1)counts[x.substitute_id]=(counts[x.substitute_id]||0)+1});
+  const out=[];
+  for(const t of S.data.teachers){
+    if(!t.active||t.id===slot.tid)continue;
+    if(absentAt(t.id,date,h))continue;
+    const day=S.data.byTD[t.id+'|'+d]||[];
+    const at=day.find(s=>s.hour===h);
+    let g,why='';
+    if(t.is_external){g=8;why='ממלא/ת מקום מבחוץ'}
+    else if(!day.length){g=7;why='לא עובד/ת ביום '+DAYS[d]}
+    else if(!at){const hs=day.map(s=>s.hour);if(h>Math.min(...hs)&&h<Math.max(...hs)){g=1;why='חלון'}else{g=7;why='לא בבית הספר בשעה זו'}}
+    else if(at.kind==='חלון'){g=1;why='חלון'}
+    else if(at.kind==='שהייה'){if(MEETING.test(at.detail)){g=3;why='שהייה: '+at.detail.replace(/``/g,'״')}else{g=2;why='שהייה'+(at.detail&&at.detail!=='שהייה'?': '+at.detail:'')}}
+    else if(at.kind==='פרטני'){g=4;why='פרטני (השעה הפרטנית תתבטל)'}
+    else if(at.kind==='תפקיד'){g=5;why='תפקיד: '+(at.subject||'')}
+    else {g=6;why='מלמד/ת '+(at.subject||'')+' ב'+at.classes.map(cls).join(', ')+' (איחוד כיתות)'}
+    const knows=cls0.some(c=>S.data.knows[t.id+'|'+c]);
+    out.push({t,g,why,knows,n:+(counts[t.id]||0),busy:busy.has(t.id),dec:dec.has(t.id)});
+  }
+  out.sort((a,b)=>a.g-b.g||(b.knows-a.knows)||a.n-b.n||a.t.name.localeCompare(b.t.name,'he'));
+  return out;
+}
+const GROUPS={1:'בחלון · הכי מתאימים',2:'בשהייה',3:'בשהייה עם ישיבה',4:'בשעה פרטנית',5:'בשעת תפקיד',6:'מלמדים באותה שעה (איחוד כיתות)',7:'לא בבית הספר בשעה זו',8:'ממלאי מקום מבחוץ'};
+function msgFor(date,tid){
+  const T=S.data.T;
+  const mine=S.data.assignments.filter(x=>x.date===date&&x.substitute_id===tid&&x.status==='assigned').map(x=>S.data.SL[x.slot_id]).filter(Boolean).sort((a,b)=>a.hour-b.hour);
+  const lines=mine.map(s=>'שעה '+s.hour+' · '+(s.subject||'שיעור')+' · כיתה '+s.classes.map(cls).join(', ')+'\n(במקום '+T[s.tid].name+')');
+  const when=date===today()?'היום, יום '+DAYS[dow(date)]+' '+short(date):'ביום '+DAYS[dow(date)]+' '+short(date);
+  return greet(T[tid].name)+',\nתודה שהסכמת למלא מקום '+when+':\n'+lines.join('\n')+'\nתודה רבה!';
+}
+function intlPhone(p){let d=String(p||'').replace(/\D/g,'');if(d.startsWith('0'))d='972'+d.slice(1);return d}
+function sendBtns(tid,text){
+  const t=S.data.T[tid],enc=encodeURIComponent(text);
+  const wa=t.phone?'<a class="btn wide" target="_blank" rel="noopener" href="https://wa.me/'+intlPhone(t.phone)+'?text='+enc+'">שלח בוואטסאפ</a>':'';
+  const sms=t.phone?'<a class="btn sec sm" href="sms:'+esc(t.phone)+'?&body='+enc+'">שלח ב־SMS</a>':'';
+  const mail=t.email?'<a class="btn sec sm" href="mailto:'+esc(t.email)+'?subject='+encodeURIComponent('מילוי מקום')+'&body='+enc+'">שלח במייל</a>':'';
+  const order={whatsapp:[wa,sms,mail],sms:[sms.replace('btn sec sm','btn wide'),wa.replace('btn wide','btn sec sm'),mail],email:[mail.replace('btn sec sm','btn wide'),wa.replace('btn wide','btn sec sm'),sms]}[t.channel||'whatsapp'];
+  return order.filter(Boolean).join('')+'<button class="btn sec sm" data-act="copy">העתק את ההודעה</button>'+(!t.phone&&!t.email?'<div class="small muted">אין למורה טלפון או מייל. אפשר להוסיף במסך "מורים", או להעתיק ולשלוח ידנית.</div>':'');
+}
+function viewCand(){
+  const D=S.date,s=S.data.SL[S.sel],T=S.data.T;if(!s){S.view='board';return viewBoard()}
+  const item=openItems(D).find(i=>i.slot.id===s.id);
+  const row=asg(D,s.id),abs=item?item.abs:null;
+  const list=candidates(D,s);
+  const chosen=row&&row.status==='assigned'?row.substitute_id:null;
+  let html='<header class="card topbar" style="border-right:6px solid '+(row?(row.status==='assigned'?'var(--green)':row.status==='asking'?'var(--orange)':'#8a96a4'):'var(--red)')+'"><div><div class="muted small">מי ממלא את השיעור?</div><h1>'+esc(lessonLabel(s))+'</h1><div class="muted">'+esc(longDate(D))+' · במקום '+esc(T[s.tid].name)+'</div></div><button class="btn sec sm" data-go="board">חזרה ללוח</button></header>';
+  let groups='',lastG=0,shown=0,more=S.showMore;
+  for(const c of list){
+    if(c.g>=6&&!more)continue;
+    if(c.g!==lastG){if(lastG)groups+='</div>';groups+='<div class="group"><div class="ghead">'+GROUPS[c.g]+'</div>';lastG=c.g}
+    const meta=(c.knows?'<span class="star">'+ICON.star+'מכיר/ה את הכיתה</span> · ':'')+esc(c.why)+' · מילויים החודש: '+c.n;
+    let actions;
+    if(chosen===c.t.id)actions='<span class="tag assigned">שובץ/ה ✓</span><button class="btn sec xs" data-act="unassign" data-slot="'+s.id+'">בטל שיבוץ</button>';
+    else if(c.dec)actions='<span class="small muted">לא יכול/ה הפעם</span><button class="btn sec xs" data-act="undecline" data-slot="'+s.id+'" data-tid="'+c.t.id+'">החזר לרשימה</button>';
+    else if(c.busy)actions='<span class="small muted">כבר ממלא/ת בשעה הזו</span>';
+    else actions='<button class="btn ok sm" data-act="yes" data-slot="'+s.id+'" data-tid="'+c.t.id+'">יכול/ה</button><button class="btn sec sm" data-act="no" data-slot="'+s.id+'" data-tid="'+c.t.id+'">לא יכול/ה</button>'+
+      (row&&row.status==='asking'&&row.substitute_id===c.t.id?'':'<button class="link" data-act="ask" data-slot="'+s.id+'" data-tid="'+c.t.id+'">שאלתי, מחכה לתשובה</button>');
+    if(row&&row.status==='asking'&&row.substitute_id===c.t.id)actions='<span class="tag asking">בבירור</span>'+actions;
+    groups+='<div class="cand'+(c.dec?' declined':'')+(chosen===c.t.id?' chosen':'')+'"><div class="who"><b>'+esc(c.t.name)+'</b><span class="small muted">'+meta+'</span></div>'+actions+'</div>';
+    shown++;
+  }
+  if(lastG)groups+='</div>';
+  if(!shown)groups+='<div class="empty">אין מועמדים פנויים בשעה הזו. לחצו על "הצג עוד".</div>';
+  groups+='<button class="btn sec wide" data-act="more">'+(more?'הצג פחות':'הצג עוד: מלמדים באותה שעה, לא בבית הספר, ממלאים מבחוץ')+'</button>';
+  groups+='<details class="card" style="padding:14px 16px;box-shadow:none;background:var(--card-muted)"><summary style="font-size:17px;font-weight:600;cursor:pointer">הוספת ממלא/ת מקום מבחוץ</summary><form id="extForm" style="display:flex;flex-direction:column;gap:10px;margin-top:12px"><label>שם מלא<input type="text" name="name" required></label><label>טלפון<input type="tel" name="phone" inputmode="tel"></label><button class="btn sm" type="submit">הוסף לרשימה</button></form></details>';
+  let side='';
+  if(chosen){
+    const txt=msgFor(D,chosen);S.msg=txt;
+    side='<div class="okline">'+ICON.ok+'מעולה, '+esc(T[chosen].name)+' שובץ/ה</div><div class="small muted">ההודעה מוכנה. שלחו אותה בדרך שהמורה רגיל/ה אליה:</div><div class="msg">'+esc(txt)+'</div>'+sendBtns(chosen,txt);
+    if(abs&&(abs.permanent||!abs.date_to||abs.date_to>addDays(abs.date_from,6))){
+      const perm=S.data.permanent.find(p=>p.absence_id===abs.id&&p.slot_id===s.id);
+      side+='<div class="card" style="box-shadow:none;background:var(--card-muted);padding:14px;display:flex;flex-direction:column;gap:8px"><b>היעדרות ארוכה</b>'+
+        (perm?'<div class="small">'+esc(T[perm.substitute_id].name)+' קבוע/ה בשיעור הזה עד החזרה.</div><button class="btn sec xs" data-act="unperm" data-slot="'+s.id+'" data-abs="'+abs.id+'">בטל החלפה קבועה</button>'
+        :'<div class="small muted">אפשר לקבוע את '+esc(T[chosen].name)+' לשיעור הזה בכל שבוע, עד שהמורה יחזור/תחזור.</div><button class="btn sm" data-act="perm" data-slot="'+s.id+'" data-abs="'+abs.id+'" data-tid="'+chosen+'">קבע/י לכל התקופה</button>')+'</div>';
+    }
+    side+='<button class="btn sec sm" data-go="board">סיימתי, חזרה ללוח</button>';
+  } else {
+    side='<h2>אין מחליף?</h2><div class="small muted">סמנו איך השיעור טופל, והוא יירד מהרשימה הפתוחה:</div><div class="grid2">'+
+     ['פיצול כיתה','ביטול שיעור','סייעת','איחוד עם כיתה אחרת'].map(o=>'<button class="btn sec sm" data-act="other" data-slot="'+s.id+'" data-note="'+o+'">'+o+'</button>').join('')+'</div>'+
+     (row&&row.status==='other'?'<div>כרגע: <b>'+esc(row.other_note)+'</b></div><button class="btn sec xs" data-act="unassign" data-slot="'+s.id+'">החזר לפתוח</button>':'');
+  }
+  return html+'<div class="split"><section class="card cands" aria-label="מועמדים">'+groups+'</section><aside class="card side" aria-label="פעולות">'+side+'</aside></div>';
+}
+
+/* ---------- absence ---------- */
+function viewAbsence(){
+  const A=S.abs,T=S.data.T;
+  const q=(A.q||'').trim();
+  const list=S.data.teachers.filter(t=>!t.is_external&&(!q||t.name.includes(q)));
+  const when=A.when||'today';
+  const from=when==='today'?S.date:when==='tomorrow'?schoolDay(addDays(S.date,1)):(A.from||S.date);
+  const to=when==='range'?(A.open?'':(A.to||from)):from;
+  const long=when==='range'&&(A.open||(A.to&&A.to>addDays(from,6)));
+  let lessons=[];
+  if(A.tid){lessons=(S.data.byTD[A.tid+'|'+dow(from)]||[]).filter(isLesson).sort((a,b)=>a.hour-b.hour)}
+  const allDay=A.allDay!==false,hours=A.hours||[];
+  const shownL=allDay?lessons:lessons.filter(s=>hours.includes(s.hour));
+  let html='<div class="form"><div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px"><h1>דיווח על מורה נעדר</h1><button class="link" data-go="board">ביטול וחזרה ללוח</button></div>';
+  html+='<section class="card box"><h2><span class="num">1.</span> מי נעדר/ת?</h2>';
+  if(A.tid)html+='<button class="pick" aria-pressed="true" data-act="untid"><span><b>'+esc(T[A.tid].name)+'</b></span><span class="small" style="color:var(--brand)">החלפה</span></button>';
+  else html+='<label for="q" class="small muted">התחילו להקליד שם</label><input id="q" type="text" data-act="q" value="'+esc(q)+'" autocomplete="off" autofocus><div class="picklist">'+list.map(t=>'<button class="pick" data-act="tid" data-tid="'+t.id+'">'+esc(t.name)+'</button>').join('')+'</div>';
+  html+='</section>';
+  html+='<section class="card box"><h2><span class="num">2.</span> מתי?</h2><div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+
+    [['today','היום'],['tomorrow','יום הלימודים הבא'],['range','כמה ימים']].map(([k,l])=>'<button data-act="when" data-v="'+k+'" aria-pressed="'+(when===k)+'">'+l+'</button>').join('')+'</div>';
+  if(when!=='range')html+='<div class="muted">'+esc(longDate(from))+'</div>';
+  else html+='<div class="grid2"><label>מתאריך<input type="date" data-act="from" value="'+from+'"></label><label>עד תאריך<input type="date" data-act="to" value="'+(A.to||'')+'" '+(A.open?'disabled':'')+'></label></div><label class="check"><input type="checkbox" data-act="open" '+(A.open?'checked':'')+'> לא ידוע מתי יחזור/תחזור</label>'+
+    (long?'<label class="check"><input type="checkbox" data-act="perm" '+(A.perm?'checked':'')+'> היעדרות ארוכה: אקבע מחליפים קבועים לכל שיעור</label>':'');
+  html+='</section>';
+  html+='<section class="card box"><h2><span class="num">3.</span> כל היום?</h2><div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))"><button data-act="allday" data-v="1" aria-pressed="'+allDay+'">כן, כל היום</button><button data-act="allday" data-v="0" aria-pressed="'+(!allDay)+'">רק חלק מהשעות</button></div>';
+  if(!allDay)html+='<div class="small muted">בחרו את השעות שבהן המורה לא נמצא/ת:</div><div class="hours">'+[1,2,3,4,5,6,7,8].map(h=>'<button data-act="hour" data-h="'+h+'" aria-pressed="'+hours.includes(h)+'">שעה '+h+'</button>').join('')+'</div>';
+  html+='</section>';
+  if(A.tid){
+    html+='<section class="card preview"><div style="font-size:18px;font-weight:600">'+(shownL.length?'ייפתחו '+shownL.length+' שיעורים לשיבוץ ב'+esc(DAYS[dow(from)])+' '+short(from)+':':'אין למורה שיעורים מול כיתה ביום הזה.')+'</div>'+
+     shownL.map(s=>'<div>'+esc(lessonLabel(s))+'</div>').join('')+(when==='range'?'<div class="small muted">כך גם בכל אחד מהימים בטווח, לפי המערכת.</div>':'')+'<div class="small muted">שעות שהייה, פרטני ותפקיד לא דורשות מחליף ולכן לא מופיעות.</div></section>';
+  }
+  html+='<button class="btn wide" style="min-height:64px;font-size:20px'+(A.tid?'':';opacity:.5')+'" data-act="saveabs"'+(A.tid?'':' disabled')+'>פתח את השיעורים לשיבוץ</button>';
+  const cur=S.data.absences.filter(a=>!a.date_to||a.date_to>=today()).sort((a,b)=>a.date_from.localeCompare(b.date_from));
+  html+='<section class="card box"><h2>היעדרויות פעילות</h2>'+(cur.length?cur.map(a=>'<div class="cand"><div class="who"><b>'+esc(T[a.teacher_id].name)+'</b><span class="small muted">'+short(a.date_from)+(a.date_to?(a.date_to!==a.date_from?' עד '+short(a.date_to):''):' · עד שיחזור/תחזור')+(a.hours?' · שעות '+a.hours.join(','):'')+(a.permanent?' · החלפה קבועה':'')+'</span></div>'+
+    '<button class="btn sec xs" data-act="back" data-id="'+a.id+'">המורה חזר/ה</button></div>').join(''):'<div class="empty">אין היעדרויות פעילות.</div>')+'</section></div>';
+  return html;
+}
+
+/* ---------- payments ---------- */
+const COMP={hours:'הזנת שעות',swap:'שעה תמורת שעה',other:'אחר'};
+function payRows(){
+  const m=monthStart(S.date),e=monthEnd(S.date);
+  return S.data.assignments.filter(x=>x.status==='assigned'&&x.substitute_id&&x.date>=m&&x.date<=e&&x.date<=today()).sort((a,b)=>b.date.localeCompare(a.date)||S.data.SL[a.slot_id].hour-S.data.SL[b.slot_id].hour);
+}
+function viewPay(){
+  const rows=payRows(),T=S.data.T,und=rows.filter(r=>!r.comp_done);
+  const show=S.payFilter==='undone'?und:rows;
+  let html='<header class="card topbar"><div><h1>התחשבנות עם ממלאי מקום</h1><div class="muted">'+esc(monthName(S.date))+' · מילויים שכבר התקיימו</div></div><div class="chips"><button class="btn sec sm" data-act="month" data-n="-1">חודש קודם</button><button class="btn sec sm" data-act="month" data-n="1">חודש הבא</button><button class="btn sec sm" data-act="csv">ייצוא לאקסל</button></div></header>';
+  html+='<section class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+kpi('k-red','לא טופלו','מחכים לתגמול',und.length)+kpi('k-green','טופלו','סגור',rows.length-und.length)+kpi('k-blue','סה״כ מילויים','החודש',rows.length)+'</section>';
+  const by={};rows.forEach(r=>{by[r.substitute_id]=(by[r.substitute_id]||0)+1});
+  html+='<div class="chips"><b>לפי מורה:</b>'+(Object.keys(by).length?Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([t,n])=>'<span class="chip">'+esc(T[t].name)+' · '+n+'</span>').join(''):'<span class="muted">אין עדיין</span>')+'</div>';
+  html+='<section class="card" style="padding:20px;display:flex;flex-direction:column;gap:14px"><div class="chips"><button class="btn sm '+(S.payFilter==='undone'?'':'sec')+'" data-act="pf" data-v="undone">רק לא טופלו</button><button class="btn sm '+(S.payFilter==='all'?'':'sec')+'" data-act="pf" data-v="all">הכול</button></div>';
+  if(!show.length)html+='<div class="empty">'+(S.payFilter==='undone'?'הכול טופל. אין מה לסגור.':'אין מילויים בחודש הזה.')+'</div>';
+  else html+='<div class="tablewrap"><table><thead><tr><th>מי מילא</th><th>מתי</th><th>שיעור</th><th>במקום</th><th>סוג תגמול</th><th>הערה</th><th><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">פעולה</span></th></tr></thead><tbody>'+
+    show.map(r=>{const s=S.data.SL[r.slot_id];return '<tr class="'+(r.comp_done?'done':'undone')+'"><td><b>'+esc(T[r.substitute_id].name)+'</b></td><td>'+DAYS[dow(r.date)].slice(0,1)+'׳ '+short(r.date)+' · שעה '+s.hour+'</td><td>'+esc((s.subject||'')+' · '+s.classes.map(cls).join(', '))+'</td><td class="muted">'+esc(T[s.tid].name)+'</td>'+
+     '<td><select data-act="ctype" data-id="'+r.id+'" aria-label="סוג תגמול"><option value="">בחרו</option>'+Object.entries(COMP).map(([k,l])=>'<option value="'+k+'"'+(r.comp_type===k?' selected':'')+'>'+l+'</option>').join('')+'</select></td>'+
+     '<td><input type="text" data-act="cnote" data-id="'+r.id+'" value="'+esc(r.comp_note||'')+'" aria-label="הערה" style="min-width:140px"></td>'+
+     '<td>'+(r.comp_done?'<button class="btn sec xs" data-act="cdone" data-id="'+r.id+'" data-v="0">בטל</button>':'<button class="btn ok xs" data-act="cdone" data-id="'+r.id+'" data-v="1">סמן כטופל</button>')+'</td></tr>'}).join('')+'</tbody></table></div>';
+  return html+'</section>';
+}
+
+/* ---------- teachers ---------- */
+function viewTeachers(){
+  const ts=[...S.data.teachers].sort((a,b)=>a.is_external-b.is_external||a.name.localeCompare(b.name,'he'));
+  const miss=ts.filter(t=>!t.phone&&!t.email).length;
+  return '<header class="card topbar"><div><h1>מורים</h1><div class="muted">טלפון ומייל משמשים רק לכפתורי השליחה. '+(miss?miss+' מורים עדיין בלי פרטי קשר.':'לכולם יש פרטי קשר.')+'</div></div></header>'+
+   '<section class="card" style="padding:20px"><div class="tablewrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>מייל</th><th>שליחה מועדפת</th><th></th></tr></thead><tbody>'+
+   ts.map(t=>'<tr><td><b>'+esc(t.name)+'</b>'+(t.is_external?'<div class="small muted">מבחוץ</div>':'')+'</td><td><input type="tel" inputmode="tel" data-f="phone" data-id="'+t.id+'" value="'+esc(t.phone||'')+'" aria-label="טלפון של '+esc(t.name)+'"></td><td><input type="email" data-f="email" data-id="'+t.id+'" value="'+esc(t.email||'')+'" aria-label="מייל של '+esc(t.name)+'"></td>'+
+    '<td><select data-f="channel" data-id="'+t.id+'" aria-label="ערוץ"><option value="whatsapp"'+(t.channel==='whatsapp'?' selected':'')+'>וואטסאפ</option><option value="sms"'+(t.channel==='sms'?' selected':'')+'>SMS</option><option value="email"'+(t.channel==='email'?' selected':'')+'>מייל</option></select></td>'+
+    '<td><button class="btn xs" data-act="savet" data-id="'+t.id+'">שמור</button></td></tr>').join('')+'</tbody></table></div></section>';
+}
+
+/* ---------- actions ---------- */
+async function act(fn,okMsg){
+  if(S.busy)return;S.busy=true;
+  try{await fn();await load(true);if(okMsg)toast(okMsg)}catch(e){handleErr(e)}finally{S.busy=false;render()}
+}
+function handleErr(e){
+  if(e.message==='no_access'){logout('המספר הזה לא מורשה להיכנס.');return}
+  console.error(e);toast('משהו לא הצליח. בדקו חיבור לאינטרנט ונסו שוב.');
+}
+function logout(msg){S.phone=null;S.data=null;try{localStorage.removeItem('milui_phone')}catch(e){};renderLogin(msg)}
+async function setSlot(p){await rpc('milui_set_slot',{p_phone:S.phone,p})}
+function absFor(slotId){const it=openItems(S.date).find(i=>i.slot.id===slotId);return it?it.abs.id:null}
+
+root.addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(e.target.id==='loginForm'){
+    const ph=e.target.querySelector('#ph').value;
+    try{const n=await rpc('milui_login',{p_phone:ph});if(!n){renderLogin('המספר הזה לא מורשה להיכנס.');return}
+      S.phone=ph;try{localStorage.setItem('milui_phone',ph)}catch(x){};await load(true);render()}catch(x){renderLogin('אין חיבור לשרת. נסו שוב.')}
+  }
+  if(e.target.id==='extForm'){
+    const f=new FormData(e.target),name=(f.get('name')||'').trim();if(!name)return;
+    act(()=>rpc('milui_save_teacher',{p_phone:S.phone,p:{name,phone:f.get('phone')||null}}),name+' נוסף/ה לרשימה');S.showMore=true;
+  }
+});
+root.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-go],[data-act]');if(!b||b.tagName==='INPUT'||b.tagName==='SELECT')return;
+  if(b.dataset.go){S.view=b.dataset.go;if(S.view==='absence')S.abs={};window.scrollTo(0,0);render();return}
+  const a=b.dataset.act,slot=+b.dataset.slot,tid=+b.dataset.tid,D=S.date;
+  switch(a){
+   case 'logout':logout();break;
+   case 'day':{const n=+b.dataset.n;let d=addDays(D,n);if(dow(d)===6)d=addDays(d,n);S.date=d;await act(()=>load());break}
+   case 'today':S.date=schoolDay(today());await act(()=>load());break;
+   case 'cand':S.sel=slot;S.view='cand';S.showMore=false;window.scrollTo(0,0);render();break;
+   case 'more':S.showMore=!S.showMore;render();break;
+   case 'yes':S.sel=slot;S.view='cand';await act(()=>setSlot({date:D,slot_id:slot,absence_id:absFor(slot),status:'assigned',substitute_id:tid}),'מעולה, '+S.data.T[tid].name+' שובץ/ה');window.scrollTo(0,0);break;
+   case 'ask':await act(()=>setSlot({date:D,slot_id:slot,absence_id:absFor(slot),status:'asking',substitute_id:tid}),'סומן: מחכים לתשובה מ'+S.data.T[tid].name);break;
+   case 'no':await act(async()=>{await rpc('milui_decline',{p_phone:S.phone,p_date:D,p_slot:slot,p_teacher:tid,p_on:true});const r=asg(D,slot);if(r&&r.substitute_id===tid)await setSlot({date:D,slot_id:slot,status:null})},'בסדר, ממשיכים לבא בתור');break;
+   case 'undecline':await act(()=>rpc('milui_decline',{p_phone:S.phone,p_date:D,p_slot:slot,p_teacher:tid,p_on:false}));break;
+   case 'unassign':await act(()=>setSlot({date:D,slot_id:slot,status:null}),'השיבוץ בוטל, השיעור פתוח שוב');break;
+   case 'other':await act(()=>setSlot({date:D,slot_id:slot,absence_id:absFor(slot),status:'other',other_note:b.dataset.note}),'סומן: '+b.dataset.note);S.view='board';render();break;
+   case 'perm':await act(async()=>{const n=await rpc('milui_set_permanent',{p_phone:S.phone,p_absence:+b.dataset.abs,p_slot:slot,p_sub:tid});toast('נקבע לכל התקופה: '+n+' שיעורים')});break;
+   case 'unperm':await act(()=>rpc('milui_set_permanent',{p_phone:S.phone,p_absence:+b.dataset.abs,p_slot:slot,p_sub:null}),'ההחלפה הקבועה בוטלה');break;
+   case 'copy':try{await navigator.clipboard.writeText(S.msg);toast('ההודעה הועתקה. הדביקו ושלחו.')}catch(x){toast('לא הצלחתי להעתיק. סמנו את הטקסט והעתיקו ידנית.')}break;
+   case 'tid':S.abs.tid=tid;render();break;
+   case 'untid':S.abs.tid=null;render();break;
+   case 'when':S.abs.when=b.dataset.v;render();break;
+   case 'allday':S.abs.allDay=b.dataset.v==='1';render();break;
+   case 'hour':{const h=+b.dataset.h,hs=S.abs.hours||[];S.abs.hours=hs.includes(h)?hs.filter(x=>x!==h):[...hs,h].sort((x,y)=>x-y);render();break}
+   case 'saveabs':{
+     const A=S.abs;if(!A.tid)return;const when=A.when||'today';
+     const from=when==='today'?S.date:when==='tomorrow'?schoolDay(addDays(S.date,1)):(A.from||S.date);
+     const to=when==='range'?(A.open?null:(A.to||from)):from;
+     if(to&&to<from){toast('תאריך הסיום לפני תאריך ההתחלה');return}
+     if(A.allDay===false&&!(A.hours||[]).length){toast('בחרו לפחות שעה אחת');return}
+     const name=S.data.T[A.tid].name;
+     await act(async()=>{await rpc('milui_save_absence',{p_phone:S.phone,p:{teacher_id:A.tid,date_from:from,date_to:to,hours:A.allDay===false?A.hours:null,permanent:!!A.perm}});S.date=from;await load(true)},'נפתחו השיעורים של '+name);
+     S.view='board';S.abs={};render();break}
+   case 'back':{const r=prompt('מאיזה תאריך המורה חוזר/ת ללמד? (שנה-חודש-יום)',today());if(!r)return;if(!/^\d{4}-\d{2}-\d{2}$/.test(r)){toast('תאריך לא תקין');return}
+     await act(()=>rpc('milui_end_absence',{p_phone:S.phone,p_id:+b.dataset.id,p_return:r}),'עודכן. השיבוצים מהתאריך הזה בוטלו.');break}
+   case 'month':{const d=parse(monthStart(S.date));d.setMonth(d.getMonth()+(+b.dataset.n));S.date=iso(d);await act(()=>load());break}
+   case 'pf':S.payFilter=b.dataset.v;render();break;
+   case 'cdone':{const r=S.data.assignments.find(x=>x.id===+b.dataset.id);await act(()=>rpc('milui_set_comp',{p_phone:S.phone,p_id:r.id,p_type:r.comp_type,p_note:r.comp_note,p_done:b.dataset.v==='1'}),b.dataset.v==='1'?'סומן כטופל':'הוחזר ללא טופל');break}
+   case 'csv':{const rows=payRows(),T=S.data.T;const lines=[['תאריך','שעה','ממלא/ת','במקום','מקצוע','כיתה','סוג תגמול','הערה','טופל']].concat(rows.map(r=>{const s=S.data.SL[r.slot_id];return[r.date,s.hour,T[r.substitute_id].name,T[s.tid].name,s.subject,s.classes.join(' '),COMP[r.comp_type]||'',r.comp_note||'',r.comp_done?'כן':'לא']}));
+     const csv='﻿'+lines.map(l=>l.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const ln=document.createElement('a');ln.href=u;ln.download='מילויי מקום '+monthStart(S.date).slice(0,7)+'.csv';document.body.appendChild(ln);ln.click();ln.remove();break}
+   case 'savet':{const id=+b.dataset.id,g=f=>root.querySelector('[data-f="'+f+'"][data-id="'+id+'"]').value.trim()||null;
+     await act(()=>rpc('milui_save_teacher',{p_phone:S.phone,p:{id,phone:g('phone'),email:g('email'),channel:g('channel')}}),'נשמר');break}
+  }
+});
+root.addEventListener('input',e=>{const a=e.target.dataset.act;
+  if(a==='q'){S.abs.q=e.target.value;const pos=e.target.selectionStart;render();const i=root.querySelector('#q');if(i){i.focus();i.setSelectionRange(pos,pos)}}
+});
+root.addEventListener('change',async e=>{const t=e.target,a=t.dataset.act;
+  if(a==='pickdate'&&t.value){S.date=t.value;await act(()=>load())}
+  if(a==='from'){S.abs.from=t.value;render()}
+  if(a==='to'){S.abs.to=t.value;render()}
+  if(a==='open'){S.abs.open=t.checked;render()}
+  if(a==='perm'){S.abs.perm=t.checked}
+  if(a==='ctype'||a==='cnote'){const r=S.data.assignments.find(x=>x.id===+t.dataset.id);if(!r)return;if(a==='ctype')r.comp_type=t.value||null;else r.comp_note=t.value||null;
+    try{await rpc('milui_set_comp',{p_phone:S.phone,p_id:r.id,p_type:r.comp_type,p_note:r.comp_note,p_done:r.comp_done});toast('נשמר')}catch(x){handleErr(x)}}
+});
+
+(async()=>{if(!S.phone){renderLogin();return}try{await load(true);render()}catch(e){if(e.message==='no_access')logout('המספר הזה לא מורשה להיכנס.');else root.innerHTML='<div class="loading">אין חיבור לשרת. רעננו את הדף.</div>'}})();
+</script>
+</body>
+</html>
