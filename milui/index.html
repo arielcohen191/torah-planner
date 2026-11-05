@@ -403,7 +403,7 @@ function viewAbsence(){
   if(A.tid)html+='<button type="button" class="sel" data-act="untid"><span class="opt" style="padding:0;min-height:0;width:auto"><span class="av" style="background:'+AVC[A.tid%AVC.length]+'">'+esc(initials(T[A.tid].name))+'</span></span><span class="tx"><b>'+esc(T[A.tid].name)+'</b><span>'+esc(tinfo(A.tid))+'</span></span><span class="small" style="color:var(--brand);font-weight:600">החלפה</span></button>';
   else html+='<div class="combo"><label for="q" class="small muted">הקלידו שם פרטי או משפחה, או בחרו מהרשימה</label><div class="field">'+
    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'+
-   '<input id="q" type="text" role="combobox" aria-autocomplete="list" aria-controls="tpop" aria-expanded="true" data-act="q" value="'+esc(q)+'" autocomplete="off" placeholder="למשל: מיטל, רדלר…" autofocus></div>'+
+   '<input id="q" type="text" role="combobox" aria-autocomplete="list" aria-controls="tpop" aria-expanded="true" data-act="q" value="'+esc(q)+'" autocomplete="off" placeholder="למשל: מיטל, רדלר…"></div>'+
    '<div class="pop" id="tpop" role="listbox" aria-label="מורים">'+comboList()+'</div></div>';
   html+='</section>';
   html+='<section class="card box"><h2><span class="num">2.</span> מתי?</h2><div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+
@@ -499,7 +499,7 @@ root.addEventListener('submit',async e=>{
 });
 root.addEventListener('click',async e=>{
   const b=e.target.closest('[data-go],[data-act]');if(!b||b.tagName==='INPUT'||b.tagName==='SELECT')return;
-  if(b.dataset.go){S.view=b.dataset.go;if(S.view==='absence')S.abs={};window.scrollTo(0,0);render();return}
+  if(b.dataset.go){S.view=b.dataset.go;if(S.view==='absence')S.abs={};window.scrollTo(0,0);render();if(S.view==='absence')root.querySelector('#q')?.focus();return}
   const a=b.dataset.act,slot=+b.dataset.slot,tid=+b.dataset.tid,D=S.date;
   switch(a){
    case 'logout':logout();break;
@@ -517,7 +517,7 @@ root.addEventListener('click',async e=>{
    case 'unperm':await act(()=>rpc('milui_set_permanent',{p_phone:S.phone,p_absence:+b.dataset.abs,p_slot:slot,p_sub:null}),'ההחלפה הקבועה בוטלה');break;
    case 'copy':try{await navigator.clipboard.writeText(S.msg);toast('ההודעה הועתקה. הדביקו ושלחו.')}catch(x){toast('לא הצלחתי להעתיק. סמנו את הטקסט והעתיקו ידנית.')}break;
    case 'tid':S.abs.tid=tid;S.abs.q='';render();break;
-   case 'untid':S.abs.tid=null;render();break;
+   case 'untid':S.abs.tid=null;render();root.querySelector('#q')?.focus();break;
    case 'when':S.abs.when=b.dataset.v;render();break;
    case 'allday':S.abs.allDay=b.dataset.v==='1';render();break;
    case 'hour':{const h=+b.dataset.h,hs=S.abs.hours||[];S.abs.hours=hs.includes(h)?hs.filter(x=>x!==h):[...hs,h].sort((x,y)=>x-y);render();break}
