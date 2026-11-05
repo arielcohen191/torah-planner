@@ -44,6 +44,12 @@ h2{margin:0;font-size:20px;font-weight:600}
 .kpi{border-radius:var(--r-lg);padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:116px}
 .kpi b{display:block;font-size:20px;font-weight:600}.kpi span{font-size:15px}
 .kpi .n{font-size:64px;line-height:64px;font-weight:200}
+.kpi{border:0;font:inherit;text-align:right;cursor:pointer;transition:transform .12s,box-shadow .12s;position:relative}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(31,42,55,.18)}
+.kpi .go{display:block;font-size:13px;opacity:.85;margin-top:6px;text-decoration:underline;text-underline-offset:3px}
+.kpi[aria-pressed="true"]{outline:4px solid #1f2a37;outline-offset:2px}
+.flash{animation:flash 1.4s ease}
+@keyframes flash{0%,40%{box-shadow:0 0 0 4px #9cc3ef}100%{box-shadow:var(--shadow)}}
 .k-red{background:var(--red)}.k-orange{background:var(--orange)}.k-green{background:var(--green)}.k-blue{background:var(--blue)}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start}
 .col{padding:16px;display:flex;flex-direction:column;gap:12px}
@@ -260,7 +266,7 @@ function renderLogin(err){
    (err?'<div class="err">'+esc(err)+'</div>':'')+'<button class="btn wide" type="submit">כניסה</button></form></div>';
   root.querySelector('#ph').focus();
 }
-function kpi(cls,title,sub,n){return '<div class="kpi '+cls+'"><div><b>'+title+'</b><span>'+sub+'</span></div><span class="n">'+n+'</span></div>'}
+function kpi(cls,title,sub,n,go,pressed){return '<button type="button" class="kpi '+cls+'" data-act="kpi" data-k="'+go+'"'+(pressed!=null?' aria-pressed="'+pressed+'"':'')+'><div><b>'+title+'</b><span>'+sub+'</span><span class="go">'+({open:'מצא מחליף ←',asking:'לרשימה ←',done:'לרשימה ←',absent:'להיעדרויות ←',undone:'הצג ←',paid:'הצג ←',all:'הצג הכול ←'}[go])+'</span></div><span class="n">'+n+'</span></button>'}
 
 function viewBoard(){
   const D=S.date,items=openItems(D),hol=holiday(D);
@@ -277,15 +283,15 @@ function viewBoard(){
     if(st==='other')body+='<div>'+esc(r.other_note||'טופל אחרת')+'</div><button class="link" data-act="cand" data-slot="'+s.id+'">שינוי</button>';
     return '<div class="item s-'+st+'"><div class="t"><b>'+esc(lessonLabel(s))+'</b><span class="tag '+st+'">'+tag+'</span></div>'+body+'</div>';
   };
-  const col=(title,list,emptyTxt)=>'<div class="card col"><div class="colhead"><span>'+title+'</span><span>'+list.length+'</span></div>'+(list.length?list.map(card).join(''):'<div class="empty">'+emptyTxt+'</div>')+'</div>';
+  const col=(title,list,emptyTxt,id)=>'<div class="card col" id="'+id+'" tabindex="-1"><div class="colhead"><span>'+title+'</span><span>'+list.length+'</span></div>'+(list.length?list.map(card).join(''):'<div class="empty">'+emptyTxt+'</div>')+'</div>';
   return '<header class="card topbar"><div><h1>לוח היום</h1><div class="muted">'+esc(longDate(D))+'</div></div>'+
    '<button class="btn" data-go="absence">'+ICON.plus+'דיווח על מורה נעדר</button></header>'+
    '<div class="datebar"><button class="btn sec sm" data-act="day" data-n="-1">→ יום קודם</button><button class="btn sec sm" data-act="today">היום</button><button class="btn sec sm" data-act="day" data-n="1">יום הבא ←</button>'+
    '<label class="small muted" style="margin-inline-start:8px">או תאריך: <input type="date" data-act="pickdate" value="'+D+'" style="width:auto;min-height:48px"></label></div>'+
    (hol?'<div class="card holiday">'+esc(hol)+': אין לימודים.</div>':
-   '<section class="kpis" aria-label="מצב היום">'+kpi('k-red','פתוחים','שיעורים בלי מורה',open.length)+kpi('k-orange','בבירור','מחכים לתשובה',asking.length)+kpi('k-green','שובצו','יש מחליף',done.length)+kpi('k-blue','נעדרים','מורים היום',absT.length)+'</section>'+
+   '<section class="kpis" aria-label="מצב היום">'+kpi('k-red','פתוחים','שיעורים בלי מורה',open.length,'open')+kpi('k-orange','בבירור','מחכים לתשובה',asking.length,'asking')+kpi('k-green','שובצו','יש מחליף',done.length,'done')+kpi('k-blue','נעדרים','מורים היום',absT.length,'absent')+'</section>'+
    (absT.length?'<div class="chips"><b>נעדרים:</b>'+absT.map(a=>'<span class="chip">'+esc(T[a.teacher_id].name)+' · '+(a.date_to?(a.date_to===D?'היום בלבד':'עד '+short(a.date_to)):'עד שיחזור')+(a.hours?' · שעות '+a.hours.join(','):'')+'</span>').join('')+'</div>':'')+
-   (items.length?'<section class="cols" aria-label="שיעורים">'+col('פתוח: צריך מחליף',open,'אין שיעורים פתוחים. כל הכבוד!')+col('בבירור: מחכים לתשובה',asking,'אין')+col('שובץ: יש מחליף',done,'עדיין אין')+'</section>'
+   (items.length?'<section class="cols" aria-label="שיעורים">'+col('פתוח: צריך מחליף',open,'אין שיעורים פתוחים. כל הכבוד!','col-open')+col('בבירור: מחכים לתשובה',asking,'אין','col-asking')+col('שובץ: יש מחליף',done,'עדיין אין','col-done')+'</section>'
    :'<div class="card holiday">אין היעדרויות ביום הזה. אם מישהו חסר, לחצו על "דיווח על מורה נעדר".</div>'));
 }
 
@@ -415,7 +421,7 @@ function viewAbsence(){
   }
   html+='<button class="btn wide" style="min-height:64px;font-size:20px'+(A.tid?'':';opacity:.5')+'" data-act="saveabs"'+(A.tid?'':' disabled')+'>פתח את השיעורים לשיבוץ</button>';
   const cur=S.data.absences.filter(a=>!a.date_to||a.date_to>=today()).sort((a,b)=>a.date_from.localeCompare(b.date_from));
-  html+='<section class="card box"><h2>היעדרויות פעילות</h2>'+(cur.length?cur.map(a=>'<div class="cand"><div class="who"><b>'+esc(T[a.teacher_id].name)+'</b><span class="small muted">'+short(a.date_from)+(a.date_to?(a.date_to!==a.date_from?' עד '+short(a.date_to):''):' · עד שיחזור/תחזור')+(a.hours?' · שעות '+a.hours.join(','):'')+(a.permanent?' · החלפה קבועה':'')+'</span></div>'+
+  html+='<section class="card box" id="activeAbs" tabindex="-1"><h2>היעדרויות פעילות</h2>'+(cur.length?cur.map(a=>'<div class="cand"><div class="who"><b>'+esc(T[a.teacher_id].name)+'</b><span class="small muted">'+short(a.date_from)+(a.date_to?(a.date_to!==a.date_from?' עד '+short(a.date_to):''):' · עד שיחזור/תחזור')+(a.hours?' · שעות '+a.hours.join(','):'')+(a.permanent?' · החלפה קבועה':'')+'</span></div>'+
     '<button class="btn sec xs" data-act="back" data-id="'+a.id+'">המורה חזר/ה</button></div>').join(''):'<div class="empty">אין היעדרויות פעילות.</div>')+'</section></div>';
   return html;
 }
@@ -440,13 +446,13 @@ function payRows(){
 }
 function viewPay(){
   const rows=payRows(),T=S.data.T,und=rows.filter(r=>!r.comp_done);
-  const show=S.payFilter==='undone'?und:rows;
+  const show=S.payFilter==='undone'?und:S.payFilter==='paid'?rows.filter(r=>r.comp_done):rows;
   let html='<header class="card topbar"><div><h1>התחשבנות עם ממלאי מקום</h1><div class="muted">'+esc(monthName(S.date))+' · מילויים שכבר התקיימו</div></div><div class="chips"><button class="btn sec sm" data-act="month" data-n="-1">חודש קודם</button><button class="btn sec sm" data-act="month" data-n="1">חודש הבא</button><button class="btn sec sm" data-act="csv">ייצוא לאקסל</button></div></header>';
-  html+='<section class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+kpi('k-red','לא טופלו','מחכים לתגמול',und.length)+kpi('k-green','טופלו','סגור',rows.length-und.length)+kpi('k-blue','סה״כ מילויים','החודש',rows.length)+'</section>';
+  html+='<section class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+kpi('k-red','לא טופלו','מחכים לתגמול',und.length,'undone',S.payFilter==='undone')+kpi('k-green','טופלו','סגור',rows.length-und.length,'paid',S.payFilter==='paid')+kpi('k-blue','סה״כ מילויים','החודש',rows.length,'all',S.payFilter==='all')+'</section>';
   const by={};rows.forEach(r=>{by[r.substitute_id]=(by[r.substitute_id]||0)+1});
   html+='<div class="chips"><b>לפי מורה:</b>'+(Object.keys(by).length?Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([t,n])=>'<span class="chip">'+esc(T[t].name)+' · '+n+'</span>').join(''):'<span class="muted">אין עדיין</span>')+'</div>';
-  html+='<section class="card" style="padding:20px;display:flex;flex-direction:column;gap:14px"><div class="chips"><button class="btn sm '+(S.payFilter==='undone'?'':'sec')+'" data-act="pf" data-v="undone">רק לא טופלו</button><button class="btn sm '+(S.payFilter==='all'?'':'sec')+'" data-act="pf" data-v="all">הכול</button></div>';
-  if(!show.length)html+='<div class="empty">'+(S.payFilter==='undone'?'הכול טופל. אין מה לסגור.':'אין מילויים בחודש הזה.')+'</div>';
+  html+='<section class="card" id="payList" tabindex="-1" style="padding:20px;display:flex;flex-direction:column;gap:14px"><div class="chips">'+[['undone','רק לא טופלו'],['paid','רק טופלו'],['all','הכול']].map(([k,l])=>'<button class="btn sm '+(S.payFilter===k?'':'sec')+'" data-act="pf" data-v="'+k+'">'+l+'</button>').join('')+'</div>';
+  if(!show.length)html+='<div class="empty">'+(S.payFilter==='undone'?'הכול טופל. אין מה לסגור.':S.payFilter==='paid'?'עוד לא סומנו מילויים כטופלו.':'אין מילויים בחודש הזה.')+'</div>';
   else html+='<div class="tablewrap"><table><thead><tr><th>מי מילא</th><th>מתי</th><th>שיעור</th><th>במקום</th><th>סוג תגמול</th><th>הערה</th><th><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">פעולה</span></th></tr></thead><tbody>'+
     show.map(r=>{const s=S.data.SL[r.slot_id];return '<tr class="'+(r.comp_done?'done':'undone')+'"><td><b>'+esc(T[r.substitute_id].name)+'</b></td><td>'+DAYS[dow(r.date)].slice(0,1)+'׳ '+short(r.date)+' · שעה '+s.hour+'</td><td>'+esc((s.subject||'')+' · '+s.classes.map(cls).join(', '))+'</td><td class="muted">'+esc(T[s.tid].name)+'</td>'+
      '<td><div class="pills" role="group" aria-label="סוג תגמול">'+Object.entries(COMP).map(([k,l])=>'<button type="button" data-act="ctype" data-id="'+r.id+'" data-v="'+k+'" aria-pressed="'+(r.comp_type===k)+'">'+l+'</button>').join('')+'</div></td>'+
@@ -532,6 +538,15 @@ root.addEventListener('click',async e=>{
      await act(()=>rpc('milui_end_absence',{p_phone:S.phone,p_id:M.id,p_return:M.date}),'מעולה, '+name+' חוזר/ת ב־'+short(M.date)+'. השיבוצים מהיום הזה בוטלו.');break}
    case 'month':{const d=parse(monthStart(S.date));d.setMonth(d.getMonth()+(+b.dataset.n));S.date=iso(d);await act(()=>load());break}
    case 'pf':S.payFilter=b.dataset.v;render();break;
+   case 'kpi':{const k=b.dataset.k;
+     const jump=id=>{const el=root.querySelector('#'+id);if(!el)return;el.scrollIntoView({behavior:'smooth',block:'start'});el.focus({preventScroll:true});el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')};
+     if(k==='open'){const o=openItems(S.date).filter(i=>i.status==='open');if(!o.length){toast('אין שיעורים פתוחים. כל הכבוד!');jump('col-done');break}
+       S.sel=o[0].slot.id;S.view='cand';S.showMore=false;window.scrollTo(0,0);render();if(o.length>1)toast('השיעור הפתוח הראשון. נשארו עוד '+(o.length-1));break}
+     if(k==='asking'){jump('col-asking');break}
+     if(k==='done'){jump('col-done');break}
+     if(k==='absent'){S.view='absence';S.abs={};render();setTimeout(()=>jump('activeAbs'),50);break}
+     if(k==='undone'||k==='paid'||k==='all'){S.payFilter=k;render();setTimeout(()=>jump('payList'),30);break}
+     break}
    case 'ctype':{const r=S.data.assignments.find(x=>x.id===+b.dataset.id);const v=r.comp_type===b.dataset.v?null:b.dataset.v;
      await act(()=>rpc('milui_set_comp',{p_phone:S.phone,p_id:r.id,p_type:v,p_note:r.comp_note,p_done:r.comp_done}),v?'נשמר: '+COMP[v]:'נוקה');break}
    case 'cdone':{const r=S.data.assignments.find(x=>x.id===+b.dataset.id);await act(()=>rpc('milui_set_comp',{p_phone:S.phone,p_id:r.id,p_type:r.comp_type,p_note:r.comp_note,p_done:b.dataset.v==='1'}),b.dataset.v==='1'?'סומן כטופל':'הוחזר ללא טופל');break}
