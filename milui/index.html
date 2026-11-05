@@ -102,6 +102,21 @@ input:focus,select:focus,button:focus-visible{outline:3px solid #9cc3ef;outline-
 .modal .mbody{padding:24px;display:flex;flex-direction:column;gap:16px}
 .modal .mfoot{display:flex;gap:10px;padding:0 24px 24px}
 .modal .mfoot .btn{flex:1}
+.calwrap{position:relative;display:inline-block;min-width:240px}
+.calbtn{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;width:100%;border:1.5px solid #c9d1db;border-radius:var(--r-md);background:#fff;padding:0 16px;font-size:18px;text-align:right}
+.calbtn .ph{color:var(--ink-muted)}
+.calpop{position:absolute;top:calc(100% + 6px);inset-inline-start:0;z-index:40;width:320px;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);box-shadow:0 10px 30px rgba(31,42,55,.18);padding:12px}
+.calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-weight:600;font-size:17px}
+.calhead button{min-width:44px;min-height:44px;border:0;background:var(--card-muted);border-radius:var(--r-sm);font-size:20px}
+.calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.calgrid .dn{font-size:13px;color:var(--ink-muted);padding:4px 0}
+.calgrid button{min-height:40px;border:0;border-radius:var(--r-sm);background:none;font-size:16px}
+.calgrid button:hover{background:#eaf3fc}
+.calgrid button[disabled]{color:#b8c0ca;cursor:default;background:none}
+.calgrid button.today{outline:2px solid var(--brand);outline-offset:-2px}
+.calgrid button[aria-pressed="true"]{background:var(--brand);color:#fff}
+.calgrid button.hol{color:var(--red)}
+.calquick{display:flex;gap:6px;margin-top:10px}.calquick button{flex:1;min-height:40px;border:1.5px solid #c9d1db;border-radius:var(--r-sm);background:#fff;font-size:15px}
 .check{display:flex;align-items:center;gap:12px;font-size:17px;min-height:48px}
 .check input{width:24px;height:24px}
 .preview{padding:20px 24px;border-right:6px solid var(--red);display:flex;flex-direction:column;gap:8px}
@@ -287,7 +302,7 @@ function viewBoard(){
   return '<header class="card topbar"><div><h1>לוח היום</h1><div class="muted">'+esc(longDate(D))+'</div></div>'+
    '<button class="btn" data-go="absence">'+ICON.plus+'דיווח על מורה נעדר</button></header>'+
    '<div class="datebar"><button class="btn sec sm" data-act="day" data-n="-1">→ יום קודם</button><button class="btn sec sm" data-act="today">היום</button><button class="btn sec sm" data-act="day" data-n="1">יום הבא ←</button>'+
-   '<label class="small muted" style="margin-inline-start:8px">או תאריך: <input type="date" data-act="pickdate" value="'+D+'" style="width:auto;min-height:48px"></label></div>'+
+   '<span class="small muted" style="margin-inline-start:8px">או תאריך:</span>'+calField('board',D)+'</div>'+
    (hol?'<div class="card holiday">'+esc(hol)+': אין לימודים.</div>':
    '<section class="kpis" aria-label="מצב היום">'+kpi('k-red','פתוחים','שיעורים בלי מורה',open.length,'open')+kpi('k-orange','בבירור','מחכים לתשובה',asking.length,'asking')+kpi('k-green','שובצו','יש מחליף',done.length,'done')+kpi('k-blue','נעדרים','מורים היום',absT.length,'absent')+'</section>'+
    (absT.length?'<div class="chips"><b>נעדרים:</b>'+absT.map(a=>'<span class="chip">'+esc(T[a.teacher_id].name)+' · '+(a.date_to?(a.date_to===D?'היום בלבד':'עד '+short(a.date_to)):'עד שיחזור')+(a.hours?' · שעות '+a.hours.join(','):'')+'</span>').join('')+'</div>':'')+
@@ -386,6 +401,30 @@ function viewCand(){
   return html+'<div class="split"><section class="card cands" aria-label="מועמדים">'+groups+'</section><aside class="card side" aria-label="פעולות">'+side+'</aside></div>';
 }
 
+/* ---------- calendar picker (Hebrew, dd.mm, no browser date fields) ---------- */
+function fmtFull(d){return d?'יום '+DAYS[dow(d)]+', '+parse(d).getDate()+'.'+(parse(d).getMonth()+1)+'.'+parse(d).getFullYear():''}
+function calField(key,value,ph,min){
+  const open=S.cal&&S.cal.key===key;
+  let h='<div class="calwrap"><button type="button" class="calbtn" data-act="calopen" data-key="'+key+'" aria-expanded="'+!!open+'">'+(value?'<span>'+esc(fmtFull(value))+'</span>':'<span class="ph">'+esc(ph||'בחרו תאריך')+'</span>')+
+   '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>';
+  if(open){
+    const m=S.cal.month,first=parse(m),start=dow(m),days=parse(monthEnd(m)).getDate(),t=today();
+    h+='<div class="calpop" role="dialog" aria-label="בחירת תאריך"><div class="calhead"><button type="button" data-act="calnav" data-n="-1" aria-label="חודש קודם">→</button><span>'+esc(monthName(m))+'</span><button type="button" data-act="calnav" data-n="1" aria-label="חודש הבא">←</button></div><div class="calgrid">'+
+     ['א','ב','ג','ד','ה','ו','ש'].map(x=>'<div class="dn">'+x+'</div>').join('')+'<div></div>'.repeat(start);
+    for(let i=1;i<=days;i++){const d=m.slice(0,8)+pad(i),hol=holiday(d),off=dow(d)===6||(min&&d<min);
+      h+='<button type="button" data-act="calpick" data-key="'+key+'" data-d="'+d+'"'+(off?' disabled':'')+' class="'+(d===t?'today ':'')+(hol&&dow(d)!==6?'hol':'')+'" aria-pressed="'+(d===value)+'"'+(hol?' title="'+esc(hol)+'"':'')+'>'+i+'</button>'}
+    h+='</div><div class="calquick"><button type="button" data-act="calpick" data-key="'+key+'" data-d="'+schoolDay(t)+'">היום</button><button type="button" data-act="calpick" data-key="'+key+'" data-d="'+schoolDay(addDays(schoolDay(t),1))+'">מחר</button></div></div>';
+  }
+  return h+'</div>';
+}
+function calSet(key,d){
+  if(key==='board'){S.date=d;return true}
+  if(key==='from'){S.abs.from=d;if(S.abs.to&&S.abs.to<d)S.abs.to=d}
+  if(key==='to')S.abs.to=d;
+  if(key==='modal')S.modal.date=d;
+  return false;
+}
+
 /* ---------- absence ---------- */
 function viewAbsence(){
   const A=S.abs,T=S.data.T;
@@ -409,7 +448,7 @@ function viewAbsence(){
   html+='<section class="card box"><h2><span class="num">2.</span> מתי?</h2><div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+
     [['today','היום'],['tomorrow','יום הלימודים הבא'],['range','כמה ימים']].map(([k,l])=>'<button data-act="when" data-v="'+k+'" aria-pressed="'+(when===k)+'">'+l+'</button>').join('')+'</div>';
   if(when!=='range')html+='<div class="muted">'+esc(longDate(from))+'</div>';
-  else html+='<div class="grid2"><label>מתאריך<input type="date" data-act="from" value="'+from+'"></label><label>עד תאריך<input type="date" data-act="to" value="'+(A.to||'')+'" '+(A.open?'disabled':'')+'></label></div><label class="check"><input type="checkbox" data-act="open" '+(A.open?'checked':'')+'> לא ידוע מתי יחזור/תחזור</label>'+
+  else html+='<div class="grid2"><div><div class="small muted">מתאריך</div>'+calField('from',from)+'</div><div><div class="small muted">עד תאריך</div>'+(A.open?'<div class="muted" style="min-height:56px;display:flex;align-items:center">עד שיחזור/תחזור</div>':calField('to',A.to||'','בחרו תאריך סיום',from))+'</div></div><label class="check"><input type="checkbox" data-act="open" '+(A.open?'checked':'')+'> לא ידוע מתי יחזור/תחזור</label>'+
     (long?'<label class="check"><input type="checkbox" data-act="perm" '+(A.perm?'checked':'')+'> היעדרות ארוכה: אקבע מחליפים קבועים לכל שיעור</label>':'');
   html+='</section>';
   html+='<section class="card box"><h2><span class="num">3.</span> כל היום?</h2><div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))"><button data-act="allday" data-v="1" aria-pressed="'+allDay+'">כן, כל היום</button><button data-act="allday" data-v="0" aria-pressed="'+(!allDay)+'">רק חלק מהשעות</button></div>';
@@ -422,18 +461,22 @@ function viewAbsence(){
   html+='<button class="btn wide" style="min-height:64px;font-size:20px'+(A.tid?'':';opacity:.5')+'" data-act="saveabs"'+(A.tid?'':' disabled')+'>פתח את השיעורים לשיבוץ</button>';
   const cur=S.data.absences.filter(a=>!a.date_to||a.date_to>=today()).sort((a,b)=>a.date_from.localeCompare(b.date_from));
   html+='<section class="card box" id="activeAbs" tabindex="-1"><h2>היעדרויות פעילות</h2>'+(cur.length?cur.map(a=>'<div class="cand"><div class="who"><b>'+esc(T[a.teacher_id].name)+'</b><span class="small muted">'+short(a.date_from)+(a.date_to?(a.date_to!==a.date_from?' עד '+short(a.date_to):''):' · עד שיחזור/תחזור')+(a.hours?' · שעות '+a.hours.join(','):'')+(a.permanent?' · החלפה קבועה':'')+'</span></div>'+
-    '<button class="btn sec xs" data-act="back" data-id="'+a.id+'">המורה חזר/ה</button></div>').join(''):'<div class="empty">אין היעדרויות פעילות.</div>')+'</section></div>';
+    '<button class="link" data-act="delabs" data-id="'+a.id+'">מחיקה (הוזן בטעות)</button><button class="btn sec xs" data-act="back" data-id="'+a.id+'">המורה חזר/ה</button></div>').join(''):'<div class="empty">אין היעדרויות פעילות.</div>')+'</section></div>';
   return html;
 }
 
 function modalHtml(){
   const M=S.modal,a=S.data.absences.find(x=>x.id===M.id);if(!a)return '';
+  if(M.kind==='del'){const n=S.data.T[a.teacher_id].name;
+    return '<div class="overlay" data-act="mclose"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh" style="background:var(--red)">מחיקת היעדרות</div><div class="mbody">'+
+     '<div style="font-size:18px">למחוק את ההיעדרות של <b>'+esc(n)+'</b> ('+short(a.date_from)+(a.date_to&&a.date_to!==a.date_from?' עד '+short(a.date_to):a.date_to?'':' ואילך')+')?</div><div class="muted">כל השיבוצים שנעשו להיעדרות הזו יימחקו גם הם. אם המורה פשוט חזר/ה, עדיף ללחוץ "המורה חזר/ה".</div></div>'+
+     '<div class="mfoot"><button class="btn" style="background:var(--red)" data-act="mdel">כן, למחוק</button><button class="btn sec" data-act="mcancel">ביטול</button></div></div></div>'}
   const name=S.data.T[a.teacher_id].name,t0=schoolDay(today()),t1=schoolDay(addDays(t0,1)),t2=schoolDay(addDays(t0,7));
   const q=[[t0,'היום'],[t1,'מחר'],[t2,'בעוד שבוע']];
   return '<div class="overlay" data-act="mclose"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">'+esc(name)+' חוזר/ת ללמד</div><div class="mbody">'+
    '<div>מאיזה יום '+esc(/^הרב\s/.test(name)?'הרב '+name.replace(/^הרב\s+/,'').split(' ')[0]:firstName(name))+' מלמד/ת שוב? השיבוצים מהיום הזה והלאה יבוטלו.</div>'+
    '<div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+q.map(([d,l])=>'<button type="button" data-act="mpick" data-d="'+d+'" aria-pressed="'+(M.date===d)+'">'+l+'<div class="small" style="font-weight:400">'+DAYS[dow(d)]+' '+short(d)+'</div></button>').join('')+'</div>'+
-   '<label class="small muted">או תאריך אחר<input type="date" data-act="mdate" value="'+M.date+'" min="'+a.date_from+'"></label>'+
+   '<div class="small muted">או תאריך אחר</div>'+calField('modal',M.date,'',a.date_from)+
    '<div style="font-size:17px">נבחר: <b>יום '+DAYS[dow(M.date)]+', '+short(M.date)+'</b></div></div>'+
    '<div class="mfoot"><button class="btn ok" data-act="mok">אישור</button><button class="btn sec" data-act="mcancel">ביטול</button></div></div></div>';
 }
@@ -466,10 +509,10 @@ function viewTeachers(){
   const ts=[...S.data.teachers].sort((a,b)=>a.is_external-b.is_external||a.name.localeCompare(b.name,'he'));
   const miss=ts.filter(t=>!t.phone&&!t.email).length;
   return '<header class="card topbar"><div><h1>מורים</h1><div class="muted">טלפון ומייל משמשים רק לכפתורי השליחה. '+(miss?miss+' מורים עדיין בלי פרטי קשר.':'לכולם יש פרטי קשר.')+'</div></div></header>'+
-   '<section class="card" style="padding:20px"><div class="tablewrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>מייל</th><th>שליחה מועדפת</th><th></th></tr></thead><tbody>'+
+   '<section class="card" style="padding:20px"><div class="tablewrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>מייל</th><th>שליחה מועדפת</th></tr></thead><tbody>'+
    ts.map(t=>'<tr><td><b>'+esc(t.name)+'</b>'+(t.is_external?'<div class="small muted">מבחוץ</div>':'')+'</td><td><input type="tel" inputmode="tel" data-f="phone" data-id="'+t.id+'" value="'+esc(t.phone||'')+'" aria-label="טלפון של '+esc(t.name)+'"></td><td><input type="email" data-f="email" data-id="'+t.id+'" value="'+esc(t.email||'')+'" aria-label="מייל של '+esc(t.name)+'"></td>'+
     '<td><div class="pills" role="group" aria-label="שליחה מועדפת">'+[['whatsapp','וואטסאפ'],['sms','SMS'],['email','מייל']].map(([k,l])=>'<button type="button" data-act="chan" data-id="'+t.id+'" data-v="'+k+'" aria-pressed="'+(t.channel===k)+'">'+l+'</button>').join('')+'</div></td>'+
-    '<td><button class="btn xs" data-act="savet" data-id="'+t.id+'">שמור</button></td></tr>').join('')+'</tbody></table></div></section>';
+    '</tr>').join('')+'</tbody></table></div></section>';
 }
 
 /* ---------- actions ---------- */
@@ -482,6 +525,9 @@ function handleErr(e){
   console.error(e);toast('משהו לא הצליח. בדקו חיבור לאינטרנט ונסו שוב.');
 }
 function logout(msg){S.phone=null;S.data=null;try{localStorage.removeItem('milui_phone')}catch(e){};renderLogin(msg)}
+async function saveTeacher(id){const g=f=>{const el=root.querySelector('[data-f="'+f+'"][data-id="'+id+'"]');return el?(el.value.trim()||null):null};
+  const t=S.data.T[id];t.phone=g('phone');t.email=g('email');
+  try{await rpc('milui_save_teacher',{p_phone:S.phone,p:{id,phone:t.phone,email:t.email,channel:t.channel}});toast('נשמר: '+t.name)}catch(e){handleErr(e)}}
 async function setSlot(p){await rpc('milui_set_slot',{p_phone:S.phone,p})}
 function absFor(slotId){const it=openItems(S.date).find(i=>i.slot.id===slotId);return it?it.abs.id:null}
 
@@ -552,9 +598,12 @@ root.addEventListener('click',async e=>{
    case 'cdone':{const r=S.data.assignments.find(x=>x.id===+b.dataset.id);await act(()=>rpc('milui_set_comp',{p_phone:S.phone,p_id:r.id,p_type:r.comp_type,p_note:r.comp_note,p_done:b.dataset.v==='1'}),b.dataset.v==='1'?'סומן כטופל':'הוחזר ללא טופל');break}
    case 'csv':{const rows=payRows(),T=S.data.T;const lines=[['תאריך','שעה','ממלא/ת','במקום','מקצוע','כיתה','סוג תגמול','הערה','טופל']].concat(rows.map(r=>{const s=S.data.SL[r.slot_id];return[r.date,s.hour,T[r.substitute_id].name,T[s.tid].name,s.subject,s.classes.join(' '),COMP[r.comp_type]||'',r.comp_note||'',r.comp_done?'כן':'לא']}));
      const csv='﻿'+lines.map(l=>l.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const ln=document.createElement('a');ln.href=u;ln.download='מילויי מקום '+monthStart(S.date).slice(0,7)+'.csv';document.body.appendChild(ln);ln.click();ln.remove();break}
-   case 'chan':{const t=S.data.T[+b.dataset.id];t.channel=b.dataset.v;root.querySelectorAll('[data-act="chan"][data-id="'+t.id+'"]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===t.channel));break}
-   case 'savet':{const id=+b.dataset.id,g=f=>root.querySelector('[data-f="'+f+'"][data-id="'+id+'"]').value.trim()||null;
-     await act(()=>rpc('milui_save_teacher',{p_phone:S.phone,p:{id,phone:g('phone'),email:g('email'),channel:S.data.T[id].channel}}),'נשמר');break}
+   case 'chan':{const t=S.data.T[+b.dataset.id];t.channel=b.dataset.v;root.querySelectorAll('[data-act="chan"][data-id="'+t.id+'"]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===t.channel));saveTeacher(t.id);break}
+   case 'calopen':{const k=b.dataset.key;if(S.cal&&S.cal.key===k){S.cal=null}else{const v=k==='board'?S.date:k==='from'?(S.abs.from||S.date):k==='to'?(S.abs.to||S.abs.from||S.date):S.modal.date;S.cal={key:k,month:monthStart(v||today())}}render();break}
+   case 'calnav':{const d=parse(S.cal.month);d.setMonth(d.getMonth()+(+b.dataset.n));S.cal.month=iso(d);render();break}
+   case 'calpick':{const k=b.dataset.key;S.cal=null;if(calSet(k,b.dataset.d)){await act(()=>load())}else render();break}
+   case 'delabs':{const a=S.data.absences.find(x=>x.id===+b.dataset.id);S.modal={kind:'del',id:a.id};render();break}
+   case 'mdel':{const id=S.modal.id,n=S.data.T[S.data.absences.find(x=>x.id===id).teacher_id].name;S.modal=null;await act(()=>rpc('milui_delete_absence',{p_phone:S.phone,p_id:id}),'ההיעדרות של '+n+' נמחקה');break}
   }
 });
 root.addEventListener('input',e=>{const a=e.target.dataset.act;
@@ -569,9 +618,9 @@ root.addEventListener('keydown',e=>{
   else if(e.key==='Escape'){refreshCombo(false)}
 });
 root.addEventListener('focusin',e=>{if(e.target.id==='q')refreshCombo(true)});
-document.addEventListener('click',e=>{if(!e.target.closest('.combo'))refreshCombo(false)});
+document.addEventListener('click',e=>{if(!e.target.closest('.combo'))refreshCombo(false);if(S.cal&&!e.target.closest('.calwrap')&&document.contains(e.target)){S.cal=null;render()}});
 root.addEventListener('change',async e=>{const t=e.target,a=t.dataset.act;
-  if(a==='mdate'&&t.value){S.modal.date=t.value;render();return}
+  if(t.dataset.f==='phone'||t.dataset.f==='email'){saveTeacher(+t.dataset.id);return}
   if(a==='pickdate'&&t.value){S.date=t.value;await act(()=>load())}
   if(a==='from'){S.abs.from=t.value;render()}
   if(a==='to'){S.abs.to=t.value;render()}
