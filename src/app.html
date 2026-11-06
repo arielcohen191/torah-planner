@@ -134,6 +134,15 @@ input[type=number]{font-variant-numeric:tabular-nums}
 .more-row{border:none;border-radius:14px;background:var(--sunk);padding:8px 12px 12px;margin:0;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:end}
 .more-row legend{font-size:12.5px;font-weight:700;padding:0 4px}
 @media (max-width:560px){.more-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}.more-row label:first-of-type{grid-column:1/-1}}
+.brk-box{margin-top:16px;border-radius:16px;background:var(--sunk);padding:14px}
+.brk-toggle{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.brk-toggle input{width:22px;height:22px;margin-top:2px;accent-color:var(--s-gemara);flex:none}
+.brk-toggle b{display:block;font-size:14.5px}.brk-toggle small{color:var(--muted);font-size:12.5px}
+.brk-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+@media (max-width:560px){.brk-fields{grid-template-columns:1fr 1fr}.brk-fields label:first-child{grid-column:1/-1}}
+.brk-inline{display:flex;gap:8px;align-items:center;font-weight:600;color:var(--ink)}.brk-inline input{width:80px;background:var(--card)}
+.brk-fields select{background:var(--card)}
+.card.brk{--c:var(--s-gemara);--tc:var(--t-gemara)}.card.brk.test{--c:var(--s-other);--tc:var(--t-other)}
 .mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .mode-pick button{font:inherit;text-align:right;border:2px solid transparent;border-radius:14px;background:var(--sunk);padding:12px 14px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;gap:2px}
 .mode-pick button small{color:var(--muted);font-size:12px}
@@ -439,6 +448,15 @@ table.wk input[type=checkbox]{width:20px;height:20px}
                 <p class="note-line">מלמדים כמה כיתות באותה שכבה? אחרי השמירה לוחצים "+ אותה תוכנית לכיתה נוספת" ומעדכנים רק את המערכת.</p>
                 <h3>שעות שבועיות</h3>
                 <div class="days" id="days"></div>
+                <div class="brk-box" id="brkBox">
+                  <label class="brk-toggle"><input type="checkbox" id="brkOn"><span><b>חזרות ומבחנים אחרי כל יחידה</b><small>שיעורי חזרה ומבחן נכנסים אוטומטית לתוך ההספק</small></span></label>
+                  <div class="brk-fields" id="brkFields">
+                    <label class="f">אחרי כל<span class="brk-inline"><input type="number" id="brkEvery" min="1" max="30"><span id="brkUnit">פרקים</span></span></label>
+                    <label class="f">שיעורי חזרה<select id="brkRev"><option value="0">בלי</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+                    <label class="f">שיעור מבחן<select id="brkTest"><option value="1">כן</option><option value="0">לא</option></select></label>
+                  </div>
+                  <p class="note-line" id="brkNote"></p>
+                </div>
                 <h3>ימי מרתון ותגבור</h3>
                 <p class="hint">יום מרוכז או שעות נוספות בתאריך מסוים (שישי, שבוע סיום, יום עיון).</p>
                 <div class="row-list" id="marathons"></div>
@@ -585,7 +603,7 @@ function computeParasha(S,hol){
   const pace=Math.max(0.01,+S.pace||1),scope=S.scope||'pace',span=[],items=[],shortWeeks=[];let available=0,needed=0;
   const mar={};(S.marathons||[]).forEach(m=>{if(m.date&&+m.hours>0)mar[m.date]=(mar[m.date]||0)+(+m.hours)});
   const blk={};(S.blocked||[]).forEach(x=>{if(x.date)blk[x.date]=x.note||'השיעור לא מתקיים'});
-  const seen=new Set();
+  const seen=new Set(),cfg=brkCfg(S);let parCount=0,blockStart=null;
   if(!S.startDate||!S.endDate||S.endDate<S.startDate)return {U:span,span,items,needed:0,available:0,finishDate:null,parasha:true,shortWeeks,scope,pace};
   for(let sun=add(S.startDate,-dow(S.startDate));sun<=S.endDate;sun=add(sun,7)){
     const days=[];
@@ -594,20 +612,27 @@ function computeParasha(S,hol){
       let hrs=+S.days?.[i]||0;if(blk[d]){if(hrs>0)items.push({type:'blk',date:d,name:blk[d]});hrs=0}
       const mh=mar[d]||0;hrs+=mh;if(hrs>0)days.push({d,hrs,mar:mh>0})}
     const wh=days.reduce((a,x)=>a+x.hrs,0);available+=wh;
-    let wu=[];(DATA.P[add(sun,6)]||'').split('-').filter(Boolean).forEach(n=>{wu=wu.concat(parashaUnits(n))});
+    const pname=DATA.P[add(sun,6)]||'';
+    let wu=[];pname.split('-').filter(Boolean).forEach(n=>{wu=wu.concat(parashaUnits(n))});
     if(!wu.length){days.forEach(x=>items.push({type:'lesson',date:x.d,hours:x.hrs,mar:x.mar,rev:true,text:'חזרה ופעילות לחג'}));continue}
     if(!days.length)continue;
-    needed+=wu.length/pace;
-    if(scope==='pace')wu=wu.slice(0,Math.max(1,Math.floor(wh*pace)));
-    else if(wh*pace<wu.length)shortWeeks.push({sun,need:r2(wu.length/wh)});
-    const base=span.length;span.push(...wu);let acc=0;
-    days.forEach(x=>{const s0=Math.round(acc/wh*wu.length);acc+=x.hrs;const e0=Math.round(acc/wh*wu.length)-1;
+    // review/test at the end of every N parshiot: the last lessons of that week
+    parCount++;if(!blockStart)blockStart=pname;let brkDays=[];
+    if(cfg&&parCount%cfg.every===0){const K=Math.min(cfg.nRev+cfg.nTest,days.length-1);if(K>0){const lbl=blockStart===pname?'פרשת '+pname:`פרשות ${blockStart}–${pname}`;const q=brkItems(cfg,lbl);const pickQ=[...q.slice(0,Math.max(0,K-cfg.nTest)),...(cfg.nTest?q.slice(-1):[])].slice(-K);
+      brkDays=days.splice(days.length-K,K).map((x,j)=>({...x,q:pickQ[j]}))}blockStart=null}
+    const whL=days.reduce((a,x)=>a+x.hrs,0);
+    needed+=wu.length/pace+brkDays.reduce((a,x)=>a+x.hrs,0);
+    if(scope==='pace')wu=wu.slice(0,Math.max(1,Math.floor(whL*pace)));
+    else if(whL*pace<wu.length)shortWeeks.push({sun,need:r2(wu.length/whL)});
+    brkDays.forEach(x=>items.push({type:'lesson',date:x.d,hours:x.hrs,mar:x.mar,brk:x.q.kind,text:x.q.text,unitLbl:x.q.lbl}));
+    const wh2=whL;const base=span.length;span.push(...wu);let acc=0;
+    days.forEach(x=>{const s0=Math.round(acc/wh2*wu.length);acc+=x.hrs;const e0=Math.round(acc/wh2*wu.length)-1;
       const it={type:'lesson',date:x.d,hours:x.hrs,mar:x.mar};
       if(e0<s0){it.rev=true;it.text='חזרה על הפרשה'}else{it.u0=base+s0;it.u1=base+e0;it.n=e0-s0+1;it.text=rangeLabel(span,base+s0,base+e0)+` (${it.n} פס׳)`;it.group=wu[s0].group}
       items.push(it)});
   }
   items.sort((a,b)=>a.date.localeCompare(b.date));
-  return {U:span,span,items,needed:scope==='pace'?Math.min(needed,available):needed,available,finishDate:null,parasha:true,shortWeeks,scope,pace};
+  return {U:span,span,items,needed:scope==='pace'?Math.min(needed,available):needed,available,finishDate:null,parasha:true,shortWeeks,scope,pace,brkCount:items.filter(x=>x.brk).length};
 }
 /* label for a run of units, e.g. "פרק ג, ה–יב" or "ג,ה – ד,יב" */
 function rangeLabel(U,s,e){
@@ -645,6 +670,20 @@ const todayIso=(()=>{const n=new Date();return `${n.getFullYear()}-${String(n.ge
 const r2=x=>Math.round(x*100)/100;
 
 /* ---------- engine ---------- */
+/* review / test lessons after each learning unit */
+const BRK_DEF={torah:3,navi:3,mishna:1,gemara:2,other:3,parasha:1};
+const brkWord=P=>P.subject==='torah'&&P.mode==='parasha'?['פרשה','פרשות']:P.subject==='gemara'?['דף','דפים']:P.subject==='other'?['נושא','נושאים']:['פרק','פרקים'];
+function brkCfg(P){const b=P.breaks;if(!b||!b.on)return null;const nRev=Math.max(0,Math.min(5,+b.review||0)),nTest=b.test?1:0;if(!(nRev+nTest))return null;
+  return {every:Math.max(1,+b.every||BRK_DEF[P.subject==='torah'&&P.mode==='parasha'?'parasha':P.subject]||1),nRev,nTest}}
+function avgLesson(P){const v=Object.values(P.days||{}).map(Number).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:1}
+function blockLabel(span,s0,e0,P){
+  const a=span[s0],b=span[e0];if(!a||!b)return '';
+  if(P.subject==='other')return s0===e0?a.label:`${a.label} – ${b.label}`;
+  const [one,many]=brkWord(P),pa=a.bk?a.bk+' ':'';
+  if(a.bk!==b.bk)return `${a.bk} ${a.cl} – ${b.bk} ${b.cl}`;
+  return a.c===b.c?`${pa}${one} ${a.cl}`:`${pa}${many} ${a.cl}–${b.cl}`;
+}
+function brkItems(cfg,lbl){const q=[];for(let r=0;r<cfg.nRev;r++)q.push({kind:'review',text:`חזרה על ${lbl}`+(cfg.nRev>1?` (${r+1}/${cfg.nRev})`:''),lbl});if(cfg.nTest)q.push({kind:'test',text:`מבחן על ${lbl}`,lbl});return q}
 function compute(S,hol){
   if(S.subject==='torah'&&S.mode==='parasha')return computeParasha(S,hol);
   const {U,a,b,span}=spanOf(S);
@@ -659,7 +698,13 @@ function compute(S,hol){
   const mar={};(S.marathons||[]).forEach(m=>{if(m.date&&+m.hours>0)mar[m.date]=(mar[m.date]||0)+(+m.hours)});
   const blk={};(S.blocked||[]).forEach(x=>{if(x.date)blk[x.date]=x.note||'השיעור לא מתקיים'});
   const seenHol=new Set();
-  if(!S.startDate||!S.endDate||S.endDate<S.startDate)return {U,span,items,needed,available:0,finishDate:null,a,b};
+  // unit boundaries for review/test lessons
+  const cfg=brkCfg(S),bounds=[];
+  if(cfg&&span.length){let ord=-1,last=null;const bid=span.map((u,i)=>{const k=S.subject==='other'?i:(u.bk||'')+'|'+u.c;if(k!==last){ord++;last=k}return Math.floor(ord/cfg.every)});
+    let s0=0;span.forEach((u,i)=>{if(i===span.length-1||bid[i]!==bid[i+1]){bounds.push({h:cum[i+1],s:s0,e:i});s0=i+1}})}
+  const brkH=cfg?bounds.length*(cfg.nRev+cfg.nTest)*avgLesson(S):0;
+  let bi=0,queue=[],nBrk=0;
+  if(!S.startDate||!S.endDate||S.endDate<S.startDate)return {U,span,items,needed:needed+brkH,available:0,finishDate:null,a,b};
   for(let d=S.startDate;d<=S.endDate;d=add(d,1)){
     const w=dow(d);if(w===6)continue;
     const h=holidayOn(d,hol);
@@ -669,7 +714,9 @@ function compute(S,hol){
     const mh=mar[d]||0;hrs+=mh;
     if(hrs<=0)continue;
     available+=hrs;
-    const p0=posAt(used),p1=posAt(used+hrs);
+    if(queue.length){const q=queue.shift();nBrk++;items.push({type:'lesson',date:d,hours:hrs,mar:mh>0,brk:q.kind,text:q.text,unitLbl:q.lbl});if(used>=needed-1e-9&&!queue.length)finishDate=d;continue}
+    let eff=hrs;if(bi<bounds.length&&used<needed-1e-9){const room=bounds[bi].h-used;if(room>1e-9&&room<eff)eff=room}
+    const p0=posAt(used),p1=posAt(used+eff);
     let it={type:'lesson',date:d,hours:hrs,mar:mh>0};
     if(used>=needed-1e-9){it.rev=true;it.text='חזרה, העמקה ומבחנים'}
     else if(span[0].fine){
@@ -678,7 +725,7 @@ function compute(S,hol){
       it.u0=u0;it.u1=u1;it.n=u1-u0+1;
       it.text=rangeLabel(span,u0,u1)+` (${it.n} פס׳)`;
       it.group=span[u0].group||'';
-      if(used+hrs>=needed-1e-9&&!finishDate){finishDate=d;it.finish=true}
+      if(used+eff>=needed-1e-9&&!finishDate){finishDate=d;it.finish=true}
     }
     else{
       const u0=Math.floor(p0+1e-9),u1=Math.max(u0,Math.ceil(p1-1e-9)-1);
@@ -687,11 +734,13 @@ function compute(S,hol){
       if(u0===u1){it.text=span[u0].label+(cont?' (המשך)':(part?' (התחלה)':''))}
       else it.text=`${span[u0].label}${cont?' (המשך)':''} – ${span[u1].short}${part?' (התחלה)':''}`;
       it.group=span[u0].group||'';
-      if(used+hrs>=needed-1e-9&&!finishDate){finishDate=d;it.finish=true}
+      if(used+eff>=needed-1e-9&&!finishDate){finishDate=d;it.finish=true}
     }
-    used+=hrs;items.push(it);
+    used+=eff;items.push(it);
+    if(bi<bounds.length&&used>=bounds[bi].h-1e-9){queue.push(...brkItems(cfg,blockLabel(span,bounds[bi].s,bounds[bi].e,S)));bi++}
   }
-  return {U,span,items,needed,available,finishDate,a,b};
+  if(cfg&&bi>=bounds.length&&!queue.length&&finishDate){const lastB=[...items].reverse().find(x=>x.brk);if(lastB&&lastB.date>finishDate)finishDate=lastB.date}
+  return {U,span,items,needed:needed+brkH,available,finishDate:(queue.length||bi<bounds.length)&&cfg?null:finishDate,a,b,brkCount:nBrk};
 }
 function verdict(R){
   if(R.parasha){const n=R.shortWeeks.length;
@@ -724,10 +773,11 @@ function weeks(P,R,hol){
     const sw=(R.shortWeeks||[]).find(x=>x.sun===sun);if(sw)notes.push(`צפוף: ${sw.need} פס׳ לשעה`);
     const its=byWeek[sun]||[];
     its.filter(i=>i.type==='blk').forEach(i=>notes.push(`${WD[dow(i.date)]} ${i.name}`));
+    {const g={};its.filter(i=>i.brk).forEach(i=>{const k=(i.brk==='test'?'מבחן':'חזרה')+': '+i.unitLbl;(g[k]=g[k]||[]).push(WD[dow(i.date)])});Object.entries(g).forEach(([k,ds])=>notes.push(`${ds.join(',')} ${k}`))}
     const les=its.filter(i=>i.type==='lesson'&&!i.rev&&i.u0!=null);
     const rev=its.some(i=>i.type==='lesson'&&i.rev);
     if(its.some(i=>i.mar))notes.push('יום מרתון');
-    const di=x=>WD.indexOf(x.split(/[ –]/)[0]);
+    const di=x=>WD.indexOf(x.split(/[ –,]/)[0]);
     let row={sun,par,notes:[...new Set(notes)].sort((a,b)=>di(a)-di(b)),hours:its.reduce((a,i)=>a+(i.hours||0),0)};
     if(les.length){const s=Math.min(...les.map(i=>i.u0)),e=Math.max(...les.map(i=>i.u1));const A=R.span[s],B=R.span[e];
       Object.assign(row,{s,e,fromC:(A.bk&&A.bk!==lastBk?A.bk+' ':'')+A.cl,fromV:A.vl,toC:(B.bk&&B.bk!==A.bk?B.bk+' ':'')+B.cl,toV:B.vl,n:e-s+1,label:rangeLabel(R.span,s,e)});lastBk=B.bk;}
@@ -738,7 +788,7 @@ function weeks(P,R,hol){
 }
 
 /* ---------- state ---------- */
-const blank=()=>({id:null,v:2,more:[],teacher:'',grade:'ו',cls:'',subject:'navi',book:'מלכים א',startIdx:0,endIdx:null,pace:12,otherText:'',
+const blank=()=>({id:null,v:2,more:[],breaks:{on:false,every:null,review:2,test:true},teacher:'',grade:'ו',cls:'',subject:'navi',book:'מלכים א',startIdx:0,endIdx:null,pace:12,otherText:'',
   startDate:todayIso<'2026-09-01'||todayIso>YEAR_END?'2026-11-01':todayIso,endDate:YEAR_END,days:{0:1,1:0,2:1,3:0,4:1,5:0},marathons:[],blocked:[],progress:{}});
 let S=blank(),step=1,mode='week';
 let db=null,uid=null,canWrite=null,isAdmin=false,myDoc={plans:{}},team=[],mineLoaded=false,teamLoaded=false;
@@ -833,6 +883,22 @@ function renderTaken(){
   const others=[];team.forEach(t=>{if(t.uid===uid)return;Object.values(t.plans||{}).forEach(p=>{if(p.grade===S.grade&&p.subject===S.subject)others.push(p)})});
   el.innerHTML=others.length?`<div class="taken">כבר נשמרה תוכנית ${esc(SUBJECTS[S.subject].label)} לשכבה ${esc(S.grade)}׳: ${others.map(p=>esc(p.teacher||'מורה')+(p.subject!=='other'?' ('+esc(p.book)+')':'')).join(', ')}. התוכניות שכבתיות, כדאי לתאם לפני שבונים עוד אחת.</div>`:'';
 }
+function renderBrk(){
+  const b=S.breaks=S.breaks||{on:false,review:2,test:true};const par=S.subject==='torah'&&S.mode==='parasha';
+  const def=BRK_DEF[par?'parasha':S.subject]||1,[one,many]=brkWord(S);
+  $('#brkOn').checked=!!b.on;$('#brkFields').hidden=!b.on;
+  $('#brkEvery').value=b.every||def;$('#brkUnit').textContent=(+(b.every||def)===1?one:many);
+  $('#brkRev').value=String(b.review??2);$('#brkTest').value=b.test===false?'0':'1';
+  const R=compute(S,allHol()),tot=R.items.filter(x=>x.type==='lesson').length,n=R.brkCount||0;
+  $('#brkNote').textContent=!b.on?'':(par?'בשבוע שבו מסתיימת יחידה, השיעורים האחרונים של השבוע הופכים לחזרה/מבחן. ':'')+`${n} מתוך ${tot} השיעורים בשנה הם חזרה או מבחן${tot?` (${Math.round(n/tot*100)}%)`:''}. הם מסומנים בטבלה בעמודת ההערות.`;
+}
+document.addEventListener('change',e=>{const t=e.target,b=S.breaks=S.breaks||{};
+  if(t.id==='brkOn'){b.on=t.checked;if(b.on&&b.review==null)b.review=2;if(b.on&&b.test==null)b.test=true}
+  else if(t.id==='brkEvery')b.every=Math.max(1,+t.value||1);
+  else if(t.id==='brkRev')b.review=+t.value;
+  else if(t.id==='brkTest')b.test=t.value==='1';
+  else return;
+  changed();renderBrk()});
 function renderDays(){
   $('#days').innerHTML=WDL.map((n,i)=>{const h=+S.days[i]||0;return `<div class="day ${h>0?'on':''}"><span>${n}</span><input type="number" min="0" max="8" step="0.5" id="day${i}" data-day="${i}" value="${h}" aria-label="שעות ביום ${n}"></div>`}).join('');
 }
@@ -844,7 +910,7 @@ function renderRows(){
   $('#marathons').innerHTML=S.marathons.length?S.marathons.map((x,i)=>rowHtml('mar',x,i)).join(''):'<p class="note-line" style="margin:0">אין ימי מרתון.</p>';
   $('#blocked').innerHTML=S.blocked.length?S.blocked.map((x,i)=>rowHtml('blk',x,i)).join(''):'<p class="note-line" style="margin:0">לא הוגדרו ימים כאלה.</p>';
 }
-function goStep(n){step=n;[1,2,3].forEach(k=>$('#s'+k).hidden=k!==n);$$('#steps button').forEach(b=>+b.dataset.s===n?b.setAttribute('aria-current','step'):b.removeAttribute('aria-current'));if(n===3)b3();renderLedger();$('#steps').scrollIntoView({block:'nearest'})}
+function goStep(n){step=n;[1,2,3].forEach(k=>$('#s'+k).hidden=k!==n);$$('#steps button').forEach(b=>+b.dataset.s===n?b.setAttribute('aria-current','step'):b.removeAttribute('aria-current'));if(n===3)b3();if(n===2)renderBrk();renderLedger();$('#steps').scrollIntoView({block:'nearest'})}
 $$('#steps button').forEach(b=>{b.onclick=()=>goStep(+b.dataset.s)});
 document.addEventListener('click',e=>{const go=e.target.closest('[data-go]');if(go)goStep(+go.dataset.go);
   const del=e.target.closest('[data-del]');if(del){(del.dataset.del==='mar'?S.marathons:S.blocked).splice(+del.dataset.i,1);renderRows();changed()}});
@@ -867,7 +933,7 @@ document.addEventListener('change',e=>{
   if(t.id==='grade')renderTaken();
 });
 let dirty=false;
-function changed(){dirty=true;persistDraft();renderLedger();if(step===3)b3()}
+function changed(){dirty=true;persistDraft();renderLedger();if(step===3)b3();if(step===2&&!changed._b){changed._b=1;try{renderBrk()}finally{changed._b=0}}}
 document.addEventListener('change',e=>{if(e.target.id==='teacher')renderHero()});
 
 /* ---------- visual helpers ---------- */
@@ -961,7 +1027,7 @@ function listHTML(P,R){
     if(it.type==='hol'){html+=`<div class="card off">${when}<div class="what"><b>${esc(it.name)}</b><small>${heb(it.date)}${it.to!==it.date?' – '+heb(it.to):''}</small></div><span class="chip bad">חופשה</span></div>`;continue}
     if(it.type==='blk'){html+=`<div class="card off">${when}<div class="what"><b>${esc(it.name)}</b><small>${heb(it.date)}</small></div><span class="chip bad">אין שיעור</span></div>`;continue}
     const sub=[heb(it.date),it.group&&P.subject==='torah'?it.group:''].filter(Boolean).map(esc).join(' · ');
-    html+=`<div class="card ${it.rev?'rev':''} ${it.mar?'mar':''}" style="${st}">${when}<div class="what"><b>${esc(it.text)}</b><small>${sub}</small>${it.mar||it.finish?`<div class="chips" style="margin-top:4px">${it.mar?'<span class="chip gold">מרתון</span>':''}${it.finish?'<span class="chip ok">סיום החומר</span>':''}</div>`:''}</div><span class="hrs" title="שעות">${r2(it.hours)}ש׳</span></div>`;
+    html+=`<div class="card ${it.rev?'rev':''} ${it.mar?'mar':''} ${it.brk?'brk '+it.brk:''}" ${it.brk?'':`style="${st}"`}>${when}<div class="what"><b>${esc(it.text)}</b><small>${sub}</small>${it.brk?`<div class="chips" style="margin-top:4px"><span class="chip">${it.brk==='test'?'מבחן':'חזרה'}</span></div>`:''}${it.mar||it.finish?`<div class="chips" style="margin-top:4px">${it.mar?'<span class="chip gold">מרתון</span>':''}${it.finish?'<span class="chip ok">סיום החומר</span>':''}</div>`:''}</div><span class="hrs" title="שעות">${r2(it.hours)}ש׳</span></div>`;
   }
   return html;
 }
@@ -1051,7 +1117,7 @@ function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTim
 function summary(P){const R=compute(P,allHol());const v=verdict(R);const W=weeks(P,R,allHol()).filter(w=>w.label&&w.sun<=todayIso);const pg=P.progress||{};
   return {available:r2(R.available),needed:r2(R.needed),ok:v.ok,finish:R.finishDate||null,from:R.span[0]?.label||'',to:R.span[R.span.length-1]?.label||'',count:R.span.length,unit:unitName(P.subject,P.book),past:W.length,done:W.filter(w=>pg[w.sun]?.d).length}}
 const clsNorm=c=>String(c||'').replace(/^\s*[א-ח]\s*['׳"]?\s*/,'').trim();
-const pick=P=>({v:2,progress:P.progress||{},more:P.more||[],mode:P.mode||'seq',scope:P.scope||'pace',teacher:P.teacher,grade:P.grade,cls:clsNorm(P.cls),subject:P.subject,book:P.book,startIdx:P.startIdx,endIdx:P.endIdx,pace:P.pace,otherText:P.otherText,startDate:P.startDate,endDate:P.endDate,days:P.days,marathons:P.marathons,blocked:P.blocked});
+const pick=P=>({v:2,progress:P.progress||{},more:P.more||[],breaks:P.breaks||{on:false},mode:P.mode||'seq',scope:P.scope||'pace',teacher:P.teacher,grade:P.grade,cls:clsNorm(P.cls),subject:P.subject,book:P.book,startIdx:P.startIdx,endIdx:P.endIdx,pace:P.pace,otherText:P.otherText,startDate:P.startDate,endDate:P.endDate,days:P.days,marathons:P.marathons,blocked:P.blocked});
 $('#saveBtn').onclick=()=>savePlan(false);
 /* what makes a plan "the same plan": grade, class, subject, mode and books. Change any of them → it is saved as a new plan */
 const planKey=P=>[P.grade,String(P.cls||'').trim(),P.subject,P.subject==='torah'?(P.mode||'seq'):'',P.subject==='other'?'':booksOf(P).join('+')].join('|');
