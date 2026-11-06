@@ -605,5 +605,5 @@
 
   return { DAYS, LAYERS, DEFAULT_CONFIG, ROLE, DCAT, OPT, SHIFT_NAME, PATTERN, STATIONS, AHMASH, SOFT, LEVEL, TYPES,
     buildStaff, defaultRules, compile, conflicts, addRule, setPersonal, newId, describe, whoText, whatText, slotsText, key, matches, setOf,
-    parseSheet, solve, report, presence, formAllows, stationLayer, matchTimetable };
+    parseSheet, solve, report, presence, formAllows, stationLayer, stationOk, matchTimetable };
 });
