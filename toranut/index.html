@@ -37,6 +37,12 @@ h1{margin:0;font-size:26px;font-weight:700}h2{margin:0 0 12px;font-size:20px;fon
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .kpi{border-radius:var(--r-lg);padding:18px 22px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:104px}
 .kpi b{display:block;font-size:19px;font-weight:600}.kpi span{font-size:14px;opacity:.95}.kpi .n{font-size:56px;line-height:56px;font-weight:200}
+button.kpi{border:0;font:inherit;color:#fff;text-align:right;width:100%;cursor:pointer;transition:transform .12s,box-shadow .12s}
+button.kpi:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(31,42,55,.18)}
+.kpi .go{display:block;margin-top:4px;font-size:13px;font-weight:600;opacity:1;text-decoration:underline}
+.lnk{background:none;border:0;padding:0;font:inherit;color:var(--brand-dark);font-weight:600;text-decoration:underline;cursor:pointer;text-align:right}
+.chip.lnk{text-decoration:none;font-weight:400;color:var(--ink);padding:2px 10px}.chip.lnk:hover{border-color:var(--brand);background:#eaf3fd}
+.fixlnk{display:block;background:none;border:0;padding:1px 0;font:inherit;font-size:14px;color:var(--red);text-decoration:underline;cursor:pointer;text-align:right}
 .k-red{background:var(--red)}.k-orange{background:var(--orange)}.k-green{background:var(--green)}.k-blue{background:var(--blue)}
 .list{display:flex;flex-direction:column;gap:10px}
 .item{background:var(--card-muted);border-radius:var(--r-sm);border-right:6px solid var(--line);padding:12px 16px}
@@ -168,7 +174,12 @@ const roleName={teacher:'מורה',aide:'סייע/ת',admin:'מנהלה',other:'
 const dayList=a=>a&&a.length?a.map(d=>D[d]).join(', '):'—';
 const SRC={sheet:['גיליון','#e8eef5'],form:['שאלון','#eef7e8'],personal:['חריג אישי','#fff4e0'],site:['נוסף באתר','#f1e9fb']};
 const srcChip=r=>{const s=SRC[r.src]||SRC.site;return '<span class="chip" style="background:'+s[1]+'">'+s[0]+'</span>'};
-function kpi(cls,title,sub,n){return '<div class="kpi '+cls+'"><div><b>'+title+'</b><span>'+sub+'</span></div><div class="n">'+n+'</div></div>'}
+function kpi(cls,title,sub,n,act,go){
+  const inner='<div><b>'+title+'</b><span>'+sub+'</span>'+(go?'<span class="go">'+go+' ←</span>':'')+'</div><div class="n">'+n+'</div>';
+  return act?'<button type="button" class="kpi '+cls+'" data-act="'+act+'">'+inner+'</button>':'<div class="kpi '+cls+'">'+inner+'</div>';
+}
+const fbtn=(id,label,cls)=>'<button type="button" class="'+(cls||'lnk')+'" data-act="focus" data-id="'+id+'" title="הצגה בלוח">'+label+'</button>';
+function emptyKeys(){const A=S.data.plan.assign||{};return S.R.unfilled.filter(k=>!A[k])}
 const ICON={sum:'<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',board:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 4v16"/>',staff:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.6c1.7.8 2.7 2.6 3 5.4"/>',rules:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',st:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'};
 const icon=k=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICON[k]+'</svg>';
 const runBtn=(cls)=>'<button class="btn'+(cls||'')+'" data-act="run"'+(S.busy?' disabled':'')+'>'+(S.busy?'מריץ…':'הרצת שיבוץ')+'</button>';
@@ -196,7 +207,10 @@ function viewSum(){
   const short=st.demand-st.supply;
   let h='<div class="card topbar"><div><h1>איפה זה נתקע</h1><div class="muted small">'+(ran?'הרצה אחרונה: '+new Date(S.data.plan.at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):'עוד לא הורץ')+(S.data.rulesFrom?' · כללים: '+esc(S.data.rulesFrom):'')+'</div></div>'+
     '<div class="row noprint">'+runBtn()+'<button class="btn sec sm" data-act="import">עדכון מהשאלון</button></div></div>';
-  h+='<div class="kpis">'+kpi('k-blue','עמדות בשבוע','בוקר, הפסקות וסוף יום',st.demand)+kpi('k-green','שובצו','',st.filled)+kpi(st.open?'k-red':'k-green','חסרות','עמדות בלי תורן',st.open)+kpi(short>0?'k-orange':'k-green','היצע לפי הכללים','סך התורנויות שהכללים דורשים',st.supply)+'</div>';
+  h+='<div class="kpis">'+kpi('k-blue','עמדות בשבוע','בוקר, הפסקות וסוף יום',st.demand,'kBoard','ללוח המלא')+
+    kpi('k-green','שובצו','',st.filled,'kStaff',R.people.some(p=>p.status==='in'&&p.got<p.target)?'מי מתחת למכסה':'לרשימת הצוות')+
+    kpi(st.open?'k-red':'k-green','חסרות','עמדות בלי תורן',st.open,st.open?'kFix':'kBoard',st.open?'לאייש עכשיו, אחת אחרי השנייה':'הכול מאויש')+
+    kpi(short>0?'k-orange':'k-green','היצע לפי הכללים','סך התורנויות שהכללים דורשים',st.supply,'kQuota',short>0?'להגדיל מכסות':'לכללי הכמות')+'</div>';
   if(!ran||S.data.plan.stale)h+='<div class="note noprint">'+(ran?'הכללים או הצוות השתנו מאז ההרצה האחרונה. ':'')+'לחצו "הרצת שיבוץ" כדי לראות את התוצאה.</div>';
   if(!ran)return h;
   // 1. היצע מול ביקוש
@@ -213,7 +227,7 @@ function viewSum(){
     S.cfg.shifts.map(sh=>'<tr><th class="st">'+esc(sh.label)+'</th>'+[0,1,2,3,4,5].map(d=>{
       const c=R.cells[sh.id+'@'+d];if(!c)return '<td class="cell off"></td>';
       if(!c.unfilled.length)return '<td style="color:var(--green)">✓ '+c.filled+'/'+c.demand+'</td>';
-      return '<td style="background:#fdecea"><b style="color:var(--red)">חסרים '+c.unfilled.length+'</b><div class="small">'+c.unfilled.map(p=>esc(p.st.name.split(' (')[0])).join('<br>')+'</div><div class="small muted">זמינים בשעה הזו: '+c.possible+(c.freeButIneligible?', '+c.freeButIneligible+' פנויים אבל לא מתאימים לעמדה':' — כולם כבר משובצים או במכסה')+'</div></td>'}).join('')+'</tr>').join('')+
+      return '<td style="background:#fdecea"><b style="color:var(--red)">חסרים '+c.unfilled.length+'</b><div class="small">'+c.unfilled.map(p=>'<button type="button" class="fixlnk" data-act="fix" data-k="'+p.key+'">'+esc(p.st.name.split(' (')[0])+'</button>').join('')+'</div><div class="small muted">זמינים בשעה הזו: '+c.possible+(c.freeButIneligible?', '+c.freeButIneligible+' פנויים אבל לא מתאימים לעמדה':' — כולם כבר משובצים או במכסה')+'</div></td>'}).join('')+'</tr>').join('')+
     '</tbody></table></div>';
   }
   h+='</div>';
@@ -226,16 +240,16 @@ function viewSum(){
   const under=R.people.filter(p=>p.status==='in'&&p.got<p.target);
   h+='<div class="card"><h2>3. החלטות שמחכות להנהלה</h2><div class="list">'+
     (obst.length?'<div class="item orange"><b>כתבו מניעה, ועדיין בשיבוץ ('+obst.length+')</b><div class="small muted">להחריג או להשאיר? מסך "צוות" ← עמודת "משובץ/ת"</div><div class="list" style="margin-top:8px">'+
-      obst.map(s=>'<div class="small"><b>'+esc(s.name)+'</b> <span class="muted">('+roleName[s.role]+', '+R2[s.id].got+' תורנויות)</span> — '+esc(s.obstacle)+'</div>').join('')+'</div></div>':'')+
-    '<div class="item"><b>מוחרגים כרגע ('+out.length+')</b><div class="chips">'+out.map(s=>{const r=ruleOf(prof(s.id).src.exclude);return '<span class="chip">'+esc(s.name)+(r&&r.note?' · '+esc(r.note):r?' · '+esc(T.whoText(r,S.data.staff)):'')+'</span>'}).join('')+'</div></div>'+
-    (noForm.length?'<div class="item orange"><b>במערכת השעות אבל לא מילאו שאלון</b><div class="chips">'+noForm.map(s=>'<span class="chip">'+esc(s.name)+(prof(s.id).ahmash==='only'?' (אחמ"ש)':'')+'</span>').join('')+'</div></div>':'')+
-    (noTT.length?'<div class="item orange"><b>מילאו שאלון אבל לא נמצאו במערכת השעות</b><div class="chips">'+noTT.map(s=>'<span class="chip">'+esc(s.name)+'</span>').join('')+'</div><div class="small muted">שובצו לפי הימים שכתבו, בלי בדיקת שעות.</div></div>':'')+
-    (under.length?'<div class="item"><b>קיבלו פחות מהמכסה ('+under.length+')</b><div class="chips">'+under.map(p=>'<span class="chip">'+esc(p.name)+' '+p.got+'/'+p.target+'</span>').join('')+'</div><div class="small muted">בדרך כלל בגלל הגבלות אישיות או ימי עבודה.</div></div>':'')+
+      obst.map(s=>'<div class="small">'+fbtn(s.id,esc(s.name))+' <span class="muted">('+roleName[s.role]+', '+R2[s.id].got+' תורנויות)</span> — '+esc(s.obstacle)+'</div>').join('')+'</div></div>':'')+
+    '<div class="item"><b>מוחרגים כרגע ('+out.length+')</b><div class="chips">'+out.map(s=>{const r=ruleOf(prof(s.id).src.exclude);return fbtn(s.id,esc(s.name)+(r&&r.note?' · '+esc(r.note):r?' · '+esc(T.whoText(r,S.data.staff)):''),'chip lnk')}).join('')+'</div></div>'+
+    (noForm.length?'<div class="item orange"><b>במערכת השעות אבל לא מילאו שאלון</b><div class="chips">'+noForm.map(s=>fbtn(s.id,esc(s.name)+(prof(s.id).ahmash==='only'?' (אחמ"ש)':''),'chip lnk')).join('')+'</div></div>':'')+
+    (noTT.length?'<div class="item orange"><b>מילאו שאלון אבל לא נמצאו במערכת השעות</b><div class="chips">'+noTT.map(s=>fbtn(s.id,esc(s.name),'chip lnk')).join('')+'</div><div class="small muted">שובצו לפי הימים שכתבו, בלי בדיקת שעות.</div></div>':'')+
+    (under.length?'<div class="item"><b>קיבלו פחות מהמכסה ('+under.length+')</b><div class="chips">'+under.map(p=>fbtn(p.id,esc(p.name)+' '+p.got+'/'+p.target,'chip lnk')).join('')+'</div><div class="small muted">בדרך כלל בגלל הגבלות אישיות או ימי עבודה.</div></div>':'')+
     '</div></div>';
   // 4. כללים "ככל האפשר" שלא התקיימו
   const br=R.people.filter(p=>p.broken.length);
   if(br.length)h+='<div class="card"><h2>4. העדפות שלא התקיימו ('+br.length+')</h2><p class="small muted">כללים מסוג "ככל האפשר" שהמערכת לא הצליחה לקיים עבור האנשים האלה. אפשר לתקן ידנית בלוח.</p><div class="list">'+
-    br.map(p=>'<div class="small"><b>'+esc(p.name)+'</b> — '+p.broken.map(esc).join(' · ')+'</div>').join('')+'</div></div>';
+    br.map(p=>'<div class="small">'+fbtn(p.id,esc(p.name))+' — '+p.broken.map(esc).join(' · ')+'</div>').join('')+'</div></div>';
   return h;
 }
 function levers(){
@@ -292,7 +306,8 @@ function focusCard(){
 function viewBoard(){
   const P=byId(),A=S.data.plan.assign||{},LK=S.data.plan.locked||{},F=S.focus&&P[S.focus]?P[S.focus]:null;
   const tabs=S.cfg.shifts.map(sh=>'<button data-act="tab" data-t="'+sh.id+'" aria-pressed="'+(S.shiftTab===sh.id)+'">'+esc(sh.label)+'</button>').join('')+'<button data-act="tab" data-t="all" aria-pressed="'+(S.shiftTab==='all')+'">הכול (להדפסה)</button>';
-  const show=S.shiftTab==='all'?S.cfg.shifts:[shiftOf(S.shiftTab)||S.cfg.shifts[0]];
+  let show=S.shiftTab==='all'?S.cfg.shifts:[shiftOf(S.shiftTab)||S.cfg.shifts[0]];
+  const EK=new Set(emptyKeys());if(S.onlyEmpty)show=show.filter(sh=>[...EK].some(k=>k.startsWith(sh.id+'@')));
   const R2=S.R.people.reduce((m,p)=>(m[p.id]=p,m),{});
   const people=S.data.staff.filter(s=>!prof(s.id).excluded).slice().sort((a,b)=>a.name.localeCompare(b.name,'he'));
   let h='<div class="card topbar noprint"><div><h1>לוח תורנויות</h1><div class="muted small">לחיצה על משבצת: החלפת תורן. שיבוץ ידני ננעל ונשמר בהרצה הבאה.</div></div><div class="row"><button class="btn sec sm" data-act="print">הדפסה</button><button class="btn sec sm" data-act="csv">הורדה לאקסל</button></div></div>'+
@@ -300,9 +315,10 @@ function viewBoard(){
       people.map(s=>'<option value="'+s.id+'"'+(F&&F.id===s.id?' selected':'')+'>'+esc(s.name)+' ('+R2[s.id].got+'/'+R2[s.id].target+')</option>').join('')+'</select>'+
       (F?'<button class="btn sec sm" data-act="focusPrev">‹ הקודם</button><button class="btn sec sm" data-act="focusNext">הבא ›</button><button class="btn sec sm" data-act="unfocus">ניקוי</button>':'')+'</div>'+
     (F?focusCard():'')+
-    '<div class="tabs noprint">'+tabs+'</div>';
+    '<div class="row noprint"><div class="tabs">'+tabs+'</div>'+(EK.size||S.onlyEmpty?'<label class="chip" style="background:#fdecea;border-color:#f3b4ae"><input type="checkbox" data-ch="onlyEmpty"'+(S.onlyEmpty?' checked':'')+'> רק משבצות חסרות ('+EK.size+')</label>'+(EK.size?'<button class="btn sm" data-act="kFix" style="background:var(--red)">לאייש את הבאה</button>':''):'')+'</div>'+
+    (S.onlyEmpty&&!EK.size?'<div class="card"><p style="color:var(--green);font-weight:600;margin:0">כל העמדות מאוישות.</p></div>':'');
   show.forEach(sh=>{
-    const sts=S.cfg.stations.filter(st=>st.shifts.includes(sh.id));
+    const sts=S.cfg.stations.filter(st=>st.shifts.includes(sh.id)&&(!S.onlyEmpty||[0,1,2,3,4,5].some(d=>EK.has(sh.id+'@'+d+'@'+st.id))));
     h+='<div class="card'+(F?' focusing':'')+'"><h2>'+esc(sh.label)+'</h2><div class="tablewrap"><table class="grid"><thead><tr><th>עמדה</th>'+[0,1,2,3,4,5].map(d=>'<th>'+D[d]+'</th>').join('')+'</tr></thead><tbody>'+
      sts.map(st=>'<tr><th class="st">'+esc(st.name)+'</th>'+[0,1,2,3,4,5].map(d=>{
        if(!sh.days.includes(d))return '<td class="cell off"></td>';
@@ -366,7 +382,7 @@ function viewRules(){
   h+='<div class="row noprint"><div class="tabs">'+[['all','הכול'],['sheet','מהגיליון'],['form','מהשאלון'],['site','נוספו באתר'],['personal','חריגים אישיים']].map(x=>'<button data-act="rf" data-f="'+x[0]+'" aria-pressed="'+(f===x[0])+'">'+x[1]+' ('+(x[0]==='all'?rules.length:rules.filter(r=>r.src===x[0]).length)+')</button>').join('')+'</div></div>';
   GROUPS.forEach(([gid,title,types])=>{
     const list=shown.filter(r=>types.includes(r.type));if(!list.length)return;
-    h+='<div class="card"><h2>'+title+'</h2><div class="list">'+list.map(r=>{
+    h+='<div class="card" id="rg-'+gid+'"><h2>'+title+'</h2><div class="list">'+list.map(r=>{
       const n=r.type==='note'?null:T.setOf(r,st).length,off=r.on===false;
       return '<div class="item'+(off?'':' green')+'" style="'+(off?'opacity:.55':'')+'"><div class="row" style="justify-content:space-between;align-items:flex-start"><div style="flex:1;min-width:220px"><b>'+esc(r.type==='note'?r.text:T.whatText(r))+'</b>'+
         (r.type!=='note'?'<div class="small">למי: '+esc(T.whoText(r,st))+' <span class="muted">('+n+' אנשים)</span></div>':'')+
@@ -480,7 +496,7 @@ function renderModal(){
   return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" data-act="noop"><div class="mhead">'+esc(st.name)+' · '+esc(sh.label)+' · '+D[d]+'</div><div class="mbody">'+
    '<div class="row"><input type="search" id="mq" placeholder="חיפוש" value="'+esc(M.q||'')+'"><label class="small"><input type="checkbox" data-act="mall"'+(M.all?' checked':'')+'> להציג גם מי שלא זמין/ה</label></div>'+
    cands.filter(c=>!M.q||c.s.name.includes(M.q)).map(c=>'<button type="button" class="cand'+(c.s.id===cur?' cur':'')+'" data-act="pick" data-id="'+c.s.id+'"><span><b>'+esc(c.s.name)+'</b> <small>'+roleName[c.s.role]+' · '+esc(c.s.layers)+'</small>'+(c.why?'<br><small style="color:var(--red)">'+esc(c.why)+'</small>':'')+'</span><small>'+c.p.got+'/'+c.p.target+'</small></button>').join('')+
-   '</div><div class="mfoot"><button class="btn sec sm" data-act="clear">לרוקן משבצת</button>'+(S.data.plan.locked[M.k]?'<button class="btn sec sm" data-act="unlock">לבטל נעילה</button>':'')+'<button class="btn sm" data-act="close">סגירה</button></div></div></div>';
+   '</div><div class="mfoot">'+(S.fixing?'<span class="small muted" style="align-self:center">חסרות: '+emptyKeys().length+'</span><button class="btn sec sm" data-act="skip">לדלג לבאה</button>':'')+'<button class="btn sec sm" data-act="clear">לרוקן משבצת</button>'+(S.data.plan.locked[M.k]?'<button class="btn sec sm" data-act="unlock">לבטל נעילה</button>':'')+'<button class="btn sm" data-act="close">סגירה</button></div></div></div>';
 }
 
 /* ---------- פעולות ---------- */
@@ -547,7 +563,13 @@ root.addEventListener('click',async e=>{
   else if(a==='csv')csv();
   else if(a==='sf'){S.staffFilter=b.dataset.f;render()}
   else if(a==='rf'){S.ruleFilter=b.dataset.f;render()}
-  else if(a==='cell'){S.modal={k:b.dataset.k,all:false,q:''};render()}
+  else if(a==='cell'){S.fixing=false;S.modal={k:b.dataset.k,all:false,q:''};render()}
+  else if(a==='fix'){S.fixing=true;S.modal={k:b.dataset.k,all:false,q:''};render()}
+  else if(a==='kFix'){const E=emptyKeys();S.view='board';S.shiftTab='all';S.onlyEmpty=true;S.focus=null;if(E.length){S.fixing=true;S.modal={k:E[0],all:false,q:''}}render();window.scrollTo(0,0)}
+  else if(a==='kBoard'){S.view='board';S.shiftTab='all';S.onlyEmpty=false;render();window.scrollTo(0,0)}
+  else if(a==='kStaff'){S.view='staff';S.staffFilter=S.R.people.some(p=>p.status==='in'&&p.got<p.target)?'lo':'all';S.q='';render();window.scrollTo(0,0)}
+  else if(a==='kQuota'){S.view='rules';S.ruleFilter='all';render();const g=document.getElementById('rg-quota');if(g)g.scrollIntoView({block:'start'})}
+  else if(a==='skip'){const E=emptyKeys(),i=E.indexOf(S.modal.k);const n=E[(i+1)%E.length];S.modal={k:n,all:false,q:''};render()}
   else if(a==='place'){S.modal={kind:'place',sh:b.dataset.sh,d:+b.dataset.d};render()}
   else if(a==='placeAt'){if(!b.disabled)placeFocus(b.dataset.k)}
   else if(a==='unfocus'){S.focus=null;render()}
@@ -555,7 +577,9 @@ root.addEventListener('click',async e=>{
   else if(a==='focus'){S.focus=b.dataset.id;S.view='board';render();window.scrollTo(0,0)}
   else if(a==='close'){if(e.target===b||b.tagName==='BUTTON'){S.modal=null;render()}}
   else if(a==='mall'){S.modal.all=b.checked;render()}
-  else if(a==='pick'){const k=S.modal.k;S.data.plan.assign[k]=b.dataset.id;S.data.plan.locked[k]=b.dataset.id;S.modal=null;recompute();save();render();toast('נשמר ונעול')}
+  else if(a==='pick'){const k=S.modal.k;S.data.plan.assign[k]=b.dataset.id;S.data.plan.locked[k]=b.dataset.id;S.modal=null;recompute();save();
+    if(S.fixing){const E=emptyKeys();if(E.length){S.modal={k:E[0],all:false,q:''};render();toast('נשמר · נשארו '+E.length+' חסרות')}else{S.fixing=false;render();toast('כל העמדות מאוישות')}}
+    else{render();toast('נשמר ונעול')}}
   else if(a==='clear'){const k=S.modal.k;delete S.data.plan.assign[k];delete S.data.plan.locked[k];S.modal=null;recompute();save();render()}
   else if(a==='unlock'){delete S.data.plan.locked[S.modal.k];S.modal=null;save();render()}
   else if(a==='radd'){S.modal={kind:'rule',r:blankRule(),whoMode:'group'};render()}
@@ -572,6 +596,7 @@ root.addEventListener('change',e=>{
   if(el.dataset.rf&&S.modal&&S.modal.r){if(/^(n|note|text)$/.test(el.dataset.rf))return;rf(el);render();return}
   const ch=el.dataset.ch;if(!ch)return;
   if(ch==='focus'){S.focus=el.value||null;render();return}
+  if(ch==='onlyEmpty'){S.onlyEmpty=el.checked;render();return}
   if(ch==='release'){S.modal.release=el.value;return}
   if(el.dataset.id){const id=el.dataset.id,s=S.data.staff.find(x=>x.id===id);
     if(ch==='status')setPersonal(id,'exclude',{v:el.value==='out'});
