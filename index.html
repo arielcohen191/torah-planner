@@ -150,6 +150,16 @@ input[type=number]{font-variant-numeric:tabular-nums}
 .brk-inline{display:flex;gap:8px;align-items:center;font-weight:600;color:var(--ink)}.brk-inline input{width:80px;background:var(--card)}.brk-inline select{width:auto;background:var(--card)}
 .brk-fields select{background:var(--card)}
 .card.brk{--c:var(--s-gemara);--tc:var(--t-gemara)}.card.brk.test{--c:var(--s-other);--tc:var(--t-other)}
+.prog{background:var(--sunk);border-radius:16px;padding:14px 16px;margin-top:12px}
+.prog h3{margin:0 0 10px}
+.prog-form{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.prog-form .f{min-width:140px}.prog-form select{background:var(--card)}
+.pg-apply{display:flex;gap:6px;align-items:center;font-size:13px;font-weight:600}
+.pg-apply input{width:18px;height:18px;accent-color:var(--primary)}
+.prog-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:12px}
+.pg-tile{background:var(--card);border-radius:12px;padding:10px 12px;border-inline-start:4px solid var(--primary)}
+.pg-tile small{display:block;color:var(--muted);font-size:12px}.pg-tile b{font-size:14.5px}
+.pg-tile.ok{border-color:var(--ok)}.pg-tile.bad{border-color:var(--bad)}.pg-tile.bad b{color:var(--bad)}
 .mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .mode-pick button{font:inherit;text-align:right;border:2px solid transparent;border-radius:14px;background:var(--sunk);padding:12px 14px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;gap:2px}
 .mode-pick button small{color:var(--muted);font-size:12px}
@@ -506,6 +516,7 @@ table.wk input[type=checkbox]{width:20px;height:20px}
                 <button class="btn ghost" id="newBtn">תוכנית חדשה</button>
               </div>
               <p class="note-line" id="saveNote" style="padding:0 16px"></p>
+              <div class="sched" id="progBox"></div>
               <div class="sched" id="planOut"></div>
             </div>
           </div>
@@ -822,7 +833,7 @@ function compute(S,hol){
   if(cfg&&span.length){let ord=-1,last=null;const bid=span.map((u,i)=>{const k=S.subject==='other'?i:cfg.unit==='parasha'?(u.bk||'')+'|'+u.group:(u.bk||'')+'|'+u.c;if(k!==last){ord++;last=k}return Math.floor(ord/cfg.every)});
     let s0=0;span.forEach((u,i)=>{if(i===span.length-1||bid[i]!==bid[i+1]){bounds.push({h:cum[i+1],s:s0,e:i});s0=i+1}})}
   const brkH=cfg?bounds.length*(cfg.nRev+cfg.nTest)*avgLesson(S):0;
-  let bi=0,queue=[],nBrk=0;
+  let bi=0,queue=[],nBrk=0,jumped=false;
   if(!S.startDate||!S.endDate||S.endDate<S.startDate)return {U,span,items,needed:needed+brkH,available:0,finishDate:null,a,b};
   for(let d=S.startDate;d<=S.endDate;d=add(d,1)){
     const w=dow(d);if(w===6)continue;
@@ -833,6 +844,8 @@ function compute(S,hol){
     const mh=mar[d]||0;hrs+=mh;
     if(hrs<=0)continue;
     available+=hrs;
+    if(S.actual&&S.actual.apply&&!jumped&&d>S.actual.date&&span.length){jumped=true;used=Math.min(needed,cum[Math.min(span.length,(S.actual.idx|0)+1)]);
+      bi=bounds.findIndex(x=>x.h>used+1e-9);if(bi<0)bi=bounds.length;queue=[];if(used<needed-1e-9)finishDate=null}
     if(queue.length){const q=queue.shift();nBrk++;items.push({type:'lesson',date:d,hours:hrs,mar:mh>0,brk:q.kind,text:q.text,unitLbl:q.lbl});if(used>=needed-1e-9&&!queue.length)finishDate=d;continue}
     let eff=hrs;if(bi<bounds.length&&used<needed-1e-9){const room=bounds[bi].h-used;if(room>1e-9&&room<eff)eff=room}
     const p0=posAt(used),p1=posAt(used+eff);
@@ -1188,10 +1201,62 @@ function calHTML(P,R){
   return html;
 }
 function metaLine(P){return [P.teacher&&('מורה: '+P.teacher),'כיתה '+P.grade+'׳'+(P.cls?P.cls:''),SUBJECTS[P.subject].label+(P.subject!=='other'?' · '+booksLabel(P):'')].filter(Boolean).map(esc).join(' · ')}
+/* "where am I": compare the reported position with the plan and project forward */
+function plannedIdxAt(R,date){let x=-1;R.items.forEach(it=>{if(it.type==='lesson'&&it.u1!=null&&it.date<=date)x=Math.max(x,it.u1)});return x}
+function progress(P){
+  if(!P.actual||P.subject==='torah'&&P.mode==='parasha')return null;
+  const base={...P,actual:null},R=compute(base,allHol());if(!R.span.length)return null;
+  const idx=Math.max(-1,Math.min(R.span.length-1,P.actual.idx|0)),date=P.actual.date;
+  const planned=plannedIdxAt(R,date),lag=planned-idx;
+  const R2=compute({...P,actual:{...P.actual,apply:true}},allHol());
+  const pace=Math.max(0.01,+P.pace||1);
+  const remUnits=R.span.length-1-idx,remHrs=R2.items.filter(i=>i.type==='lesson'&&!i.brk&&i.date>date).reduce((a,i)=>a+i.hours,0);
+  const reach=plannedIdxAt(R2,P.endDate||YEAR_END);
+  const needPace=remHrs>0?remUnits/remHrs:Infinity,missH=Math.max(0,remUnits/pace-remHrs);
+  return {idx,date,planned,lag,lagLessons:lag/(pace*avgLesson(P)),finish:R2.finishDate,reach,reachLbl:reach>=0?R.span[reach].label:'',done:reach>=R.span.length-1,
+    needPace,missH,marathons:Math.ceil(missH/3),span:R.span,unit:unitName(P.subject,P.book),pace,lbl:i=>i>=0?R.span[i].label:'לפני תחילת התוכנית'};
+}
+function renderProg(){
+  const el=$('#progBox');if(!el)return;
+  if(S.subject==='torah'&&S.mode==='parasha'){const R=compute(S,allHol()),W=weeks(S,R,allHol()).filter(w=>w.label&&w.sun<=todayIso),pg=S.progress||{},d=W.filter(w=>pg[w.sun]?.d).length;
+    el.innerHTML=`<div class="prog"><h3>דיווח הספק</h3><p class="note-line" style="margin:0">בפרשת השבוע מסמנים "הספקתי" בכל שבוע בטבלה. ${W.length?`עד היום: <b>${d} מתוך ${W.length}</b> שבועות.`:''}</p></div>`;return}
+  const {span}=spanOf(S);if(!span.length){el.innerHTML='';return}
+  const R=compute({...S,actual:null},allHol()),plannedNow=plannedIdxAt(R,todayIso);
+  const cur=S.actual?S.actual.idx:plannedNow;
+  // chapter list over the whole span (with book name when several books)
+  const multi=new Set(span.map(u=>u.bk||'')).size>1,ch=[];span.forEach((u,i)=>{const k=(u.bk||'')+'|'+u.c;const l=ch[ch.length-1];if(!l||l.k!==k)ch.push({k,s:i,e:i,t:(multi&&u.bk?u.bk+' ':'')+(S.subject==='other'?u.label:SUBJECTS[S.subject].cols[0]+' '+u.cl)});else l.e=i});
+  const cc=ch.find(c=>cur>=c.s&&cur<=c.e)||ch[0],hasV=span[0].vl!=='';
+  const vopts=hasV?span.slice(cc.s,cc.e+1).map((u,j)=>`<option value="${cc.s+j}" ${cc.s+j===cur?'selected':''}>${esc(u.vl)}</option>`).join(''):'';
+  const P=progress(S);
+  let res='';
+  if(P){const st=P.lag>0?'bad':P.lag<0?'ok':'ok';
+    const lagTxt=P.lag===0?'בדיוק לפי התוכנית':P.lag>0?`בפיגור של ${P.lag} ${P.unit} (כ־${Math.max(1,Math.round(P.lagLessons))} שיעורים)`:`מקדים ב־${-P.lag} ${P.unit} (כ־${Math.max(1,Math.round(-P.lagLessons))} שיעורים)`;
+    res=`<div class="prog-grid">
+      <div class="pg-tile"><small>לפי התוכנית, ב־${greg(P.date)} הייתם אמורים להגיע עד</small><b>${esc(P.lbl(P.planned))}</b></div>
+      <div class="pg-tile"><small>בפועל הגעתם עד</small><b>${esc(P.lbl(P.idx))}</b></div>
+      <div class="pg-tile ${st}"><small>מצב</small><b>${lagTxt}</b></div>
+      <div class="pg-tile ${P.done?'ok':'bad'}"><small>בקצב הנוכחי (${r2(P.pace)} ${esc(P.unit)} לשעה)</small><b>${P.done?`מסיימים ב${heb(P.finish||YEAR_END)} (${greg(P.finish||YEAR_END)})`:`עד סוף השנה מגיעים ל${esc(P.reachLbl)}`}</b></div>
+    </div>
+    ${P.done?'':`<p class="note-line"><b>כדי לסיים בזמן:</b> קצב של ${isFinite(P.needPace)?r2(P.needPace):'—'} ${esc(P.unit)} לשעה במקום ${r2(P.pace)}, או ${P.marathons} ימי מרתון של 3 שעות, או לקצר את "עד־" בשלב 1.</p>`}`;}
+  el.innerHTML=`<div class="prog"><h3>דיווח הספק – איפה אני עומד?</h3>
+    <div class="prog-form"><label class="f">הגענו עד (כולל)<select id="pgC">${ch.map(c=>`<option value="${c.s}|${c.e}" ${c===cc?'selected':''}>${esc(c.t)}</option>`).join('')}</select></label>
+    ${hasV?`<label class="f">${esc(SUBJECTS[S.subject].cols[1])}<select id="pgV">${vopts}</select></label>`:''}
+    <button class="btn primary" type="button" id="pgSet">עדכון</button>
+    ${S.actual?`<label class="pg-apply"><input type="checkbox" id="pgApply" ${S.actual.apply?'checked':''}> להמשיך את התוכנית מהנקודה הזו</label><button class="btn ghost" type="button" id="pgClear">ביטול הדיווח</button>`:''}</div>
+    ${S.actual?`<p class="note-line" style="margin-top:6px">דווח ב־${gregFull(S.actual.date)}${S.actual.apply?' · השבועות הבאים בטבלה מחושבים מחדש מהנקודה הזו':''}</p>`:'<p class="note-line" style="margin-top:6px">בוחרים עד איפה הגעתם בפועל, והכלי משווה לתוכנית ומחשב מה זה אומר לסוף השנה.</p>'}
+    ${res}</div>`;
+}
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='pgC'){const [a,b]=t.value.split('|').map(Number),v=$('#pgV');if(v){const {span}=spanOf(S);v.innerHTML=span.slice(a,b+1).map((u,j)=>`<option value="${a+j}">${esc(u.vl)}</option>`).join('');v.value=String(b)}}
+  if(t.id==='pgApply'&&S.actual){S.actual.apply=t.checked;changed();pgChanged()}});
+document.addEventListener('click',e=>{
+  if(e.target.closest('#pgSet')){const v=$('#pgV'),c=$('#pgC');const idx=v?+v.value:+c.value.split('|')[1];S.actual={date:todayIso,idx,apply:S.actual?.apply??true};changed();pgChanged();toast('הדיווח עודכן'+(S.id?' ונשמר':'. לחצו "שמירה במערכת" כדי לשמור.'))}
+  if(e.target.closest('#pgClear')){S.actual=null;changed();pgChanged()}});
 function b3(){
   const R=compute(S,allHol());const v=verdict(R);
   $('#planTitle').textContent=`תוכנית ${SUBJECTS[S.subject].label}${S.subject!=='other'?' – '+booksLabel(S):''}`;
   $('#planMeta').innerHTML=(S._owner?'<b>עריכת תוכנית של מורה אחר · </b>':'')+metaLine(S)+(R.span.length?` · ${esc(R.span[0].label)} עד ${esc(R.span[R.span.length-1].label)}`:'');
+  renderProg();
   $('#planOut').innerHTML=(v.ok?'':R.parasha?`<div class="status warn" style="margin:12px 0 4px"><b>${v.title}</b>${v.text}</div>`:`<div class="status warn" style="margin:12px 0 4px"><b>${v.title}</b>התוכנית מציגה עד היכן תגיעו בשעות הקיימות. אפשר להוסיף ימי מרתון או להעלות קצב בשלב 2.</div>`)+planHTML(S,R,mode);
 }
 $$('.seg button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));b3()});
@@ -1246,9 +1311,10 @@ $('#docxBtn').onclick=async()=>{
 /* ---------- storage (db) ---------- */
 function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
 function summary(P){const R=compute(P,allHol());const v=verdict(R);const W=weeks(P,R,allHol()).filter(w=>w.label&&w.sun<=todayIso);const pg=P.progress||{};
-  return {available:r2(R.available),needed:r2(R.needed),ok:v.ok,finish:R.finishDate||null,from:R.span[0]?.label||'',to:R.span[R.span.length-1]?.label||'',count:R.span.length,unit:unitName(P.subject,P.book),past:W.length,done:W.filter(w=>pg[w.sun]?.d).length}}
+  return {available:r2(R.available),needed:r2(R.needed),ok:v.ok,finish:R.finishDate||null,from:R.span[0]?.label||'',to:R.span[R.span.length-1]?.label||'',count:R.span.length,unit:unitName(P.subject,P.book),past:W.length,done:W.filter(w=>pg[w.sun]?.d).length,
+    ...(()=>{const g=progress(P);return g?{lag:g.lag,lagLessons:Math.round(g.lagLessons),reportAt:g.date,onTime:g.done,reach:g.reachLbl}:{}})()}}
 const clsNorm=c=>String(c||'').replace(/^\s*[א-ח]\s*['׳"]?\s*/,'').trim();
-const pick=P=>({v:2,progress:P.progress||{},more:P.more||[],breaks:P.breaks||{on:false},mode:P.mode||'seq',scope:P.scope||'pace',teacher:P.teacher,grade:P.grade,cls:clsNorm(P.cls),subject:P.subject,book:P.book,startIdx:P.startIdx,endIdx:P.endIdx,pace:P.pace,otherText:P.otherText,startDate:P.startDate,endDate:P.endDate,days:P.days,marathons:P.marathons,blocked:P.blocked});
+const pick=P=>({v:2,progress:P.progress||{},actual:P.actual||null,more:P.more||[],breaks:P.breaks||{on:false},mode:P.mode||'seq',scope:P.scope||'pace',teacher:P.teacher,grade:P.grade,cls:clsNorm(P.cls),subject:P.subject,book:P.book,startIdx:P.startIdx,endIdx:P.endIdx,pace:P.pace,otherText:P.otherText,startDate:P.startDate,endDate:P.endDate,days:P.days,marathons:P.marathons,blocked:P.blocked});
 $('#saveBtn').onclick=()=>savePlan(false);
 /* what makes a plan "the same plan": grade, class, subject, mode and books. Change any of them → it is saved as a new plan */
 const planKey=P=>[P.grade,String(P.cls||'').trim(),P.subject,P.subject==='torah'?(P.mode||'seq'):'',P.subject==='other'?'':booksOf(P).join('+')].join('|');
@@ -1275,6 +1341,7 @@ async function savePlan(quiet){
 }
 const subjLbl=p=>esc(SUBJECTS[p.subject]?.label.replace(' (רשימה חופשית)',''))+(p.subject!=='other'?' · '+esc(booksLabel(p)):'');
 const statusChip=s=>s?.ok?'<span class="chip ok">מסתדר</span>':`<span class="chip bad">חסרות ${r2((s?.needed||0)-(s?.available||0))} ש׳</span>`;
+const progCell=m=>m?.reportAt?(m.lag>0?`<span class="chip bad">פיגור ${m.lag} ${esc(m.unit||'')}</span>`:m.lag<0?`<span class="chip ok">מקדים ${-m.lag}</span>`:'<span class="chip ok">לפי התוכנית</span>')+`<br><small style="color:var(--muted)">${m.onTime?'מסיים בזמן':'עד הסוף: '+esc(m.reach||'')} · דווח ${greg(m.reportAt)}</small>`:(m?.past?`${m.done}/${m.past} שבועות`:'<small style="color:var(--muted)">לא דווח</small>');
 function prow(p,attr){
   const pc=cover(p.summary);
   return `<div class="prow" ${attr} role="button" tabindex="0"><span class="av" style="--c:${SC(p.subject)}">${esc(p.grade)}${esc(String(p.cls||'').slice(0,2))}</span><div style="min-width:0"><div class="pname"><span>${subjLbl(p)}</span><small>${esc(p.teacher||'')}${p.summary?.finish?' · מסיים '+heb(p.summary.finish).split(' ').slice(0,2).join(' '):''}${p.summary?.past?` · בוצע ${p.summary.done}/${p.summary.past}`:''}</small></div><div class="bar"><i style="width:${pc}%;--c:${SC(p.subject)}"></i></div></div><span class="pct" style="background:${p.summary?.ok?'var(--ok)':'var(--bad)'}">${Math.round(pc)}%</span></div>`;
@@ -1332,7 +1399,7 @@ function renderTeam(){
       <div class="w"><div class="w-h"><h2>עדכונים אחרונים</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="w-b"><ul class="tl">${recent.map(r=>`<li><span class="bul" style="--c:${SC(r.p.subject)}">${esc(r.p.grade)}</span><div><b>${esc(r.p.teacher||'מורה')} עדכן/ה ${subjLbl(r.p)}</b><small>${r.p.updatedAt?gregFull(r.p.updatedAt.slice(0,10))+' · '+r.p.updatedAt.slice(11,16):''}</small></div></li>`).join('')}</ul></div></div>
     </div></div>
   <div class="w"><div class="w-h"><h2>חלוקת העבודה – שכבה × מקצוע</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="tbl"><table class="list"><thead><tr><th>שכבה</th>${['torah','navi','mishna','gemara'].map(k=>`<th><span class="subj-tag"><span class="dot" style="background:${SC(k)}"></span>${SUBJECTS[k].label}</span></th>`).join('')}</tr></thead><tbody>${GRADES.filter(gr=>!fg||gr===fg).map(gr=>`<tr><td><b>${gr}׳</b></td>${['torah','navi','mishna','gemara'].map(k=>{const ps=allRows.filter(r=>r.p.grade===gr&&r.p.subject===k);return `<td>${ps.length?ps.map(r=>`<div data-team="${esc(r.u+'|'+r.id)}" style="cursor:pointer;margin:2px 0">${statusChip(r.p.summary).replace(/>[^<]*</,'>'+esc(r.p.teacher||'מורה')+'<')}</div>`).join(''):'<span class="chip">פנוי</span>'}</td>`}).join('')}</tr>`).join('')}</tbody></table></div></div>
-  <div class="w"><div class="w-h"><h2>כל התוכניות</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="tbl"><table class="list"><thead><tr><th>מורה</th><th>כיתה</th><th>מקצוע</th><th>טווח</th><th>זמינות / נדרשות</th><th>סיום משוער</th><th>מצב</th><th>מעקב ביצוע</th><th>עודכן</th></tr></thead><tbody>${rows.map(({u,id,p})=>`<tr class="click" data-team="${esc(u+'|'+id)}"><td>${esc(p.teacher)}</td><td>${esc(p.grade)}׳${esc(p.cls||'')}</td><td><span class="subj-tag"><span class="dot" style="background:${SC(p.subject)}"></span>${subjLbl(p)}</span></td><td>${esc(p.summary?.from)} – ${esc(p.summary?.to)}</td><td>${p.summary?.available} / ${p.summary?.needed}</td><td>${p.summary?.finish?heb(p.summary.finish):'—'}</td><td>${statusChip(p.summary)}</td><td>${p.summary?.past?`${p.summary.done}/${p.summary.past} שבועות`:'—'}</td><td>${p.updatedAt?greg(p.updatedAt.slice(0,10)):''}</td></tr>`).join('')}</tbody></table></div></div>`;
+  <div class="w"><div class="w-h"><h2>כל התוכניות</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="tbl"><table class="list"><thead><tr><th>מורה</th><th>כיתה</th><th>מקצוע</th><th>טווח</th><th>זמינות / נדרשות</th><th>סיום משוער</th><th>מצב</th><th>מעקב ביצוע</th><th>עודכן</th></tr></thead><tbody>${rows.map(({u,id,p})=>`<tr class="click" data-team="${esc(u+'|'+id)}"><td>${esc(p.teacher)}</td><td>${esc(p.grade)}׳${esc(p.cls||'')}</td><td><span class="subj-tag"><span class="dot" style="background:${SC(p.subject)}"></span>${subjLbl(p)}</span></td><td>${esc(p.summary?.from)} – ${esc(p.summary?.to)}</td><td>${p.summary?.available} / ${p.summary?.needed}</td><td>${p.summary?.finish?heb(p.summary.finish):'—'}</td><td>${statusChip(p.summary)}</td><td>${progCell(p.summary)}</td><td>${p.updatedAt?greg(p.updatedAt.slice(0,10)):''}</td></tr>`).join('')}</tbody></table></div></div>`;
   el.innerHTML=html;
 }
 $('#tGrade').onchange=renderTeam;$('#tSubj').onchange=renderTeam;
