@@ -27,7 +27,7 @@ gate_css = """<style>
 </style>"""
 shim = '<script>window.PLANNER_CFG=' + json.dumps(cfg) + ';</script>\n<script>\n' + (root / 'src/shim.js').read_text() + '</script>\n'
 body = body.replace('<script>\nconst DATA', shim + '<script>\nconst DATA', 1)
-fav = '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%232f6fd6%27/%3E%3Cpath d=%27M9 10h14M9 16h14M9 22h9%27 stroke=%27white%27 stroke-width=%273%27 stroke-linecap=%27round%27/%3E%3C/svg%3E">'
+fav = '<link rel="icon" href="/favicon.ico" sizes="any">\n<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">\n<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">'
 out = ('<!doctype html>\n<html lang="he" dir="rtl">\n<head>\n<meta charset="utf-8">\n'
        '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
        + fav + '\n' + head + gate_css + '\n</head>\n<body>\n' + body + '\n</body>\n</html>\n')
