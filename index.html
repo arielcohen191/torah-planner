@@ -154,6 +154,7 @@ input[type=number]{font-variant-numeric:tabular-nums}
 .mode-pick button{font:inherit;text-align:right;border:2px solid transparent;border-radius:14px;background:var(--sunk);padding:12px 14px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;gap:2px}
 .mode-pick button small{color:var(--muted);font-size:12px}
 .mode-pick button[aria-pressed="true"]{border-color:var(--s-torah);background:var(--t-torah)}
+.range fieldset{flex-wrap:wrap}.range .fpar{flex-basis:100%}
 .range legend{font-size:12.5px;font-weight:700;color:var(--ink);padding:0 4px}
 .range .f{flex:1}
 .taken{border-radius:6px;padding:9px 12px;font-size:13px;margin-top:14px;background:var(--gold-soft);color:var(--gold)}
@@ -445,8 +446,8 @@ table.wk input[type=checkbox]{width:20px;height:20px}
                 </div>
                 <div id="takenNote"></div>
                 <div class="range" id="rangeWrap">
-                  <fieldset id="fsFrom"><legend>ממשיכים מ־</legend><label class="f"><span class="cl1">פרק</span><select id="sC"></select></label><label class="f sub"><span class="cl2">פסוק</span><select id="sV"></select></label></fieldset>
-                  <fieldset id="fsTo"><legend>עד־ (כולל)</legend><label class="f"><span class="cl1">פרק</span><select id="eC"></select></label><label class="f sub"><span class="cl2">פסוק</span><select id="eV"></select></label></fieldset>
+                  <fieldset id="fsFrom"><legend>ממשיכים מ־</legend><label class="f fpar" hidden>פרשה<select id="sP"></select></label><label class="f"><span class="cl1">פרק</span><select id="sC"></select></label><label class="f sub"><span class="cl2">פסוק</span><select id="sV"></select></label></fieldset>
+                  <fieldset id="fsTo"><legend>עד־ (כולל)</legend><label class="f fpar" hidden>פרשה<select id="eP"></select></label><label class="f"><span class="cl1">פרק</span><select id="eC"></select></label><label class="f sub"><span class="cl2">פסוק</span><select id="eV"></select></label></fieldset>
                   <fieldset><legend>קצב</legend><label class="f"><span id="paceLbl">פסוקים לשעה</span><input id="pace" type="number" min="0.05" step="0.05"></label></fieldset>
                 </div>
                 <p class="note-line" id="paceHint"></p>
@@ -783,14 +784,20 @@ const r2=x=>Math.round(x*100)/100;
 /* ---------- engine ---------- */
 /* review / test lessons after each learning unit */
 const BRK_DEF={torah:3,navi:3,mishna:1,gemara:2,other:3,parasha:1};
-const brkWord=P=>P.subject==='torah'&&P.mode==='parasha'?['פרשה','פרשות']:P.subject==='gemara'?['דף','דפים']:P.subject==='other'?['נושא','נושאים']:['פרק','פרקים'];
+/* unit of a review block: 'book' | 'parasha' | 'chap' */
+function brkUnitOf(P){const u=(P.breaks||{}).unit;
+  if(P.subject==='torah'&&P.mode==='parasha')return u==='parasha'?'parasha':'book';
+  if(P.subject==='torah')return u==='chap'?'chap':'parasha';
+  return 'chap'}
+const brkWord=P=>{const u=brkUnitOf(P);return u==='parasha'?['פרשה','פרשות']:u==='book'?['חומש','חומשים']:P.subject==='gemara'?['דף','דפים']:P.subject==='other'?['נושא','נושאים']:['פרק','פרקים']};
 function brkCfg(P){const b=P.breaks;if(!b||!b.on)return null;const nRev=Math.max(0,Math.min(5,+b.review||0)),nTest=b.test?1:0;if(!(nRev+nTest))return null;
-  const par=P.subject==='torah'&&P.mode==='parasha';
-  return {every:Math.max(1,+b.every||BRK_DEF[par?'parasha':P.subject]||1),nRev,nTest,unit:par?(b.unit||'book'):'chap'}}
+  const unit=brkUnitOf(P);
+  return {every:Math.max(1,+b.every||(unit==='parasha'?1:BRK_DEF[P.subject])||1),nRev,nTest,unit}}
 function avgLesson(P){const v=Object.values(P.days||{}).map(Number).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:1}
 function blockLabel(span,s0,e0,P){
   const a=span[s0],b=span[e0];if(!a||!b)return '';
   if(P.subject==='other')return s0===e0?a.label:`${a.label} – ${b.label}`;
+  if(brkUnitOf(P)==='parasha'&&a.group){const pa2=(a.group||'').replace('פרשת ',''),pb=(b.group||'').replace('פרשת ','');const rng=`(${a.bk&&a.bk!==b.bk?a.bk+' ':''}${a.cl},${a.vl} – ${b.bk&&b.bk!==a.bk?b.bk+' ':''}${b.cl},${b.vl})`;return (pa2===pb?`פרשת ${pa2}`:`פרשות ${pa2}–${pb}`)+' '+rng}
   const [one,many]=brkWord(P),pa=a.bk?a.bk+' ':'';
   if(a.bk!==b.bk)return `${a.bk} ${a.cl} – ${b.bk} ${b.cl}`;
   return a.c===b.c?`${pa}${one} ${a.cl}`:`${pa}${many} ${a.cl}–${b.cl}`;
@@ -812,7 +819,7 @@ function compute(S,hol){
   const seenHol=new Set();
   // unit boundaries for review/test lessons
   const cfg=brkCfg(S),bounds=[];
-  if(cfg&&span.length){let ord=-1,last=null;const bid=span.map((u,i)=>{const k=S.subject==='other'?i:(u.bk||'')+'|'+u.c;if(k!==last){ord++;last=k}return Math.floor(ord/cfg.every)});
+  if(cfg&&span.length){let ord=-1,last=null;const bid=span.map((u,i)=>{const k=S.subject==='other'?i:cfg.unit==='parasha'?(u.bk||'')+'|'+u.group:(u.bk||'')+'|'+u.c;if(k!==last){ord++;last=k}return Math.floor(ord/cfg.every)});
     let s0=0;span.forEach((u,i)=>{if(i===span.length-1||bid[i]!==bid[i+1]){bounds.push({h:cum[i+1],s:s0,e:i});s0=i+1}})}
   const brkH=cfg?bounds.length*(cfg.nRev+cfg.nTest)*avgLesson(S):0;
   let bi=0,queue=[],nBrk=0;
@@ -965,7 +972,7 @@ function fillRange(){
   $('#paceLbl').textContent=`${unit} לשעת לימוד`;
   const p=+S.pace||1;
   $('#paceHint').textContent=S.subject==='other'?'נושא בלי שעות מוגדרות יקבל שעות לפי הקצב.':(p<1?`כלומר יחידה אחת בכל ${r2(1/p)} שעות לימוד.`:`כלומר ${r2(p)} ${unit} בכל שעת לימוד.`);
-  renderTaken();renderMore();applyMode();
+  renderTaken();renderMore();applyMode();syncPar();
 }
 function applyMode(){
   const tor=S.subject==='torah',par=tor&&S.mode==='parasha';
@@ -974,8 +981,14 @@ function applyMode(){
   $('#bookWrap').hidden=par||S.subject==='other';$('#fsFrom').hidden=par;$('#fsTo').hidden=par;
   if(par){$('#moreBlock').hidden=true;$('#paceHint').textContent='הפרשה מתחלקת בין השיעורים של אותו שבוע. בשבועות שבהם הפרשה ארוכה מדי לקצב, יופיע סימון "צפוף".'}
 }
-document.addEventListener('click',e=>{const b=e.target.closest('[data-m2]');if(!b)return;S.mode=b.dataset.m2;applyMode();if(S.mode==='seq')renderMore();changed()});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-m2]');if(!b)return;S.mode=b.dataset.m2;applyMode();if(S.mode==='seq')renderMore();syncPar();changed()});
 document.addEventListener('change',e=>{if(e.target.id==='scope'){S.scope=e.target.value;changed()}});
+/* parasha pickers for chumash: choose a parasha and the range snaps to its first / last verse */
+function parList(){const L=[];CUR_U.forEach((u,i)=>{if(!u.group)return;const l=L[L.length-1];if(!l||l.g!==u.group)L.push({g:u.group,s:i,e:i});else l.e=i});return L}
+function syncPar(){const on=S.subject==='torah'&&hasVerses('torah',S.book)&&S.mode!=='parasha';$$('.fpar').forEach(x=>x.hidden=!on);if(!on)return;
+  const L=parList(),f=(w,idx)=>{const sel=$('#'+w+'P');sel.innerHTML=L.map(p=>`<option value="${w==='s'?p.s:p.e}">${esc(p.g.replace('פרשת ',''))}</option>`).join('');const cur=L.find(p=>idx>=p.s&&idx<=p.e);if(cur)sel.value=String(w==='s'?cur.s:cur.e)};
+  f('s',S.startIdx);f('e',S.endIdx)}
+document.addEventListener('change',e=>{const t=e.target;if(t.id==='sP'||t.id==='eP')setIdx(t.id[0],+t.value)});
 function fillSub(w){
   const idx=w==='s'?S.startIdx:S.endIdx,c=CUR_U[idx]?.c;
   const opts=CUR_U.map((u,i)=>u.c===c?`<option value="${i}">${esc(u.vl)}</option>`:'').join('');
@@ -983,7 +996,7 @@ function fillSub(w){
 }
 function setIdx(w,i){
   if(w==='s'){S.startIdx=i;if(S.endIdx<i)S.endIdx=i}else{S.endIdx=i;if(S.startIdx>i)S.startIdx=i}
-  $('#sC').value=CUR_U[S.startIdx].c;$('#eC').value=CUR_U[S.endIdx].c;fillSub('s');fillSub('e');changed();
+  $('#sC').value=CUR_U[S.startIdx].c;$('#eC').value=CUR_U[S.endIdx].c;fillSub('s');fillSub('e');syncPar();changed();
 }
 document.addEventListener('change',e=>{const t=e.target;
   if(t.id==='sC'||t.id==='eC'){const c=+t.value||t.value;let i=CUR_U.findIndex(u=>String(u.c)===String(c));
@@ -997,10 +1010,12 @@ function renderTaken(){
 }
 function renderBrk(){
   const b=S.breaks=S.breaks||{on:false,review:2,test:true};const par=S.subject==='torah'&&S.mode==='parasha';
-  const def=BRK_DEF[par?'parasha':S.subject]||1,[one,many]=brkWord(S);
+  const unit=brkUnitOf(S),def=unit==='parasha'?1:(BRK_DEF[S.subject]||1),[one,many]=brkWord(S);
   $('#brkOn').checked=!!b.on;$('#brkFields').hidden=!b.on;
-  const byBook=par&&(b.unit||'book')==='book';
-  $('#brkScope').hidden=!par;$('#brkScope').value=par?(b.unit||'book'):'parasha';
+  const byBook=unit==='book',tor=S.subject==='torah';
+  const sc=$('#brkScope');sc.hidden=!tor;
+  sc.innerHTML=par?'<option value="book">חומש</option><option value="parasha">מספר פרשות</option>':'<option value="parasha">מספר פרשות</option><option value="chap">מספר פרקים</option>';
+  sc.value=unit;
   $('#brkEvery').hidden=byBook;$('#brkUnit').hidden=byBook;
   $('#brkEvery').value=b.every||def;$('#brkUnit').textContent=(+(b.every||def)===1?one:many);
   $('#brkRev').value=String(b.review??2);$('#brkTest').value=b.test===false?'0':'1';
@@ -1010,7 +1025,7 @@ function renderBrk(){
 document.addEventListener('change',e=>{const t=e.target,b=S.breaks=S.breaks||{};
   if(t.id==='brkOn'){b.on=t.checked;if(b.on&&b.review==null)b.review=2;if(b.on&&b.test==null)b.test=true}
   else if(t.id==='brkEvery')b.every=Math.max(1,+t.value||1);
-  else if(t.id==='brkScope')b.unit=t.value;
+  else if(t.id==='brkScope'){b.unit=t.value;b.every=null}
   else if(t.id==='brkRev')b.review=+t.value;
   else if(t.id==='brkTest')b.test=t.value==='1';
   else return;
