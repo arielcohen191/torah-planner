@@ -228,7 +228,7 @@ function viewSum(){
     S.cfg.shifts.map(sh=>'<tr><th class="st">'+esc(sh.label)+'</th>'+[0,1,2,3,4,5].map(d=>{
       const c=R.cells[sh.id+'@'+d];if(!c)return '<td class="cell off"></td>';
       if(!c.unfilled.length)return '<td style="color:var(--green)">✓ '+c.filled+'/'+c.demand+'</td>';
-      return '<td style="background:#fdecea"><b style="color:var(--red)">חסרים '+c.unfilled.length+'</b><div class="small">'+c.unfilled.map(p=>'<button type="button" class="fixlnk" data-act="fix" data-k="'+p.key+'">'+esc(p.st.name.split(' (')[0])+'</button>').join('')+'</div><div class="small muted">זמינים בשעה הזו: '+c.possible+(c.freeButIneligible?', '+c.freeButIneligible+' פנויים אבל לא מתאימים לעמדה':' — כולם כבר משובצים או במכסה')+'</div></td>'}).join('')+'</tr>').join('')+
+      return '<td style="background:#fdecea"><b style="color:var(--red)">חסרים '+c.unfilled.length+'</b><div class="small">'+c.unfilled.map(p=>'<button type="button" class="fixlnk" data-act="fix" data-k="'+p.key+'">'+esc(p.st.name.split(' (')[0])+'</button>').join('')+'</div>'+(()=>{const top=Object.entries(c.why||{}).filter(([k])=>!/לא עובד|לא נמצא|לא מתחיל|מסיים|מלמד/.test(k)).sort((x,y)=>y[1]-x[1])[0];return top&&top[1]>=5?'<div class="small" style="color:var(--red);font-weight:600">חוסם '+top[1]+' אנשים: '+esc(top[0])+'</div>':''})()+'<div class="small muted">זמינים בשעה הזו: '+c.possible+(c.freeButIneligible?', '+c.freeButIneligible+' פנויים אבל לא מתאימים לעמדה':' — כולם כבר משובצים או במכסה')+'</div></td>'}).join('')+'</tr>').join('')+
     '</tbody></table></div>';
   }
   h+='</div>';
@@ -423,11 +423,16 @@ function renderRuleModal(){
     else{const q=M.pq||'';who+='<input type="search" id="pq" class="fsel" placeholder="חיפוש שם" value="'+esc(q)+'"><div style="max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px">'+
       st.filter(s=>!q||s.name.includes(q)||(w.ids||[]).includes(s.id)).map(s=>'<label class="row small" style="padding:3px 4px"><input type="checkbox" data-rf="who.ids" value="'+s.id+'"'+((w.ids||[]).includes(s.id)?' checked':'')+'> '+esc(s.name)+' <span class="muted">'+roleName[s.role]+'</span></label>').join('')+'</div>';}
   }
-  const n=r.type==='note'?null:T.setOf(r,st).length;
+  const idsMode=M.whoMode==='ids'&&r.type!=='note'&&r.type!=='soft';
+  const n=r.type==='note'?null:(idsMode&&!(w.ids||[]).length)?0:T.setOf(r,st).length;
+  const everyone=n!=null&&n===st.length&&r.type!=='soft';
+  const restrictive=['slots','exclude','quota','shift','stations','ahmash'].includes(r.type);
   return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" data-act="noop" style="max-width:620px"><div class="mhead">'+(M.edit?'עריכת כלל':'כלל חדש')+'</div><div class="mbody">'+
     '<label><b>סוג הכלל</b><select class="fsel" data-rf="type">'+opt(Object.fromEntries(Object.entries(T.TYPES).map(([k,v])=>[k,v.label])),r.type)+'</select></label>'+p+who+
     '<label class="small">הערה / מקור (רשות)<input type="text" class="fsel" data-rf="note" value="'+esc(r.note||'')+'"></label>'+
     '<div class="note small"><b>תצוגה מקדימה:</b> '+esc(T.describe(r,st))+(n!=null?' <span class="muted">· חל על '+n+' אנשים</span>':'')+'</div>'+
+    (idsMode&&!n?'<div class="small err">סמנו לפחות אדם אחד ברשימה.</div>':'')+
+    (everyone&&restrictive?'<div class="small" style="background:#fdecea;border:1px solid #f3b4ae;border-radius:8px;padding:8px 12px;color:var(--red)"><b>שימו לב: הכלל חל על כל הצוות ('+n+' אנשים).</b> אם התכוונתם לאנשים מסוימים — לחצו "אנשים מסוימים" למעלה וסמנו אותם.</div>':'')+
     '</div><div class="mfoot"><button class="btn sec sm" data-act="close">ביטול</button><button class="btn sm" data-act="rsave"'+(n===0||(r.type==='slots'&&!(r.slots||[]).length)||(r.type==='note'&&!(r.text||'').trim())?' disabled':'')+'>שמירה</button></div></div></div>';
 }
 const REL={equal:'חל בדיוק על אותם אנשים',sub:'החדש חל על חלק מהאנשים של הכלל הקיים',sup:'החדש רחב יותר מהכלל הקיים',partial:'חלק מהאנשים משותפים'};

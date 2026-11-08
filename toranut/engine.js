@@ -216,7 +216,7 @@
   function compile(rules, staff) {
     const P = {};
     staff.forEach(s => {
-      const p = { excluded: false, target: 2, pattern: 'free', stations: 'any', ahmash: 'no', min: {}, max: {}, hardMax: {}, only: [], never: [], src: {} };
+      const p = { excluded: false, target: 2, pattern: 'free', stations: 'any', ahmash: 'no', min: {}, max: {}, hardMax: {}, only: [], never: [], why: {}, src: {} };
       (rules || []).forEach(r => {
         if (r.on === false || r.type === 'note' || !matches(r, s)) return;
         switch (r.type) {
@@ -229,7 +229,12 @@
             if (r.mode === 'min') { p.min[r.shift] = +r.n; if (p.max[r.shift] != null && p.max[r.shift] < r.n) p.max[r.shift] = +r.n; }
             else { p.max[r.shift] = +r.n; p.hardMax[r.shift] = !!r.hard; if (p.min[r.shift] > r.n) p.min[r.shift] = +r.n; }
             p.src['shift:' + r.shift] = r.id; break;
-          case 'slots': (r.mode === 'only' ? p.only : p.never).push(...(r.slots || [])); break;
+          case 'slots': {
+            (r.mode === 'only' ? p.only : p.never).push(...(r.slots || []));
+            const w = r.who || {}, all = !(w.ids && w.ids.length) && !(w.roles && w.roles.length) && !(w.dcats && w.dcats.length) && !(w.options && w.options.length);
+            const why = r.note ? 'כלל: ' + r.note : all ? 'כלל לכל הצוות: ' + whatText(r) : (w.ids && w.ids.length === 1) ? 'הגבלה אישית' + (r.src === 'site' ? ' (נוספה באתר)' : '') : 'כלל: ' + whatText(r);
+            if (r.mode === 'only') p.why.only = why; else (r.slots || []).forEach(k => { p.why[k] = why; });
+            break; }
         }
       });
       P[s.id] = p;
@@ -378,8 +383,8 @@
     const k = shift.id + '@' + day;
     if (!p || p.excluded) return 'לא משובץ/ת (הוחרג/ה)';
     if (p.target <= 0) return 'מכסה 0';
-    if (p.only.length && !p.only.includes(k)) return 'הגבלה אישית';
-    if (p.never.includes(k)) return 'הגבלה אישית';
+    if (p.only.length && !p.only.includes(k)) return p.why.only || 'הגבלה אישית';
+    if (p.never.includes(k)) return p.why[k] || 'הגבלה אישית';
     if (shift.kind === 'morning' && s.noMorning.includes(day)) return 'ביקש/ה לא בבוקר ביום הזה';
     if (shift.kind === 'end' && s.noEnd.includes(day)) return 'ביקש/ה לא בסוף יום ביום הזה';
     return null;
