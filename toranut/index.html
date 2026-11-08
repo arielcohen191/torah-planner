@@ -34,7 +34,7 @@ h1{margin:0;font-size:26px;font-weight:700}h2{margin:0 0 12px;font-size:20px;fon
 .btn:hover{background:var(--brand-dark)}.btn.sec{background:#fff;color:var(--ink);border:1.5px solid #c9d1db}.btn.sec:hover{background:var(--card-muted)}
 .btn.sm{min-height:44px;padding:0 16px;font-size:16px}.btn[disabled]{opacity:.6;cursor:wait}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
 .kpi{border-radius:var(--r-lg);padding:18px 22px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:104px}
 .kpi b{display:block;font-size:19px;font-weight:600}.kpi span{font-size:14px;opacity:.95}.kpi .n{font-size:56px;line-height:56px;font-weight:200}
 button.kpi{border:0;font:inherit;color:#fff;text-align:right;width:100%;cursor:pointer;transition:transform .12s,box-shadow .12s}
@@ -101,7 +101,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .cand:hover{border-color:var(--brand)}.cand.cur{border-color:var(--green);background:#eef7e8}
 .cand small{color:var(--ink-muted)}
 .note{background:#fff8e6;border:1px solid #f0d48a;border-radius:var(--r-sm);padding:12px 16px}
-@media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}main{padding:16px}}
+@media (max-width:900px){main{padding:16px}}
+@media (max-width:520px){.kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi{padding:12px 14px;min-height:0;flex-direction:column;align-items:flex-start}.kpi .n{font-size:40px;line-height:44px}}
 @media (max-width:760px){.app{flex-direction:column}nav.rail{flex-direction:row;flex:none;padding:8px;overflow-x:auto}.rail .brand,.rail .spacer,.rail .who{display:none}.rail button{flex:1;min-width:72px}}
 @media print{nav.rail,.noprint,.toast{display:none!important}main{padding:0}body{background:#fff;font-size:12px}.card{box-shadow:none;padding:0;margin-bottom:12px;break-inside:avoid}
  table.grid{font-size:11px;min-width:0}table.grid thead th{background:#ddd;color:#000}td.cell.empty{background:#fff}td.cell .lk{display:none}}
@@ -483,6 +484,7 @@ function renderModal(){
   if(S.modal.kind==='rule')return renderRuleModal();
   if(S.modal.kind==='conflict')return renderConflictModal();
   if(S.modal.kind==='place')return placeModal();
+  if(S.modal.kind==='import')return importModal();
   if(S.modal.kind==='confirm')return '<div class="overlay" data-act="close"><div class="modal" role="alertdialog" aria-modal="true" data-act="noop"><div class="mhead">'+esc(S.modal.title)+'</div><div class="mbody"><p>'+esc(S.modal.text)+'</p></div><div class="mfoot"><button class="btn sec sm" data-act="close">ביטול</button><button class="btn sm" data-act="cyes" style="background:var(--red)">'+esc(S.modal.yes)+'</button></div></div></div>';
   const M=S.modal,[sid,dd,stid]=M.k.split('@'),sh=shiftOf(sid),st=stOf(stid),d=+dd;
   const A=S.data.plan.assign,cur=A[M.k];
@@ -514,23 +516,64 @@ function csv(){
   const blob=new Blob(['﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='תורנויות-חצר.csv';a.click();
 }
+/* קריאת הגיליון: JSONP (עוקף CORS, ומשתמש בחיבור הגוגל של הדפדפן אם יש) */
+function sheetJSONP(id,sheet){
+  return new Promise((res,rej)=>{
+    const cb='__tq'+Date.now().toString(36);let done=false;
+    const sc=document.createElement('script');
+    const end=(f,v)=>{if(done)return;done=true;try{delete window[cb]}catch(x){}sc.remove();f(v)};
+    window[cb]=j=>{if(!j||j.status==='error'||!j.table)return end(rej,new Error((j&&j.errors&&j.errors[0]&&j.errors[0].detailed_message)||'access'));end(res,j)};
+    sc.onerror=()=>end(rej,new Error('network'));
+    setTimeout(()=>end(rej,new Error('timeout')),9000);
+    sc.src='https://docs.google.com/spreadsheets/d/'+id+'/gviz/tq?tqx=responseHandler:'+cb+'&headers=0&sheet='+encodeURIComponent(sheet);
+    document.head.appendChild(sc);
+  });
+}
+function parseCSV(t){
+  const sep=(t.split('\n')[0].match(/\t/g)||[]).length>(t.split('\n')[0].match(/,/g)||[]).length?'\t':',';
+  const rows=[];let row=[],cell='',q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){cell+='"';i++}else q=false}else cell+=c}
+    else if(c==='"')q=true;
+    else if(c===sep){row.push(cell);cell=''}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(cell);rows.push(row);row=[];cell=''}
+    else cell+=c}
+  if(cell||row.length){row.push(cell);rows.push(row)}
+  return rows;
+}
 async function importSheet(){
-  const id=S.data.sheet;let values=null;
+  const id=S.data.sheet;
+  toast('קורא את הגיליון…');
   try{
-    const url='https://docs.google.com/spreadsheets/d/'+id+'/gviz/tq?tqx=out:json&sheet='+encodeURIComponent('תגובות לטופס 1')+'&headers=0';
-    const t=await (await fetch(url)).text();const j=JSON.parse(t.slice(t.indexOf('{'),t.lastIndexOf('}')+1));
-    values=j.table.rows.map(r=>(r.c||[]).map(c=>c?(c.f!=null&&typeof c.v!=='string'?c.f:c.v):''));
+    const j=await sheetJSONP(id,'תגובות לטופס 1');
+    const values=j.table.rows.map(r=>(r.c||[]).map(c=>c?(c.f!=null&&typeof c.v!=='string'?c.f:c.v):''));
     const cols=j.table.cols.map(c=>c.label||'');if(cols.some(Boolean))values.unshift(cols);
-  }catch(e){values=null}
-  if(!values){const txt=prompt('לא הצלחתי לקרוא את הגיליון ישירות.\nהעתיקו את כל הגיליון "תגובות לטופס 1" (Ctrl+A, Ctrl+C) והדביקו כאן:');if(!txt)return;values=txt.split(/\r?\n/).map(l=>l.split('\t'))}
+    return applyImport(values);
+  }catch(e){S.modal={kind:'import',err:e.message};render()}
+}
+async function applyImport(values){
   const rows=T.parseSheet(values);
-  if(!rows.length){toast('לא נמצאו תשובות בגיליון');return}
+  if(!rows.length){toast('לא נמצאו תשובות. ודאו שזה הגיליון "תגובות לטופס 1".');return false}
+  const before=(S.data.formRows||[]).length;
+  if(before&&rows.length<before*0.7&&!confirm('בקובץ יש רק '+rows.length+' תשובות, ולפני כן היו '+before+'. מי שלא מופיע בקובץ ירד מהשיבוץ. להמשיך?'))return false;
   const fresh=T.buildStaff(rows,S.tt);
   const old={};S.data.staff.forEach(s=>old[s.name]=s);
   let added=0;
   fresh.forEach(s=>{const o=old[s.name];if(o)s.id=o.id;else{added++;s.id='s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}});
-  S.data.formRows=rows;S.data.staff=fresh;S.data.plan.stale=true;recompute();await save(true);render();
-  toast('עודכן מהשאלון: '+rows.length+' תשובות'+(added?', '+added+' חדשים':''));
+  const gone=S.data.staff.filter(s=>!fresh.some(f=>f.id===s.id)).length;
+  S.data.formRows=rows;S.data.staff=fresh;S.data.plan.stale=true;S.modal=null;recompute();await save(true);render();
+  toast('עודכן מהשאלון: '+rows.length+' תשובות'+(added?' · '+added+' חדשים':'')+(gone?' · '+gone+' ירדו':''));
+  return true;
+}
+function importModal(){
+  const link='https://docs.google.com/spreadsheets/d/'+S.data.sheet+'/edit';
+  return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" data-act="noop" style="max-width:560px"><div class="mhead">עדכון מהשאלון</div><div class="mbody">'+
+    '<p style="margin:0"><b>לא הצלחתי לקרוא את הגיליון.</b> בדרך כלל זה כי הוא לא משותף לקריאה.</p>'+
+    '<div class="item"><b>הדרך הקלה (פעם אחת):</b><ol style="margin:6px 0 0;padding-inline-start:20px"><li><a href="'+link+'" target="_blank" rel="noopener">לפתוח את הגיליון</a></li><li>שיתוף ← "גישה כללית" ← <b>כל מי שיש לו את הקישור</b> ← <b>צופה</b></li><li>לחזור לכאן וללחוץ "לנסות שוב"</li></ol><div class="small muted" style="margin-top:6px">צפייה בלבד: אף אחד לא יכול לערוך את הגיליון דרך הקישור.</div></div>'+
+    '<div class="item"><b>או: להעלות קובץ</b><div class="small">בגיליון: קובץ ← הורדה ← CSV (רק הלשונית "תגובות לטופס 1"), ואז לבחור את הקובץ כאן:</div><input type="file" id="csvFile" accept=".csv,.tsv,text/csv,text/plain" style="margin-top:8px;font-size:16px"></div>'+
+    '<details class="small"><summary>במחשב: הדבקה ישירה</summary><textarea id="pasteBox" class="fsel" rows="4" placeholder="להעתיק את כל הגיליון (Ctrl+A, Ctrl+C) ולהדביק כאן"></textarea><button class="btn sec sm" data-act="impPaste" style="margin-top:6px">ייבוא מההדבקה</button></details>'+
+    (S.modal.err&&!/access|timeout|network/.test(S.modal.err)?'<div class="small muted">פרט טכני: '+esc(S.modal.err)+'</div>':'')+
+    '</div><div class="mfoot"><button class="btn sec sm" data-act="close">סגירה</button><button class="btn sm" data-act="import">לנסות שוב</button></div></div></div>';
 }
 function setPersonal(id,type,values){
   S.data.rules=T.setPersonal(S.data.rules,id,type,null);
@@ -557,7 +600,8 @@ root.addEventListener('click',async e=>{
   if(a==='nav'){S.view=b.dataset.v;render();window.scrollTo(0,0)}
   else if(a==='logout'){try{localStorage.removeItem('milui_phone')}catch(x){}S.phone=null;S.data=null;render()}
   else if(a==='run')run();
-  else if(a==='import')importSheet();
+  else if(a==='import'){S.modal=null;render();importSheet()}
+  else if(a==='impPaste'){const t=(document.getElementById('pasteBox')||{}).value||'';if(t.trim())applyImport(parseCSV(t))}
   else if(a==='tab'){S.shiftTab=b.dataset.t;render()}
   else if(a==='print'){const t=S.shiftTab;S.shiftTab='all';render();setTimeout(()=>{window.print();S.shiftTab=t;render()},50)}
   else if(a==='csv')csv();
@@ -593,6 +637,7 @@ root.addEventListener('click',async e=>{
 });
 root.addEventListener('change',e=>{
   const el=e.target;
+  if(el.id==='csvFile'&&el.files&&el.files[0]){const f=el.files[0],r=new FileReader();r.onload=()=>applyImport(parseCSV(String(r.result).replace(/^\ufeff/,'')));r.readAsText(f,'utf-8');return}
   if(el.dataset.rf&&S.modal&&S.modal.r){if(/^(n|note|text)$/.test(el.dataset.rf))return;rf(el);render();return}
   const ch=el.dataset.ch;if(!ch)return;
   if(ch==='focus'){S.focus=el.value||null;render();return}
