@@ -351,6 +351,19 @@ function msgFor(date,tid){
   return greet(T[tid].name)+',\nתודה שהסכמת למלא מקום '+when+':\n'+lines.join('\n')+'\nתודה רבה!';
 }
 function intlPhone(p){let d=String(p||'').replace(/\D/g,'');if(d.startsWith('0'))d='972'+d.slice(1);return d}
+const ORD=['','הראשונה','השנייה','השלישית','הרביעית','החמישית','השישית','השביעית','השמינית','התשיעית','העשירית'];
+const dispName=n=>String(n).replace(/`/g,'׳');
+function callName(t){return /^הרב\s/.test(t.name)?'הרב '+dispName(t.name.replace(/^הרב\s+/,'').split(' ')[0]):dispName(firstName(t.name))}
+function whenWord(date){return date===today()?'היום':date===addDays(today(),1)?'מחר':'ביום '+DAYS[dow(date)]+' '+short(date)}
+function reqText(date,tid,slot){const t=S.data.T[tid],g=t.gender;
+  return callName(t)+' '+(g==='m'?'היקר':g==='f'?'היקרה':'היקר/ה')+',\nזקוקים לעזרתך '+whenWord(date)+' בשעה '+ORD[slot.hour]+' בכיתה '+slot.classes.map(cls).join(', ')+'.\nנא '+(g==='m'?'אשר':g==='f'?'אשרי':'אשר/י')+'. תודה'}
+function reqLink(tid,text){const t=S.data.T[tid],enc=encodeURIComponent(text);
+  const wa=t.phone?'https://wa.me/'+intlPhone(t.phone)+'?text='+enc:null,sms=t.phone?'sms:'+t.phone+'?&body='+enc:null,ml=t.email?'mailto:'+t.email+'?subject='+encodeURIComponent('בקשה למילוי מקום')+'&body='+enc:null;
+  if(t.channel==='sms'&&sms)return[sms,'ב־SMS'];if(t.channel==='email'&&ml)return[ml,'במייל'];if(wa)return[wa,'בוואטסאפ'];if(ml)return[ml,'במייל'];return[null,'']}
+function reqBtn(date,c,s,again){const txt=reqText(date,c.t.id,s),[href,via]=reqLink(c.t.id,txt);
+  const lbl=again?'שלח שוב':'שלח בקשה';
+  if(!href)return '<button class="btn sm" data-act="askcopy" data-slot="'+s.id+'" data-tid="'+c.t.id+'" title="אין טלפון או מייל. ההודעה תועתק">'+lbl+'</button>';
+  return '<a class="btn sm" href="'+esc(href)+'"'+(href.startsWith('https')?' target="_blank" rel="noopener"':'')+' data-act="ask" data-slot="'+s.id+'" data-tid="'+c.t.id+'" data-via="'+via+'" title="'+esc(lbl+' '+via)+'">'+lbl+'</a>'}
 function sendBtns(tid,text){
   const t=S.data.T[tid],enc=encodeURIComponent(text);
   const wa=t.phone?'<a class="btn wide" target="_blank" rel="noopener" href="https://wa.me/'+intlPhone(t.phone)+'?text='+enc+'">שלח בוואטסאפ</a>':'';
@@ -375,9 +388,8 @@ function viewCand(){
     if(chosen===c.t.id)actions='<span class="tag assigned">שובץ/ה ✓</span><button class="btn sec xs" data-act="unassign" data-slot="'+s.id+'">בטל שיבוץ</button>';
     else if(c.dec)actions='<span class="small muted">לא יכול/ה הפעם</span><button class="btn sec xs" data-act="undecline" data-slot="'+s.id+'" data-tid="'+c.t.id+'">החזר לרשימה</button>';
     else if(c.busy)actions='<span class="small muted">כבר ממלא/ת בשעה הזו</span>';
-    else actions='<button class="btn ok sm" data-act="yes" data-slot="'+s.id+'" data-tid="'+c.t.id+'">יכול/ה</button><button class="btn sec sm" data-act="no" data-slot="'+s.id+'" data-tid="'+c.t.id+'">לא יכול/ה</button>'+
-      (row&&row.status==='asking'&&row.substitute_id===c.t.id?'':'<button class="link" data-act="ask" data-slot="'+s.id+'" data-tid="'+c.t.id+'">שאלתי, מחכה לתשובה</button>');
-    if(row&&row.status==='asking'&&row.substitute_id===c.t.id)actions='<span class="tag asking">בבירור</span>'+actions;
+    else{const asked=row&&row.status==='asking'&&row.substitute_id===c.t.id;
+      actions=(asked?'<span class="tag asking">נשלחה בקשה</span>':'')+reqBtn(D,c,s,asked)+'<button class="btn ok sm" data-act="yes" data-slot="'+s.id+'" data-tid="'+c.t.id+'">יכול/ה</button><button class="btn sec sm" data-act="no" data-slot="'+s.id+'" data-tid="'+c.t.id+'">לא יכול/ה</button>'}
     groups+='<div class="cand'+(c.dec?' declined':'')+(chosen===c.t.id?' chosen':'')+'"><div class="who"><b>'+esc(c.t.name)+'</b><span class="small muted">'+meta+'</span></div>'+actions+'</div>';
     shown++;
   }
@@ -397,7 +409,9 @@ function viewCand(){
     }
     side+='<button class="btn sec sm" data-go="board">סיימתי, חזרה ללוח</button>';
   } else {
-    side='<h2>אין מחליף?</h2><div class="small muted">סמנו איך השיעור טופל, והוא יירד מהרשימה הפתוחה:</div><div class="grid2">'+
+    const top=list.find(c=>!c.dec&&!c.busy);
+    side=(top?'<h2>שליחת בקשה</h2><div class="small muted">לוחצים <b>שלח בקשה</b> ליד המורה, ונפתחת הודעה מוכנה עם השם שלו/ה. נשאר רק ללחוץ שלח. למשל:</div><div class="msg">'+esc(reqText(D,top.t.id,s))+'</div><div class="small muted">כשהמורה עונה, לוחצים <b>יכול/ה</b> או <b>לא יכול/ה</b>.</div><hr style="border:0;border-top:1px solid var(--line);margin:4px 0">':'')+
+     '<h2>אין מחליף?</h2><div class="small muted">סמנו איך השיעור טופל, והוא יירד מהרשימה הפתוחה:</div><div class="grid2">'+
      ['פיצול כיתה','ביטול שיעור','סייעת','איחוד עם כיתה אחרת'].map(o=>'<button class="btn sec sm" data-act="other" data-slot="'+s.id+'" data-note="'+o+'">'+o+'</button>').join('')+'</div>'+
      (row&&row.status==='other'?'<div>כרגע: <b>'+esc(row.other_note)+'</b></div><button class="btn sec xs" data-act="unassign" data-slot="'+s.id+'">החזר לפתוח</button>':'');
   }
@@ -512,9 +526,10 @@ function viewTeachers(){
   const ts=[...S.data.teachers].sort((a,b)=>a.is_external-b.is_external||a.name.localeCompare(b.name,'he'));
   const miss=ts.filter(t=>!t.phone&&!t.email).length;
   return '<header class="card topbar"><div><h1>מורים</h1><div class="muted">טלפון ומייל משמשים רק לכפתורי השליחה. '+(miss?miss+' מורים עדיין בלי פרטי קשר.':'לכולם יש פרטי קשר.')+'</div></div></header>'+
-   '<section class="card" style="padding:20px"><div class="tablewrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>מייל</th><th>שליחה מועדפת</th></tr></thead><tbody>'+
+   '<section class="card" style="padding:20px"><div class="tablewrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>מייל</th><th>שליחה מועדפת</th><th>פנייה</th></tr></thead><tbody>'+
    ts.map(t=>'<tr><td><b>'+esc(t.name)+'</b>'+(t.is_external?'<div class="small muted">מבחוץ</div>':'')+'</td><td><input type="tel" inputmode="tel" data-f="phone" data-id="'+t.id+'" value="'+esc(t.phone||'')+'" aria-label="טלפון של '+esc(t.name)+'"></td><td><input type="email" data-f="email" data-id="'+t.id+'" value="'+esc(t.email||'')+'" aria-label="מייל של '+esc(t.name)+'"></td>'+
     '<td><div class="pills" role="group" aria-label="שליחה מועדפת">'+[['whatsapp','וואטסאפ'],['sms','SMS'],['email','מייל']].map(([k,l])=>'<button type="button" data-act="chan" data-id="'+t.id+'" data-v="'+k+'" aria-pressed="'+(t.channel===k)+'">'+l+'</button>').join('')+'</div></td>'+
+    '<td><div class="pills" role="group" aria-label="פנייה בהודעה">'+[['m','היקר'],['f','היקרה']].map(([k,l])=>'<button type="button" data-act="gend" data-id="'+t.id+'" data-v="'+k+'" aria-pressed="'+(t.gender===k)+'">'+l+'</button>').join('')+'</div></td>'+
     '</tr>').join('')+'</tbody></table></div></section>';
 }
 
@@ -530,7 +545,7 @@ function handleErr(e){
 function logout(msg){S.phone=null;S.data=null;try{localStorage.removeItem('milui_phone')}catch(e){};renderLogin(msg)}
 async function saveTeacher(id){const g=f=>{const el=root.querySelector('[data-f="'+f+'"][data-id="'+id+'"]');return el?(el.value.trim()||null):null};
   const t=S.data.T[id];t.phone=g('phone');t.email=g('email');
-  try{await rpc('milui_save_teacher',{p_phone:S.phone,p:{id,phone:t.phone,email:t.email,channel:t.channel}});toast('נשמר: '+t.name)}catch(e){handleErr(e)}}
+  try{await rpc('milui_save_teacher',{p_phone:S.phone,p:{id,phone:t.phone,email:t.email,channel:t.channel,gender:t.gender||''}});toast('נשמר: '+t.name)}catch(e){handleErr(e)}}
 async function setSlot(p){await rpc('milui_set_slot',{p_phone:S.phone,p})}
 function absFor(slotId){const it=openItems(S.date).find(i=>i.slot.id===slotId);return it?it.abs.id:null}
 
@@ -557,7 +572,9 @@ root.addEventListener('click',async e=>{
    case 'cand':S.sel=slot;S.view='cand';S.showMore=false;window.scrollTo(0,0);render();break;
    case 'more':S.showMore=!S.showMore;render();break;
    case 'yes':S.sel=slot;S.view='cand';await act(()=>setSlot({date:D,slot_id:slot,absence_id:absFor(slot),status:'assigned',substitute_id:tid}),'מעולה, '+S.data.T[tid].name+' שובץ/ה');window.scrollTo(0,0);break;
-   case 'ask':await act(()=>setSlot({date:D,slot_id:slot,absence_id:absFor(slot),status:'asking',substitute_id:tid}),'סומן: מחכים לתשובה מ'+S.data.T[tid].name);break;
+   case 'ask':await act(()=>setSlot({date:D,slot_id:slot,absence_id:absFor(slot),status:'asking',substitute_id:tid}),'הבקשה נפתחה '+(b.dataset.via||'')+'. מחכים לתשובה מ'+S.data.T[tid].name);break;
+   case 'askcopy':{const txt=reqText(D,tid,S.data.SL[slot]);try{await navigator.clipboard.writeText(txt)}catch(x){}
+     await act(()=>setSlot({date:D,slot_id:slot,absence_id:absFor(slot),status:'asking',substitute_id:tid}),'אין למורה טלפון או מייל. ההודעה הועתקה, הדביקו ושלחו');break}
    case 'no':await act(async()=>{await rpc('milui_decline',{p_phone:S.phone,p_date:D,p_slot:slot,p_teacher:tid,p_on:true});const r=asg(D,slot);if(r&&r.substitute_id===tid)await setSlot({date:D,slot_id:slot,status:null})},'בסדר, ממשיכים לבא בתור');break;
    case 'undecline':await act(()=>rpc('milui_decline',{p_phone:S.phone,p_date:D,p_slot:slot,p_teacher:tid,p_on:false}));break;
    case 'unassign':await act(()=>setSlot({date:D,slot_id:slot,status:null}),'השיבוץ בוטל, השיעור פתוח שוב');break;
@@ -601,6 +618,7 @@ root.addEventListener('click',async e=>{
    case 'cdone':{const r=S.data.assignments.find(x=>x.id===+b.dataset.id);await act(()=>rpc('milui_set_comp',{p_phone:S.phone,p_id:r.id,p_type:r.comp_type,p_note:r.comp_note,p_done:b.dataset.v==='1'}),b.dataset.v==='1'?'סומן כטופל':'הוחזר ללא טופל');break}
    case 'csv':{const rows=payRows(),T=S.data.T;const lines=[['תאריך','שעה','ממלא/ת','במקום','מקצוע','כיתה','סוג תגמול','הערה','טופל']].concat(rows.map(r=>{const s=S.data.SL[r.slot_id];return[r.date,s.hour,T[r.substitute_id].name,T[s.tid].name,s.subject,s.classes.join(' '),COMP[r.comp_type]||'',r.comp_note||'',r.comp_done?'כן':'לא']}));
      const csv='﻿'+lines.map(l=>l.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const ln=document.createElement('a');ln.href=u;ln.download='מילויי מקום '+monthStart(S.date).slice(0,7)+'.csv';document.body.appendChild(ln);ln.click();ln.remove();break}
+   case 'gend':{const t=S.data.T[+b.dataset.id];t.gender=t.gender===b.dataset.v?null:b.dataset.v;root.querySelectorAll('[data-act="gend"][data-id="'+t.id+'"]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===t.gender));saveTeacher(t.id);break}
    case 'chan':{const t=S.data.T[+b.dataset.id];t.channel=b.dataset.v;root.querySelectorAll('[data-act="chan"][data-id="'+t.id+'"]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===t.channel));saveTeacher(t.id);break}
    case 'calopen':{const k=b.dataset.key;if(S.cal&&S.cal.key===k){S.cal=null}else{const v=k==='board'?S.date:k==='from'?(S.abs.from||S.date):k==='to'?(S.abs.to||S.abs.from||S.date):S.modal.date;S.cal={key:k,month:monthStart(v||today())}}render();break}
    case 'calnav':{const d=parse(S.cal.month);d.setMonth(d.getMonth()+(+b.dataset.n));S.cal.month=iso(d);render();break}
