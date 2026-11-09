@@ -560,17 +560,18 @@ function printYards(){
 
 /* ---------- גרסאות ---------- */
 const snapOf=()=>({plan:{assign:S.data.plan.assign||{},locked:S.data.plan.locked||{},at:S.data.plan.at||null},rules:S.data.rules||[],stations:S.data.stations||{},shifts:S.data.shifts||{},yards:S.data.yards||null});
-async function addVersion(label){try{await rpc('toranut_version_add',{p_phone:S.phone,p_label:label,p_stats:S.R?S.R.stats:null,p_snap:snapOf()});S.versions=null}catch(e){toast('שמירת הגרסה נכשלה: '+e.message)}}
+const stamp=t=>{const d=new Date(t),z=n=>String(n).padStart(2,'0');return z(d.getDate())+'.'+z(d.getMonth()+1)+'.'+d.getFullYear()+' '+z(d.getHours())+':'+z(d.getMinutes())};
+async function addVersion(kind,name){const label=stamp(Date.now())+(name?' · '+name:'');try{await rpc('toranut_version_add',{p_phone:S.phone,p_label:label,p_stats:Object.assign({},S.R?S.R.stats:{},{kind}),p_snap:snapOf()});S.versions=null}catch(e){toast('שמירת הגרסה נכשלה: '+e.message)}}
 async function loadVersions(){try{S.versions=await rpc('toranut_versions_list',{p_phone:S.phone})||[]}catch(e){S.versions=[];toast('טעינת הגרסאות נכשלה')}render()}
 const fmtAt=t=>new Date(t).toLocaleString('he-IL',{weekday:'short',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
 function viewHist(){
   if(!S.versions){loadVersions();return '<div class="card"><h1>גרסאות</h1><p class="muted">טוען…</p></div>'}
   let h='<div class="card topbar"><div><h1>גרסאות</h1><div class="muted small">כל "הרצת שיבוץ" נשמרת כאן אוטומטית. אפשר לצפות בכל גרסה ולשחזר אותה — לפני כל שחזור המצב הנוכחי נשמר כגרסה, כך ששום דבר לא הולך לאיבוד.</div></div>'+
-    '<div class="row noprint"><input type="text" id="vlabel" class="fsel" placeholder="שם לגרסה (רשות)" style="max-width:220px"><button class="btn sm" data-act="vSave">שמירת גרסה עכשיו</button></div></div>';
+    '<div class="row noprint"><input type="text" id="vlabel" class="fsel" placeholder="הערה לגרסה (רשות)" style="max-width:220px"><button class="btn sm" data-act="vSave">שמירת גרסה עכשיו</button></div></div>';
   if(!S.versions.length)return h+'<div class="card"><p>עוד אין גרסאות. הן ייווצרו בהרצת השיבוץ הבאה.</p></div>';
   h+='<div class="card"><div class="list">'+S.versions.map((v,i)=>{const st=v.stats||{};
-    return '<div class="item '+(st.open?'orange':'green')+'"><div class="ver"><div><b>'+esc(fmtAt(v.at))+'</b> · '+esc(v.label||'')+(i===0?' <span class="chip">האחרונה</span>':'')+
-      '<div class="small muted">'+esc(v.by||'')+(st.demand?' · שובצו '+st.filled+'/'+st.demand+(st.open?' · <span style="color:var(--red)">חסרות '+st.open+'</span>':' · הכול מאויש'):'')+'</div></div>'+
+    return '<div class="item '+(st.open?'orange':'green')+'"><div class="ver"><div><b style="font-size:18px">'+esc(v.label||stamp(v.at))+'</b>'+(i===0?' <span class="chip">האחרונה</span>':'')+
+      '<div class="small muted">'+esc([st.kind,v.by].filter(Boolean).join(' · '))+(st.demand?' · שובצו '+st.filled+'/'+st.demand+(st.open?' · <span style="color:var(--red)">חסרות '+st.open+'</span>':' · הכול מאויש'):'')+'</div></div>'+
       '<div class="row"><button class="btn sec sm" data-act="vView" data-id="'+v.id+'">צפייה בלוח</button><button class="btn sec sm" data-act="vRestore" data-id="'+v.id+'">שחזור</button></div></div></div>'}).join('')+'</div></div>';
   return h;
 }
@@ -578,7 +579,7 @@ function previewBar(){
   if(!S.preview)return '';
   const cur=S.data.plan.assign||{},old=(S.preview.snap.plan||{}).assign||{};
   const keys=new Set([...Object.keys(cur),...Object.keys(old)]);let diff=0;keys.forEach(k=>{if(cur[k]!==old[k])diff++});
-  return '<div class="preview-bar noprint"><div><b>צפייה בגרסה מ־'+esc(fmtAt(S.preview.meta.at))+'</b> · '+esc(S.preview.meta.label||'')+' · '+diff+' משבצות שונות מהשיבוץ הנוכחי · קריאה בלבד</div>'+
+  return '<div class="preview-bar noprint"><div><b>צפייה בגרסה '+esc(S.preview.meta.label||stamp(S.preview.meta.at))+'</b> · '+diff+' משבצות שונות מהשיבוץ הנוכחי · קריאה בלבד</div>'+
     '<div class="row"><button class="btn sm" data-act="vRestore" data-id="'+S.preview.meta.id+'" style="background:#fff;color:#2b2f6b">שחזור הגרסה הזו</button><button class="btn sec sm" data-act="vExit">חזרה לנוכחית</button></div></div>';
 }
 async function viewVersion(id){
@@ -590,7 +591,7 @@ async function restoreVersion(id){
   const meta=(S.versions||[]).find(v=>String(v.id)===String(id))||{at:new Date()};
   let snap=S.preview&&String(S.preview.meta.id)===String(id)?S.preview.snap:null;
   try{if(!snap)snap=await rpc('toranut_version_get',{p_phone:S.phone,p_id:+id});
-    S.preview=null;recompute();await addVersion('לפני שחזור לגרסה מ־'+fmtAt(meta.at));
+    S.preview=null;recompute();await addVersion('לפני שחזור לגרסה '+(meta.label||stamp(meta.at)));
     S.data.plan={assign:(snap.plan||{}).assign||{},locked:(snap.plan||{}).locked||{},at:(snap.plan||{}).at||null,stats:null};
     if(snap.rules)S.data.rules=snap.rules;if(snap.stations)S.data.stations=snap.stations;if(snap.shifts)S.data.shifts=snap.shifts;if(snap.yards)S.data.yards=snap.yards;
     S.modal=null;recompute();S.data.plan.stats=S.R.stats;await save(true);S.versions=null;S.view='board';render();toast('הגרסה שוחזרה. המצב הקודם נשמר בגרסאות.')}
@@ -739,8 +740,8 @@ root.addEventListener('click',async e=>{
   if(a==='yClear'){const M=S.modal;setYard(M.b,M.y,M.d,'');return}
   if(a==='vView'){viewVersion(b.dataset.id);return}
   if(a==='vExit'){S.preview=null;recompute();render();return}
-  if(a==='vRestore'){const id=b.dataset.id,meta=(S.versions||[]).find(v=>String(v.id)===String(id));S.modal={kind:'confirm',title:'שחזור גרסה',text:'לשחזר את הגרסה מ־'+(meta?fmtAt(meta.at):'')+'? השיבוץ, הכללים וחלוקת החצרות יחזרו למצב של אז. המצב הנוכחי יישמר קודם כגרסה.',yes:'לשחזר',fn:null,restore:id};render();return}
-  if(a==='vSave'){const l=((document.getElementById('vlabel')||{}).value||'').trim()||'שמירה ידנית';addVersion(l).then(()=>{toast('הגרסה נשמרה');loadVersions()});return}
+  if(a==='vRestore'){const id=b.dataset.id,meta=(S.versions||[]).find(v=>String(v.id)===String(id));S.modal={kind:'confirm',title:'שחזור גרסה',text:'לשחזר את הגרסה '+(meta?(meta.label||stamp(meta.at)):'')+'? השיבוץ, הכללים וחלוקת החצרות יחזרו למצב של אז. המצב הנוכחי יישמר קודם כגרסה.',yes:'לשחזר',fn:null,restore:id};render();return}
+  if(a==='vSave'){const l=((document.getElementById('vlabel')||{}).value||'').trim();addVersion('שמירה ידנית',l).then(()=>{toast('הגרסה נשמרה');loadVersions()});return}
   if(a==='nav'){S.view=b.dataset.v;if(S.view==='hist')S.versions=null;render();window.scrollTo(0,0)}
   else if(a==='logout'){try{localStorage.removeItem('milui_phone')}catch(x){}S.phone=null;S.data=null;render()}
   else if(a==='run')run();
