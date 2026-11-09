@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<title>מפת כיתה · כנפי רוח</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+/* שפה עיצובית: כמו שאר כלי כנפי רוח (מתכנן הספק / סיירות / תורנויות) */
+:root{
+  --canvas:#eef1f6; --card:#ffffff; --sunk:#f4f6fa; --line:#e1e6ee; --ink:#1d2939; --muted:#667085; --faint:#98a2b3;
+  --rail:#1c2636; --rail-2:#243245; --rail-ink:#c9d3e2; --rail-dim:#7d8aa0;
+  --primary:#2f6fd6; --primary-soft:#e6efff;
+  --grad:linear-gradient(135deg,#4a95ff 0%,#2f6fd6 50%,#5b4fd6 100%);
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --lift:0 2px 6px rgba(16,24,40,.05),0 10px 28px rgba(16,24,40,.07);
+  --f-ui:"Rubik","Segoe UI",Arial,sans-serif; --f-brand:"Frank Ruhl Libre","Times New Roman",serif;
+  --accent:var(--primary); --accent-soft:var(--primary-soft); --paper:var(--canvas); --gold:#a35a00;
+  --ok:#14804a; --ok-bg:#dff5e8; --mid:#d99a1e; --mid-bg:#fff1d6; --bad:#c8323f; --bad-bg:#fde5e7;
+  --na:#c3cad6; --na-bg:#eef1f6;
+}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--canvas);color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.5}
+.app{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh}
+.rail{background:linear-gradient(180deg,var(--rail) 0%,color-mix(in srgb,var(--rail) 82%,#2f3f8f) 100%);color:var(--rail-ink);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:10px;padding:18px 16px;border-bottom:1px solid var(--rail-2)}
+.mark{width:38px;height:38px;border-radius:12px;background:var(--grad);display:grid;place-items:center;color:#fff;font-family:var(--f-brand);font-weight:900;font-size:17px;flex:none;box-shadow:0 4px 12px rgba(47,111,214,.45)}
+.brand b{display:block;color:#fff;font-size:16px;font-weight:700;line-height:1.2}.brand small{color:var(--rail-dim);font-size:12px}
+.rail h6{margin:16px 16px 6px;font-size:11px;font-weight:600;color:var(--rail-dim);letter-spacing:.06em}
+.nav{display:flex;flex-direction:column;gap:2px;padding:0 8px}
+.nav button{font:inherit;display:flex;align-items:center;gap:10px;width:100%;text-align:right;background:none;border:none;color:var(--rail-ink);padding:11px 12px;border-radius:12px;cursor:pointer}
+.nav button svg{width:18px;height:18px;flex:none;opacity:.85}
+.nav button:hover{background:var(--rail-2)}
+.nav button.on{background:var(--grad);color:#fff;font-weight:600;box-shadow:0 6px 16px rgba(47,111,214,.35)}
+.rail-foot{margin-top:auto;padding:14px 16px;font-size:12px;color:var(--rail-dim);border-top:1px solid var(--rail-2)}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{background:color-mix(in srgb,var(--canvas) 70%,var(--card));backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;position:sticky;top:0;z-index:5;flex-wrap:wrap}
+.topbar h1{margin:0;font-size:19px;font-weight:700}.crumb{font-size:12px;color:var(--faint)}
+.topacts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{font:inherit;font-weight:600;font-size:13px;border-radius:10px;padding:7px 13px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);display:inline-flex;align-items:center;gap:6px;box-shadow:var(--shadow)}
+.btn:hover{border-color:var(--primary)}
+.btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.primary{background:var(--grad);border:none;color:#fff;box-shadow:0 4px 12px rgba(47,111,214,.3)}
+.hero .btn{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.35);color:#fff;box-shadow:none}
+.hero .btn:hover{background:rgba(255,255,255,.26)}
+.content{padding:16px 20px 48px;max-width:1440px;width:100%}
+.hero{position:relative;overflow:hidden;background:var(--grad);color:#fff;border-radius:22px;padding:22px 24px;box-shadow:0 12px 30px rgba(47,111,214,.28);margin-bottom:18px}
+.hero::after{content:"";position:absolute;left:-60px;top:-80px;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hero h2{margin:0;font-size:clamp(22px,3.2vw,30px);font-weight:800}
+.hero .quote{font-family:var(--f-brand);font-size:14px;opacity:.85;max-width:720px;margin-bottom:6px}
+.hero .sub{opacity:.9;font-size:14px;margin:2px 0 12px}
+.hero .demo{display:inline-block;background:#fff1d6;color:#7a4300;border-radius:99px;padding:3px 12px;font-size:13px;font-weight:600;margin-bottom:10px}
+.hero .acts{display:flex;gap:8px;flex-wrap:wrap;position:relative;z-index:1}
+.view{display:none}.view.on{display:block}
+.view>h2,.sec2{font-size:18px;margin:26px 0 8px;font-weight:700}
+.view>h2:first-child{margin-top:4px}
+.hint{color:var(--muted);font-size:13px;margin:-4px 0 12px}
+@media (max-width:900px){.app{grid-template-columns:minmax(0,1fr)}.rail{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:0 12px}.brand{border:none;padding:12px 4px}.rail h6,.rail-foot{display:none}.nav{flex-direction:row;overflow-x:auto;padding:0 0 10px;width:100%}.nav button{white-space:nowrap;width:auto}.content{padding:12px}}
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{background:var(--card);border:1px solid transparent;box-shadow:var(--lift);border-radius:18px;padding:12px 14px;cursor:pointer;text-align:right;font:inherit;color:inherit;transition:.15s}
+.tile:hover{border-color:var(--accent);transform:translateY(-1px)}
+.tile .v{font-size:30px;font-weight:800;line-height:1.1}
+.tile .l{font-size:13px;color:var(--muted)}
+.tile.bad .v{color:var(--bad)}.tile.mid .v{color:#a87a1e}.tile.acc .v{color:var(--accent)}
+/* domain bars */
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.dcard{background:var(--card);border:1px solid transparent;box-shadow:var(--lift);border-radius:18px;padding:14px}
+.dcard h3{margin:0 0 8px;font-size:15px}
+.bar{display:flex;height:26px;border-radius:7px;overflow:hidden;background:var(--na-bg)}
+.bar span{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;cursor:pointer;min-width:0}
+.bar .s1{background:var(--ok)}.bar .s2{background:var(--mid)}.bar .s3{background:var(--bad)}.bar .s0{background:var(--na);color:#555}
+.dnames{font-size:12.5px;color:var(--muted);margin-top:8px}
+.dnames b{color:var(--ink);font-weight:500}
+/* insights */
+.ins{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.icard{background:var(--card);box-shadow:var(--lift);border-right:5px solid var(--accent);border-radius:16px;padding:12px 16px}
+.icard.r{border-right-color:var(--bad)}.icard.y{border-right-color:var(--mid)}.icard.g{border-right-color:var(--ok)}.icard.n{border-right-color:var(--na)}
+.icard h4{margin:0 0 6px;font-size:15px}
+.icard p{margin:0;font-size:14px}
+.chip{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:20px;padding:1px 10px;margin:3px 0 0 4px;font-size:13px;cursor:pointer;border:0;font:inherit;font-size:13px}
+.chip:hover{background:var(--accent);color:#fff}
+/* heatmap */
+.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.filters input,.filters select{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.fbadge{background:var(--accent);color:#fff;border-radius:20px;padding:3px 12px;font-size:13px;cursor:pointer}
+table.map{border-collapse:separate;border-spacing:3px;width:100%}
+.map th{font-size:12.5px;font-weight:500;color:var(--muted);padding:4px;vertical-align:bottom;cursor:pointer;white-space:nowrap}
+.map th.sorted{color:var(--accent);font-weight:700}
+.map td{background:var(--card);padding:0;height:40px;border-radius:7px;text-align:center;font-size:13px}
+.map td.nm{text-align:right;padding:0 10px;font-weight:500;cursor:pointer;white-space:nowrap;border:1px solid var(--line)}
+.map td.nm:hover{border-color:var(--accent);color:var(--accent)}
+.map td.nm small{color:var(--muted);font-weight:400;margin-left:6px}
+.c{cursor:pointer;font-weight:700}
+.c1{background:var(--ok-bg)!important;color:var(--ok)}.c2{background:var(--mid-bg)!important;color:#a87a1e}.c3{background:var(--bad-bg)!important;color:var(--bad)}.c0{background:var(--na-bg)!important;color:#9a968e;font-weight:400}
+.flags{display:flex;gap:3px;justify-content:center;flex-wrap:wrap}
+.flag{font-size:11px;border:1px solid var(--line);border-radius:5px;padding:0 5px;background:#fff;white-space:nowrap}
+.flag.s{border-color:#d9c7a3;background:#fbf6ec}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--muted);margin:10px 0;flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-left:5px}
+/* strengths */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.srow{display:flex;align-items:center;gap:10px;margin:6px 0;cursor:pointer}
+.srow .lab{width:200px;font-size:14px;flex:none}
+.srow .tr{flex:1;background:var(--na-bg);border-radius:6px;height:20px;overflow:hidden}
+.srow .tr span{display:block;height:100%;background:var(--grad)}
+.srow .num{width:28px;font-weight:700;color:var(--primary)}
+.box{background:var(--card);box-shadow:var(--lift);border-radius:18px;padding:16px}
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(20,30,35,.45);display:none;align-items:flex-start;justify-content:center;padding:30px 16px;overflow:auto;z-index:20}
+.ov.on{display:flex}
+.modal{background:var(--paper);border-radius:16px;max-width:980px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
+.mh{background:var(--grad);color:#fff;padding:16px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mh h3{margin:0;font-size:24px}
+.mh .nav2 button{background:rgba(255,255,255,.15);border:0;color:#fff;font:inherit;border-radius:8px;padding:6px 12px;cursor:pointer;margin-right:4px}
+.mb{padding:18px 22px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.good{grid-column:1/-1;background:#fff;border:1px solid var(--line);border-right:5px solid var(--gold);border-radius:14px;padding:12px 16px;font-family:var(--f-brand);font-size:16.5px;line-height:1.7}
+.sec h4{margin:0 0 8px;font-size:14px;color:var(--accent);text-transform:none}
+.ind{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-radius:7px;margin:3px 0;font-size:14px;background:#fff;border:1px solid var(--line)}
+.ind .p{border-radius:20px;padding:0 10px;font-size:12.5px;font-weight:700}
+.dhead{display:flex;justify-content:space-between;align-items:center;margin:10px 0 4px;font-weight:700;font-size:14.5px}
+.note{background:var(--bad-bg);border-radius:8px;padding:6px 10px;font-size:14px;margin:4px 0}
+.note.y{background:var(--mid-bg)}
+.tags span{display:inline-block;border:1px solid #e2d3b3;background:#fbf6ec;border-radius:20px;padding:2px 10px;margin:2px;font-size:13px}
+.empty{color:var(--muted);font-size:13.5px;font-style:italic}
+/* projector / sensitive */
+body.proj .sens{display:none!important}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted);background:#fff}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.qa li{margin:4px 0}
+fieldset{border:0;box-shadow:var(--lift);background:#fff;border-radius:18px;padding:6px 20px 18px;margin:0 0 18px}
+fieldset.me{background:#fdfbf6;border-color:#e2d3b3}
+legend{font-weight:800;font-size:17px;padding:0 8px;color:var(--accent)}
+fieldset h3{font-size:15.5px;margin:18px 0 6px}
+.tagm{font-size:12px;font-weight:500;background:var(--accent-soft);color:var(--accent);border-radius:20px;padding:2px 10px;margin-right:6px}
+.tagm.s{background:#f6ecd8;color:#8a6420}
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.qhead label{margin-left:14px;font-size:14px}
+.qitem{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:8px 0;background:var(--paper)}
+.qrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0}
+.qrow .grow{flex:1;min-width:220px}
+#v-q input,#v-q select,#v-q textarea{font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+#v-q textarea{width:100%;resize:vertical}
+.x{border:0;background:transparent;cursor:pointer;font-size:15px;opacity:.6}.x:hover{opacity:1}
+.add{border:1px dashed var(--accent);background:transparent;color:var(--accent);border-radius:8px;padding:6px 14px;font:inherit;cursor:pointer}
+.lvl{display:inline-flex;align-items:center;gap:3px}
+.lvl button{width:28px;height:28px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;font:inherit;font-size:13px}
+.lvl button.on{background:var(--bad);border-color:var(--bad);color:#fff}
+.lvl small{color:var(--muted);margin-right:6px;min-width:80px}
+.pick{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.pchip{background:var(--accent-soft);color:var(--accent);border-radius:20px;padding:2px 10px;font-size:13px}
+.pchip b{cursor:pointer;margin-right:6px;font-weight:400}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.ch{border:1px solid var(--line);background:#fff;border-radius:20px;padding:4px 12px;font:inherit;font-size:13.5px;cursor:pointer}
+.ch.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.cb{display:block;margin-top:14px;font-size:14px}
+.wt{width:100%;border-collapse:collapse}.wt td{padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+.wt td:first-child{white-space:nowrap;width:70px}
+.dots{color:var(--bad);letter-spacing:-1px;font-size:12px}.dots i{color:#e5ddd2;font-style:normal}
+.cat{font-size:12px;color:var(--muted);background:var(--na-bg);border-radius:10px;padding:0 8px;margin-right:4px}
+footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
+@media (max-width:820px){.mb,.sgrid{grid-template-columns:1fr}main{padding:14px}header{padding:14px 14px 0}}
+@media print{
+  .rail,.topbar,.hero .acts,.filters,.btn{display:none!important}.app{display:block}
+  .view{display:block!important;page-break-after:always}
+  body{background:#fff}
+  .c1{background:#fff!important;color:#000}.c2{background:#ddd!important;color:#000}.c3{background:#555!important;color:#fff}
+}
+</style>
+</head>
+<body class="proj">
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><div class="mark">כ״ר</div><div><b>מפת כיתה</b><small>כנפי רוח · ישיבות פדגוגיות</small></div></div>
+    <h6>ניווט</h6>
+    <nav class="nav" id="nav">
+      <button data-v="overview" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>תמונת כיתה</button>
+      <button data-v="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18M9 3v18"/></svg>מפת תלמידים</button>
+      <button data-v="strengths"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>כוחות הכיתה</button>
+      <button data-v="quality"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>שלמות הנתונים</button>
+      <button data-v="q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>שאלון מחנך</button>
+      <button data-v="me" class="sens"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>למנהל</button>
+      <button data-v="load"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>טעינת כיתה</button>
+    </nav>
+    <div class="rail-foot">הנתונים נטענים בדפדפן בלבד ואינם נשמרים בשרת</div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <div><div class="crumb" id="crumb">מפת כיתה / תמונת כיתה</div><h1 id="pageTitle">תמונת כיתה</h1></div>
+      <div class="topacts">
+        <button class="btn" id="sensBtn" title="נתוני רקע משפחתי, רווחה וכו' — מוסתרים כברירת מחדל להקרנה">🔒 נתוני רקע רגישים: מוסתרים</button>
+        <button class="btn" onclick="window.print()">🖨️ הדפסה</button>
+      </div>
+    </header>
+    <div class="content">
+      <div class="hero">
+        <div class="quote">"כי על ידי שמוצאין בו עוד מעט טוב, איזה נקודה טובה, ודנין אותו לכף זכות… מוציאין אותו באמת מכף חובה לכף זכות" (ליקו"מ א, רפב)</div>
+        <div id="demoTag"></div>
+        <h2 id="ttl">מפת כיתה</h2>
+        <div class="sub" id="subttl"></div>
+        <div class="acts"><button class="btn" id="loadBtn">📂 טעינת כיתה (CSV)</button><button class="btn" onclick="go('q')">📝 שאלון מחנך</button></div>
+      </div>
+  <section class="view on" id="v-overview">
+    <h2>במבט אחד</h2>
+    <p class="hint">כל אריח לחיץ — פותח את מפת התלמידים מסוננת.</p>
+    <div class="tiles" id="tiles"></div>
+    <h2>פילוח לפי תחומי תפקוד</h2>
+    <p class="hint">ירוק = תקין · צהוב = לשים לב · אדום = דורש התערבות · אפור = לא מולא. לחיצה על פס מסננת את המפה.</p>
+    <div class="dgrid" id="dgrid"></div>
+    <h2>קול המחנך</h2>
+    <p class="hint">מתוך שאלון המחנך, חלק א'.</p>
+    <div id="qview"></div>
+    <h2>מוקדים לישיבה</h2>
+    <p class="hint">נגזר אוטומטית מהנתונים — נקודות פתיחה לשיחה, לא מסקנות.</p>
+    <div class="ins" id="ins"></div>
+  </section>
+
+  <section class="view" id="v-map">
+    <div class="filters">
+      <input id="q" placeholder="חיפוש שם…" size="14">
+      <select id="fsel"><option value="">כל התלמידים</option></select>
+      <span id="fbadge"></span>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--ok-bg);border:1px solid var(--ok)"></i>תקין</span>
+      <span><i style="background:var(--mid-bg);border:1px solid var(--mid)"></i>לשים לב</span>
+      <span><i style="background:var(--bad-bg);border:1px solid var(--bad)"></i>דורש התערבות</span>
+      <span><i style="background:var(--na-bg);border:1px solid var(--na)"></i>לא מולא</span>
+      <span>· ערך התא = המדד החמור ביותר בתחום · לחיצה על כותרת = מיון · לחיצה על שם = כרטיס תלמיד</span>
+    </div>
+    <table class="map" id="map"></table>
+  </section>
+
+  <section class="view" id="v-strengths">
+    <div class="sgrid">
+      <div class="box"><h2>החוזקות שהמחנך זיהה בכיתה</h2><p class="hint">לחיצה על חוזקה מציגה את התלמידים שלה.</p><div id="sbars"></div><div id="slist" style="margin-top:10px"></div></div>
+      <div class="box"><h2>גורמים מאזנים — כוחות לרתום</h2><p class="hint">לכל תלמיד שדורש התערבות: במה הוא חזק ומה הוא אוהב. נקודת מוצא לבניית מענה.</p><div id="bridge"></div></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-quality">
+    <h2>שלמות הנתונים בטבלה</h2>
+    <p class="hint">מה כבר מולא ומה עוד חסר כדי שהמפה תהיה מלאה.</p>
+    <div class="box"><table class="map" id="qtab"></table></div>
+  </section>
+
+  <section class="view" id="v-q">
+    <h2>שאלון מחנך לקראת הישיבה הפדגוגית</h2>
+    <p class="hint">ממלאים לפני הישיבה. התשובות נשמרות אוטומטית בדפדפן הזה. בסוף שומרים קובץ ושולחים לרב חגי: זה אותו כלי, עם הנתונים והתשובות בפנים.</p>
+    <div id="qform"></div>
+  </section>
+  <section class="view" id="v-me">
+    <h2>למנהל: המחנך בתפקיד</h2>
+    <p class="hint">חלק ב' של השאלון. מקורות כוח, מה מוציא מאיזון ומה ישחרר. החלק הזה לא מוצג כשנתוני הרקע מוסתרים.</p>
+    <div id="meview"></div>
+  </section>
+  <section class="view" id="v-load">
+    <h2>טעינת כיתה אחרת</h2>
+    <div class="box">
+      <ol class="qa">
+        <li>בגוגל שיטס, פתחו את הלשונית של הכיתה.</li>
+        <li><b>קובץ ← הורדה ← ערכים מופרדים בפסיקים (CSV)</b> — יורד קובץ של הלשונית הנוכחית בלבד.</li>
+        <li>גררו את הקובץ לכאן. הנתונים נטענים <b>רק בדפדפן שלכם</b> ולא נשלחים לשום מקום.</li>
+      </ol>
+      <div class="drop" id="drop">גררו קובץ CSV לכאן, או <a href="#" id="pick">בחרו קובץ</a><input type="file" id="file" accept=".csv,text/csv" hidden></div>
+      <p class="hint" style="margin-top:10px">הכלי מניח שהטבלה בנויה לפי "תבנית/פורמט" המשותפת (אותן עמודות באותו סדר).</p>
+      <p><button class="chip" id="backPilot">↩ חזרה לכיתת הדוגמה</button></p>
+    </div>
+  </section>
+      <p class="hint" style="text-align:center;margin-top:30px">מפת כיתה · כנפי רוח · נבנה ע"י הרב אריאל · דע לך · MakeSense · הנתונים חסויים — לשימוש צוות בלבד</p>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+
+<script id="saved" type="application/json"></script>
+<script>
+// כיתת דוגמה — שמות ונתונים בדויים
+window.PILOT={"className":"ו’4 (דוגמה)","teacher":"כיתת דוגמה","demo":true,"students":[{"n":1,"name":"אברהמי אורי","g":"1111111 . 1111 1112 1111111","be":"232","st":"ACG","hob":"כדורגל","good":"אורי הינו תלמיד נעים הליכות ובעל לב טוב. [טקסט דוגמה בדוי]"},{"n":2,"name":"בן דוד הלל","g":"1111131 . 1111 2222 1111212","be":"211","st":"ABC","hob":"מנגן בפסנתר","x":{"62":"1","64":"[הערת מורה לדוגמה]"},"good":"הלל הינו תלמיד סקרן, שואל שאלות ואוהב ללמוד. [טקסט דוגמה בדוי]"},{"n":3,"name":"גולן נריה","g":"1111111 . 1111 2211 1112222","be":"211","st":"ABFH","hob":"אוהב לצייר","good":"נריה הינו תלמיד חברותי ומאיר פנים. [טקסט דוגמה בדוי]"},{"n":4,"name":"דהן אלישע","g":"1111111 3 1111 1112 1111112","be":"","st":"ACG","hob":"כדורסל","good":"אלישע הינו תלמיד רציני, אחראי ומשקיע. [טקסט דוגמה בדוי]"},{"n":5,"name":"הלוי שקד","g":"1111111 . 1111 1111 1111111","be":"","st":"ABCDFG","hob":"אוהב לבנות בלגו","good":"שקד הינו תלמיד יצירתי ובעל חוש הומור. [טקסט דוגמה בדוי]"},{"n":6,"name":"ויסמן אביה","g":"1211111 3 1111 1111 1111111","be":"","st":"ABCDF","hob":"קורא הרבה","good":"אביה הינו תלמיד נעים הליכות ובעל לב טוב. [טקסט דוגמה בדוי]"},{"n":7,"name":"זכאי עידו","g":"1111111 . 1111 2111 1112121","be":"211","st":"AJCDE","hob":"אופניים","good":"עידו הינו תלמיד סקרן, שואל שאלות ואוהב ללמוד. [טקסט דוגמה בדוי]"},{"n":8,"name":"חדד יאיר","g":"1113121 . 1131 3332 3.13123","be":"","st":"ABJ","hob":"","e":"רגשי - חברתי","good":"יאיר הינו תלמיד חברותי ומאיר פנים. [טקסט דוגמה בדוי]"},{"n":9,"name":"טל אמיתי","g":"2111111 3 1133 2223 3.11122","be":"","st":"ABE","hob":"אוהב בעלי חיים","e":"התנהגותי","s":"[פירוט לדוגמה]","m":"שילוב","good":"אמיתי הינו תלמיד רציני, אחראי ומשקיע. [טקסט דוגמה בדוי]"},{"n":10,"name":"יוסף נחום","g":"2113121 . 1111 2322 2.22222","be":"211","st":"IJBD","hob":"","m":"שילוב","good":"נחום הינו תלמיד יצירתי ובעל חוש הומור. [טקסט דוגמה בדוי]"},{"n":11,"name":"כרמי בנימין","g":"1111111 3 2111 1121 1111111","be":"211","st":"ABCDEFG","hob":"","good":"בנימין הינו תלמיד נעים הליכות ובעל לב טוב. [טקסט דוגמה בדוי]"},{"n":12,"name":"לוין אהרון","g":"1111111 . 1111 1111 1111221","be":"212","st":"CDIG","hob":"כדורגל","good":"אהרון הינו תלמיד סקרן, שואל שאלות ואוהב ללמוד. [טקסט דוגמה בדוי]"},{"n":13,"name":"מזרחי נתנאל","g":"3111111 . 1133 2222 1111112","be":"","st":"ABECG","hob":"מנגן בפסנתר","e":"רגשי","s":"[פירוט לדוגמה]","m":"שילוב","good":"נתנאל הינו תלמיד חברותי ומאיר פנים. [טקסט דוגמה בדוי]"},{"n":14,"name":"נחמני הדר","g":"1112111 . 1111 1111 1111111","be":"211","st":"ABCF","hob":"אוהב לצייר","good":"הדר הינו תלמיד רציני, אחראי ומשקיע. [טקסט דוגמה בדוי]"},{"n":15,"name":"סלע יונתן","g":"1111121 3 1133 3333 2.13133","be":"211","st":"IBH","hob":"כדורסל","e":"טבלת עיצוב התנהגות","s":"[פירוט לדוגמה]","m":"מענה חברתי/העצמה","good":"יונתן הינו תלמיד יצירתי ובעל חוש הומור. [טקסט דוגמה בדוי]"},{"n":16,"name":"עמר אליאב","g":"2111111 . 1111 1111 1111111","be":"211","st":"AJCDGFE","hob":"אוהב לבנות בלגו","m":"שילוב","good":"אליאב הינו תלמיד נעים הליכות ובעל לב טוב. [טקסט דוגמה בדוי]"},{"n":17,"name":"פז מתן","g":"1111111 3 1131 2222 1112122","be":"211","st":"BJI","hob":"קורא הרבה","e":"רגשי - חברתי","good":"מתן הינו תלמיד סקרן, שואל שאלות ואוהב ללמוד. [טקסט דוגמה בדוי]"},{"n":18,"name":"צדוק אחיה","g":"1131111 . 1111 1122 2.11112","be":"","st":"BCGF","hob":"אופניים","good":"אחיה הינו תלמיד חברותי ומאיר פנים. [טקסט דוגמה בדוי]"},{"n":19,"name":"קורן ישי","g":"1111111 . 1133 2222 2113222","be":"211","st":"EG","hob":"","e":"רגשי","s":"[פירוט לדוגמה]","good":"ישי הינו תלמיד רציני, אחראי ומשקיע. [טקסט דוגמה בדוי]"},{"n":20,"name":"רוזן טוביה","g":"2111111 . 1113 1112 1111111","be":"211","st":"FBCE","hob":"אוהב בעלי חיים","s":"[פירוט לדוגמה]","m":"מענה חברתי/העצמה","good":"טוביה הינו תלמיד יצירתי ובעל חוש הומור. [טקסט דוגמה בדוי]"},{"n":21,"name":"שגיא עוז","g":"2121111 3 1131 2222 1111122","be":"211","st":"ADG","hob":"","e":"רגשי","m":"שילוב","good":"עוז הינו תלמיד נעים הליכות ובעל לב טוב. [טקסט דוגמה בדוי]"},{"n":22,"name":"תמיר יהונתן","g":"1111111 3 1111 1211 1111111","be":"","st":"JC","hob":"","good":"יהונתן הינו תלמיד סקרן, שואל שאלות ואוהב ללמוד. [טקסט דוגמה בדוי]"}]};
+
+// ---------- schema (column indexes in the template sheet) ----------
+const STRENGTHS={A:"לב טוב ואכפתיות",B:"שמחת חיים ואופטימיות",C:"דרך ארץ וכבוד",D:"אחריות וארגון",E:"נחישות והתמדה",F:"סקרנות אינטלקטואלית",G:"יושרה ואמינות",H:"יצירתיות וחשיבה מקורית",I:"כישורים מעשיים / פיזיים",J:"מנהיגות והובלה"};
+const IND={ // col: [label, {value:text}]
+ 16:["נוכחות סדירה",{1:"תקין",3:"דורש התערבות"}],
+ 17:["הגעה בזמן",{1:"תקין",3:"דורש התערבות"}],
+ 18:["מצב רגשי-התנהגותי",{1:"תקין",2:"בינוני",3:"דורש התערבות"}],
+ 20:["מצב חברתי",{1:"תקין",2:"בינוני",3:"דורש התערבות"}],
+ 22:["תפקוד בשיעורים",{1:"טוב",2:"בינוני",3:"גרוע"}],
+ 23:["מוטיבציה לימודית",{1:"עובד בהתלהבות",2:"מוטיבציה חלקית",3:"מנותק"}],
+ 24:["ציוד וארגון",{1:"מצויד ומאורגן",2:"לעיתים לא",3:"לרוב לא"}],
+ 25:["שיעורי בית ועבודות",{1:"מכין",2:"רק בחלק מהמקצועות",3:"נמנע כמעט לגמרי"}],
+ 28:["כיפה",{1:"מקפיד",3:"לא מקפיד"}],29:["ציצית",{1:"מקפיד",3:"לא מקפיד"}],30:["תלבושת",{1:"מקפיד",3:"לא מקפיד"}],
+ 31:["שפה נקייה",{1:"מקפיד",3:"לא מקפיד"}],32:["הימנעות מאלימות",{1:"מקפיד",3:"לא מקפיד"}],33:["כבוד וקבלת סמכות",{1:"מקפיד",3:"לא מקפיד"}],
+ 34:["קשב ושת\"פ בקודש",{1:"מקפיד",2:"בינוני",3:"גרוע"}],
+ 36:["לשון — ממוצע",{1:"85–100",2:"60–84",3:"0–59"}],40:["מתמטיקה — ממוצע",{1:"85–100",2:"60–84",3:"0–59"}],
+ 44:["אנגלית — ממוצע",{1:"85–100",2:"60–84",3:"0–59"}],48:["מדעים — ממוצע",{1:"85–100",2:"60–84",3:"0–59"}]
+};
+// generic labels for 2-scale items where '2' isn't defined
+const DOMAINS=[
+ {id:"exec",name:"תפקודים ניהוליים",short:"ניהולי",cols:[24,25,17,16]},
+ {id:"emo",name:"רגשי-התנהגותי",short:"רגשי-התנהגותי",cols:[18,33,32,31],txt:19},
+ {id:"soc",name:"חברתי",short:"חברתי",cols:[20],txt:21},
+ {id:"learn",name:"תפקוד לימודי (תלמידאות)",short:"תלמידאות",cols:[22,23,34],txt:35},
+ {id:"ach",name:"הישגים לימודיים",short:"הישגים",cols:[36,40,44,48]},
+ {id:"val",name:"ערכי-תורני",short:"ערכי",cols:[28,29,30]}
+];
+const SUBJ=[{n:"חינוך לשוני",c:36},{n:"מתמטיקה",c:40},{n:"אנגלית",c:44},{n:"מדעים",c:48},{n:"אחר",c:52},{n:"ללא כותרת (BE–BH)",c:56},{n:"חנ\"ג",c:60}];
+
+let STATE={rows:[],cls:"",teacher:"",filter:null,sort:null,proj:true};
+
+// ---------- data loading ----------
+function expandPilot(P){
+  return P.students.map(s=>{
+    const r=[];r[1]=String(s.n);r[2]=s.name;r[3]=s.good;r[4]=(s.st||"").split("").map(k=>STRENGTHS[k]).join(", ");r[5]=s.hob||"";r[6]="";
+    const g=s.g.replace(/ /g,"");const cols=[7,8,10,11,12,13,14,15,16,17,18,20,22,23,24,25,28,29,30,31,32,33,34];
+    cols.forEach((c,i)=>{const ch=g[i];r[c]=ch==="."?"":ch});
+    r[9]=s.alg||"";r[19]=s.e||"";r[21]=s.s||"";r[26]=s.m||"";r[27]="";
+    if(s.be){[56,57,58].forEach((c,i)=>r[c]=s.be[i]||"")}
+    if(s.x)Object.entries(s.x).forEach(([k,v])=>r[+k]=v);
+    return r;
+  });
+}
+function parseCSV(t){
+  const out=[];let row=[],f="",q=false;
+  for(let i=0;i<t.length;i++){const ch=t[i];
+    if(q){if(ch=='"'){if(t[i+1]=='"'){f+='"';i++}else q=false}else f+=ch}
+    else if(ch=='"')q=true;else if(ch==','){row.push(f);f=""}
+    else if(ch=='\n'){row.push(f);out.push(row);row=[];f=""}else if(ch!='\r')f+=ch}
+  if(f||row.length){row.push(f);out.push(row)}return out;
+}
+function rowsFromSheet(all){
+  return all.filter(r=>r[2]&&r[2].trim()&&/^\d+$/.test((r[1]||"").trim()));
+}
+function load(rows,cls,teacher){
+  STATE.rows=rows.map((r,i)=>buildStudent(r,i));STATE.cls=cls;STATE.teacher=teacher;STATE.filter=null;qLoad();window._meOpen=0;
+  document.getElementById("ttl").textContent="מפת כיתה "+cls;
+  document.getElementById("demoTag").innerHTML=window._isDemo?'<span class="demo">⚠ כיתת דוגמה — שמות ונתונים בדויים. טענו את קובץ הכיתה שלכם כדי לראות אותה.</span>':"";
+  document.getElementById("subttl").textContent=(teacher?"מחנך: "+teacher+" · ":"")+STATE.rows.length+" תלמידים · ישיבה פדגוגית תשפ\"ז";
+  renderAll();
+}
+const v=(r,c)=>{const x=(r[c]||"").trim();return /^[1-4]$/.test(x)?+x:null};
+function buildStudent(r,i){
+  const s={i,r,num:r[1],name:r[2].trim(),first:r[2].trim(),good:r[3]||"",hob:(r[5]||"").trim(),prev:(r[6]||"").trim(),
+    strengths:Object.values(STRENGTHS).filter(l=>(r[4]||"").includes(l.split(" (")[0])),
+    maane:(r[26]||"").replace(/["()]/g,"").split(/,(?![^()]*\))/).map(x=>x.trim()).filter(Boolean).map(x=>x.split(" (")[0].split("(")[0].trim()),
+    extra:(r[27]||"").trim(),dom:{}};
+  DOMAINS.forEach(d=>{
+    const vals=d.cols.map(c=>{let x=v(r,c);if(x===4)x=null;return x});
+    const filled=vals.filter(x=>x!==null);
+    s.dom[d.id]={score:filled.length?Math.max(...filled):0,filled:filled.length,total:d.cols.length,vals,txt:d.txt?(r[d.txt]||"").trim():""};
+  });
+  // background flags
+  const F=[];const lvl=v(r,7);
+  if(lvl===2)F.push({t:"שילוב",k:"shiluv"});if(lvl===3)F.push({t:"סל אישי/חנ\"מ",k:"shiluv"});
+  const al=v(r,8);if(al===2||al===4)F.push({t:(al===4?"⚠ אלרגיה מסכנת חיים":"רגישות")+((r[9]||"").trim()?": "+r[9].trim():""),k:"alg"});
+  if(v(r,10)===3)F.push({t:"חדש בביה\"ס",k:"new"});
+  if(v(r,11)===3)F.push({t:"עולה",k:"oleh"});
+  if(v(r,15)===3)F.push({t:"הורה במילואים",k:"miluim"});
+  const fam=v(r,12);if(fam===2||fam===3)F.push({t:fam===2?"הורים גרושים":"מצב משפחתי מורכב",k:"fam",s:1});
+  const par=v(r,13);if(par===2||par===3)F.push({t:"שת\"פ הורים: "+(par===2?"בינוני":"גרוע"),k:"par",s:1});
+  if(v(r,14)===4)F.push({t:"מעורבות רווחה",k:"welfare",s:1});
+  s.flags=F;
+  s.reds=DOMAINS.filter(d=>s.dom[d.id].score===3).map(d=>d.id);
+  s.ambers=DOMAINS.filter(d=>s.dom[d.id].score===2).map(d=>d.id);
+  return s;
+}
+
+// ---------- filters ----------
+const FILTERS={
+  red:{n:"דורשים התערבות (תחום אחד לפחות)",f:s=>s.reds.length>0},
+  red2:{n:"דורשים התערבות ב־2 תחומים ומעלה",f:s=>s.reds.length>=2},
+  nomaane:{n:"דורשים התערבות — ללא מענה רשום",f:s=>s.reds.length>0&&!s.maane.length},
+  allgood:{n:"תקינים בכל התחומים שמולאו",f:s=>!s.reds.length&&!s.ambers.length},
+  shiluv:{n:"שילוב / סל אישי",f:s=>s.flags.some(x=>x.k=="shiluv")},
+  maane:{n:"מקבלים מענה",f:s=>s.maane.length>0},
+  miluim:{n:"הורה במילואים",f:s=>s.flags.some(x=>x.k=="miluim")},
+  new:{n:"חדשים בביה\"ס",f:s=>s.flags.some(x=>x.k=="new")},
+  oleh:{n:"עולים",f:s=>s.flags.some(x=>x.k=="oleh")},
+  alg:{n:"אלרגיה/רגישות",f:s=>s.flags.some(x=>x.k=="alg")},
+  fam:{n:"מצב משפחתי מורכב",f:s=>s.flags.some(x=>x.k=="fam")},
+  par:{n:"שת\"פ הורים חלקי",f:s=>s.flags.some(x=>x.k=="par")},
+  welfare:{n:"מעורבות רווחה",f:s=>s.flags.some(x=>x.k=="welfare")}
+};
+DOMAINS.forEach(d=>[1,2,3,0].forEach(sc=>FILTERS[d.id+sc]={n:d.name+": "+["לא מולא","תקין","לשים לב","דורש התערבות"][sc],f:s=>s.dom[d.id].score===sc}));
+function list(){return STATE.rows.filter(s=>!STATE.filter||FILTERS[STATE.filter].f(s))}
+function go(view,filter){
+  if(filter!==undefined)STATE.filter=filter;
+  document.querySelector(".hero").hidden=view!="overview";
+  document.querySelectorAll("#nav button").forEach(b=>{b.classList.toggle("on",b.dataset.v==view);if(b.dataset.v==view){const t=b.textContent.trim();document.getElementById("pageTitle").textContent=t;document.getElementById("crumb").textContent="מפת כיתה / "+t}});
+  document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id=="v-"+view));
+  if(view=="map")renderMap();if(view=="q")renderQForm();if(view=="me")renderMeView();window.scrollTo(0,0);
+}
+
+// ---------- renderers ----------
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const chip=s=>`<button class="chip" onclick="openS(${s.i})">${esc(s.name)}</button>`;
+function renderAll(){renderQForm();renderQView();renderTiles();renderDomains();renderInsights();renderStrengths();renderQuality();renderFilterSel();renderMap()}
+function count(k){return STATE.rows.filter(FILTERS[k].f).length}
+function renderTiles(){
+  const T=[["",STATE.rows.length,"תלמידים בכיתה","acc"],["red",count("red"),"דורשים התערבות בתחום אחד לפחות","bad"],["red2",count("red2"),"דורשים התערבות ב־2 תחומים+","bad"],
+   ["nomaane",count("nomaane"),"דורשים התערבות ואין מענה רשום","bad"],["allgood",count("allgood"),"תקינים בכל התחומים","acc"],
+   ["shiluv",count("shiluv"),"שילוב / סל אישי","mid"],["maane",count("maane"),"מקבלים מענה כלשהו","acc"],
+   ["miluim",count("miluim"),"הורה במילואים",""],["new",count("new"),"חדשים בביה\"ס",""],["oleh",count("oleh"),"עולים",""],["alg",count("alg"),"אלרגיה / רגישות",""],
+   ["fam",count("fam"),"מצב משפחתי מורכב","sens"],["par",count("par"),"שת\"פ הורים חלקי","sens"],["welfare",count("welfare"),"מעורבות רווחה","sens"]];
+  document.getElementById("tiles").innerHTML=T.filter(t=>t[1]||!t[0]).map(t=>`<button class="tile ${t[3]}" onclick="go('map','${t[0]}')"><div class="v">${t[1]}</div><div class="l">${t[2]}</div></button>`).join("");
+}
+function renderDomains(){
+  const N=STATE.rows.length;
+  document.getElementById("dgrid").innerHTML=DOMAINS.map(d=>{
+    const c=[1,2,3,0].map(sc=>[sc,STATE.rows.filter(s=>s.dom[d.id].score===sc)]);
+    const bar=c.filter(x=>x[1].length).map(([sc,a])=>`<span class="s${sc}" style="width:${a.length/N*100}%" title="${a.length}" onclick="go('map','${d.id}${sc}')">${a.length}</span>`).join("");
+    const red=c[2][1],amb=c[1][1];
+    const names=c[3][1].length==N?`<span class="empty">טרם מולא — ממתין למורי המקצועות</span>`:
+      (red.length?`<b>התערבות:</b> ${red.map(s=>esc(s.name)).join(" · ")}`:`<span class="empty">אין תלמידים שדורשים התערבות</span>`);
+    return `<div class="dcard"><h3>${d.name}</h3><div class="bar">${bar}</div><div class="dnames">${names}</div></div>`;
+  }).join("");
+}
+function renderInsights(){
+  const R=STATE.rows,I=[];
+  const r2=R.filter(FILTERS.red2.f);
+  if(r2.length)I.push(["r","ריבוי מוקדי קושי",`${r2.length} תלמידים דורשים התערבות ביותר מתחום אחד — מועמדים לדיון פרטני:`,r2]);
+  const nm=R.filter(FILTERS.nomaane.f);
+  if(nm.length)I.push(["r","פער: צורך בלי מענה",`סומנו כ"דורש התערבות" אך עמודת המענים ריקה. לבדוק אם יש מענה שלא נרשם, או שצריך לבנות אחד:`,nm]);
+  // weakest sub-indicator in class
+  const subs=Object.keys(IND).map(c=>{const a=R.filter(s=>v(s.r,+c)>=2&&v(s.r,+c)<=3);return [c,a]}).filter(x=>x[1].length).sort((a,b)=>b[1].length-a[1].length);
+  if(subs[0]){const [c,a]=subs[0];I.push(["y","המדד החלש בכיתה",`"${IND[c][0]}" — ${a.length} מתוך ${R.length} תלמידים לא במצב תקין. ${subs[1]?`אחריו: "${IND[subs[1][0]][0]}" (${subs[1][1].length}).`:""} ייתכן שזה מקום למענה כיתתי ולא פרטני.`,[]])}
+  const emo=R.filter(s=>s.dom.emo.score==3);
+  if(emo.length>=3)I.push(["y","ריכוז רגשי בכיתה",`${emo.length} תלמידים סומנו כדורשי התערבות רגשית-התנהגותית — כדאי לחשוב עם היועצת על מענה קבוצתי.`,emo]);
+  const unclear=R.filter(s=>/\?\?|\.\.\./.test(s.dom.emo.txt+s.dom.soc.txt));
+  if(unclear.length)I.push(["n","הערות שדורשות דיוק",`בעמודות הפירוט מופיע "??" או "..." — שווה שהמחנך ישלים לפני הישיבה:`,unclear]);
+  const mil=R.filter(FILTERS.miluim.f);
+  if(mil.length)I.push(["n","הקשר: מילואים",`${mil.length} תלמידים (${Math.round(mil.length/R.length*100)}%) עם הורה במערך המילואים/ביטחון. כדאי לקרוא את שאר הנתונים שלהם בהקשר הזה.`,mil]);
+  const ach=R.filter(s=>s.dom.ach.filled==0).length;
+  if(ach==R.length)I.push(["n","חסר: הישגים לימודיים",`אף מורה מקצועי עוד לא מילא את עמודות הלשון, החשבון, האנגלית והמדעים — לכן אין עדיין תמונת הישגים ביחס לגיל. זה התנאי לשאלה של הרב חגי.`,[]]);
+  const good=R.filter(FILTERS.allgood.f);
+  I.push(...qInsights(R));
+  I.push(["g","כוחות הכיתה",`${good.length} תלמידים תקינים בכל התחומים שמולאו. החוזקה השכיחה בכיתה: "${topStrength()[0]}" (${topStrength()[1]} תלמידים).`,[]]);
+  document.getElementById("ins").innerHTML=I.map(([c,h,p,a])=>`<div class="icard ${c}"><h4>${h}</h4><p>${p}</p>${a.map(chip).join("")}</div>`).join("");
+}
+function topStrength(){const m={};STATE.rows.forEach(s=>s.strengths.forEach(x=>m[x]=(m[x]||0)+1));return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]||["—",0]}
+function renderFilterSel(){
+  document.getElementById("fsel").innerHTML=`<option value="">כל התלמידים</option>`+Object.entries(FILTERS).filter(([k])=>!/\d$/.test(k)).map(([k,x])=>`<option value="${k}">${x.n}</option>`).join("");
+}
+function cell(sc,title){return `<td class="c c${sc}" title="${esc(title)}">${["—","✓","!","!!"][sc]}</td>`}
+function renderMap(){
+  const q=document.getElementById("q").value.trim();
+  let L=list().filter(s=>!q||s.name.includes(q));
+  if(STATE.sort){const k=STATE.sort;L=[...L].sort((a,b)=>k=="risk"?(b.reds.length*10+b.ambers.length)-(a.reds.length*10+a.ambers.length):(b.dom[k].score%4||0)-(a.dom[k].score%4||0))}
+  document.getElementById("fsel").value=STATE.filter&&!/\d$/.test(STATE.filter)?STATE.filter:"";
+  document.getElementById("fbadge").innerHTML=STATE.filter?`<span class="fbadge" onclick="STATE.filter=null;renderMap()">${FILTERS[STATE.filter].n} · ${L.length} ✕</span>`:"";
+  const th=`<tr><th onclick="STATE.sort=null;renderMap()" class="${!STATE.sort?'sorted':''}">תלמיד</th>${DOMAINS.map(d=>`<th class="${STATE.sort==d.id?'sorted':''}" onclick="STATE.sort='${d.id}';renderMap()">${d.short}</th>`).join("")}<th class="${STATE.sort=='risk'?'sorted':''}" onclick="STATE.sort='risk';renderMap()">מוקדים</th><th>מענים</th><th>רקע</th></tr>`;
+  const rows=L.map(s=>`<tr><td class="nm" onclick="openS(${s.i})"><small>${s.num}</small>${esc(s.name)}${Q&&Q.cls.discuss.some(d=>d.stu==s.name)?' <span title="המחנך ביקש לדון">⭐</span>':""}</td>${DOMAINS.map(d=>{const x=s.dom[d.id];return cell(x.score,d.name+(x.txt?": "+x.txt:"")+` (${x.filled}/${x.total} מדדים מולאו)`)}).join("")}
+   <td style="font-size:12.5px;white-space:nowrap">${s.reds.length?`<b style="color:var(--bad)">${s.reds.length} אדום</b>`:""}${s.reds.length&&s.ambers.length?"<br>":""}${s.ambers.length?`<span style="color:#a87a1e">${s.ambers.length} צהוב</span>`:""}</td>
+   <td style="font-size:12px">${s.maane.map(esc).join("<br>")}</td>
+   <td><div class="flags">${s.flags.map(f=>`<span class="flag ${f.s?'s sens':''}">${esc(f.t)}</span>`).join("")}</div></td></tr>`).join("");
+  document.getElementById("map").innerHTML=th+rows;
+}
+function renderStrengths(){
+  const m={};STATE.rows.forEach(s=>s.strengths.forEach(x=>(m[x]=m[x]||[]).push(s)));
+  const E=Object.entries(m).sort((a,b)=>b[1].length-a[1].length),N=STATE.rows.length;
+  window._SM=m;
+  document.getElementById("sbars").innerHTML=E.map(([k,a])=>`<div class="srow" data-k="${esc(k)}" onclick="showStr(this.dataset.k)"><div class="lab">${esc(k)}</div><div class="tr"><span style="width:${a.length/N*100}%"></span></div><div class="num">${a.length}</div></div>`).join("");
+  document.getElementById("slist").innerHTML="";
+  const need=STATE.rows.filter(s=>s.reds.length);
+  document.getElementById("bridge").innerHTML=need.length?need.map(s=>`<div style="margin:10px 0;padding-bottom:10px;border-bottom:1px solid var(--line)">${chip(s)} <span style="font-size:12.5px;color:var(--bad)">${s.reds.map(id=>DOMAINS.find(d=>d.id==id).short).join(" · ")}</span>
+   <div class="tags" style="margin-top:4px">${s.strengths.map(x=>`<span>${esc(x)}</span>`).join("")}${s.hob?`<span style="background:#eef3f3;border-color:#c7d9d8">❤ ${esc(s.hob)}</span>`:""}</div></div>`).join(""):`<p class="empty">אין תלמידים שסומנו כדורשי התערבות.</p>`;
+}
+function showStr(k){document.getElementById('slist').innerHTML='<b>'+esc(k)+':</b> '+window._SM[k].map(chip).join('')}
+function renderQuality(){
+  const R=STATE.rows,N=R.length;
+  const items=[["משפטים בעין טובה",3],["חוזקות",4],["תחביבים",5],["צרכים משנים קודמות (יועצות)",6],["רמת שילוב",7],["מצב רגשי",18],["מצב חברתי",20],["תפקוד בשיעורים",22],["ציוד וארגון",24],["ציצית",29],["קשב בקודש",34],["מענים (אם רלוונטי)",26],["תוספות מחנך",27]];
+  const rows=items.map(([n,c])=>{const k=R.filter(s=>(s.r[c]||"").trim()).length;return [n,k]});
+  SUBJ.forEach(x=>{const k=R.filter(s=>[...Array(x.c==60?5:4).keys()].some(o=>(s.r[x.c+o]||"").trim())).length;rows.push(["מורה מקצועי: "+x.n,k])});
+  document.getElementById("qtab").innerHTML=`<tr><th style="text-align:right">שדה</th><th>מולא</th><th style="width:50%"></th></tr>`+rows.map(([n,k])=>{const p=k/N;const sc=p==1?1:p>=.5?2:p>0?2:0;
+    return `<tr><td class="nm" style="cursor:default">${n}</td><td class="c c${p==1?1:p==0?3:2}">${k}/${N}</td><td><div class="bar"><span class="s${p==1?1:2}" style="width:${p*100}%"></span></div></td></tr>`}).join("");
+}
+
+// ---------- student card ----------
+let CUR=-1;
+function openS(i){CUR=i;const s=STATE.rows[i];const L=list();const pos=L.findIndex(x=>x.i==i);
+  const dom=DOMAINS.map(d=>{const x=s.dom[d.id];const sc=x.score;
+    const inds=d.cols.map((c,j)=>{const val=x.vals[j];const lab=IND[c]?IND[c][0]:"";const txt=val&&IND[c]?(IND[c][1][val]||["","תקין","בינוני","דורש התערבות"][val]):"לא מולא";
+      return `<div class="ind"><span>${lab}</span><span class="p c${val||0}">${txt}</span></div>`}).join("");
+    return `<div><div class="dhead"><span>${d.name}</span><span class="p c${sc}" style="border-radius:20px;padding:0 10px;font-size:12.5px">${["לא מולא","תקין","לשים לב","דורש התערבות"][sc]}</span></div>${x.txt?`<div class="note ${sc<3?'y':''}">✎ ${esc(x.txt)}</div>`:""}${inds}</div>`}).join("");
+  const subjNotes=SUBJ.map(x=>{const t=(s.r[x.c+(x.c==60?4:3)]||"").trim();return t?`<div class="note y"><b>${x.n}:</b> ${esc(t)}</div>`:""}).join("");
+  document.getElementById("modal").innerHTML=`<div class="mh"><div><div style="opacity:.8;font-size:13px">${STATE.cls} · תלמיד ${s.num}</div><h3>${esc(s.name)}</h3></div>
+   <div class="nav2"><button onclick="step(-1)" ${pos<=0?'disabled':''}>→ הקודם</button><button onclick="step(1)" ${pos>=L.length-1?'disabled':''}>הבא ←</button><button onclick="closeS()">✕</button></div></div>
+   <div class="mb">
+    <div class="good">${esc(s.good)||'<span class="empty">טרם נכתב</span>'}</div>
+    <div class="sec"><h4>חוזקות</h4><div class="tags">${s.strengths.map(x=>`<span>${esc(x)}</span>`).join("")||'<span class="empty">—</span>'}</div>
+     <h4 style="margin-top:14px">תחביבים ותחומי עניין</h4><div>${esc(s.hob)||'<span class="empty">לא ידוע — לפקוח עין</span>'}</div>
+     <h4 style="margin-top:14px">מענים</h4><div>${s.maane.map(esc).join(" · ")||'<span class="empty">אין מענה רשום</span>'}</div>
+     <h4 style="margin-top:14px">רקע</h4><div class="flags" style="justify-content:flex-start">${s.flags.map(f=>`<span class="flag ${f.s?'s sens':''}" style="font-size:13px">${esc(f.t)}</span>`).join("")||'<span class="empty">—</span>'}</div>
+     ${s.prev?`<h4 style="margin-top:14px">צרכים משנים קודמות</h4><div>${esc(s.prev)}</div>`:""}
+     ${s.extra?`<h4 style="margin-top:14px">תוספות מחנך</h4><div>${esc(s.extra)}</div>`:""}
+     ${(()=>{if(!Q)return"";const d=Q.cls.discuss.find(x=>x.stu==s.name);const w=Q.cls.worries.filter(x=>x.t&&x.stu.includes(s.name));
+       return (d||w.length)?`<h4 style="margin-top:14px">מהשאלון של המחנך</h4>${d?`<div class="note">⭐ ביקש לדון${d.why?": "+esc(d.why):""}</div>`:""}${w.map(x=>`<div class="note y">${lvlDots(x.lvl)} ${esc(x.t)}</div>`).join("")}`:""})()}
+     ${subjNotes?`<h4 style="margin-top:14px">הערות מורים מקצועיים</h4>${subjNotes}`:""}
+    </div>
+    <div class="sec">${dom}</div>
+   </div>`;
+  document.getElementById("ov").classList.add("on");
+}
+function step(d){const L=list();const pos=L.findIndex(x=>x.i==CUR);const n=L[pos+d];if(n)openS(n.i)}
+function closeS(){document.getElementById("ov").classList.remove("on");CUR=-1}
+document.getElementById("ov").onclick=e=>{if(e.target.id=="ov")closeS()};
+document.addEventListener("keydown",e=>{if(CUR<0)return;if(e.key=="Escape")closeS();if(e.key=="ArrowLeft")step(1);if(e.key=="ArrowRight")step(-1)});
+
+// ================= שאלון מחנך =================
+const W_CATS=["תלמיד/ים מסוימים","אקלים חברתי בכיתה","משמעת ושיעורים","הישגים לימודיים","הורים","מורה/שיעור מסוים בכיתה","מערכת שעות ולוח זמנים","אחר"];
+const D_SRCS=["התלמידים","מורה שעובד בכיתה שלי","עמית בצוות","מזכירות / מנהלה","הנהלה","תחזוקה ולוגיסטיקה","עומס ומערכת שעות","הורים","אחר"];
+const ROLES=["מחנך","מורה מקצועי","רכז/ת","מורה שילוב","תפקיד ניהולי","אחר"];
+const FUEL=["הקשר עם התלמידים","רגעי הצלחה של תלמיד","ההוראה עצמה","הצוות והעמיתים","הערכה מההנהלה","שותפות עם ההורים","יצירה ויוזמה","סדר וארגון","לימוד תורה"];
+const LVL=["","קל","מורגש","משמעותי","כבד","מוציא מאיזון"];
+let Q=null;
+const qKey=()=>"mapat-kita-q:"+STATE.cls+(window.SAVED&&window.SAVED.q?":file:"+(window.SAVED.q.who||"")+(window.SAVED.q.date||""):"");
+function blankQ(){return {who:"",date:new Date().toISOString().slice(0,10),
+  cls:{worries:[],discuss:[],bright:"",needs:""},
+  me:{roles:[],fuel:[],fuelTxt:"",drains:[],personal:false,oneThing:""}}}
+function qLoad(){
+  const saved=window.SAVED&&window.SAVED.cls==STATE.cls&&window.SAVED.q;
+  let ls=null;try{ls=JSON.parse(localStorage.getItem(qKey())||"null")}catch(e){}
+  Q=ls||saved||blankQ();
+}
+function qSave(){try{localStorage.setItem(qKey(),JSON.stringify(Q))}catch(e){}
+  const st=document.getElementById("qstat");if(st)st.textContent="✓ נשמר "+new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});}
+function qChanged(){qSave();renderQView();renderInsights();renderMap();}
+const opt=(arr,sel)=>arr.map(x=>`<option ${x==sel?"selected":""}>${esc(x)}</option>`).join("");
+const lvlSel=(v,path)=>`<span class="lvl">${[1,2,3,4,5].map(n=>`<button type="button" class="${v>=n?'on':''}" title="${LVL[n]}" onclick="qSet('${path}',${n});renderQForm()">${n}</button>`).join("")}<small>${LVL[v]||"עוצמה"}</small></span>`;
+function stuPick(list,path){const names=STATE.rows.map(s=>s.name);
+  return `<div class="pick">${list.map((n,j)=>`<span class="pchip">${esc(n)}<b onclick="qDelIn('${path}',${j})">✕</b></span>`).join("")}
+  <select onchange="if(this.value){qPush('${path}',this.value);renderQForm()}"><option value="">+ שיוך תלמיד…</option>${names.filter(n=>!list.includes(n)).map(n=>`<option>${esc(n)}</option>`).join("")}</select></div>`}
+// path helpers: "cls.worries.0.t"
+function qRef(path){const p=path.split(".");let o=Q;for(let i=0;i<p.length-1;i++)o=o[p[i]];return [o,p[p.length-1]]}
+function qSet(path,val){const [o,k]=qRef(path);o[k]=val;qSave();scheduleQ()}
+function qPush(path,val){const [o,k]=qRef(path);o[k].push(val);qSave();scheduleQ()}
+function qDelIn(path,j){const [o,k]=qRef(path);o[k].splice(j,1);qSave();renderQForm();scheduleQ()}
+function qToggle(path,val){const [o,k]=qRef(path);const a=o[k];const i=a.indexOf(val);i<0?a.push(val):a.splice(i,1);qSave();renderQForm();scheduleQ()}
+let _qt;function scheduleQ(){clearTimeout(_qt);_qt=setTimeout(()=>{renderQView();renderInsights();renderMap()},400)}
+const ta=(path,val,ph,rows=2)=>`<textarea rows="${rows}" placeholder="${ph}" oninput="qSet('${path}',this.value)">${esc(val||"")}</textarea>`;
+
+function renderQForm(){
+  if(!Q)return;const c=Q.cls,m=Q.me;
+  const worries=c.worries.map((w,i)=>`<div class="qitem">
+     <div class="qrow"><input value="${esc(w.t)}" placeholder="מה מטריד? במשפט אחד" oninput="qSet('cls.worries.${i}.t',this.value)" class="grow">
+     <select onchange="qSet('cls.worries.${i}.cat',this.value)">${opt(W_CATS,w.cat)}</select>
+     <button class="x" onclick="qDelIn('cls.worries',${i})" title="מחיקה">🗑</button></div>
+     <div class="qrow">${lvlSel(w.lvl,'cls.worries.'+i+'.lvl')} ${stuPick(w.stu,'cls.worries.'+i+'.stu')}</div>
+     <div class="qrow"><input value="${esc(w.help||"")}" placeholder="מה יכול לעזור / איזה מענה הייתי רוצה? (לא חובה)" oninput="qSet('cls.worries.${i}.help',this.value)" class="grow"></div></div>`).join("");
+  const discuss=c.discuss.map((d,i)=>`<div class="qitem"><div class="qrow"><b style="min-width:140px">${esc(d.stu)}</b>
+     <input value="${esc(d.why)}" placeholder="למה חשוב לי לדבר עליו? מה אני רוצה לצאת עם זה מהישיבה?" oninput="qSet('cls.discuss.${i}.why',this.value)" class="grow">
+     <button class="x" onclick="qDelIn('cls.discuss',${i})">🗑</button></div></div>`).join("");
+  const drains=m.drains.map((d,i)=>`<div class="qitem">
+     <div class="qrow"><input value="${esc(d.t)}" placeholder="מה שואב ממני / מוציא אותי מאיזון?" oninput="qSet('me.drains.${i}.t',this.value)" class="grow">
+     <select onchange="qSet('me.drains.${i}.src',this.value)" title="מקור">${opt(D_SRCS,d.src)}</select>
+     <select onchange="qSet('me.drains.${i}.role',this.value)" title="באיזה תפקיד">${opt(ROLES,d.role)}</select>
+     <button class="x" onclick="qDelIn('me.drains',${i})">🗑</button></div>
+     <div class="qrow">${lvlSel(d.lvl,'me.drains.'+i+'.lvl')}<input value="${esc(d.relief||"")}" placeholder="מה היה משחרר אותי? מה אפשר לקחת ממני או לתת לי?" oninput="qSet('me.drains.${i}.relief',this.value)" class="grow"></div></div>`).join("");
+  document.getElementById("qform").innerHTML=`
+  <div class="qhead"><div><label>ממלא/ת: <input value="${esc(Q.who)}" placeholder="שם" oninput="qSet('who',this.value)"></label>
+    <label>תאריך: <input type="date" value="${Q.date}" oninput="qSet('date',this.value)"></label></div>
+    <div><span id="qstat" class="hint" style="margin:0"></span>
+    <button class="chip" onclick="exportFile()">📤 שמירת קובץ לשליחה לרב חגי</button>
+    <button class="chip" onclick="if(confirm('לנקות את כל התשובות בשאלון?')){Q=blankQ();qChanged();renderQForm()}">ניקוי</button></div></div>
+
+  <fieldset><legend>חלק א' · הכיתה שלי <span class="tagm">יוצג בישיבה</span></legend>
+   <h3>1. מה מטריד או מדאיג אותי בכיתה כרגע?</h3>
+   <p class="hint">בדרך כלל זו לא דאגה אחת, אלא כמה. רשמו כל דבר בשורה נפרדת ודרגו את העוצמה שלו, מ־1 (קל) עד 5 (מוציא מאיזון). אפשר לשייך לכל דאגה תלמידים.</p>
+   ${worries||'<p class="empty">עוד לא נרשמו דאגות.</p>'}
+   <button class="add" onclick="Q.cls.worries.push({t:'',cat:W_CATS[0],lvl:3,stu:[],help:''});qSave();renderQForm()">+ דאגה נוספת</button>
+
+   <h3>2. על אילו תלמידים הכי חשוב לי לדבר בישיבה?</h3>
+   <p class="hint">עד חמישה תלמידים. התלמידים שתבחרו יסומנו ב־⭐ במפה.</p>
+   ${discuss}
+   ${c.discuss.length<5?`<select onchange="if(this.value){Q.cls.discuss.push({stu:this.value,why:''});qSave();renderQForm();scheduleQ()}"><option value="">+ בחירת תלמיד…</option>${STATE.rows.map(s=>s.name).filter(n=>!c.discuss.some(d=>d.stu==n)).map(n=>`<option>${esc(n)}</option>`).join("")}</select>`:""}
+
+   <h3>3. נקודות אור: מה עובד טוב בכיתה ונותן לי כוח?</h3>
+   ${ta('cls.bright',c.bright,'רגעים, תלמידים, תהליכים או שיתופי פעולה שעובדים טוב')}
+   <h3>4. מה אני צריך מהצוות או מההנהלה כדי לתת מענה בכיתה?</h3>
+   ${ta('cls.needs',c.needs,'שעות, איש צוות, יועצת, שינוי במערכת, גיבוי מול הורים…')}
+  </fieldset>
+
+  <fieldset class="me"><legend>חלק ב' · אני בתפקיד <span class="tagm s">🔒 למנהל בלבד · לא מוצג בהקרנה</span></legend>
+   ${!window._meOpen?`<p>החלק הזה נועד לשיחה אישית עם הרב חגי, ולא לישיבה עצמה. <button class="chip" onclick="window._meOpen=1;renderQForm()">פתיחת החלק האישי</button></p>`:`
+   <h3>5. באילו תפקידים אני משמש השנה?</h3>
+   <div class="chips">${ROLES.map(r=>`<button class="ch ${m.roles.includes(r)?'on':''}" onclick="qToggle('me.roles','${r}')">${r}</button>`).join("")}</div>
+   <h3>6. מאיפה אני מקבל כוח?</h3>
+   <div class="chips">${FUEL.map(r=>`<button class="ch ${m.fuel.includes(r)?'on':''}" onclick="qToggle('me.fuel','${r}')">${r}</button>`).join("")}</div>
+   ${ta('me.fuelTxt',m.fuelTxt,'מקורות כוח נוספים, במילים שלי')}
+   <h3>7. מה שואב ממני אנרגיה או מוציא אותי מאיזון?</h3>
+   <p class="hint">כל דבר בשורה נפרדת. אפשר לציין מה המקור, באיזה תפקיד ומה העוצמה, ובמה ההנהלה יכולה לעזור. "לא תמיד אוכל לתת מענה, אבל לפחות אדע."</p>
+   ${drains||'<p class="empty">עוד לא נרשם דבר.</p>'}
+   <button class="add" onclick="Q.me.drains.push({t:'',src:D_SRCS[0],role:(Q.me.roles[0]||ROLES[0]),lvl:3,relief:''});qSave();renderQForm()">+ פריט נוסף</button>
+   <h3>8. דבר אחד שאם יילקח ממני, אהיה פנוי יותר לעבודה החינוכית</h3>
+   ${ta('me.oneThing',m.oneThing,'למשל: לוגיסטיקה של טיולים, תורנויות, מילוי טפסים…')}
+   <label class="cb"><input type="checkbox" ${m.personal?"checked":""} onchange="qSet('me.personal',this.checked)"> יש כרגע עומס אישי מחוץ לבית הספר שכדאי שתדע עליו, בלי פירוט</label>`}
+  </fieldset>`;
+}
+
+// ---------- תצוגת התשובות ----------
+const lvlDots=n=>`<span class="dots" title="${LVL[n]}">${"●".repeat(n)}<i>${"●".repeat(5-n)}</i></span>`;
+function renderQView(){
+  const box=document.getElementById("qview");if(!box||!Q)return;
+  const c=Q.cls,W=[...c.worries].filter(w=>w.t.trim()).sort((a,b)=>b.lvl-a.lvl);
+  const byName=n=>STATE.rows.find(s=>s.name==n);
+  const sc=n=>{const s=byName(n);return s?chip(s):esc(n)};
+  const any=W.length||c.discuss.length||c.bright||c.needs;
+  box.innerHTML=!any?`<div class="icard n"><h4>שאלון המחנך עוד לא מולא</h4><p>מומלץ למלא לפני הישיבה, וזה לוקח בערך 10 דקות. <button class="chip" onclick="go('q')">למילוי השאלון</button></p></div>`:`
+   <div class="ins">
+    ${W.length?`<div class="icard y" style="grid-column:1/-1"><h4>מה מטריד את המחנך${Q.who?` (${esc(Q.who)})`:""}, לפי עוצמה</h4>
+      <table class="wt">${W.map(w=>`<tr><td>${lvlDots(w.lvl)}</td><td><b>${esc(w.t)}</b> <span class="cat">${esc(w.cat)}</span>${w.help?`<div class="hint" style="margin:2px 0 0">↳ מענה מבוקש: ${esc(w.help)}</div>`:""}</td><td>${w.stu.map(sc).join("")}</td></tr>`).join("")}</table></div>`:""}
+    ${c.discuss.length?`<div class="icard r"><h4>⭐ תלמידים שהמחנך מבקש לדון בהם</h4>${c.discuss.map(d=>`<div style="margin:6px 0">${sc(d.stu)} <span style="font-size:14px">${esc(d.why)}</span></div>`).join("")}</div>`:""}
+    ${c.needs?`<div class="icard"><h4>מה המחנך צריך מהצוות או מההנהלה</h4><p>${esc(c.needs)}</p></div>`:""}
+    ${c.bright?`<div class="icard g"><h4>נקודות אור</h4><p>${esc(c.bright)}</p></div>`:""}
+   </div>`;
+  renderMeView();
+}
+function renderMeView(){
+  const el=document.getElementById("meview");if(!el||!Q)return;const m=Q.me;
+  const D=[...m.drains].filter(d=>d.t.trim()).sort((a,b)=>b.lvl-a.lvl);
+  const bySrc={};D.forEach(d=>(bySrc[d.src]=bySrc[d.src]||[]).push(d));
+  const empty=!D.length&&!m.fuel.length&&!m.fuelTxt&&!m.oneThing&&!m.personal;
+  el.innerHTML=empty?`<p class="empty">החלק האישי בשאלון עוד לא מולא.</p>`:`
+   <div class="sgrid">
+    <div class="box"><h2>מה מוציא מאיזון${Q.who?` · ${esc(Q.who)}`:""}</h2>
+     ${m.roles.length?`<p class="hint">תפקידים: ${m.roles.map(esc).join(" · ")}</p>`:""}
+     ${m.personal?`<div class="note y">ℹ️ המחנך ציין שיש כרגע עומס אישי מחוץ לבית הספר, בלי פירוט. כדאי לדעת איפה לא ללחוץ.</div>`:""}
+     <table class="wt">${D.map(d=>`<tr><td>${lvlDots(d.lvl)}</td><td><b>${esc(d.t)}</b> <span class="cat">${esc(d.src)} · ${esc(d.role)}</span>${d.relief?`<div class="hint" style="margin:2px 0 0">↳ מה ישחרר: ${esc(d.relief)}</div>`:""}</td></tr>`).join("")}</table>
+     ${Object.keys(bySrc).length>1?`<h4 style="margin:14px 0 6px">לפי מקור</h4>${Object.entries(bySrc).sort((a,b)=>b[1].reduce((s,x)=>s+x.lvl,0)-a[1].reduce((s,x)=>s+x.lvl,0)).map(([k,a])=>`<div class="srow" style="cursor:default"><div class="lab">${esc(k)}</div><div class="tr"><span style="width:${Math.min(100,a.reduce((s,x)=>s+x.lvl,0)*10)}%;background:var(--bad)"></span></div><div class="num" style="color:var(--bad)">${a.length}</div></div>`).join("")}`:""}
+    </div>
+    <div class="box"><h2>מקורות כוח</h2>
+     <div class="tags">${m.fuel.map(x=>`<span>${esc(x)}</span>`).join("")}</div>${m.fuelTxt?`<p>${esc(m.fuelTxt)}</p>`:""}
+     ${m.oneThing?`<h2>דבר אחד שישחרר אותו לעבודה חינוכית</h2><div class="good" style="font-size:16px">${esc(m.oneThing)}</div>`:""}
+    </div>
+   </div>`;
+}
+// insights that cross the questionnaire with the sheet data
+function qInsights(R){
+  const I=[];if(!Q)return I;
+  const disc=new Set(Q.cls.discuss.map(d=>d.stu));
+  const worried=new Set(Q.cls.worries.flatMap(w=>w.stu));
+  const raised=new Set([...disc,...worried]);
+  if(!raised.size)return I;
+  const gut=R.filter(s=>raised.has(s.name)&&!s.reds.length);
+  if(gut.length)I.push(["y","תחושת המחנך מול הטבלה",`המחנך העלה את התלמידים האלה בשאלון, אבל בטבלה אין להם אף תחום אדום. אולי הטבלה לא משקפת את מה שהוא רואה:`,gut]);
+  const silent=R.filter(s=>s.reds.length>=2&&!raised.has(s.name));
+  if(silent.length)I.push(["n","אדום בטבלה, לא עלה בשאלון",`לתלמידים האלה יש כמה תחומים אדומים, אבל המחנך לא העלה אותם בשאלון. אולי המצב כבר מטופל, ואולי כדאי לשאול:`,silent]);
+  return I;
+}
+// ---------- קובץ לשליחה: עותק של הכלי עם הנתונים והתשובות ----------
+function exportFile(){
+  const clone=document.documentElement.cloneNode(true);
+  clone.querySelector("body").className="proj";
+  clone.querySelectorAll("#ov").forEach(x=>x.classList.remove("on"));
+  let s=clone.querySelector("#saved");
+  s.textContent=JSON.stringify({cls:STATE.cls,teacher:STATE.teacher,raw:STATE.rows.map(x=>x.r),q:Q}).replace(/</g,"\\u003c");
+  const html="<!DOCTYPE html>\n"+clone.outerHTML;
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([html],{type:"text/html"}));
+  a.download=`מפת כיתה ${STATE.cls}${Q.who?" - "+Q.who:""}.html`;a.click();
+}
+
+// ---------- wiring ----------
+document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>go(b.dataset.v));
+document.getElementById("q").oninput=renderMap;
+document.getElementById("fsel").onchange=e=>{STATE.filter=e.target.value||null;renderMap()};
+document.getElementById("loadBtn").onclick=()=>go("load");
+document.getElementById("sensBtn").onclick=e=>{STATE.proj=!STATE.proj;document.body.classList.toggle("proj",STATE.proj);
+  if(STATE.proj&&document.getElementById("v-me").classList.contains("on"))go("overview");e.target.textContent=STATE.proj?"🔒 נתוני רקע רגישים: מוסתרים":"🔓 נתוני רקע רגישים: מוצגים";e.target.classList.toggle("on",!STATE.proj)};
+const drop=document.getElementById("drop"),file=document.getElementById("file");
+document.getElementById("pick").onclick=e=>{e.preventDefault();file.click()};
+drop.ondragover=e=>{e.preventDefault();drop.classList.add("over")};drop.ondragleave=()=>drop.classList.remove("over");
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove("over");readFile(e.dataTransfer.files[0])};
+file.onchange=()=>readFile(file.files[0]);
+function readFile(f){window.SAVED=null;window._isDemo=false;if(!f)return;const rd=new FileReader();rd.onload=()=>{const rows=rowsFromSheet(parseCSV(rd.result));
+  if(!rows.length){alert("לא נמצאו שורות תלמידים בקובץ. ודאו שזה CSV של לשונית כיתה לפי התבנית.");return}
+  const nm=f.name.replace(/\.csv$/i,"").split(" - ").pop().trim();const m=nm.match(/^(\S+)\s*(.*)$/)||[];
+  load(rows,m[1]||nm,(m[2]||"").trim());go("overview")};rd.readAsText(f,"utf-8")}
+document.getElementById("backPilot").onclick=()=>{window._isDemo=!!PILOT.demo;load(expandPilot(PILOT),PILOT.className,PILOT.teacher);go("overview")};
+(function(){let S=null;try{S=JSON.parse(document.getElementById("saved").textContent||"null")}catch(e){}
+  window.SAVED=S;if(S&&S.raw){load(S.raw,S.cls,S.teacher)}else{window._isDemo=!!PILOT.demo;load(expandPilot(PILOT),PILOT.className,PILOT.teacher)}})();
+</script>
+</body>
+</html>
