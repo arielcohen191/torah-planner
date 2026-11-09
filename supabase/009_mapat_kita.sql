@@ -7,3 +7,7 @@
 -- הרשאות: מחנך — הכיתה שלו בלבד; הנהלה — כל הכיתות; חלק ב' של השאלון — רק המנהל והמחנך שמילא.
 -- איפוס קוד ידני: update public.mk_access set pin_hash = extensions.crypt('1234', extensions.gen_salt('bf')), fails=0, locked_until=null where phone='05XXXXXXXX';
 -- סוד הסנכרון: select v from public.mk_settings where k='sync_secret';  (לא נשמר בריפו)
+-- עדכון (mapat_kita_first_pin): סיסמה 4–30 תווים. כניסה ראשונה: mk_check_phone → mk_create_pin (רק למי ששויך תפקיד ואין לו סיסמה).
+--   mk_change_pin לשינוי עצמי. הנהלה (admin/principal) מנהלת גישה: mk_staff_set(..., p_pin_action 'reset'|'set', p_new_pin); p_role='none' מסיר גישה.
+-- עדכון (mapat_kita_staff_q): השאלון לכל איש צוות — mk_staff_q(phone pk, part_a, part_b). פריטי חלק א' משויכים לכיתה (cls).
+--   mk_my_q / mk_save_q(phone,pin,a,b) · mk_get מחזיר voices (כל מי שכתב על הכיתה) · mk_staff_map — מנהל בלבד, כולל חלק ב'.

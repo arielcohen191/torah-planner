@@ -201,8 +201,8 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
       <button data-v="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18M9 3v18"/></svg>מפת תלמידים</button>
       <button data-v="strengths"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>כוחות הכיתה</button>
       <button data-v="quality"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>שלמות הנתונים</button>
-      <button data-v="q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>שאלון מחנך</button>
-      <button data-v="me" class="sens"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>למנהל</button>
+      <button data-v="q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>השאלון שלי</button>
+      <button data-v="me" class="sens"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>מפת צוות</button>
       <button data-v="manage" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>ניהול גישה</button>
     </nav>
     <div id="classBox" hidden><h6>כיתות</h6><div class="nav clist" id="classList"></div></div>
@@ -231,8 +231,8 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
     <h2>פילוח לפי תחומי תפקוד</h2>
     <p class="hint">ירוק = תקין · צהוב = לשים לב · אדום = דורש התערבות · אפור = לא מולא. לחיצה על פס מסננת את המפה.</p>
     <div class="dgrid" id="dgrid"></div>
-    <h2 class="keep">קול המחנך</h2>
-    <p class="hint keep">מתוך שאלון המחנך, חלק א'.</p>
+    <h2 class="keep">קול הצוות</h2>
+    <p class="hint keep">מתוך השאלונים של אנשי הצוות שעובדים עם הכיתה (חלק א').</p>
     <div id="qview"></div>
     <h2>מוקדים לישיבה</h2>
     <p class="hint">נגזר אוטומטית מהנתונים — נקודות פתיחה לשיחה, לא מסקנות.</p>
@@ -269,13 +269,13 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
   </section>
 
   <section class="view" id="v-q">
-    <h2>שאלון מחנך לקראת הישיבה הפדגוגית</h2>
-    <p class="hint">ממלאים לפני הישיבה. כל שינוי נשמר אוטומטית בשרת. חלק א' גלוי להנהלה. חלק ב' גלוי רק לך ולמנהל.</p>
+    <h2>השאלון שלי לקראת הישיבות הפדגוגיות</h2>
+    <p class="hint">לכל איש צוות: מחנכים, מורים מקצועיים והנהלה. כל שינוי נשמר אוטומטית בשרת. בחלק א' משייכים כל דבר לכיתה, והוא יופיע במפה של אותה כיתה. חלק ב' גלוי רק לך ולמנהל.</p>
     <div id="qform"></div>
   </section>
   <section class="view" id="v-me">
-    <h2>למנהל: המחנך בתפקיד</h2>
-    <p class="hint">חלק ב' של השאלון. מקורות כוח, מה מוציא מאיזון ומה ישחרר. החלק הזה לא מוצג כשנתוני הרקע מוסתרים.</p>
+    <h2>מפת צוות · למנהל בלבד</h2>
+    <p class="hint">חלק ב' של השאלונים: מקורות כוח, מה מוציא מאיזון ומה ישחרר. הלשונית מוסתרת כשנתוני הרקע הרגישים מוסתרים.</p>
     <div id="meview"></div>
   </section>
   <section class="view" id="v-manage">
@@ -485,7 +485,7 @@ function renderMap(){
   document.getElementById("fsel").value=STATE.filter&&!/\d$/.test(STATE.filter)?STATE.filter:"";
   document.getElementById("fbadge").innerHTML=STATE.filter?`<span class="fbadge" onclick="STATE.filter=null;renderMap()">${FILTERS[STATE.filter].n} · ${L.length} ✕</span>`:"";
   const th=`<tr><th onclick="STATE.sort=null;renderMap()" class="${!STATE.sort?'sorted':''}">תלמיד</th>${DOMAINS.map(d=>`<th class="${STATE.sort==d.id?'sorted':''}" onclick="STATE.sort='${d.id}';renderMap()">${d.short}</th>`).join("")}<th class="${STATE.sort=='risk'?'sorted':''}" onclick="STATE.sort='risk';renderMap()">מוקדים</th><th>מענים</th><th>רקע</th></tr>`;
-  const rows=L.map(s=>`<tr><td class="nm" onclick="openS(${s.i})"><small>${s.num}</small>${esc(s.name)}${Q&&Q.cls.discuss.some(d=>d.stu==s.name)?' <span title="המחנך ביקש לדון">⭐</span>':""}</td>${DOMAINS.map(d=>{const x=s.dom[d.id];return cell(x.score,d.name+(x.txt?": "+x.txt:"")+` (${x.filled}/${x.total} מדדים מולאו)`)}).join("")}
+  const rows=L.map(s=>`<tr><td class="nm" onclick="openS(${s.i})"><small>${s.num}</small>${esc(s.name)}${voiceDiscuss().some(d=>d.stu==s.name)?' <span title="המחנך ביקש לדון">⭐</span>':""}</td>${DOMAINS.map(d=>{const x=s.dom[d.id];return cell(x.score,d.name+(x.txt?": "+x.txt:"")+` (${x.filled}/${x.total} מדדים מולאו)`)}).join("")}
    <td style="font-size:12.5px;white-space:nowrap">${s.reds.length?`<b style="color:var(--bad)">${s.reds.length} אדום</b>`:""}${s.reds.length&&s.ambers.length?"<br>":""}${s.ambers.length?`<span style="color:#a87a1e">${s.ambers.length} צהוב</span>`:""}</td>
    <td style="font-size:12px">${s.maane.map(esc).join("<br>")}</td>
    <td><div class="flags">${s.flags.map(f=>`<span class="flag ${f.s?'s sens':''}">${esc(f.t)}</span>`).join("")}</div></td></tr>`).join("");
@@ -529,8 +529,8 @@ function openS(i){CUR=i;const s=STATE.rows[i];const L=list();const pos=L.findInd
      <h4 style="margin-top:14px">רקע</h4><div class="flags" style="justify-content:flex-start">${s.flags.map(f=>`<span class="flag ${f.s?'s sens':''}" style="font-size:13px">${esc(f.t)}</span>`).join("")||'<span class="empty">—</span>'}</div>
      ${s.prev?`<h4 style="margin-top:14px">צרכים משנים קודמות</h4><div>${esc(s.prev)}</div>`:""}
      ${s.extra?`<h4 style="margin-top:14px">תוספות מחנך</h4><div>${esc(s.extra)}</div>`:""}
-     ${(()=>{if(!Q)return"";const d=Q.cls.discuss.find(x=>x.stu==s.name);const w=Q.cls.worries.filter(x=>x.t&&x.stu.includes(s.name));
-       return (d||w.length)?`<h4 style="margin-top:14px">מהשאלון של המחנך</h4>${d?`<div class="note">⭐ ביקש לדון${d.why?": "+esc(d.why):""}</div>`:""}${w.map(x=>`<div class="note y">${lvlDots(x.lvl)} ${esc(x.t)}</div>`).join("")}`:""})()}
+     ${(()=>{const d=voiceDiscuss().filter(x=>x.stu==s.name);const w=voiceWorries().filter(x=>x.t&&(x.stu||[]).includes(s.name));
+       return (d.length||w.length)?`<h4 style="margin-top:14px">מהשאלונים של הצוות</h4>${d.map(x=>`<div class="note">⭐ ${esc(x.by)} ביקש לדון${x.why?": "+esc(x.why):""}</div>`).join("")}${w.map(x=>`<div class="note y">${lvlDots(x.lvl)} ${esc(x.t)} · ${esc(x.by)}</div>`).join("")}`:""})()}
      ${subjNotes?`<h4 style="margin-top:14px">הערות מורים מקצועיים</h4>${subjNotes}`:""}
     </div>
     <div class="sec">${dom}</div>
@@ -764,11 +764,13 @@ function afterLogin(){
   document.getElementById("gate").hidden=true;
   document.getElementById("who").innerHTML=`<b>${esc(USER.name)}</b><small>${ROLE_HE[USER.role]||""}${USER.class_name?" · "+esc(USER.class_name):""}</small>`;
   document.querySelector('#nav [data-v="manage"]').hidden=!USER.can_manage;
+  const meBtn=document.querySelector('#nav [data-v="me"]');meBtn.hidden=USER.role!=="principal";
+  loadMyQ();
   const isMgmt=USER.role!=="teacher";
   document.getElementById("classBox").hidden=!isMgmt;
   if(isMgmt)renderClassList();
   const start=USER.class_name||(USER.classes.find(c=>c.has_data)||USER.classes[0]||{}).class_name;
-  if(start)openClass(start);else showNoClass("לא שויכה לך כיתה. פנו להרב אריאל.");
+  if(start)openClass(start);else{showNoClass("שלום "+USER.name.split(" ")[0]);document.getElementById("subttl").textContent="אין לך כיתת חינוך, אבל אפשר למלא את השאלון על הכיתות שאתה עובד בהן.";["overview","map","strengths","quality"].forEach(v=>document.querySelector(`#nav [data-v="${v}"]`).hidden=true);go("q")}
 }
 function renderClassList(){
   document.getElementById("classList").innerHTML=USER.classes.map(c=>`<button data-c="${esc(c.class_name)}" class="${c.class_name==CUR_CLASS?'on':''}" onclick="openClass(this.dataset.c)" title="${c.teacher?esc(c.teacher):'לא שויך מחנך'}">
@@ -779,15 +781,13 @@ async function openClass(c){
   document.getElementById("ttl").textContent="טוען את "+c+"…";
   let d;try{d=await rpc("mk_get",{p_phone:SES.phone,p_pin:SES.pin,p_class:c})}catch(e){showNoClass("אין חיבור לשרת כרגע.");return}
   if(d.error){if(d.error==="bad"||d.error==="locked"){logout();return}showNoClass(ERR[d.error]||d.error);return}
-  CAN_EDIT_Q=!!d.can_edit_q;
-  window._serverQ=d.q;window._serverMeta=d;
-  document.querySelector('#nav [data-v="q"]').hidden=!CAN_EDIT_Q;
+  VOICES=d.voices||[];
   const rows=d.rows?rowsFromSheet(d.rows):[];
   document.body.classList.toggle("nodata",!rows.length);
   load(rows,d.class_name,d.teacher||"");
   const sync=d.synced_at?new Date(d.synced_at).toLocaleString("he-IL",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}):null;
   document.getElementById("subttl").textContent=(d.teacher?"מחנך: "+d.teacher+" · ":"")+(rows.length?rows.length+" תלמידים · ":"")+(sync?"עודכן מהטבלה "+sync:"");
-  document.getElementById("demoTag").innerHTML=rows.length?"":`<span class="demo">הטבלה של ${esc(d.class_name)} עוד לא סונכרנה מגוגל שיטס.${CAN_EDIT_Q?" בינתיים אפשר כבר למלא את שאלון המחנך.":""}</span>`;
+  document.getElementById("demoTag").innerHTML=rows.length?"":`<span class="demo">הטבלה של ${esc(d.class_name)} עוד לא סונכרנה מגוגל שיטס.${" בינתיים אפשר כבר למלא את השאלון."}</span>`;
   go(document.querySelector("#nav button.on:not([hidden])")?.dataset.v||"overview");
 }
 function showNoClass(t){document.getElementById("ttl").textContent=t;document.getElementById("subttl").textContent=""}
@@ -853,6 +853,152 @@ function pinAction(id,a){
   const n=prompt("סיסמה חדשה עבור "+STAFF[id].name+" (4 תווים לפחות):");if(n==null)return;
   if(n.length<4){alert("הסיסמה צריכה להיות באורך 4 תווים לפחות");return}staffCall(id,"set",n);
 }
+
+// ================= v3: שאלון לכל איש צוות · קול הצוות לכל כיתה · מפת צוות למנהל =================
+let VOICES=[];
+const nrm=t=>String(t||"").replace(/[^א-ת0-9]/g,"");
+const curIs=c=>nrm(c)===nrm(STATE.cls)&&STATE.rows.length>0;
+function myDefaultClass(){return USER.class_name||CUR_CLASS||(USER.all_classes||[])[0]||""}
+function voiceDiscuss(){return VOICES.flatMap(v=>v.discuss.map(d=>({...d,by:v.name})))}
+function voiceWorries(){return VOICES.flatMap(v=>v.worries.map(w=>({...w,by:v.name})))}
+
+qLoad=function(){};   // השאלון האישי נטען פעם אחת בכניסה (loadMyQ), לא לפי כיתה
+async function loadMyQ(){
+  Q=blankQ();Q.who=USER.name;
+  try{const r=await rpc("mk_my_q",{p_phone:SES.phone,p_pin:SES.pin});
+    if(r&&!r.error){const a=r.part_a||{};Q.cls.worries=a.worries||[];Q.cls.discuss=a.discuss||[];Q.cls.bright=a.bright||"";Q.cls.needs=a.needs||"";
+      Q.who=a.who||USER.name;Q.date=a.date||Q.date;if(r.part_b)Q.me=Object.assign(Q.me,r.part_b);}
+  }catch(e){}
+  renderQForm();
+}
+qSave=function(){
+  const st=document.getElementById("qstat");if(st)st.textContent="שומר…";
+  clearTimeout(_saveT);_saveT=setTimeout(async()=>{
+    try{const r=await rpc("mk_save_q",{p_phone:SES.phone,p_pin:SES.pin,p_part_a:{who:Q.who,date:Q.date,...Q.cls},p_part_b:Q.me});
+      const st=document.getElementById("qstat");if(st)st.textContent=r.error?"⚠ "+(ERR[r.error]||r.error):"✓ נשמר "+new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
+      if(!r.error&&CUR_CLASS)refreshVoices();
+    }catch(e){const st=document.getElementById("qstat");if(st)st.textContent="⚠ לא נשמר — אין חיבור. ננסה שוב בשינוי הבא."}
+  },900);
+};
+async function refreshVoices(){try{const d=await rpc("mk_get",{p_phone:SES.phone,p_pin:SES.pin,p_class:CUR_CLASS});if(!d.error){VOICES=d.voices||[];renderQView();renderInsights();renderMap()}}catch(e){}}
+
+// ----- טופס השאלון -----
+const clsSel=(v,path)=>`<select onchange="qSet('${path}',this.value);renderQForm()" title="כיתה">${(USER.all_classes||[]).map(c=>`<option ${c==v?"selected":""}>${esc(c)}</option>`).join("")}</select>`;
+function stuField(list,cls,path){
+  if(curIs(cls))return stuPick(list,path);
+  return `<input class="grow" value="${esc(list.join(", "))}" placeholder="שמות תלמידים (לא חובה, מופרדים בפסיק)" onchange="qSet('${path}',this.value.split(',').map(x=>x.trim()).filter(Boolean))">`;
+}
+renderQForm=function(){
+  if(!Q||!USER)return;const c=Q.cls,m=Q.me;
+  const worries=c.worries.map((w,i)=>`<div class="qitem">
+     <div class="qrow"><input value="${esc(w.t)}" placeholder="מה מטריד? במשפט אחד" oninput="qSet('cls.worries.${i}.t',this.value)" class="grow">
+     ${clsSel(w.cls,'cls.worries.'+i+'.cls')}<select onchange="qSet('cls.worries.${i}.cat',this.value)">${opt(W_CATS,w.cat)}</select>
+     <button class="x" onclick="qDelIn('cls.worries',${i})" title="מחיקה">🗑</button></div>
+     <div class="qrow">${lvlSel(w.lvl,'cls.worries.'+i+'.lvl')} ${stuField(w.stu||[],w.cls,'cls.worries.'+i+'.stu')}</div>
+     <div class="qrow"><input value="${esc(w.help||"")}" placeholder="מה יכול לעזור / איזה מענה הייתי רוצה? (לא חובה)" oninput="qSet('cls.worries.${i}.help',this.value)" class="grow"></div></div>`).join("");
+  const discuss=c.discuss.map((d,i)=>`<div class="qitem"><div class="qrow">${clsSel(d.cls,'cls.discuss.'+i+'.cls')}
+     ${curIs(d.cls)?`<select onchange="qSet('cls.discuss.${i}.stu',this.value)">${STATE.rows.map(s=>`<option ${s.name==d.stu?"selected":""}>${esc(s.name)}</option>`).join("")}</select>`:`<input value="${esc(d.stu)}" placeholder="שם התלמיד" oninput="qSet('cls.discuss.${i}.stu',this.value)">`}
+     <input value="${esc(d.why)}" placeholder="למה חשוב לי לדבר עליו? מה אני רוצה לצאת עם זה מהישיבה?" oninput="qSet('cls.discuss.${i}.why',this.value)" class="grow">
+     <button class="x" onclick="qDelIn('cls.discuss',${i})">🗑</button></div></div>`).join("");
+  const drains=m.drains.map((d,i)=>`<div class="qitem">
+     <div class="qrow"><input value="${esc(d.t)}" placeholder="מה שואב ממני / מוציא אותי מאיזון?" oninput="qSet('me.drains.${i}.t',this.value)" class="grow">
+     <select onchange="qSet('me.drains.${i}.src',this.value)" title="מקור">${opt(D_SRCS,d.src)}</select>
+     <select onchange="qSet('me.drains.${i}.role',this.value)" title="באיזה תפקיד">${opt(ROLES,d.role)}</select>
+     <button class="x" onclick="qDelIn('me.drains',${i})">🗑</button></div>
+     <div class="qrow">${lvlSel(d.lvl,'me.drains.'+i+'.lvl')}<input value="${esc(d.relief||"")}" placeholder="מה היה משחרר אותי? מה אפשר לקחת ממני או לתת לי?" oninput="qSet('me.drains.${i}.relief',this.value)" class="grow"></div></div>`).join("");
+  const dc=myDefaultClass();
+  document.getElementById("qform").innerHTML=`
+  <div class="qhead"><div><b>${esc(USER.name)}</b> <span class="hint" style="margin:0">· ${ROLE_HE[USER.role]||""}${USER.class_name?" · מחנך "+esc(USER.class_name):""}</span></div>
+    <div><span id="qstat" class="hint" style="margin:0"></span></div></div>
+
+  <fieldset><legend>חלק א' · הכיתות שלי <span class="tagm">גלוי להנהלה ולמחנך הכיתה · מוצג בישיבה</span></legend>
+   <h3>1. מה מטריד או מדאיג אותי באחת הכיתות שאני עובד בהן?</h3>
+   <p class="hint">כל דבר בשורה נפרדת: באיזו כיתה, באיזו עוצמה (1 = קל, 5 = מוציא מאיזון), ובמי מדובר. מה שתכתבו יופיע ב"קול הצוות" במפה של אותה כיתה.</p>
+   ${worries||'<p class="empty">עוד לא נרשמו דאגות.</p>'}
+   <button class="add" onclick="Q.cls.worries.push({t:'',cls:myDefaultClass(),cat:W_CATS[0],lvl:3,stu:[],help:''});qSave();renderQForm()">+ דאגה נוספת</button>
+
+   <h3>2. על אילו תלמידים חשוב לי לדבר בישיבה?</h3>
+   <p class="hint">התלמידים שתבחרו יסומנו ב־⭐ במפה של הכיתה שלהם.</p>
+   ${discuss}
+   <button class="add" onclick="Q.cls.discuss.push({cls:myDefaultClass(),stu:'',why:''});qSave();renderQForm()">+ תלמיד לדיון</button>
+
+   <h3>3. נקודות אור: מה עובד טוב ונותן לי כוח?</h3>
+   ${ta('cls.bright',c.bright,'רגעים, תלמידים, תהליכים או שיתופי פעולה שעובדים טוב')}
+   <h3>4. מה אני צריך מהצוות או מההנהלה?</h3>
+   ${ta('cls.needs',c.needs,'שעות, איש צוות, יועצת, שינוי במערכת, גיבוי מול הורים…')}
+   ${USER.class_name?'<p class="hint">שאלות 3 ו־4 מוצגות במפה של '+esc(USER.class_name)+'.</p>':""}
+  </fieldset>
+
+  <fieldset class="me"><legend>חלק ב' · אני בתפקיד <span class="tagm s">🔒 גלוי רק לך ולמנהל</span></legend>
+   ${!window._meOpen?`<p>החלק הזה נועד לשיחה אישית עם המנהל, ולא לישיבה עצמה. <button class="chip" onclick="window._meOpen=1;renderQForm()">פתיחת החלק האישי</button></p>`:`
+   <h3>5. באילו תפקידים אני משמש השנה?</h3>
+   <div class="chips">${ROLES.map(r=>`<button class="ch ${m.roles.includes(r)?'on':''}" onclick="qToggle('me.roles','${r}')">${r}</button>`).join("")}</div>
+   <h3>6. מאיפה אני מקבל כוח?</h3>
+   <div class="chips">${FUEL.map(r=>`<button class="ch ${m.fuel.includes(r)?'on':''}" onclick="qToggle('me.fuel','${r}')">${r}</button>`).join("")}</div>
+   ${ta('me.fuelTxt',m.fuelTxt,'מקורות כוח נוספים, במילים שלי')}
+   <h3>7. מה שואב ממני אנרגיה או מוציא אותי מאיזון?</h3>
+   <p class="hint">כל דבר בשורה נפרדת. אפשר לציין מה המקור, באיזה תפקיד ומה העוצמה, ובמה ההנהלה יכולה לעזור.</p>
+   ${drains||'<p class="empty">עוד לא נרשם דבר.</p>'}
+   <button class="add" onclick="Q.me.drains.push({t:'',src:D_SRCS[0],role:(Q.me.roles[0]||ROLES[0]),lvl:3,relief:''});qSave();renderQForm()">+ פריט נוסף</button>
+   <h3>8. דבר אחד שאם יילקח ממני, אהיה פנוי יותר לעבודה החינוכית</h3>
+   ${ta('me.oneThing',m.oneThing,'למשל: לוגיסטיקה של טיולים, תורנויות, מילוי טפסים…')}
+   <label class="cb"><input type="checkbox" ${m.personal?"checked":""} onchange="qSet('me.personal',this.checked)"> יש כרגע עומס אישי מחוץ לבית הספר שכדאי שהמנהל ידע עליו, בלי פירוט</label>`}
+  </fieldset>`;
+};
+
+// ----- קול הצוות (בתצוגת הכיתה) -----
+renderQView=function(){
+  const box=document.getElementById("qview");if(!box)return;
+  const byName=n=>STATE.rows.find(s=>s.name==n);const sc=n=>{const s=byName(n);return s?chip(s):esc(n)};
+  const W=voiceWorries().filter(w=>w.t).sort((a,b)=>b.lvl-a.lvl),D=voiceDiscuss().filter(d=>d.stu);
+  const H=VOICES.find(v=>v.is_homeroom);
+  if(!VOICES.length){box.innerHTML=`<div class="icard n"><h4>עוד אין תשובות בשאלון על הכיתה הזו</h4><p>כל איש צוות שעובד עם הכיתה יכול לכתוב עליה ב"השאלון שלי". <button class="chip" onclick="go('q')">לשאלון שלי</button></p></div>`;return}
+  box.innerHTML=`<p class="hint">${VOICES.length} אנשי צוות כתבו על הכיתה: ${VOICES.map(v=>esc(v.name)+(v.is_homeroom?" (מחנך)":"")).join(" · ")}</p><div class="ins">
+    ${W.length?`<div class="icard y" style="grid-column:1/-1"><h4>מה מטריד את הצוות בכיתה, לפי עוצמה</h4>
+      <table class="wt">${W.map(w=>`<tr><td>${lvlDots(w.lvl)}</td><td><b>${esc(w.t)}</b> <span class="cat">${esc(w.cat)}</span> <span class="cat">✎ ${esc(w.by)}</span>${w.help?`<div class="hint" style="margin:2px 0 0">↳ מענה מבוקש: ${esc(w.help)}</div>`:""}</td><td>${(w.stu||[]).map(sc).join("")}</td></tr>`).join("")}</table></div>`:""}
+    ${D.length?`<div class="icard r"><h4>⭐ תלמידים שהצוות מבקש לדון בהם</h4>${D.map(d=>`<div style="margin:6px 0">${sc(d.stu)} <span style="font-size:14px">${esc(d.why)}</span> <span class="cat">${esc(d.by)}</span></div>`).join("")}</div>`:""}
+    ${H&&H.needs?`<div class="icard"><h4>מה המחנך צריך מהצוות או מההנהלה</h4><p>${esc(H.needs)}</p></div>`:""}
+    ${H&&H.bright?`<div class="icard g"><h4>נקודות אור</h4><p>${esc(H.bright)}</p></div>`:""}
+  </div>`;
+};
+qInsights=function(R){
+  const I=[];const raised=new Set([...voiceDiscuss().map(d=>d.stu),...voiceWorries().flatMap(w=>w.stu||[])]);
+  if(!raised.size)return I;
+  const gut=R.filter(s=>raised.has(s.name)&&!s.reds.length);
+  if(gut.length)I.push(["y","תחושת הצוות מול הטבלה",`הצוות העלה את התלמידים האלה בשאלון, אבל בטבלה אין להם אף תחום אדום. אולי הטבלה לא משקפת את מה שהצוות רואה:`,gut]);
+  const silent=R.filter(s=>s.reds.length>=2&&!raised.has(s.name));
+  if(silent.length)I.push(["n","אדום בטבלה, לא עלה בשאלון",`לתלמידים האלה יש כמה תחומים אדומים, אבל אף אחד לא העלה אותם בשאלון. אולי המצב כבר מטופל, ואולי כדאי לשאול:`,silent]);
+  return I;
+};
+
+// ----- מפת צוות (מנהל בלבד) -----
+renderMeView=async function(){
+  const el=document.getElementById("meview");if(!el||!USER||USER.role!=="principal")return;
+  el.innerHTML='<p class="hint">טוען…</p>';
+  const r=await rpc("mk_staff_map",{p_phone:SES.phone,p_pin:SES.pin});
+  if(r.error){el.innerHTML=`<p class="hint">${ERR[r.error]||r.error}</p>`;return}
+  const S=r.staff.filter(s=>s.part_b&&((s.part_b.drains||[]).some(d=>d.t)||(s.part_b.fuel||[]).length||s.part_b.oneThing));
+  const all=S.flatMap(s=>(s.part_b.drains||[]).filter(d=>d.t).map(d=>({...d,by:s.name})));
+  const bySrc={};all.forEach(d=>(bySrc[d.src]=bySrc[d.src]||[]).push(d));
+  const fuel={};S.forEach(s=>(s.part_b.fuel||[]).forEach(f=>fuel[f]=(fuel[f]||0)+1));
+  el.innerHTML=`<div class="tiles" style="margin-bottom:16px">
+     <div class="tile acc" style="cursor:default"><div class="v">${r.staff.length}</div><div class="l">מילאו את השאלון (מתוך ${r.n_access} עם גישה)</div></div>
+     <div class="tile mid" style="cursor:default"><div class="v">${S.length}</div><div class="l">מילאו את החלק האישי</div></div>
+     <div class="tile bad" style="cursor:default"><div class="v">${all.filter(d=>d.lvl>=4).length}</div><div class="l">פריטים בעוצמה 4–5</div></div>
+     <div class="tile" style="cursor:default"><div class="v">${S.filter(s=>s.part_b.personal).length}</div><div class="l">ציינו עומס אישי</div></div></div>
+   ${!S.length?'<p class="empty">עוד אף אחד לא מילא את החלק האישי.</p>':`<div class="sgrid">
+    <div class="box"><h2>מה מוציא את הצוות מאיזון, לפי מקור</h2>
+     ${Object.entries(bySrc).sort((a,b)=>b[1].reduce((s,x)=>s+x.lvl,0)-a[1].reduce((s,x)=>s+x.lvl,0)).map(([k,a])=>`<div class="srow" style="cursor:default"><div class="lab">${esc(k)}</div><div class="tr"><span style="width:${Math.min(100,a.reduce((s,x)=>s+x.lvl,0)*6)}%;background:var(--bad)"></span></div><div class="num" style="color:var(--bad)">${a.length}</div></div>`).join("")}
+     <h2 style="margin-top:18px">מקורות הכוח של הצוות</h2>
+     ${Object.entries(fuel).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<div class="srow" style="cursor:default"><div class="lab">${esc(k)}</div><div class="tr"><span style="width:${n/S.length*100}%"></span></div><div class="num">${n}</div></div>`).join("")}
+    </div>
+    <div class="box"><h2>לפי איש צוות</h2>
+     ${S.map(s=>{const D=(s.part_b.drains||[]).filter(d=>d.t).sort((a,b)=>b.lvl-a.lvl);return `<div style="border-bottom:1px solid var(--line);padding:10px 0">
+       <b>${esc(s.name)}</b> <span class="cat">${ROLE_HE[s.role]||""}${s.class_name?" · "+esc(s.class_name):""}</span>${s.part_b.personal?' <span class="cat" style="background:var(--mid-bg)">ℹ️ עומס אישי</span>':""}
+       <table class="wt">${D.map(d=>`<tr><td>${lvlDots(d.lvl)}</td><td>${esc(d.t)} <span class="cat">${esc(d.src)}</span>${d.relief?`<div class="hint" style="margin:2px 0 0">↳ מה ישחרר: ${esc(d.relief)}</div>`:""}</td></tr>`).join("")}</table>
+       ${s.part_b.oneThing?`<div class="note y">דבר אחד שישחרר: ${esc(s.part_b.oneThing)}</div>`:""}</div>`}).join("")}
+    </div></div>`}`;
+};
 
 document.querySelector(".hero").hidden=false;
 (function(){const s=ses();if(s&&s.phone){SES=s;doLogin(s.phone,s.pin,true)}else showGate()})();
