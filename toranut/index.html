@@ -649,7 +649,7 @@ function alertBar(){
   const need=needSubs(),t=today(),soon=absences().filter(a=>a.to&&a.to>=t&&a.to<=addDays(t,2)&&!(S.data.absOk||{})[a.key+'|'+a.to]);
   const P=byId(),items=[];
   if(need.length)items.push('<button type="button" class="lnk" data-act="goAbs" style="color:#fff">'+(need.length===1?'תורנות אחת של נעדר/ת':need.length+' תורנויות של נעדרים')+' בלי מחליף — לטיפול ←</button>');
-  soon.forEach(a=>items.push('<button type="button" class="lnk" data-act="goAbs" style="color:#fff">'+esc((P[a.staffId]||{}).name||'')+' אמור/ה לחזור ב־'+heDate(addDays(a.to,1))+' — לאשר או להאריך ←</button>'));
+  soon.forEach(a=>items.push('<button type="button" class="lnk" data-act="goAbs" style="color:#fff">'+esc((P[a.staffId]||{}).name||'')+' אמור/ה לחזור ב־'+heDate(addDays(a.to,1))+' — לבדוק ←</button>'));
   const br=brokenCount();
   if(br)items.push('<button type="button" class="lnk" data-act="fixNow" style="color:#fff">'+(br===1?'שיבוץ אחד כבר לא תקין':br+' שיבוצים כבר לא תקינים')+' (שינוי מערכת או כללים) — הצעת תיקון מינימלי ←</button>');
   return items.length?'<div class="preview-bar noprint" style="background:#9a3412">'+items.join('<span style="opacity:.5">|</span>')+'</div>':'';
@@ -659,18 +659,16 @@ let _brk=null;function brokenCount(){if(_brk!==null)return _brk;try{_brk=T.repai
 function viewAbs(){
   const P=byId(),t=today(),list=absences().filter(a=>!a.to||a.to>=addDays(t,-2)).sort((a,b)=>a.from<b.from?-1:1),V=validSubs();
   const people=S.data.staff.slice().sort((a,b)=>a.name.localeCompare(b.name,'he'));
-  let h='<div class="card topbar"><div><h1>היעדרויות ארוכות</h1><div class="muted small">מילואים, חופשת לידה, מחלה ממושכת. הלוח הקבוע לא משתנה — רק התורנויות של הנעדר/ת מקבלות מחליף/ה זמני/ת, וכשההיעדרות נגמרת הכול חוזר לבד. היעדרויות של מורים נשמרות גם בכלי מילוי המקום. בלוח ובהדפסה מופיע רק "נעדר/ת", בלי סיבה.</div></div></div>';
-  h+='<div class="card"><h2>הוספת היעדרות</h2><div class="row"><select id="abWho" class="fsel" style="max-width:260px"><option value="">בחירת איש צוות</option>'+people.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('')+'</select>'+
-    '<label class="small">מתאריך <input type="date" id="abFrom" class="fsel" value="'+t+'" style="width:auto"></label><label class="small">עד תאריך <input type="date" id="abTo" class="fsel" style="width:auto"></label>'+
-    '<label class="small"><input type="checkbox" id="abOpen"> עד הודעה חדשה</label><button class="btn sm" data-act="abAdd">הוספה</button></div></div>';
+  let h='<div class="card topbar"><div><h1>היעדרויות ארוכות</h1><div class="muted small">היעדרויות מוזנות <b>רק בכלי מילוי המקום</b>, ומופיעות כאן אוטומטית כשהן יום מלא ויותר מיום אחד (מילואים, חופשת לידה, מחלה ממושכת). הלוח הקבוע לא משתנה — רק התורנויות של הנעדר/ת מקבלות מחליף/ה זמני/ת, וכשההיעדרות נגמרת הכול חוזר לבד. בלוח ובהדפסה מופיע רק "נעדר/ת", בלי סיבה.</div></div>'+
+    '<a class="btn sm" href="../milui/" target="_blank" rel="noopener" style="text-decoration:none">להזנת היעדרות · מילוי מקום ←</a></div>';
+  h+='<div class="note small"><b>היעדרות של יום אחד:</b> לא מופיעה כאן. המורה הנעדר/ת אחראי/ת למצוא מחליף/ה לתורנות שלו/ה מקרב הצוות ולעדכן את ההנהלה (לפי מדיניות התורנויות).</div>';
   if(!list.length)return h+'<div class="card"><p class="muted">אין היעדרויות ארוכות פעילות.</p></div>';
   list.forEach(a=>{
     const s=P[a.staffId],act=absActiveOn(a,t),duties=dutiesOf(a.staffId),soon=a.to&&a.to>=t&&a.to<=addDays(t,2);
     h+='<div class="card"><div class="topbar"><div><h2 style="margin:0">'+esc(s?s.name:'?')+' <span class="chip">'+(act?'נעדר/ת עכשיו':a.from>t?'מתחיל/ה ב־'+heDate(a.from):'הסתיים')+'</span></h2>'+
       '<div class="small muted">'+heDate(a.from)+' – '+(a.to?heDate(a.to):'עד הודעה חדשה')+(a.src==='l'?' · נשמר בתורנויות בלבד (לא במערכת השעות של מילוי מקום)':'')+'</div></div>'+
-      '<div class="row"><input type="date" class="fsel" id="ext-'+a.key+'" value="'+(a.to||'')+'" style="width:auto"><button class="btn sec sm" data-act="abEnd" data-k="'+a.key+'">עדכון תאריך סיום</button>'+
-      '<button class="btn sec sm" data-act="abOpenEnd" data-k="'+a.key+'">עד הודעה חדשה</button><button class="btn sec sm" data-act="abBack" data-k="'+a.key+'">חזר/ה היום</button></div></div>';
-    if(soon&&!(S.data.absOk||{})[a.key+'|'+a.to])h+='<div class="note small" style="margin-top:8px"><b>אמור/ה לחזור ב־'+heDate(addDays(a.to,1))+'.</b> אם ההיעדרות הוארכה — לעדכן תאריך. אם חוזר/ת — מומלץ לבדוק שהמערכת שלו/ה לא השתנתה בזמן ההיעדרות (מסך "מערכת"). <button class="btn sm" data-act="abOk" data-k="'+a.key+'" data-to="'+a.to+'">מאשר/ת חזרה</button></div>';
+      (a.src==='m'?'<a class="btn sec sm" href="../milui/" target="_blank" rel="noopener" style="text-decoration:none">הארכה / סיום · במילוי מקום</a>':'<button class="btn sec sm" data-act="abBack" data-k="'+a.key+'">סיום</button>')+'</div>';
+    if(soon&&!(S.data.absOk||{})[a.key+'|'+a.to])h+='<div class="note small" style="margin-top:8px"><b>אמור/ה לחזור ב־'+heDate(addDays(a.to,1))+'.</b> אם ההיעדרות הוארכה — לעדכן את התאריך בכלי מילוי המקום. אם חוזר/ת — מומלץ לבדוק שהמערכת שלו/ה לא השתנתה בזמן ההיעדרות (מסך "מערכת"). <button class="btn sm" data-act="abOk" data-k="'+a.key+'" data-to="'+a.to+'">מאשר/ת חזרה</button></div>';
     h+='<h3 style="margin-top:12px">התורנויות ('+duties.length+')</h3>'+(duties.length?'<div class="list">'+duties.map(k=>{const v=V[k];
       return '<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0"><span>'+esc(slotLabel(k))+'</span><span>'+(v&&P[v.id]?'<b>'+esc(P[v.id].name)+'</b> ':'<span style="color:var(--red);font-weight:600">בלי מחליף</span> ')+
         '<button class="btn sec sm" data-act="subPick" data-k="'+k+'" data-a="'+a.key+'">'+(v?'החלפה':'בחירת מחליף')+'</button>'+(v?' <button class="btn sec sm" data-act="subClear" data-k="'+k+'">ביטול</button>':'')+'</span></div>'}).join('')+'</div>'+
@@ -876,7 +874,7 @@ function viewTT(){
   if(X.missing.length)h+='<div class="item orange" id="tt-miss"><b>נעלמו מהמערכת ('+X.missing.length+')</b><div class="small muted">לא נמחקים אוטומטית. מה קרה?</div>'+X.missing.map(o=>{const c=I.miss[o]||(I.miss[o]={v:'temp',to:''}),s=S.data.staff.find(x=>x.tt===o);
     return '<div style="margin-top:8px"><b class="small">'+esc(o)+'</b>'+(s?' <span class="small muted">('+dutiesOf(s.id).length+' תורנויות)</span>':'')+'<div class="row small">'+
       '<label><input type="radio" name="m-'+esc(o)+'" data-ch="ttMiss" data-o="'+esc(o)+'" value="temp"'+(c.v==='temp'?' checked':'')+'> נעדר/ת זמנית</label>'+
-      (c.v==='temp'?'<label>עד <input type="date" class="fsel" data-ch="ttMissTo" data-o="'+esc(o)+'" value="'+(c.to||'')+'" style="width:auto"></label><span class="muted">(ריק = עד הודעה חדשה)</span>':'')+
+      (c.v==='temp'?'<span class="muted">(המערכת שלו/ה נשמרת. את ההיעדרות מזינים במילוי מקום)</span>':'')+
       '<label><input type="radio" name="m-'+esc(o)+'" data-ch="ttMiss" data-o="'+esc(o)+'" value="left"'+(c.v==='left'?' checked':'')+'> עזב/ה</label>'+
       '<label><input type="radio" name="m-'+esc(o)+'" data-ch="ttMiss" data-o="'+esc(o)+'" value="keep"'+(c.v==='keep'?' checked':'')+'> להשאיר בלי שינוי</label></div></div>'}).join('')+'</div>';
   if(X.fresh.length)h+='<div class="item orange" id="tt-fresh"><b>הופיעו במערכת ('+X.fresh.length+')</b>'+X.fresh.map(n=>{const c=I.fresh[n]||(I.fresh[n]={v:'ask',for:'',to:''});
@@ -915,7 +913,7 @@ async function ttApply(){
   const missing=X.missing.concat(pairsNo.map(p=>p.o)),fresh=X.fresh.concat(pairsNo.map(p=>p.n));
   missing.forEach(o=>{const c=I.miss[o]||{v:'temp'};const s=S.data.staff.find(x=>x.tt===o);
     if(c.v==='left'){deactivate.push(o);if(s)ruleAdd.push([s.id,'עזב/ה (עדכון מערכת)'])}
-    else if(c.v==='temp'){absAdd.push({name:o,to:c.to||null})}});
+    else if(c.v==='temp'){absAdd.push(o)}});
   fresh.forEach(n=>{const c=I.fresh[n]||{v:'skip'};if(c.v==='skip')return;
     upsert.push({name:n,slots:I.T2[n].slots});
     const p=I.T2[n].p,days=p.map((x,i)=>/[^.]/.test(x)?i:-1).filter(i=>i>=0),parts=n.replace(/^הרב\s+/,'').split(' ');
@@ -926,14 +924,15 @@ async function ttApply(){
   try{
     toast('מעדכן…');
     const batch=(upsert.length||deactivate.length)?await rpc('toranut_tt_apply',{p_phone:S.phone,p:{upsert,deactivate}}):null;
-    for(const a of absAdd){try{await rpc('toranut_absence_save',{p_phone:S.phone,p_name:a.name,p_from:today(),p_to:a.to})}catch(e){}}
     S.data.staff=S.data.staff.concat(staffAdd);
     ruleAdd.forEach(([id,note])=>{S.data.rules=T.setPersonal(S.data.rules,id,'exclude',{v:true,note})});
     if(batch){S.data.ttBatches=(S.data.ttBatches||[]).concat([{batch,at:Date.now(),by:S.me,file:I.name}]).slice(-10)}
     S.data.plan.stale=true;await save(true);S.imp=null;
     await reloadKeep();
     const opened=openFixPlan('עדכון מערכת');
-    if(!opened)toast('המערכת עודכנה. הלוח לא הושפע.'+(absAdd.length?' יש היעדרויות חדשות — מסך "היעדרויות".':''));
+    const noAbs=absAdd.filter(n=>!(S.abs||[]).some(a=>a.name===n));
+    if(noAbs.length)setTimeout(()=>toast('לא לשכוח: להזין במילוי מקום היעדרות עבור '+noAbs.join(', ')),opened?400:0);
+    else if(!opened)toast('המערכת עודכנה. הלוח לא הושפע.');
   }catch(e){toast('העדכון נכשל: '+e.message)}
 }
 async function ttUndo(b){
