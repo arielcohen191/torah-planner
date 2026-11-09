@@ -43,12 +43,12 @@
     // חלוקת מגרשים: שכבה לכל יום (ראשון…שישי). מתוך הגיליון "חלוקת מגרשים וחצרות".
     yards: {
       b1: {
-        'מגרש משולב': ['ה', 'אב', 'ו', 'ד', 'ב', 'ג'],
+        'מגרש משולב': ['ה', 'הפסקה פעילה (א-ב)', 'ו', 'ד', 'ב', 'ג'],
         'דשא סינטטי': ['ב', 'ג', 'ב', 'ג', 'ה', 'ו'],
         'פינג פונג + תחתון': ['ג', 'ד', 'ה', 'ו', 'ו', 'ה'],
         'כדורסל': ['ד', 'ו', 'ד', 'ה', 'ג', 'ד'],
         'מגרש עליון': ['א', 'א', 'א', 'א', 'א', 'א'],
-        'דשא גדול': ['ו', 'ה', 'ג', 'ב', 'ד', 'אב']
+        'דשא גדול': ['ו', 'ה', 'ג', 'ב', 'ד', 'א+ב']
       },
       b2: {
         'מגרש משולב': ['ו', 'ד', 'ג', 'ב', 'ה'],
@@ -59,7 +59,23 @@
         'דשא גדול': ['ה', 'ו', 'ב', 'ד', 'ג']
       }
     },
+    // שורות הגיליון "חלוקת מגרשים וחצרות" ← העמדה שהתורן שלה אחראי על המגרש
+    yardRows: [
+      { key: 'מגרש משולב', name: 'מגרש משולב', st: 'office' },
+      { key: 'דשא סינטטי', name: 'דשא סינטטי', st: 'synth' },
+      { key: 'פינג פונג + תחתון', name: 'פינג פונג + מגרש תחתון בחצר האחורית', st: 'backLo' },
+      { key: 'כדורסל', name: 'מגרש (כדורסל) בין מבנה א-ב למבנה ג-ד', st: 'flE' },
+      { key: 'מגרש עליון', name: 'מגרש עליון בחצר האחורית והכניסה למבנה א-ב', st: 'backUp' },
+      { key: 'דשא גדול', name: 'מגרש הדשא הגדול', st: 'grass' }
+    ]
   };
+
+  /** שכבות מתוך טקסט חופשי: "א+ב", "הפסקה פעילה (א-ב)", "ו" */
+  function layerLetters(txt) {
+    let t = String(txt || '');
+    const m = t.match(/\(([^)]*)\)/); if (m) t = m[1];
+    return [...new Set((t.match(/[אבגדהו]/g) || []))].join('');
+  }
 
   /* ---------- עזרים ---------- */
   const norm = s => String(s || '').replace(/^הרב\s+/, '').replace(/[`'"׳״]/g, '').replace(/[-–]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -392,7 +408,7 @@
 
   function stationLayer(cfg, st, shift, day) {
     if (st.layer) return st.layer;
-    if (st.yard && cfg.yards[shift.id] && cfg.yards[shift.id][st.yard]) return cfg.yards[shift.id][st.yard][day] || '';
+    if (st.yard && cfg.yards[shift.id] && cfg.yards[shift.id][st.yard]) return layerLetters(cfg.yards[shift.id][st.yard][day]);
     return '';
   }
   function stationOk(s, p, st, layer) {
@@ -610,5 +626,5 @@
 
   return { DAYS, LAYERS, DEFAULT_CONFIG, ROLE, DCAT, OPT, SHIFT_NAME, PATTERN, STATIONS, AHMASH, SOFT, LEVEL, TYPES,
     buildStaff, defaultRules, compile, conflicts, addRule, setPersonal, newId, describe, whoText, whatText, slotsText, key, matches, setOf,
-    parseSheet, solve, report, presence, formAllows, stationLayer, stationOk, matchTimetable };
+    parseSheet, layerLetters, solve, report, presence, formAllows, stationLayer, stationOk, matchTimetable };
 });

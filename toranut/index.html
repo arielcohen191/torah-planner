@@ -105,6 +105,28 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 @media (max-width:900px){main{padding:16px}}
 @media (max-width:520px){.kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi{padding:12px 14px;min-height:0;flex-direction:column;align-items:flex-start}.kpi .n{font-size:40px;line-height:44px}}
 @media (max-width:760px){.app{flex-direction:column}nav.rail{flex-direction:row;flex:none;padding:8px;overflow-x:auto}.rail .brand,.rail .spacer,.rail .who{display:none}.rail button{flex:1;min-width:72px}}
+.yt{border-collapse:collapse;width:100%;font-size:14px;min-width:900px}
+.yt th,.yt td{border:1px solid #9aa5b1;padding:4px 6px;text-align:center;vertical-align:middle}
+.yt thead th{background:var(--rail);color:#fff;font-weight:600}
+.yt thead tr:nth-child(2) th{background:#3a4756;font-weight:500;font-size:13px}
+.yt th.brk{background:var(--rail);color:#fff;width:70px;font-size:13px}
+.yt th.yn{background:var(--card-muted);text-align:right;font-weight:600;min-width:170px}
+.yt td.ly{font-weight:700;cursor:pointer;min-width:38px}
+.yt td.nm{cursor:pointer;min-width:84px;font-size:13px}
+.yt td.nm.empty{color:var(--red);font-weight:700}
+.yt tr.ahm td,.yt tr.ahm th.yn{background:#eef2f6;font-style:italic}
+.yt td.off{background:repeating-linear-gradient(45deg,#f5f7fa,#f5f7fa 6px,#e6eaef 6px,#e6eaef 12px)}
+.yt tr.sep td,.yt tr.sep th{border-top:3px solid var(--rail)}
+.L-א{background:#ffd9d9}.L-ב{background:#ffe6c4}.L-ג{background:#fff3a8}.L-ד{background:#d4f0c9}.L-ה{background:#cfe5ff}.L-ו{background:#e4d8ff}.L-multi{background:linear-gradient(135deg,#ffd9d9 50%,#ffe6c4 50%)}
+.legend{display:flex;gap:8px;flex-wrap:wrap;font-size:13px}.legend span{padding:2px 10px;border-radius:6px;border:1px solid #c9d1db}
+.ver{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+.preview-bar{background:#2b2f6b;color:#fff;border-radius:var(--r-md);padding:12px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.preview-bar .btn.sec{background:#fff}
+html.print-yards main>*:not(#yardsCard){display:none!important}
+html.print-yards #yardsCard{padding:0}
+@media print{html.print-yards body{font-size:10px}html.print-yards .yt{font-size:11px;min-width:0}html.print-yards .yt th.yn{min-width:0;width:160px;font-size:11px}html.print-yards .yt td.nm{min-width:0;font-size:11px}html.print-yards .yt td.ly{font-size:12.5px}html.print-yards .yt tr{break-inside:avoid}html.print-yards #yardsCard{break-inside:auto}
+ html.print-yards #yardsCard h1{font-size:16px;margin:0 0 4px}html.print-yards .yt th,html.print-yards .yt td{padding:3px 3px}html.print-yards .legend{font-size:12px}
+ html.print-yards *{-webkit-print-color-adjust:exact;print-color-adjust:exact}html.print-yards .tablewrap{overflow:visible}}
 @media print{nav.rail,.noprint,.toast{display:none!important}main{padding:0}body{background:#fff;font-size:12px}.card{box-shadow:none;padding:0;margin-bottom:12px;break-inside:avoid}
  table.grid{font-size:11px;min-width:0}table.grid thead th{background:#ddd;color:#000}td.cell.empty{background:#fff}td.cell .lk{display:none}}
 </style>
@@ -135,10 +157,13 @@ function config(){
   c.stations=c.stations.filter(st=>!(ov[st.id]&&ov[st.id].off)).map(st=>Object.assign(st,ov[st.id]&&ov[st.id].prio?{prio:+ov[st.id].prio}:{}));
   const so=S.data.shifts||{};
   c.shifts.forEach(sh=>{if(so[sh.id]&&Array.isArray(so[sh.id].days))sh.days=so[sh.id].days});
-  c.rules=S.data.rules||[];
+  const src=S.preview?S.preview.snap:S.data;
+  if(S.preview){c.rules=src.rules||[]}else c.rules=S.data.rules||[];
+  const yd=(S.preview?src.yards:null)||S.data.yards;if(yd)c.yards=yd;
   return c;
 }
-function recompute(){S.cfg=config();S.C=T.compile(S.cfg.rules,S.data.staff);S.R=T.report(S.cfg,S.data.staff,S.tt,S.data.plan.assign||{})}
+function curAssign(){return S.preview?((S.preview.snap.plan||{}).assign||{}):(S.data.plan.assign||{})}
+function recompute(){S.cfg=config();S.C=T.compile(S.cfg.rules,S.data.staff);S.R=T.report(S.cfg,S.data.staff,S.tt,curAssign())}
 
 /* גרסה 2: הכללים יושבים ב־data.rules ולא על אנשי הצוות */
 function migrate(){
@@ -182,15 +207,15 @@ function kpi(cls,title,sub,n,act,go){
 }
 const fbtn=(id,label,cls)=>'<button type="button" class="'+(cls||'lnk')+'" data-act="focus" data-id="'+id+'" title="הצגה בלוח">'+label+'</button>';
 function emptyKeys(){const A=S.data.plan.assign||{};return S.R.unfilled.filter(k=>!A[k])}
-const ICON={sum:'<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',board:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 4v16"/>',staff:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.6c1.7.8 2.7 2.6 3 5.4"/>',rules:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',st:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'};
+const ICON={sum:'<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',board:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 4v16"/>',staff:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.6c1.7.8 2.7 2.6 3 5.4"/>',yards:'<path d="M3 20h18M5 20V9l7-5 7 5v11"/><path d="M9 20v-6h6v6"/>',hist:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',rules:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',st:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'};
 const icon=k=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICON[k]+'</svg>';
 const runBtn=(cls)=>'<button class="btn'+(cls||'')+'" data-act="run"'+(S.busy?' disabled':'')+'>'+(S.busy?'מריץ…':'הרצת שיבוץ')+'</button>';
 
 function render(){
   if(!S.phone)return renderLogin();
   if(!S.data){root.innerHTML='<div class="loading">טוען…</div>';return}
-  const nav=[['sum','איפה תקוע'],['board','לוח'],['staff','צוות'],['rules','כללים'],['st','עמדות']];
-  const body={sum:viewSum,board:viewBoard,staff:viewStaff,rules:viewRules,st:viewStations}[S.view]();
+  const nav=[['sum','איפה תקוע'],['board','לוח'],['yards','חצרות'],['staff','צוות'],['rules','כללים'],['st','עמדות'],['hist','גרסאות']];
+  const body=previewBar()+{sum:viewSum,board:viewBoard,yards:viewYards,staff:viewStaff,rules:viewRules,st:viewStations,hist:viewHist}[S.view]();
   const sy=window.scrollY,my=document.querySelector('.modal .mbody');const mScroll=my?my.scrollTop:0;
   root.innerHTML='<div class="app"><nav class="rail" aria-label="ניווט"><div class="brand">תורנויות<br>חצר</div>'+
     nav.map(n=>'<button type="button" data-act="nav" data-v="'+n[0]+'"'+(S.view===n[0]?' aria-current="page"':'')+'>'+icon(n[0])+n[1]+'</button>').join('')+
@@ -306,7 +331,7 @@ function focusCard(){
   return h;
 }
 function viewBoard(){
-  const P=byId(),A=S.data.plan.assign||{},LK=S.data.plan.locked||{},F=S.focus&&P[S.focus]?P[S.focus]:null;
+  const P=byId(),A=curAssign(),LK=S.data.plan.locked||{},F=S.focus&&P[S.focus]?P[S.focus]:null;
   const tabs=S.cfg.shifts.map(sh=>'<button data-act="tab" data-t="'+sh.id+'" aria-pressed="'+(S.shiftTab===sh.id)+'">'+esc(sh.label)+'</button>').join('')+'<button data-act="tab" data-t="all" aria-pressed="'+(S.shiftTab==='all')+'">הכול (להדפסה)</button>';
   let show=S.shiftTab==='all'?S.cfg.shifts:[shiftOf(S.shiftTab)||S.cfg.shifts[0]];
   const EK=new Set(emptyKeys());if(S.onlyEmpty)show=show.filter(sh=>[...EK].some(k=>k.startsWith(sh.id+'@')));
@@ -471,6 +496,107 @@ function trySaveRule(){
   S.modal={kind:'conflict',r:nr,cs,edit:M.edit};render();
 }
 
+/* ---------- חצרות (חלוקת מגרשים) ---------- */
+const LAY='אבגדהו';
+function layCls(txt){const l=T.layerLetters(txt);return !l?'':l.length>1?'L-multi':'L-'+l}
+function viewYards(){
+  const A=curAssign(),P=byId(),Y=S.cfg.yards,rows=T.DEFAULT_CONFIG.yardRows,days=[0,1,2,3,4,5];
+  const nm=k=>{const id=A[k];return id&&P[id]?esc(P[id].name):''};
+  let h='<div class="card" id="yardsCard"><div class="topbar"><div><h1>חלוקת מגרשים וחצרות · כנפי רוח בנים · תשפ"ז</h1><div class="muted small">התורן האחראי נלקח מהשיבוץ'+(S.data.plan.at?' (הרצה '+new Date(S.data.plan.at).toLocaleDateString('he-IL')+')':'')+'<span class="noprint"> · לחיצה על שכבה: עריכה · לחיצה על שם: החלפת תורן</span></div></div>'+
+    '<div class="row noprint"><button class="btn sm" data-act="printYards">הדפסה צבעונית (דף אחד)</button><button class="btn sec sm" data-act="yImport">עדכון מהגיליון</button></div></div>';
+  h+='<div class="tablewrap" style="margin-top:10px"><table class="yt"><thead><tr><th rowspan="2">הפסקה</th><th rowspan="2">חצר / מגרש</th>'+days.map(d=>'<th colspan="2">'+D[d]+'</th>').join('')+'</tr><tr>'+days.map(()=>'<th>שכבה</th><th>תורן אחראי</th>').join('')+'</tr></thead><tbody>';
+  [['b1','הפסקה ראשונה (10)'],['b2','הפסקה שנייה (12)']].forEach(([b,label])=>{
+    const sh=shiftOf(b);if(!sh)return;
+    const n=rows.length+1;
+    h+='<tr class="ahm sep"><th class="brk" rowspan="'+n+'">'+label+'</th><th class="yn">אחראי משמרת (אחמ"ש)</th>'+days.map(d=>{
+      if(!sh.days.includes(d))return '<td class="off" colspan="2"></td>';
+      const k=b+'@'+d+'@ahmash';return '<td>—</td><td class="nm'+(A[k]?'':' empty')+'" data-act="cell" data-k="'+k+'">'+(nm(k)||'חסר')+'</td>'}).join('')+'</tr>';
+    rows.forEach(r=>{
+      h+='<tr><th class="yn">'+esc(r.name)+'</th>'+days.map(d=>{
+        if(!sh.days.includes(d))return '<td class="off" colspan="2"></td>';
+        const v=((Y[b]||{})[r.key]||[])[d]||'',c=layCls(v),k=b+'@'+d+'@'+r.st;
+        const stOn=S.cfg.stations.some(x=>x.id===r.st);
+        return '<td class="ly '+c+'" data-act="yEdit" data-b="'+b+'" data-y="'+esc(r.key)+'" data-d="'+d+'" title="עריכת שכבה">'+esc(v)+'</td>'+
+          '<td class="nm '+c+(stOn&&!A[k]?' empty':'')+'"'+(stOn?' data-act="cell" data-k="'+k+'"':'')+'>'+(stOn?(nm(k)||'חסר'):'<span class="muted">עמדה כבויה</span>')+'</td>'}).join('')+'</tr>';
+    });
+  });
+  h+='</tbody></table></div><div class="legend" style="margin-top:8px">'+[...LAY].map(l=>'<span class="L-'+l+'">שכבה '+l+'׳</span>').join('')+'<span class="L-multi">כמה שכבות</span></div></div>';
+  return h;
+}
+function yardModal(){
+  const M=S.modal,cur=M.v;
+  const letters=T.layerLetters(cur),desc=(String(cur).match(/^(.*?)\s*\(/)||[])[1]||(letters?'':cur);
+  return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" data-act="noop"><div class="mhead">'+esc(M.yname)+' · '+(M.b==='b1'?'הפסקה ראשונה':'הפסקה שנייה')+' · '+D[M.d]+'</div><div class="mbody">'+
+   '<b>איזו שכבה?</b><div class="chips">'+[...LAY].map(l=>'<label class="chip L-'+l+'" style="font-size:18px;padding:6px 14px"><input type="checkbox" data-ch="yl" value="'+l+'"'+(letters.includes(l)?' checked':'')+'> '+l+'</label>').join('')+'</div>'+
+   '<label class="small">תיאור (רשות), למשל "הפסקה פעילה"<input type="text" id="ydesc" class="fsel" value="'+esc(desc)+'"></label>'+
+   '<div class="small muted">השינוי משפיע על השיבוץ: התורן מעדיף להיות ליד השכבה שלו. אחרי השינוי — "הרצת שיבוץ".</div>'+
+   '</div><div class="mfoot"><button class="btn sec sm" data-act="close">ביטול</button><button class="btn sec sm" data-act="yClear">ריק</button><button class="btn sm" data-act="ySave">שמירה</button></div></div></div>';
+}
+function setYard(b,key,d,val){
+  const Y=S.data.yards=S.data.yards||JSON.parse(JSON.stringify(T.DEFAULT_CONFIG.yards));
+  Y[b]=Y[b]||{};Y[b][key]=(Y[b][key]||[]).slice();while(Y[b][key].length<6)Y[b][key].push('');Y[b][key][d]=val;
+  S.data.plan.stale=true;S.modal=null;recompute();save();render();toast('נשמר · כדאי להריץ שיבוץ מחדש');
+}
+async function yardsImport(){
+  toast('קורא את הגיליון…');
+  let values;
+  try{const j=await sheetJSONP(S.data.sheet,'חלוקת מגרשים וחצרות');values=j.table.rows.map(r=>(r.c||[]).map(c=>c?(c.v==null?'':String(c.v)):''))}
+  catch(e){S.modal={kind:'import',err:e.message};render();return}
+  const KEY=[[/משולב/,'מגרש משולב'],[/סינטטי/,'דשא סינטטי'],[/פינג/,'פינג פונג + תחתון'],[/כדורסל/,'כדורסל'],[/עליון/,'מגרש עליון'],[/הדשא הגדול|דשא גדול/,'דשא גדול']];
+  const Y={b1:{},b2:{}};let b=null,n=0;
+  values.forEach(r=>{const a=String(r[0]||''),y=String(r[1]||'');
+    if(/ראשונה/.test(a))b='b1';else if(/שני/.test(a)&&/הפסקה/.test(a))b='b2';
+    const k=(KEY.find(([re])=>re.test(y))||[])[1];
+    if(b&&k){Y[b][k]=[2,4,6,8,10,12].map(i=>String(r[i]||'').trim());n++}});
+  if(n<6){toast('לא זיהיתי את מבנה הגיליון');return}
+  S.data.yards=Y;S.data.plan.stale=true;recompute();await save(true);render();toast('חלוקת החצרות עודכנה מהגיליון ('+n+' שורות)');
+}
+function printYards(){
+  const st=document.createElement('style');st.id='pgYards';st.textContent='@page{size:A4 landscape;margin:7mm}';document.head.appendChild(st);
+  document.documentElement.classList.add('print-yards');
+  const done=()=>{document.documentElement.classList.remove('print-yards');const x=document.getElementById('pgYards');if(x)x.remove();window.removeEventListener('afterprint',done)};
+  window.addEventListener('afterprint',done);setTimeout(()=>{window.print();setTimeout(done,1500)},50);
+}
+
+/* ---------- גרסאות ---------- */
+const snapOf=()=>({plan:{assign:S.data.plan.assign||{},locked:S.data.plan.locked||{},at:S.data.plan.at||null},rules:S.data.rules||[],stations:S.data.stations||{},shifts:S.data.shifts||{},yards:S.data.yards||null});
+async function addVersion(label){try{await rpc('toranut_version_add',{p_phone:S.phone,p_label:label,p_stats:S.R?S.R.stats:null,p_snap:snapOf()});S.versions=null}catch(e){toast('שמירת הגרסה נכשלה: '+e.message)}}
+async function loadVersions(){try{S.versions=await rpc('toranut_versions_list',{p_phone:S.phone})||[]}catch(e){S.versions=[];toast('טעינת הגרסאות נכשלה')}render()}
+const fmtAt=t=>new Date(t).toLocaleString('he-IL',{weekday:'short',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
+function viewHist(){
+  if(!S.versions){loadVersions();return '<div class="card"><h1>גרסאות</h1><p class="muted">טוען…</p></div>'}
+  let h='<div class="card topbar"><div><h1>גרסאות</h1><div class="muted small">כל "הרצת שיבוץ" נשמרת כאן אוטומטית. אפשר לצפות בכל גרסה ולשחזר אותה — לפני כל שחזור המצב הנוכחי נשמר כגרסה, כך ששום דבר לא הולך לאיבוד.</div></div>'+
+    '<div class="row noprint"><input type="text" id="vlabel" class="fsel" placeholder="שם לגרסה (רשות)" style="max-width:220px"><button class="btn sm" data-act="vSave">שמירת גרסה עכשיו</button></div></div>';
+  if(!S.versions.length)return h+'<div class="card"><p>עוד אין גרסאות. הן ייווצרו בהרצת השיבוץ הבאה.</p></div>';
+  h+='<div class="card"><div class="list">'+S.versions.map((v,i)=>{const st=v.stats||{};
+    return '<div class="item '+(st.open?'orange':'green')+'"><div class="ver"><div><b>'+esc(fmtAt(v.at))+'</b> · '+esc(v.label||'')+(i===0?' <span class="chip">האחרונה</span>':'')+
+      '<div class="small muted">'+esc(v.by||'')+(st.demand?' · שובצו '+st.filled+'/'+st.demand+(st.open?' · <span style="color:var(--red)">חסרות '+st.open+'</span>':' · הכול מאויש'):'')+'</div></div>'+
+      '<div class="row"><button class="btn sec sm" data-act="vView" data-id="'+v.id+'">צפייה בלוח</button><button class="btn sec sm" data-act="vRestore" data-id="'+v.id+'">שחזור</button></div></div></div>'}).join('')+'</div></div>';
+  return h;
+}
+function previewBar(){
+  if(!S.preview)return '';
+  const cur=S.data.plan.assign||{},old=(S.preview.snap.plan||{}).assign||{};
+  const keys=new Set([...Object.keys(cur),...Object.keys(old)]);let diff=0;keys.forEach(k=>{if(cur[k]!==old[k])diff++});
+  return '<div class="preview-bar noprint"><div><b>צפייה בגרסה מ־'+esc(fmtAt(S.preview.meta.at))+'</b> · '+esc(S.preview.meta.label||'')+' · '+diff+' משבצות שונות מהשיבוץ הנוכחי · קריאה בלבד</div>'+
+    '<div class="row"><button class="btn sm" data-act="vRestore" data-id="'+S.preview.meta.id+'" style="background:#fff;color:#2b2f6b">שחזור הגרסה הזו</button><button class="btn sec sm" data-act="vExit">חזרה לנוכחית</button></div></div>';
+}
+async function viewVersion(id){
+  const meta=(S.versions||[]).find(v=>String(v.id)===String(id));
+  try{const snap=await rpc('toranut_version_get',{p_phone:S.phone,p_id:+id});if(!snap)throw new Error('לא נמצאה');
+    S.preview={meta,snap};S.view='board';S.shiftTab='all';S.focus=null;S.onlyEmpty=false;recompute();render();window.scrollTo(0,0)}catch(e){toast('טעינת הגרסה נכשלה: '+e.message)}
+}
+async function restoreVersion(id){
+  const meta=(S.versions||[]).find(v=>String(v.id)===String(id))||{at:new Date()};
+  let snap=S.preview&&String(S.preview.meta.id)===String(id)?S.preview.snap:null;
+  try{if(!snap)snap=await rpc('toranut_version_get',{p_phone:S.phone,p_id:+id});
+    S.preview=null;recompute();await addVersion('לפני שחזור לגרסה מ־'+fmtAt(meta.at));
+    S.data.plan={assign:(snap.plan||{}).assign||{},locked:(snap.plan||{}).locked||{},at:(snap.plan||{}).at||null,stats:null};
+    if(snap.rules)S.data.rules=snap.rules;if(snap.stations)S.data.stations=snap.stations;if(snap.shifts)S.data.shifts=snap.shifts;if(snap.yards)S.data.yards=snap.yards;
+    S.modal=null;recompute();S.data.plan.stats=S.R.stats;await save(true);S.versions=null;S.view='board';render();toast('הגרסה שוחזרה. המצב הקודם נשמר בגרסאות.')}
+  catch(e){toast('השחזור נכשל: '+e.message)}
+}
+
 /* ---------- עמדות ---------- */
 function viewStations(){
   const ov=S.data.stations||{};
@@ -490,6 +616,7 @@ function renderModal(){
   if(S.modal.kind==='rule')return renderRuleModal();
   if(S.modal.kind==='conflict')return renderConflictModal();
   if(S.modal.kind==='place')return placeModal();
+  if(S.modal.kind==='yard')return yardModal();
   if(S.modal.kind==='import')return importModal();
   if(S.modal.kind==='confirm')return '<div class="overlay" data-act="close"><div class="modal" role="alertdialog" aria-modal="true" data-act="noop"><div class="mhead">'+esc(S.modal.title)+'</div><div class="mbody"><p>'+esc(S.modal.text)+'</p></div><div class="mfoot"><button class="btn sec sm" data-act="close">ביטול</button><button class="btn sm" data-act="cyes" style="background:var(--red)">'+esc(S.modal.yes)+'</button></div></div></div>';
   const M=S.modal,[sid,dd,stid]=M.k.split('@'),sh=shiftOf(sid),st=stOf(stid),d=+dd;
@@ -513,7 +640,7 @@ function run(){
   setTimeout(()=>{
     const r=T.solve(config(),S.data.staff,S.tt,{iterations:40,locked:S.data.plan.locked||{},seed:Date.now()%997});
     S.data.plan.assign=r.assign;S.data.plan.at=new Date().toISOString();S.data.plan.stats=r.stats;delete S.data.plan.stale;
-    S.busy=false;recompute();save(true);render();toast('השיבוץ הסתיים: '+r.stats.filled+' מתוך '+r.stats.demand+' עמדות');
+    S.busy=false;recompute();save(true).then(()=>addVersion('הרצת שיבוץ'));render();toast('השיבוץ הסתיים: '+r.stats.filled+' מתוך '+r.stats.demand+' עמדות · נשמר כגרסה');
   },30);
 }
 function csv(){
@@ -603,7 +730,18 @@ function rf(el){
 root.addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const a=b.dataset.act;
-  if(a==='nav'){S.view=b.dataset.v;render();window.scrollTo(0,0)}
+  if(S.preview&&!(a==='cyes'&&S.modal&&S.modal.restore)&&/^(run|import|yImport|pick|clear|unlock|place|placeAt|fix|kFix|radd|redit|rdel|rreset|rsave|rconfirm|cyes|yEdit|ySave|yClear|impPaste|vSave)$/.test(a)){toast('זו גרסה ישנה (קריאה בלבד). לחצו "שחזור" כדי לעבוד עליה, או "חזרה לנוכחית".');return}
+  if(S.preview&&a==='cell'){toast('קריאה בלבד — זו גרסה ישנה');return}
+  if(a==='printYards'){printYards();return}
+  if(a==='yImport'){yardsImport();return}
+  if(a==='yEdit'){const r=T.DEFAULT_CONFIG.yardRows.find(x=>x.key===b.dataset.y);S.modal={kind:'yard',b:b.dataset.b,y:b.dataset.y,yname:r?r.name:b.dataset.y,d:+b.dataset.d,v:((S.cfg.yards[b.dataset.b]||{})[b.dataset.y]||[])[+b.dataset.d]||''};render();return}
+  if(a==='ySave'){const M=S.modal,l=[...document.querySelectorAll('input[data-ch=yl]:checked')].map(x=>x.value).join('+'),dsc=(document.getElementById('ydesc')||{}).value||'';setYard(M.b,M.y,M.d,dsc.trim()?(l?dsc.trim()+' ('+l.replace(/\+/g,'-')+')':dsc.trim()):l);return}
+  if(a==='yClear'){const M=S.modal;setYard(M.b,M.y,M.d,'');return}
+  if(a==='vView'){viewVersion(b.dataset.id);return}
+  if(a==='vExit'){S.preview=null;recompute();render();return}
+  if(a==='vRestore'){const id=b.dataset.id,meta=(S.versions||[]).find(v=>String(v.id)===String(id));S.modal={kind:'confirm',title:'שחזור גרסה',text:'לשחזר את הגרסה מ־'+(meta?fmtAt(meta.at):'')+'? השיבוץ, הכללים וחלוקת החצרות יחזרו למצב של אז. המצב הנוכחי יישמר קודם כגרסה.',yes:'לשחזר',fn:null,restore:id};render();return}
+  if(a==='vSave'){const l=((document.getElementById('vlabel')||{}).value||'').trim()||'שמירה ידנית';addVersion(l).then(()=>{toast('הגרסה נשמרה');loadVersions()});return}
+  if(a==='nav'){S.view=b.dataset.v;if(S.view==='hist')S.versions=null;render();window.scrollTo(0,0)}
   else if(a==='logout'){try{localStorage.removeItem('milui_phone')}catch(x){}S.phone=null;S.data=null;render()}
   else if(a==='run')run();
   else if(a==='import'){S.modal=null;render();importSheet()}
@@ -639,6 +777,7 @@ root.addEventListener('click',async e=>{
   else if(a==='rconfirm')commitRule(S.modal.r,b.dataset.c);
   else if(a==='rdel'){const r=ruleOf(b.dataset.r);S.modal={kind:'confirm',title:'מחיקת כלל',text:T.describe(r,S.data.staff),yes:'למחוק',fn:()=>{S.data.rules=S.data.rules.filter(x=>x.id!==r.id)}};render()}
   else if(a==='rreset'){S.modal={kind:'confirm',title:'איפוס לכללי הגיליון',text:'כל הכללים שנוספו באתר והחריגים האישיים יימחקו. להמשיך?',yes:'לאפס',fn:()=>{S.data.rules=T.defaultRules(S.data.staff);S.data.rulesFrom='גיליון "כללים" · 6.11.2026'}};render()}
+  else if(a==='cyes'&&S.modal.restore){restoreVersion(S.modal.restore)}
   else if(a==='cyes'){S.modal.fn();S.modal=null;S.data.plan.stale=true;recompute();save(true);render();toast('בוצע')}
 });
 root.addEventListener('change',e=>{
@@ -646,6 +785,8 @@ root.addEventListener('change',e=>{
   if(el.id==='csvFile'&&el.files&&el.files[0]){const f=el.files[0],r=new FileReader();r.onload=()=>applyImport(parseCSV(String(r.result).replace(/^\ufeff/,'')));r.readAsText(f,'utf-8');return}
   if(el.dataset.rf&&S.modal&&S.modal.r){if(/^(n|note|text)$/.test(el.dataset.rf))return;rf(el);render();return}
   const ch=el.dataset.ch;if(!ch)return;
+  if(S.preview&&!/^(focus|onlyEmpty|release|yl)$/.test(ch)){toast('קריאה בלבד — זו גרסה ישנה');render();return}
+  if(ch==='yl')return;
   if(ch==='focus'){S.focus=el.value||null;render();return}
   if(ch==='onlyEmpty'){S.onlyEmpty=el.checked;render();return}
   if(ch==='release'){S.modal.release=el.value;return}
