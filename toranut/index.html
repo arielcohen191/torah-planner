@@ -122,6 +122,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .ver{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
 .preview-bar{background:#2b2f6b;color:#fff;border-radius:var(--r-md);padding:12px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 .preview-bar .btn.sec{background:#fff}
+.printonly{display:none}@media print{.printonly{display:block;margin-top:6px;font-size:10px;color:#555}}
+td.cell.merged{background:#eef2f6;color:var(--ink-muted);font-size:12px;cursor:default}
 html.print-yards main>*:not(#yardsCard){display:none!important}
 html.print-yards #yardsCard{padding:0}
 @media print{html.print-yards body{font-size:10px}html.print-yards .yt{font-size:11px;min-width:0}html.print-yards .yt th.yn{min-width:0;width:160px;font-size:11px}html.print-yards .yt td.nm{min-width:0;font-size:11px}html.print-yards .yt td.ly{font-size:12.5px}html.print-yards .yt tr{break-inside:avoid}html.print-yards #yardsCard{break-inside:auto}
@@ -160,10 +162,11 @@ function config(){
   const src=S.preview?S.preview.snap:S.data;
   if(S.preview){c.rules=src.rules||[]}else c.rules=S.data.rules||[];
   const yd=(S.preview?src.yards:null)||S.data.yards;if(yd)c.yards=yd;
+  c.skip={};c.mergeInto={};(S.data.merges||[]).forEach(m=>{if(m.until&&m.until<ymd(Date.now()))return;c.skip[m.key]=true;(c.mergeInto[m.into]=c.mergeInto[m.into]||[]).push(m.key)});
   return c;
 }
 function curAssign(){return S.preview?((S.preview.snap.plan||{}).assign||{}):(S.data.plan.assign||{})}
-function recompute(){S.cfg=config();S.C=T.compile(S.cfg.rules,S.data.staff);S.R=T.report(S.cfg,S.data.staff,S.tt,curAssign())}
+function recompute(){_brk=null;S.cfg=config();S.C=T.compile(S.cfg.rules,S.data.staff);S.R=T.report(S.cfg,S.data.staff,S.tt,curAssign())}
 
 /* גרסה 2: הכללים יושבים ב־data.rules ולא על אנשי הצוות */
 function migrate(){
@@ -177,7 +180,7 @@ function migrate(){
 }
 async function load(){
   const r=await rpc('toranut_load',{p_phone:S.phone});
-  S.me=r.me;S.tt=r.tt||{};S.data=r.data||{};S.at=r.updated_at;
+  S.me=r.me;S.tt=r.tt||{};S.data=r.data||{};S.at=r.updated_at;S.abs=r.absences||[];S.phones=r.phones||{};_brk=null;
   if(!S.data.plan)S.data.plan={assign:{},locked:{}};
   if(!S.data.plan.locked)S.data.plan.locked={};
   if(migrate())await save(true);
@@ -207,15 +210,15 @@ function kpi(cls,title,sub,n,act,go){
 }
 const fbtn=(id,label,cls)=>'<button type="button" class="'+(cls||'lnk')+'" data-act="focus" data-id="'+id+'" title="הצגה בלוח">'+label+'</button>';
 function emptyKeys(){const A=S.data.plan.assign||{};return S.R.unfilled.filter(k=>!A[k])}
-const ICON={sum:'<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',board:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 4v16"/>',staff:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.6c1.7.8 2.7 2.6 3 5.4"/>',yards:'<path d="M3 20h18M5 20V9l7-5 7 5v11"/><path d="M9 20v-6h6v6"/>',hist:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',rules:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',st:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'};
+const ICON={sum:'<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',board:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 4v16"/>',staff:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.6c1.7.8 2.7 2.6 3 5.4"/>',yards:'<path d="M3 20h18M5 20V9l7-5 7 5v11"/><path d="M9 20v-6h6v6"/>',hist:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',abs:'<circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c.7-3.5 3.3-5.5 6.5-5.5 1.3 0 2.5.3 3.5.9"/><path d="M16 15l5 5M21 15l-5 5"/>',tt:'<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 3v3M16 3v3M12 13v4M10 15h4"/>',rules:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',st:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'};
 const icon=k=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICON[k]+'</svg>';
 const runBtn=(cls)=>'<button class="btn'+(cls||'')+'" data-act="run"'+(S.busy?' disabled':'')+'>'+(S.busy?'מריץ…':'הרצת שיבוץ')+'</button>';
 
 function render(){
   if(!S.phone)return renderLogin();
   if(!S.data){root.innerHTML='<div class="loading">טוען…</div>';return}
-  const nav=[['sum','איפה תקוע'],['board','לוח'],['yards','חצרות'],['staff','צוות'],['rules','כללים'],['st','עמדות'],['hist','גרסאות']];
-  const body=previewBar()+{sum:viewSum,board:viewBoard,yards:viewYards,staff:viewStaff,rules:viewRules,st:viewStations,hist:viewHist}[S.view]();
+  const nav=[['sum','איפה תקוע'],['board','לוח'],['yards','חצרות'],['staff','צוות'],['rules','כללים'],['st','עמדות'],['abs','היעדרויות'],['tt','מערכת'],['hist','גרסאות']];
+  const body=previewBar()+alertBar()+{sum:viewSum,board:viewBoard,yards:viewYards,staff:viewStaff,rules:viewRules,st:viewStations,abs:viewAbs,tt:viewTT,hist:viewHist}[S.view]();
   const sy=window.scrollY,my=document.querySelector('.modal .mbody');const mScroll=my?my.scrollTop:0;
   root.innerHTML='<div class="app"><nav class="rail" aria-label="ניווט"><div class="brand">תורנויות<br>חצר</div>'+
     nav.map(n=>'<button type="button" data-act="nav" data-v="'+n[0]+'"'+(S.view===n[0]?' aria-current="page"':'')+'>'+icon(n[0])+n[1]+'</button>').join('')+
@@ -352,9 +355,12 @@ function viewBoard(){
        const k=sh.id+'@'+d+'@'+st.id,sid=A[k],ly=T.stationLayer(S.cfg,st,sh,d);
        let extra='';
        if(F){if(sid===F.id)extra=' me';else if(!mySlotAt(F.id,sh.id,d)&&!canPlace(F,sh.id,d,st.id))extra=' can'}
-       return '<td class="cell'+(sid?'':' empty')+extra+'" data-act="cell" data-k="'+k+'">'+(sid&&P[sid]?esc(P[sid].name)+(LK[k]?' <span class="lk">●</span>':''):'')+(ly&&!st.floor?'<span class="ly">שכבה '+esc(ly)+'</span>':'')+'</td>'}).join('')+'</tr>').join('')+
+       if(S.cfg.skip[k]){const m=(S.data.merges||[]).find(x=>x.key===k);return '<td class="cell merged">אוחד לפטרול עם<br>'+esc(m?(stOf(m.into.split('@')[2])||{name:''}).name.split(' (')[0]:'')+'</td>'}
+       const mi=S.cfg.mergeInto[k];
+       return '<td class="cell'+(sid?'':' empty')+extra+'" data-act="cell" data-k="'+k+'">'+(sid&&P[sid]?holderHtml(k,sid,P)+(LK[k]?' <span class="lk">●</span>':''):'')+(mi?'<span class="ly" style="color:var(--brand-dark)">+ פטרול גם ב'+mi.map(x=>esc(stOf(x.split('@')[2]).name.split(' (')[0])).join(', ')+'</span>':'')+(ly&&!st.floor?'<span class="ly">שכבה '+esc(ly)+'</span>':'')+'</td>'}).join('')+'</tr>').join('')+
      '</tbody></table></div></div>';
   });
+  h+='<div class="printonly">שיבוץ: '+(S.data.plan.at?stamp(S.data.plan.at):'—')+' · הודפס: '+stamp(Date.now())+'</div>';
   return h;
 }
 function placeModal(){
@@ -501,7 +507,7 @@ const LAY='אבגדהו';
 function layCls(txt){const l=T.layerLetters(txt);return !l?'':l.length>1?'L-multi':'L-'+l}
 function viewYards(){
   const A=curAssign(),P=byId(),Y=S.cfg.yards,rows=T.DEFAULT_CONFIG.yardRows,days=[0,1,2,3,4,5];
-  const nm=k=>{const id=A[k];return id&&P[id]?esc(P[id].name):''};
+  const nm=k=>{if(S.cfg.skip[k])return '<span class="muted">אוחד לפטרול</span>';const id=A[k];return id&&P[id]?holderHtml(k,id,P,true):''};
   let h='<div class="card" id="yardsCard"><div class="topbar"><div><h1>חלוקת מגרשים וחצרות · כנפי רוח בנים · תשפ"ז</h1><div class="muted small">התורן האחראי נלקח מהשיבוץ'+(S.data.plan.at?' (הרצה '+new Date(S.data.plan.at).toLocaleDateString('he-IL')+')':'')+'<span class="noprint"> · לחיצה על שכבה: עריכה · לחיצה על שם: החלפת תורן</span></div></div>'+
     '<div class="row noprint"><button class="btn sm" data-act="printYards">הדפסה צבעונית (דף אחד)</button><button class="btn sec sm" data-act="yImport">עדכון מהגיליון</button></div></div>';
   h+='<div class="tablewrap" style="margin-top:10px"><table class="yt"><thead><tr><th rowspan="2">הפסקה</th><th rowspan="2">חצר / מגרש</th>'+days.map(d=>'<th colspan="2">'+D[d]+'</th>').join('')+'</tr><tr>'+days.map(()=>'<th>שכבה</th><th>תורן אחראי</th>').join('')+'</tr></thead><tbody>';
@@ -520,7 +526,7 @@ function viewYards(){
           '<td class="nm '+c+(stOn&&!A[k]?' empty':'')+'"'+(stOn?' data-act="cell" data-k="'+k+'"':'')+'>'+(stOn?(nm(k)||'חסר'):'<span class="muted">עמדה כבויה</span>')+'</td>'}).join('')+'</tr>';
     });
   });
-  h+='</tbody></table></div><div class="legend" style="margin-top:8px">'+[...LAY].map(l=>'<span class="L-'+l+'">שכבה '+l+'׳</span>').join('')+'<span class="L-multi">כמה שכבות</span></div></div>';
+  h+='</tbody></table></div><div class="printonly">שיבוץ: '+(S.data.plan.at?stamp(S.data.plan.at):'—')+' · הודפס: '+stamp(Date.now())+'</div><div class="legend" style="margin-top:8px">'+[...LAY].map(l=>'<span class="L-'+l+'">שכבה '+l+'׳</span>').join('')+'<span class="L-multi">כמה שכבות</span></div></div>';
   return h;
 }
 function yardModal(){
@@ -598,15 +604,357 @@ async function restoreVersion(id){
   catch(e){toast('השחזור נכשל: '+e.message)}
 }
 
+/* =====================================================================
+   היעדרויות ארוכות · מחליפים זמניים · עדכון מערכת מקובץ · תיקון מינימלי · הודעות
+   ===================================================================== */
+const ymd=d=>{const x=new Date(d),z=n=>String(n).padStart(2,'0');return x.getFullYear()+'-'+z(x.getMonth()+1)+'-'+z(x.getDate())};
+const today=()=>ymd(Date.now());
+const addDays=(s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return ymd(d)};
+const heDate=s=>s?new Date(s+'T12:00:00').toLocaleDateString('he-IL',{day:'numeric',month:'numeric'}):'';
+const slotLabel=k=>{const [sh,d,st]=k.split('@');return D[+d]+' · '+((shiftOf(sh)||{label:sh}).label.split(' (')[0])+' · '+(stOf(st)||{name:st}).name.split(' (')[0]};
+
+/* ---------- היעדרויות ---------- */
+function absences(){
+  const out=[];
+  (S.abs||[]).forEach(a=>{const s=S.data.staff.find(x=>x.tt===a.name);if(s)out.push({key:'m'+a.id,id:a.id,src:'m',staffId:s.id,from:a.from,to:a.to||null})});
+  (S.data.absLocal||[]).forEach(a=>out.push({key:'l'+a.id,id:a.id,src:'l',staffId:a.staffId,from:a.from,to:a.to||null}));
+  return out;
+}
+const absActiveOn=(a,d)=>a.from<=d&&(!a.to||a.to>=d);
+function absentNow(){const t=today(),m={};absences().forEach(a=>{if(absActiveOn(a,t))m[a.staffId]=a});return m}
+/** מחליפים בתוקף: {key:{id,abs}} כשההיעדרות עדיין פעילה */
+function validSubs(){
+  const live={};absences().forEach(a=>{if(!a.to||a.to>=today())live[a.key]=a});
+  const out={},sub=(S.data.plan.subs||{});
+  Object.keys(sub).forEach(k=>{const x=sub[k];if(x&&live[x.abs]&&(S.data.plan.assign||{})[k]===live[x.abs].staffId)out[k]=x});
+  return out;
+}
+function dutiesOf(id){const A=S.data.plan.assign||{};return Object.keys(A).filter(k=>A[k]===id)}
+function needSubs(){
+  const now=absentNow(),V=validSubs(),need=[];
+  Object.values(now).forEach(a=>dutiesOf(a.staffId).forEach(k=>{if(!V[k])need.push(k)}));
+  return need;
+}
+/** איך להציג מחזיק משבצת בלוח/בחצרות (כולל מחליף ונעדר) */
+function holderHtml(k,sid,P,short){
+  if(!sid||!P[sid])return '';
+  const now=S.preview?{}:absentNow();
+  if(now[sid]){const v=validSubs()[k];
+    if(v&&P[v.id])return esc(P[v.id].name)+'<span class="ly" style="color:var(--brand-dark)">מחליף/ה'+(short?'':' · במקום '+esc(P[sid].name))+'</span>';
+    return '<span style="text-decoration:line-through;opacity:.6">'+esc(P[sid].name)+'</span><span class="ly" style="color:var(--red);font-weight:700">נעדר/ת · חסר מחליף</span>'}
+  return esc(P[sid].name);
+}
+function alertBar(){
+  if(S.preview||!S.data)return '';
+  const need=needSubs(),t=today(),soon=absences().filter(a=>a.to&&a.to>=t&&a.to<=addDays(t,2)&&!(S.data.absOk||{})[a.key+'|'+a.to]);
+  const P=byId(),items=[];
+  if(need.length)items.push('<button type="button" class="lnk" data-act="goAbs" style="color:#fff">'+(need.length===1?'תורנות אחת של נעדר/ת':need.length+' תורנויות של נעדרים')+' בלי מחליף — לטיפול ←</button>');
+  soon.forEach(a=>items.push('<button type="button" class="lnk" data-act="goAbs" style="color:#fff">'+esc((P[a.staffId]||{}).name||'')+' אמור/ה לחזור ב־'+heDate(addDays(a.to,1))+' — לאשר או להאריך ←</button>'));
+  const br=brokenCount();
+  if(br)items.push('<button type="button" class="lnk" data-act="fixNow" style="color:#fff">'+(br===1?'שיבוץ אחד כבר לא תקין':br+' שיבוצים כבר לא תקינים')+' (שינוי מערכת או כללים) — הצעת תיקון מינימלי ←</button>');
+  return items.length?'<div class="preview-bar noprint" style="background:#9a3412">'+items.join('<span style="opacity:.5">|</span>')+'</div>':'';
+}
+let _brk=null;function brokenCount(){if(_brk!==null)return _brk;try{_brk=T.repair(S.cfg,S.data.staff,S.tt,S.data.plan.assign||{},S.data.plan.locked||{}).broken.length}catch(e){_brk=0}return _brk}
+
+function viewAbs(){
+  const P=byId(),t=today(),list=absences().filter(a=>!a.to||a.to>=addDays(t,-2)).sort((a,b)=>a.from<b.from?-1:1),V=validSubs();
+  const people=S.data.staff.slice().sort((a,b)=>a.name.localeCompare(b.name,'he'));
+  let h='<div class="card topbar"><div><h1>היעדרויות ארוכות</h1><div class="muted small">מילואים, חופשת לידה, מחלה ממושכת. הלוח הקבוע לא משתנה — רק התורנויות של הנעדר/ת מקבלות מחליף/ה זמני/ת, וכשההיעדרות נגמרת הכול חוזר לבד. היעדרויות של מורים נשמרות גם בכלי מילוי המקום. בלוח ובהדפסה מופיע רק "נעדר/ת", בלי סיבה.</div></div></div>';
+  h+='<div class="card"><h2>הוספת היעדרות</h2><div class="row"><select id="abWho" class="fsel" style="max-width:260px"><option value="">בחירת איש צוות</option>'+people.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('')+'</select>'+
+    '<label class="small">מתאריך <input type="date" id="abFrom" class="fsel" value="'+t+'" style="width:auto"></label><label class="small">עד תאריך <input type="date" id="abTo" class="fsel" style="width:auto"></label>'+
+    '<label class="small"><input type="checkbox" id="abOpen"> עד הודעה חדשה</label><button class="btn sm" data-act="abAdd">הוספה</button></div></div>';
+  if(!list.length)return h+'<div class="card"><p class="muted">אין היעדרויות ארוכות פעילות.</p></div>';
+  list.forEach(a=>{
+    const s=P[a.staffId],act=absActiveOn(a,t),duties=dutiesOf(a.staffId),soon=a.to&&a.to>=t&&a.to<=addDays(t,2);
+    h+='<div class="card"><div class="topbar"><div><h2 style="margin:0">'+esc(s?s.name:'?')+' <span class="chip">'+(act?'נעדר/ת עכשיו':a.from>t?'מתחיל/ה ב־'+heDate(a.from):'הסתיים')+'</span></h2>'+
+      '<div class="small muted">'+heDate(a.from)+' – '+(a.to?heDate(a.to):'עד הודעה חדשה')+(a.src==='l'?' · נשמר בתורנויות בלבד (לא במערכת השעות של מילוי מקום)':'')+'</div></div>'+
+      '<div class="row"><input type="date" class="fsel" id="ext-'+a.key+'" value="'+(a.to||'')+'" style="width:auto"><button class="btn sec sm" data-act="abEnd" data-k="'+a.key+'">עדכון תאריך סיום</button>'+
+      '<button class="btn sec sm" data-act="abOpenEnd" data-k="'+a.key+'">עד הודעה חדשה</button><button class="btn sec sm" data-act="abBack" data-k="'+a.key+'">חזר/ה היום</button></div></div>';
+    if(soon&&!(S.data.absOk||{})[a.key+'|'+a.to])h+='<div class="note small" style="margin-top:8px"><b>אמור/ה לחזור ב־'+heDate(addDays(a.to,1))+'.</b> אם ההיעדרות הוארכה — לעדכן תאריך. אם חוזר/ת — מומלץ לבדוק שהמערכת שלו/ה לא השתנתה בזמן ההיעדרות (מסך "מערכת"). <button class="btn sm" data-act="abOk" data-k="'+a.key+'" data-to="'+a.to+'">מאשר/ת חזרה</button></div>';
+    h+='<h3 style="margin-top:12px">התורנויות ('+duties.length+')</h3>'+(duties.length?'<div class="list">'+duties.map(k=>{const v=V[k];
+      return '<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0"><span>'+esc(slotLabel(k))+'</span><span>'+(v&&P[v.id]?'<b>'+esc(P[v.id].name)+'</b> ':'<span style="color:var(--red);font-weight:600">בלי מחליף</span> ')+
+        '<button class="btn sec sm" data-act="subPick" data-k="'+k+'" data-a="'+a.key+'">'+(v?'החלפה':'בחירת מחליף')+'</button>'+(v?' <button class="btn sec sm" data-act="subClear" data-k="'+k+'">ביטול</button>':'')+'</span></div>'}).join('')+'</div>'+
+      '<div class="row" style="margin-top:10px"><button class="btn sm" data-act="subAuto" data-a="'+a.key+'">מילוי אוטומטי של כל המחליפים</button></div>':'<p class="muted small">אין לו/ה תורנויות בלוח.</p>')+'</div>';
+  });
+  return h;
+}
+async function abAdd(){
+  const id=document.getElementById('abWho').value,from=document.getElementById('abFrom').value,open=document.getElementById('abOpen').checked,to=open?null:(document.getElementById('abTo').value||null);
+  if(!id||!from){toast('לבחור איש צוות ותאריך התחלה');return}
+  if(!open&&!to){toast('לבחור תאריך סיום או "עד הודעה חדשה"');return}
+  if(to&&to<from){toast('תאריך הסיום לפני ההתחלה');return}
+  const s=S.data.staff.find(x=>x.id===id);
+  try{
+    if(s.tt){await rpc('toranut_absence_save',{p_phone:S.phone,p_name:s.tt,p_from:from,p_to:to})}
+    else{S.data.absLocal=S.data.absLocal||[];S.data.absLocal.push({id:Date.now().toString(36),staffId:id,from,to});await save(true)}
+    await reloadKeep();toast('ההיעדרות נשמרה'+(dutiesOf(id).length?' · '+dutiesOf(id).length+' תורנויות צריכות מחליף':''));
+  }catch(e){toast('השמירה נכשלה: '+e.message)}
+}
+async function abSetEnd(key,to){
+  const a=absences().find(x=>x.key===key);if(!a)return;
+  try{
+    if(a.src==='m')await rpc('toranut_absence_set_end',{p_phone:S.phone,p_id:a.id,p_to:to});
+    else{const x=(S.data.absLocal||[]).find(y=>'l'+y.id===key);x.to=to;await save(true)}
+    await reloadKeep();toast('עודכן')
+  }catch(e){toast('העדכון נכשל: '+e.message)}
+}
+async function reloadKeep(){const v=S.view,f=S.focus;await load();S.view=v;S.focus=f;_brk=null;render()}
+function setSub(k,id,absKey){S.data.plan.subs=S.data.plan.subs||{};if(id)S.data.plan.subs[k]={id,abs:absKey};else delete S.data.plan.subs[k];save()}
+function subModal(){
+  const M=S.modal,P=byId(),absent=new Set(Object.keys(absentNow()));
+  const extra={};Object.entries(validSubs()).forEach(([k,v])=>{if(k!==M.k)extra[k]=v.id});
+  const cands=T.subCandidates(S.cfg,S.data.staff,S.tt,S.data.plan.assign||{},absent,M.k,extra).filter(c=>!c.why||M.all).slice(0,M.all?80:15);
+  return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" data-act="noop"><div class="mhead">מחליף/ה זמני/ת · '+esc(slotLabel(M.k))+'</div><div class="mbody">'+
+    '<label class="small"><input type="checkbox" data-act="subAll"'+(M.all?' checked':'')+'> להציג גם מי שלא זמין/ה</label>'+
+    (cands.length?cands.map(c=>'<button type="button" class="cand" data-act="subSet" data-id="'+c.id+'"'+(c.why?' disabled style="opacity:.5"':'')+'><span><b>'+esc(P[c.id].name)+'</b>'+(c.temp?' <small>מחליף/ה זמני/ת</small>':'')+(c.why?'<br><small style="color:var(--red)">'+esc(c.why)+'</small>':'')+'</span><small>'+c.load+'/'+c.target+(c.load>=c.target?' · מעל המכסה':'')+'</small></button>').join(''):'<p class="muted">אין אף אחד זמין בשעה הזו.</p>')+
+    '</div><div class="mfoot"><button class="btn sm" data-act="close">סגירה</button></div></div></div>';
+}
+function autoSubs(absKey){
+  const a=absences().find(x=>x.key===absKey);if(!a)return;
+  const absent=new Set(Object.keys(absentNow()));absent.add(a.staffId);
+  const V=validSubs(),extra={};Object.entries(V).forEach(([k,v])=>extra[k]=v.id);
+  const got=[],miss=[];
+  dutiesOf(a.staffId).forEach(k=>{if(V[k])return;
+    const c=T.subCandidates(S.cfg,S.data.staff,S.tt,S.data.plan.assign||{},absent,k,extra).find(x=>!x.why);
+    if(c){extra[k]=c.id;S.data.plan.subs=S.data.plan.subs||{};S.data.plan.subs[k]={id:c.id,abs:absKey};got.push({key:k,to:c.id,sub:a.staffId})}else miss.push(k)});
+  save(true);render();
+  if(got.length)openNotify(got.map(g=>({key:g.key,to:g.to,from:null,note:'החלפה זמנית'+(a.to?' עד '+heDate(a.to):'')})));
+  toast('שובצו '+got.length+' מחליפים'+(miss.length?' · '+miss.length+' בלי מועמד זמין':''));
+}
+
+/* ---------- הודעות למושפעים ---------- */
+function phoneOf(s){const p=s&&s.tt&&(S.phones||{})[s.tt];if(!p)return null;let d=String(p).replace(/\D/g,'');if(d.startsWith('0'))d='972'+d.slice(1);return d.length>=11?d:null}
+/** changes: [{key, from, to, note}] */
+function openNotify(changes){
+  const P=byId(),by={};
+  changes.forEach(c=>{
+    if(c.to){(by[c.to]=by[c.to]||{add:[],rem:[]}).add.push(slotLabel(c.key)+(c.note?' ('+c.note+')':''))}
+    if(c.from&&c.from!==c.to){(by[c.from]=by[c.from]||{add:[],rem:[]}).rem.push(slotLabel(c.key))}
+  });
+  const items=Object.keys(by).filter(id=>P[id]).map(id=>{const s=P[id],x=by[id],first=s.name.split(' ')[0];
+    const text='שלום '+first+',\nעדכון בתורנויות החצר:'+(x.add.length?'\n'+x.add.map(l=>'• '+l).join('\n'):'')+(x.rem.length?'\nכבר לא בתורנות:\n'+x.rem.map(l=>'• '+l).join('\n'):'')+'\nתודה!';
+    return {id,name:s.name,text,phone:phoneOf(s)}});
+  if(!items.length)return;
+  S.modal={kind:'notify',items,sent:{}};render();
+}
+function notifyModal(){
+  const M=S.modal;
+  return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" data-act="noop" style="max-width:640px"><div class="mhead">מי צריך לדעת ('+M.items.length+')</div><div class="mbody">'+
+    '<p class="small muted" style="margin:0">הודעה מוכנה לכל מי שהשיבוץ שלו/ה השתנה. וואטסאפ נפתח עם ההודעה; למי שאין טלפון — העתקה.</p>'+
+    M.items.map((it,i)=>'<div class="item'+(M.sent[i]?' green':'')+'"><div class="row" style="justify-content:space-between"><b>'+esc(it.name)+(M.sent[i]?' ✓':'')+'</b><span class="row">'+
+      (it.phone?'<a class="btn sm" href="https://wa.me/'+it.phone+'?text='+encodeURIComponent(it.text)+'" target="_blank" rel="noopener" data-act="nSent" data-i="'+i+'" style="background:#1f8f4e;text-decoration:none">וואטסאפ</a>':'<span class="small muted">אין טלפון</span>')+
+      '<button class="btn sec sm" data-act="nCopy" data-i="'+i+'">העתקה</button></span></div><div class="small" style="white-space:pre-line;margin-top:6px">'+esc(it.text)+'</div></div>').join('')+
+    '</div><div class="mfoot"><button class="btn sm" data-act="close">סיום</button></div></div></div>';
+}
+
+/* ---------- תיקון מינימלי: הצעה לאישור ---------- */
+function openFixPlan(reason){
+  const rep=T.repair(S.cfg,S.data.staff,S.tt,S.data.plan.assign||{},S.data.plan.locked||{});
+  if(!rep.broken.length){toast('כל השיבוצים תקינים — לא נדרש שינוי בלוח');return false}
+  const choice={};rep.unresolved.forEach(k=>choice[k]='empty');
+  S.modal={kind:'fixplan',rep,choice,reason:reason||''};render();return true;
+}
+function fixOptions(k,rep){
+  const [sh,d,st]=k.split('@'),P=byId(),C=S.C,opts=[{v:'empty',label:'להשאיר ריקה',cost:'אזור בלי השגחה בזמן הזה'}];
+  const partners=((S.data.mergeable||{})[st]||[]).filter(p=>S.cfg.stations.some(x=>x.id===p));
+  partners.forEach(p=>{const pk=sh+'@'+d+'@'+p;if(rep.assign[pk]&&P[rep.assign[pk]])opts.push({v:'merge:'+pk,label:'לאחד עם "'+stOf(p).name.split(' (')[0]+'" לפטרול אחד',cost:esc(P[rep.assign[pk]].name)+' אחראי/ת על שני האזורים'})});
+  const L={};Object.values(rep.assign).forEach(id=>L[id]=(L[id]||0)+1);
+  const busy=new Set(Object.keys(rep.assign).filter(x=>x.startsWith(sh+'@'+d+'@')).map(x=>rep.assign[x]));
+  S.data.staff.filter(s=>!busy.has(s.id)&&!T.canStand(S.cfg,s,C.P[s.id],S.tt,sh,+d,st)).sort((a,b)=>(L[a.id]||0)-(L[b.id]||0)).slice(0,3)
+    .forEach(s=>opts.push({v:'person:'+s.id,label:'להוסיף תורנות ל'+s.name,cost:'יעלה ל־'+((L[s.id]||0)+1)+' (מכסה '+C.P[s.id].target+')'+(C.P[s.id].ahmash==='can'?' · אחמ"ש':'')}));
+  if(!partners.length)opts.push({v:'none',label:'אין עמדות שהוגדרו כ"אפשר לאחד" עם העמדה הזו',cost:'אפשר להגדיר במסך "עמדות"',disabled:true});
+  return opts;
+}
+function fixPlanModal(){
+  const M=S.modal,rep=M.rep,P=byId();
+  const nm=id=>id&&P[id]?esc(P[id].name):'—';
+  let h='<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" data-act="noop" style="max-width:720px"><div class="mhead">הצעת תיקון מינימלי'+(M.reason?' · '+esc(M.reason):'')+'</div><div class="mbody">'+
+    '<p style="margin:0"><b>'+rep.broken.length+'</b> שיבוצים כבר לא תקינים. כל השאר נשאר בדיוק כמו שהוא. '+(rep.changes.length?'<b>'+rep.changes.length+'</b> שינויים, <b>'+rep.people.length+'</b> אנשים מושפעים.':'')+'</p>';
+  if(rep.lockBroken.length)h+='<div class="item orange"><b>שיבוצים ידניים (נעולים) שנשברו ('+rep.lockBroken.length+')</b><div class="small">'+rep.lockBroken.map(k=>esc(slotLabel(k))+' — '+nm((S.data.plan.assign||{})[k])+' כבר לא זמין/ה').join('<br>')+'</div><div class="small muted">הנעילה תשוחרר והמשבצת תאויש לפי ההצעה למטה.</div></div>';
+  if(rep.changes.length)h+='<div class="item green"><b>שינויים שהמערכת מציעה</b><div class="list" style="margin-top:6px">'+rep.changes.map(c=>'<div class="small">'+esc(slotLabel(c.key))+': '+nm(c.from)+' ← <b>'+nm(c.to)+'</b>'+(c.kind==='swap'?' <span class="chip">החלפה</span>':'')+'</div>').join('')+'</div></div>';
+  if(rep.unresolved.length)h+='<div class="item orange"><b>אין מי שיכול/ה — החלטה שלך ('+rep.unresolved.length+')</b>'+rep.unresolved.map(k=>
+      '<div style="margin-top:10px"><div class="small"><b>'+esc(slotLabel(k))+'</b> (היה/תה: '+nm((S.data.plan.assign||{})[k])+')</div>'+
+      fixOptions(k,rep).map(o=>'<label class="row small" style="padding:3px 0'+(o.disabled?';opacity:.6':'')+'"><input type="radio" name="fx-'+k+'" data-ch="fxopt" data-k="'+k+'" value="'+o.v+'"'+(M.choice[k]===o.v?' checked':'')+(o.disabled?' disabled':'')+'> <span>'+esc(o.label)+' <span class="muted">— '+o.cost+'</span></span></label>').join('')+'</div>').join('')+'</div>';
+  h+='</div><div class="mfoot"><button class="btn sec sm" data-act="close">ביטול</button><button class="btn sm" data-act="fixApply">אישור ושמירה</button></div></div></div>';
+  return h;
+}
+async function fixApply(){
+  const M=S.modal,rep=M.rep,old=S.data.plan.assign||{},A=Object.assign({},rep.assign),LK=Object.assign({},S.data.plan.locked||{});
+  rep.lockBroken.forEach(k=>delete LK[k]);rep.broken.forEach(k=>delete LK[k]);
+  const notes=[];
+  rep.changes.forEach(c=>notes.push({key:c.key,from:c.from,to:c.to}));
+  S.data.merges=S.data.merges||[];
+  rep.unresolved.forEach(k=>{const ch=M.choice[k]||'empty';
+    if(ch.startsWith('person:')){const id=ch.slice(7);A[k]=id;LK[k]=id;notes.push({key:k,from:old[k],to:id})}
+    else if(ch.startsWith('merge:')){S.data.merges.push({key:k,into:ch.slice(6),at:today()});notes.push({key:k,from:old[k],to:null})}
+    else notes.push({key:k,from:old[k],to:null});
+  });
+  S.data.plan.assign=A;S.data.plan.locked=LK;S.modal=null;_brk=null;recompute();S.data.plan.stats=S.R.stats;
+  await save(true);await addVersion('תיקון מינימלי'+(M.reason?' · '+M.reason:''));render();toast('נשמר · נשמר גם כגרסה');
+  openNotify(notes);
+}
+
+/* ---------- עדכון מערכת מקובץ ---------- */
+function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector('script[src="'+src+'"]'))return res();const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('טעינת ספריית אקסל נכשלה'));document.head.appendChild(s)})}
+async function readTable(file){
+  const name=file.name.toLowerCase();
+  if(/\.(xlsx|xls|xlsm|ods)$/.test(name)){
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+    const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+    return {sheets:wb.SheetNames,get:n=>XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:false,defval:''})};
+  }
+  const t=String(await file.text()).replace(/^﻿/,'');const rows=parseCSV(t);
+  return {sheets:['קובץ'],get:()=>rows};
+}
+const FIELDS=[['teacher','שם המורה',/מורה|שם|teacher/i,true],['tid','מזהה מורה (אם יש)',/מזהה|ת\.?\s?ז|קוד מורה|^id$|teacher.?id/i,false],['day','יום',/יום|day/i,true],['hour','שעה / מספר שיעור',/שעה|שיעור\s*מס|מס.?\s*שיעור|period|hour|lesson/i,true],['subject','מקצוע',/מקצוע|subject|נושא|תוכן/i,false],['cls','כיתה / קבוצה',/כית|class|קבוצ/i,false]];
+function guessHeader(rows){for(let i=0;i<Math.min(15,rows.length);i++){const r=rows[i]||[];const ne=r.filter(c=>String(c).trim()).length;if(ne>=3&&r.some(c=>/מורה|יום|שעה|teacher|day|period/i.test(c)))return i}return 0}
+function guessMap(head){const m={},used=new Set();FIELDS.forEach(([f,,re])=>{const i=head.findIndex((h,j)=>!used.has(j)&&re.test(String(h)));if(i>=0){m[f]=i;used.add(i)}});return m}
+const DAYW=[['ראשון','א',"א'",'1','sun'],['שני','ב',"ב'",'2','mon'],['שלישי','ג',"ג'",'3','tue'],['רביעי','ד',"ד'",'4','wed'],['חמישי','ה',"ה'",'5','thu'],['שישי','ו',"ו'",'6','fri']];
+function parseDay(v){let t=String(v||'').trim().toLowerCase().replace(/^יום\s*/,'').replace(/[׳"]/g,"'");if(!t)return null;
+  for(let i=0;i<6;i++)if(DAYW[i].some(w=>t===w||(w.length>2&&t.startsWith(w))))return i;return null}
+function parseHour(v){const m=String(v||'').match(/\d+/);if(!m)return null;const n=+m[0];return n>=1&&n<=10?n:null}
+function kindOf(sub){const t=String(sub||'');return /שהי/.test(t)?'שהייה':/פרטנ/.test(t)?'פרטני':/חלון/.test(t)?'חלון':/תפקיד|ריכוז|ניהול|רכז/.test(t)?'תפקיד':'שיעור'}
+const KCH={'שיעור':'L','שיעור משותף':'L','פרטני':'P','שהייה':'S','תפקיד':'T','חלון':'C'};
+function buildNewTT(rows,head,map){
+  const T2={},bad={day:[],hour:[],teacher:0};let ok=0,total=0;
+  rows.slice(head+1).forEach(r=>{if(!r||!r.some(c=>String(c).trim()))return;total++;
+    const name=String(r[map.teacher]||'').replace(/\s+/g,' ').trim(),d=parseDay(r[map.day]),h=parseHour(r[map.hour]);
+    if(!name){bad.teacher++;return}if(d==null){if(bad.day.length<4)bad.day.push(r[map.day]);return}if(h==null){if(bad.hour.length<4)bad.hour.push(r[map.hour]);return}
+    ok++;const sub=map.subject!=null?String(r[map.subject]||'').trim():'',cls=map.cls!=null?String(r[map.cls]||'').split(/[,;\/]/).map(x=>x.trim()).filter(Boolean):[];
+    const x=T2[name]||(T2[name]={tid:map.tid!=null?String(r[map.tid]||'').trim():'',slots:[],p:['........','........','........','........','........','........']});
+    const kind=kindOf(sub);x.slots.push({day:d,hour:h,kind,subject:sub||null,classes:cls,detail:null});
+    if(h<=8){const a=x.p[d].split('');if(a[h-1]==='.'||a[h-1]==='C')a[h-1]=KCH[kind]||'L';x.p[d]=a.join('')}});
+  return {T2,ok,total,bad};
+}
+function ttDiff(T2){
+  const old=Object.keys(S.tt),ids=S.data.ttIds||{},used=new Set(),match={},pairs=[],fresh=[];
+  const nn=s=>String(s).replace(/^הרב\s+/,'').replace(/[`'"׳״]/g,'').replace(/\s+/g,' ').trim().split(' ').sort().join(' ');
+  Object.keys(T2).forEach(n=>{
+    const viaId=T2[n].tid&&ids['#'+T2[n].tid],viaName=ids[n];
+    let o=(viaId&&S.tt[viaId]&&viaId)||(viaName&&S.tt[viaName]&&viaName)||old.find(x=>!used.has(x)&&nn(x)===nn(n));
+    if(o){match[n]=o;used.add(o);return}
+    const c=old.filter(x=>!used.has(x)&&(T.sameName(n,x)||T.sameName(x,n)));
+    if(c.length===1){pairs.push({n,o:c[0],ok:true});used.add(c[0]);return}
+    fresh.push(n);
+  });
+  const missing=old.filter(o=>!used.has(o));
+  const changed=[],same=[];
+  const all=Object.assign({},match);pairs.forEach(p=>all[p.n]=p.o);
+  Object.keys(all).forEach(n=>{const o=all[n];(JSON.stringify(S.tt[o].p)!==JSON.stringify(T2[n].p)?changed:same).push({n,o})});
+  return {match,pairs,fresh,missing,changed,same};
+}
+function affectedBy(o,newP){
+  const s=S.data.staff.find(x=>x.tt===o);if(!s)return [];
+  const tt2=Object.assign({},S.tt);tt2[o]=Object.assign({},S.tt[o],{p:newP});
+  return dutiesOf(s.id).filter(k=>{const [a,d,b]=k.split('@');return T.canStand(S.cfg,s,S.C.P[s.id],tt2,a,+d,b)});
+}
+function viewTT(){
+  const I=S.imp,last=(S.data.ttBatches||[]).slice(-1)[0];
+  let h='<div class="card topbar"><div><h1>עדכון מערכת שעות מקובץ</h1><div class="muted small">מעלים ייצוא של מערכת השעות הקבועה מהתוכנה שבונה את המערכת (אקסל או CSV). הכלי משווה למערכת השמורה, שואל על כל מי שנעלם או הופיע, ומציע תיקון מינימלי ללוח. המערכת המעודכנת משמשת גם את כלי מילוי המקום.</div></div>'+
+    (last?'<div class="row"><span class="small muted">עדכון אחרון: '+esc(stamp(last.at))+' · '+esc(last.by||'')+'</span><button class="btn sec sm" data-act="ttUndo" data-b="'+last.batch+'">ביטול העדכון האחרון</button></div>':'')+'</div>';
+  if(!I||!I.rows){
+    return h+'<div class="card"><h2>1. בחירת קובץ</h2><input type="file" id="ttFile" accept=".xlsx,.xls,.xlsm,.ods,.csv,.tsv,text/csv" style="font-size:16px"><p class="small muted">הקובץ צריך להכיל שורה לכל שיעור: מורה, יום, שעה (ורצוי גם מקצוע וכיתה). אם הקובץ בנוי אחרת — שלחו אותו לאריאל.</p></div>';
+  }
+  if(I.step==='map'){
+    const head=I.rows[I.head]||[],cols=head.map((c,i)=>'<option value="'+i+'">'+esc(String(c||'עמודה '+(i+1)))+'</option>').join('');
+    h+='<div class="card"><h2>2. איזו עמודה היא מה</h2>'+(I.sheets.length>1?'<label class="small">גיליון: <select class="fsel" data-ch="ttSheet" style="width:auto">'+I.sheets.map(n=>'<option'+(n===I.sheet?' selected':'')+'>'+esc(n)+'</option>').join('')+'</select></label>':'')+
+      '<label class="small" style="display:block;margin:6px 0">שורת הכותרות: <input type="number" min="1" class="fsel" data-ch="ttHead" value="'+(I.head+1)+'" style="width:90px"></label>'+
+      '<div class="list">'+FIELDS.map(([f,label,,req])=>'<label class="row"><b style="min-width:180px">'+label+(req?' *':'')+'</b><select class="fsel" data-ch="ttMap" data-f="'+f+'" style="width:auto"><option value="">—</option>'+cols.replace('value="'+I.map[f]+'"','value="'+I.map[f]+'" selected')+'</select></label>').join('')+'</div>'+
+      '<h3 style="margin-top:12px">דוגמה מהקובץ</h3><div class="tablewrap"><table class="grid" style="min-width:0"><tbody>'+I.rows.slice(I.head,I.head+6).map(r=>'<tr>'+(r||[]).slice(0,10).map(c=>'<td class="small">'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'+
+      (I.err?'<div class="item orange" style="margin-top:10px"><b>הקובץ לא נקלט:</b> '+I.err+'</div>':'')+
+      '<div class="row" style="margin-top:12px"><button class="btn sec sm" data-act="ttReset">קובץ אחר</button><button class="btn sm" data-act="ttParse">המשך להשוואה</button></div></div>';
+    return h;
+  }
+  // step diff
+  const X=I.diff,P=byId(),cur=Object.keys(S.tt).length,changes=X.changed.length+X.missing.length+X.fresh.length;
+  const suspicious=Object.keys(I.T2).length<cur*0.6||changes>cur*0.4;
+  const missOpts=X.missing.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('');
+  h+='<div class="card"><h2>3. מה השתנה</h2><div class="kpis" style="margin-bottom:12px">'+
+    kpi('k-blue','בקובץ','מורים',Object.keys(I.T2).length)+kpi(X.missing.length?'k-orange':'k-green','נעלמו','',X.missing.length,X.missing.length?'ttGoMiss':null,X.missing.length?'למטה':null)+kpi(X.fresh.length?'k-orange':'k-green','הופיעו','',X.fresh.length,X.fresh.length?'ttGoFresh':null,X.fresh.length?'למטה':null)+kpi(X.changed.length?'k-orange':'k-green','השתנו','',X.changed.length,X.changed.length?'ttGoChg':null,X.changed.length?'למטה':null)+'</div>'+
+    (suspicious?'<div class="item orange"><b>זה הרבה שינויים ('+changes+' מתוך '+cur+' מורים).</b> אולי זה קובץ של מערכת שבועית או של חלק מבית הספר? <label class="row small"><input type="checkbox" data-ch="ttSure"'+(I.sure?' checked':'')+'> בדקתי — זה הקובץ הנכון של המערכת הקבועה</label></div>':'');
+  if(X.pairs.length)h+='<div class="item"><b>אותו אדם? ('+X.pairs.length+')</b><div class="small muted">השם כתוב אחרת בקובץ. סמנו אם זה אותו אדם — הכלי יזכור להבא.</div>'+X.pairs.map((p,i)=>'<label class="row small"><input type="checkbox" data-ch="ttPair" data-i="'+i+'"'+(p.ok?' checked':'')+'> "'+esc(p.n)+'" = "'+esc(p.o)+'"</label>').join('')+'</div>';
+  if(X.missing.length)h+='<div class="item orange" id="tt-miss"><b>נעלמו מהמערכת ('+X.missing.length+')</b><div class="small muted">לא נמחקים אוטומטית. מה קרה?</div>'+X.missing.map(o=>{const c=I.miss[o]||(I.miss[o]={v:'temp',to:''}),s=S.data.staff.find(x=>x.tt===o);
+    return '<div style="margin-top:8px"><b class="small">'+esc(o)+'</b>'+(s?' <span class="small muted">('+dutiesOf(s.id).length+' תורנויות)</span>':'')+'<div class="row small">'+
+      '<label><input type="radio" name="m-'+esc(o)+'" data-ch="ttMiss" data-o="'+esc(o)+'" value="temp"'+(c.v==='temp'?' checked':'')+'> נעדר/ת זמנית</label>'+
+      (c.v==='temp'?'<label>עד <input type="date" class="fsel" data-ch="ttMissTo" data-o="'+esc(o)+'" value="'+(c.to||'')+'" style="width:auto"></label><span class="muted">(ריק = עד הודעה חדשה)</span>':'')+
+      '<label><input type="radio" name="m-'+esc(o)+'" data-ch="ttMiss" data-o="'+esc(o)+'" value="left"'+(c.v==='left'?' checked':'')+'> עזב/ה</label>'+
+      '<label><input type="radio" name="m-'+esc(o)+'" data-ch="ttMiss" data-o="'+esc(o)+'" value="keep"'+(c.v==='keep'?' checked':'')+'> להשאיר בלי שינוי</label></div></div>'}).join('')+'</div>';
+  if(X.fresh.length)h+='<div class="item orange" id="tt-fresh"><b>הופיעו במערכת ('+X.fresh.length+')</b>'+X.fresh.map(n=>{const c=I.fresh[n]||(I.fresh[n]={v:'ask',for:'',to:''});
+    return '<div style="margin-top:8px"><b class="small">'+esc(n)+'</b> <span class="small muted">('+I.T2[n].slots.length+' שעות)</span><div class="row small">'+
+      '<label><input type="radio" name="f-'+esc(n)+'" data-ch="ttFresh" data-n="'+esc(n)+'" value="perm"'+(c.v==='perm'?' checked':'')+'> חדש/ה קבוע/ה</label>'+
+      '<label><input type="radio" name="f-'+esc(n)+'" data-ch="ttFresh" data-n="'+esc(n)+'" value="temp"'+(c.v==='temp'?' checked':'')+'> מחליף/ה זמני/ת</label>'+
+      (c.v==='temp'?'<label>של <select class="fsel" data-ch="ttFreshFor" data-n="'+esc(n)+'" style="width:auto"><option value="">—</option>'+missOpts.replace('value="'+esc(c.for)+'"','value="'+esc(c.for)+'" selected')+'</select></label>':'')+
+      '<label><input type="radio" name="f-'+esc(n)+'" data-ch="ttFresh" data-n="'+esc(n)+'" value="skip"'+(c.v==='skip'?' checked':'')+'> להתעלם</label></div></div>'}).join('')+'</div>';
+  if(X.changed.length)h+='<div class="item" id="tt-chg"><b>השעות השתנו ('+X.changed.length+')</b><div class="list" style="margin-top:6px">'+X.changed.map(c=>{const a=affectedBy(c.o,I.T2[c.n].p);return '<div class="small">'+esc(c.o)+(a.length?' — <span style="color:var(--red)">'+a.length+' תורנויות נשברות</span>':' — התורנויות לא מושפעות')+'</div>'}).join('')+'</div></div>';
+  if(!changes&&!X.pairs.length)h+='<p style="color:var(--green);font-weight:600">המערכת בקובץ זהה למערכת השמורה. אין מה לעדכן.</p>';
+  const undecided=X.fresh.filter(n=>!I.fresh[n]||I.fresh[n].v==='ask'||(I.fresh[n].v==='temp'&&!I.fresh[n].for)).length;
+  h+='<div class="row" style="margin-top:14px"><button class="btn sec sm" data-act="ttReset">ביטול</button><button class="btn sm" data-act="ttApply"'+((suspicious&&!I.sure)||undecided||(!changes&&!X.pairs.length)?' disabled':'')+'>אישור ועדכון</button>'+(undecided?'<span class="small" style="color:var(--red)">יש לבחור מה לעשות עם כל מי שהופיע</span>':'')+'</div></div>';
+  return h;
+}
+async function ttFile(file){
+  try{const t=await readTable(file);const sheet=t.sheets[0],rows=t.get(sheet),head=guessHeader(rows);
+    S.imp={t,sheets:t.sheets,sheet,rows,head,map:guessMap(rows[head]||[]),step:'map',miss:{},fresh:{},name:file.name};render()}
+  catch(e){toast('לא הצלחתי לקרוא את הקובץ: '+e.message)}
+}
+function ttParse(){
+  const I=S.imp;I.err='';
+  const miss=FIELDS.filter(([f,,,req])=>req&&I.map[f]==null).map(x=>x[1]);
+  if(miss.length){I.err='חסר שיוך לעמודה: '+miss.join(', ');render();return}
+  const r=buildNewTT(I.rows,I.head,I.map);
+  if(!r.ok||r.ok<r.total*0.85){I.err='רק '+r.ok+' מתוך '+r.total+' שורות נקראו תקין.'+(r.bad.day.length?' ימים שלא זוהו: '+r.bad.day.map(esc).join(', ')+'.':'')+(r.bad.hour.length?' שעות שלא זוהו: '+r.bad.hour.map(esc).join(', ')+'.':'')+' בדקו את שיוך העמודות או שזה הקובץ הנכון.';render();return}
+  if(Object.keys(r.T2).length<3){I.err='נמצאו פחות מ־3 מורים בקובץ.';render();return}
+  I.T2=r.T2;I.diff=ttDiff(r.T2);I.step='diff';render();
+}
+async function ttApply(){
+  const I=S.imp,X=I.diff,P=byId(),upsert=[],deactivate=[],absAdd=[],staffAdd=[],ruleAdd=[];
+  S.data.ttIds=S.data.ttIds||{};
+  const pairsOk=X.pairs.filter(p=>p.ok),pairsNo=X.pairs.filter(p=>!p.ok);
+  pairsOk.forEach(p=>{S.data.ttIds[p.n]=p.o;if(I.T2[p.n].tid)S.data.ttIds['#'+I.T2[p.n].tid]=p.o});
+  Object.keys(X.match).forEach(n=>{if(I.T2[n].tid)S.data.ttIds['#'+I.T2[n].tid]=X.match[n]});
+  X.changed.forEach(c=>{if(X.pairs.some(p=>p.n===c.n&&!p.ok))return;upsert.push({name:c.o,slots:I.T2[c.n].slots})});
+  const missing=X.missing.concat(pairsNo.map(p=>p.o)),fresh=X.fresh.concat(pairsNo.map(p=>p.n));
+  missing.forEach(o=>{const c=I.miss[o]||{v:'temp'};const s=S.data.staff.find(x=>x.tt===o);
+    if(c.v==='left'){deactivate.push(o);if(s)ruleAdd.push([s.id,'עזב/ה (עדכון מערכת)'])}
+    else if(c.v==='temp'){absAdd.push({name:o,to:c.to||null})}});
+  fresh.forEach(n=>{const c=I.fresh[n]||{v:'skip'};if(c.v==='skip')return;
+    upsert.push({name:n,slots:I.T2[n].slots});
+    const p=I.T2[n].p,days=p.map((x,i)=>/[^.]/.test(x)?i:-1).filter(i=>i>=0),parts=n.replace(/^הרב\s+/,'').split(' ');
+    const lay=[...new Set(I.T2[n].slots.flatMap(x=>x.classes).map(c=>c[0]).filter(ch=>'אבגדהו'.includes(ch)))].join('').slice(0,2)||'*';
+    const rec={id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:(parts.slice(1).join(' ')+' '+parts[0]).trim(),tt:n,role:'teacher',layers:lay,days,dcat:days.length>=4?'45':days.length===3?'3':'12',option:'N',pref:[],noMorning:[],noEnd:[],obstacle:'',note:'',form:false,flag:c.v==='temp'?'מחליף/ה זמני/ת (עדכון מערכת)':'חדש/ה מעדכון מערכת — לא מילא/ה שאלון'};
+    if(c.v==='temp'){const ws=S.data.staff.find(x=>x.tt===c.for);rec.temp={for:ws?ws.id:null};ruleAdd.push([rec.id,'מחליף/ה זמני/ת — לא בלוח הקבוע'])}
+    staffAdd.push(rec)});
+  try{
+    toast('מעדכן…');
+    const batch=(upsert.length||deactivate.length)?await rpc('toranut_tt_apply',{p_phone:S.phone,p:{upsert,deactivate}}):null;
+    for(const a of absAdd){try{await rpc('toranut_absence_save',{p_phone:S.phone,p_name:a.name,p_from:today(),p_to:a.to})}catch(e){}}
+    S.data.staff=S.data.staff.concat(staffAdd);
+    ruleAdd.forEach(([id,note])=>{S.data.rules=T.setPersonal(S.data.rules,id,'exclude',{v:true,note})});
+    if(batch){S.data.ttBatches=(S.data.ttBatches||[]).concat([{batch,at:Date.now(),by:S.me,file:I.name}]).slice(-10)}
+    S.data.plan.stale=true;await save(true);S.imp=null;
+    await reloadKeep();
+    const opened=openFixPlan('עדכון מערכת');
+    if(!opened)toast('המערכת עודכנה. הלוח לא הושפע.'+(absAdd.length?' יש היעדרויות חדשות — מסך "היעדרויות".':''));
+  }catch(e){toast('העדכון נכשל: '+e.message)}
+}
+async function ttUndo(b){
+  try{await rpc('toranut_tt_undo',{p_phone:S.phone,p_batch:+b});S.data.ttBatches=(S.data.ttBatches||[]).filter(x=>String(x.batch)!==String(b));await save(true);await reloadKeep();toast('העדכון בוטל. המערכת חזרה למצב שלפניו.');openFixPlan('ביטול עדכון מערכת')}
+  catch(e){toast('הביטול נכשל: '+e.message)}
+}
+
 /* ---------- עמדות ---------- */
 function viewStations(){
   const ov=S.data.stations||{};
-  let h='<div class="card"><h1>עמדות</h1><p class="muted small">עדיפות 1 = ממלאים קודם. כשאין מספיק אנשים, עמדות בעדיפות 3 נשארות ריקות ראשונות. "לא פעילה" מוציאה את העמדה מהלוח. כמויות ומכסות — במסך "כללים".</p></div>';
-  h+='<div class="card tablewrap"><table class="staff"><thead><tr><th>עמדה</th><th>משמרות</th><th>עדיפות</th><th>פעילה</th></tr></thead><tbody>'+
+  let h='<div class="card"><h1>עמדות</h1><p class="muted small">"אפשר לאחד" = כשחסר צוות, הכלי יציע לאחד את שתי העמדות לפטרול אחד (רק זוגות שהוגדרו כאן). עדיפות 1 = ממלאים קודם. כשאין מספיק אנשים, עמדות בעדיפות 3 נשארות ריקות ראשונות. "לא פעילה" מוציאה את העמדה מהלוח. כמויות ומכסות — במסך "כללים".</p></div>';
+  h+='<div class="card tablewrap"><table class="staff"><thead><tr><th>עמדה</th><th>משמרות</th><th>עדיפות</th><th>פעילה</th><th>אפשר לאחד לפטרול עם</th></tr></thead><tbody>'+
    T.DEFAULT_CONFIG.stations.map(st=>{const o=ov[st.id]||{},pr=o.prio||st.prio||2;
      return '<tr class="'+(o.off?'out':'')+'"><td><b>'+esc(st.name)+'</b>'+(st.floor?' <span class="lay">'+st.layer+'</span>':'')+(st.yard?'<div class="small muted">שכבה לפי חלוקת החצרות: '+esc(st.yard)+'</div>':'')+'</td><td class="small">'+st.shifts.map(id=>esc((T.DEFAULT_CONFIG.shifts.find(x=>x.id===id)||{}).label)).join('<br>')+'</td>'+
      '<td><select data-ch="prio" data-st="'+st.id+'">'+[1,2,3].map(n=>'<option'+(pr===n?' selected':'')+'>'+n+'</option>').join('')+'</select></td>'+
-     '<td><select data-ch="off" data-st="'+st.id+'"><option value="0">פעילה</option><option value="1"'+(o.off?' selected':'')+'>לא פעילה</option></select></td></tr>'}).join('')+'</tbody></table></div>';
+     '<td><select data-ch="off" data-st="'+st.id+'"><option value="0">פעילה</option><option value="1"'+(o.off?' selected':'')+'>לא פעילה</option></select></td>'+
+     '<td>'+(()=>{const mine=(S.data.mergeable||{})[st.id]||[];const same=T.DEFAULT_CONFIG.stations.filter(x=>x.id!==st.id&&x.shifts.some(z=>st.shifts.includes(z))&&!mine.includes(x.id));
+       return '<div class="chips" style="margin:0 0 4px">'+mine.map(m=>'<span class="chip">'+esc((stOf(m)||{name:m}).name.split(' (')[0])+' <button type="button" class="lnk" data-act="mRem" data-a="'+st.id+'" data-b="'+m+'" aria-label="הסרה">×</button></span>').join('')+'</div>'+
+       (same.length?'<select data-ch="mAdd" data-st="'+st.id+'"><option value="">+ הוספה</option>'+same.map(x=>'<option value="'+x.id+'">'+esc(x.name.split(' (')[0])+'</option>').join('')+'</select>':'')})()+'</td></tr>'}).join('')+'</tbody></table></div>';
+  const MG=S.data.merges||[];
+  if(MG.length)h+='<div class="card"><h2>איחודים פעילים ('+MG.length+')</h2><div class="list">'+MG.map((m,i)=>'<div class="row" style="justify-content:space-between"><span>'+esc(slotLabel(m.key))+' ← אוחד לפטרול עם <b>'+esc((stOf(m.into.split('@')[2])||{name:''}).name.split(' (')[0])+'</b> <span class="muted small">('+heDate(m.at)+')</span></span><button class="btn sec sm" data-act="mDel" data-i="'+i+'">ביטול האיחוד</button></div>').join('')+'</div></div>';
   h+='<div class="card"><h2>ימי פעילות לכל משמרת</h2><div class="list">'+T.DEFAULT_CONFIG.shifts.map(sh=>{const cur=shiftOf(sh.id).days;
     return '<div class="row"><b style="min-width:200px">'+esc(sh.label)+'</b>'+[0,1,2,3,4,5].map(d=>'<label class="chip"><input type="checkbox" data-ch="sday" data-sh="'+sh.id+'" data-d="'+d+'"'+(cur.includes(d)?' checked':'')+'> '+D[d]+'</label>').join('')+'</div>'}).join('')+'</div></div>';
   return h;
@@ -618,6 +966,9 @@ function renderModal(){
   if(S.modal.kind==='conflict')return renderConflictModal();
   if(S.modal.kind==='place')return placeModal();
   if(S.modal.kind==='yard')return yardModal();
+  if(S.modal.kind==='sub')return subModal();
+  if(S.modal.kind==='notify')return notifyModal();
+  if(S.modal.kind==='fixplan')return fixPlanModal();
   if(S.modal.kind==='import')return importModal();
   if(S.modal.kind==='confirm')return '<div class="overlay" data-act="close"><div class="modal" role="alertdialog" aria-modal="true" data-act="noop"><div class="mhead">'+esc(S.modal.title)+'</div><div class="mbody"><p>'+esc(S.modal.text)+'</p></div><div class="mfoot"><button class="btn sec sm" data-act="close">ביטול</button><button class="btn sm" data-act="cyes" style="background:var(--red)">'+esc(S.modal.yes)+'</button></div></div></div>';
   const M=S.modal,[sid,dd,stid]=M.k.split('@'),sh=shiftOf(sid),st=stOf(stid),d=+dd;
@@ -731,9 +1082,31 @@ function rf(el){
 root.addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const a=b.dataset.act;
-  if(S.preview&&!(a==='cyes'&&S.modal&&S.modal.restore)&&/^(run|import|yImport|pick|clear|unlock|place|placeAt|fix|kFix|radd|redit|rdel|rreset|rsave|rconfirm|cyes|yEdit|ySave|yClear|impPaste|vSave)$/.test(a)){toast('זו גרסה ישנה (קריאה בלבד). לחצו "שחזור" כדי לעבוד עליה, או "חזרה לנוכחית".');return}
+  if(S.preview&&!(a==='cyes'&&S.modal&&S.modal.restore)&&/^(run|import|yImport|pick|clear|unlock|place|placeAt|fix|kFix|radd|redit|rdel|rreset|rsave|rconfirm|cyes|yEdit|ySave|yClear|impPaste|vSave|abAdd|abEnd|abOpenEnd|abBack|abOk|subPick|subClear|subAuto|subSet|fixNow|fixApply|ttApply|ttUndo|mRem|mDel)$/.test(a)){toast('זו גרסה ישנה (קריאה בלבד). לחצו "שחזור" כדי לעבוד עליה, או "חזרה לנוכחית".');return}
   if(S.preview&&a==='cell'){toast('קריאה בלבד — זו גרסה ישנה');return}
   if(a==='printYards'){printYards();return}
+  if(a==='goAbs'){S.view='abs';render();window.scrollTo(0,0);return}
+  if(a==='fixNow'){openFixPlan('בדיקת תקינות');return}
+  if(a==='fixApply'){fixApply();return}
+  if(a==='abAdd'){abAdd();return}
+  if(a==='abEnd'){const v=(document.getElementById('ext-'+b.dataset.k)||{}).value;if(!v){toast('לבחור תאריך');return}abSetEnd(b.dataset.k,v);return}
+  if(a==='abOpenEnd'){abSetEnd(b.dataset.k,null);return}
+  if(a==='abBack'){abSetEnd(b.dataset.k,addDays(today(),-1));return}
+  if(a==='abOk'){S.data.absOk=S.data.absOk||{};S.data.absOk[b.dataset.k+'|'+b.dataset.to]=1;save();render();return}
+  if(a==='subPick'){S.modal={kind:'sub',k:b.dataset.k,abs:b.dataset.a,all:false};render();return}
+  if(a==='subAll'){S.modal.all=b.checked;render();return}
+  if(a==='subSet'){if(b.disabled)return;const M=S.modal,prev=(validSubs()[M.k]||{}).id;setSub(M.k,b.dataset.id,M.abs);S.modal=null;render();const ab=absences().find(x=>x.key===M.abs);openNotify([{key:M.k,to:b.dataset.id,from:prev||null,note:'החלפה זמנית'+(ab&&ab.to?' עד '+heDate(ab.to):'')}]);return}
+  if(a==='subClear'){setSub(b.dataset.k,null);render();return}
+  if(a==='subAuto'){autoSubs(b.dataset.a);return}
+  if(a==='nSent'){S.modal.sent[+b.dataset.i]=1;setTimeout(render,300);return}
+  if(a==='nCopy'){const it=S.modal.items[+b.dataset.i];try{navigator.clipboard.writeText(it.text);toast('הועתק')}catch(x){toast('לא הצלחתי להעתיק')}S.modal.sent[+b.dataset.i]=1;render();return}
+  if(a==='ttReset'){S.imp=null;render();return}
+  if(/^ttGo/.test(a)){const el=document.getElementById({ttGoMiss:'tt-miss',ttGoFresh:'tt-fresh',ttGoChg:'tt-chg'}[a]);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});return}
+  if(a==='ttParse'){ttParse();return}
+  if(a==='ttApply'){if(!b.disabled)ttApply();return}
+  if(a==='ttUndo'){S.modal={kind:'confirm',title:'ביטול עדכון המערכת',text:'המערכת של המורים שעודכנו תחזור למצב שלפני העדכון (גם בכלי מילוי המקום). להמשיך?',yes:'לבטל',fn:null,undo:b.dataset.b};render();return}
+  if(a==='mRem'){const M=S.data.mergeable||{};M[b.dataset.a]=(M[b.dataset.a]||[]).filter(x=>x!==b.dataset.b);M[b.dataset.b]=(M[b.dataset.b]||[]).filter(x=>x!==b.dataset.a);save();render();return}
+  if(a==='mDel'){S.data.merges.splice(+b.dataset.i,1);S.data.plan.stale=true;recompute();save();render();toast('האיחוד בוטל · העמדה חזרה ללוח');return}
   if(a==='yImport'){yardsImport();return}
   if(a==='yEdit'){const r=T.DEFAULT_CONFIG.yardRows.find(x=>x.key===b.dataset.y);S.modal={kind:'yard',b:b.dataset.b,y:b.dataset.y,yname:r?r.name:b.dataset.y,d:+b.dataset.d,v:((S.cfg.yards[b.dataset.b]||{})[b.dataset.y]||[])[+b.dataset.d]||''};render();return}
   if(a==='ySave'){const M=S.modal,l=[...document.querySelectorAll('input[data-ch=yl]:checked')].map(x=>x.value).join('+'),dsc=(document.getElementById('ydesc')||{}).value||'';setYard(M.b,M.y,M.d,dsc.trim()?(l?dsc.trim()+' ('+l.replace(/\+/g,'-')+')':dsc.trim()):l);return}
@@ -779,15 +1152,28 @@ root.addEventListener('click',async e=>{
   else if(a==='rdel'){const r=ruleOf(b.dataset.r);S.modal={kind:'confirm',title:'מחיקת כלל',text:T.describe(r,S.data.staff),yes:'למחוק',fn:()=>{S.data.rules=S.data.rules.filter(x=>x.id!==r.id)}};render()}
   else if(a==='rreset'){S.modal={kind:'confirm',title:'איפוס לכללי הגיליון',text:'כל הכללים שנוספו באתר והחריגים האישיים יימחקו. להמשיך?',yes:'לאפס',fn:()=>{S.data.rules=T.defaultRules(S.data.staff);S.data.rulesFrom='גיליון "כללים" · 6.11.2026'}};render()}
   else if(a==='cyes'&&S.modal.restore){restoreVersion(S.modal.restore)}
+  else if(a==='cyes'&&S.modal.undo){const u=S.modal.undo;S.modal=null;ttUndo(u)}
   else if(a==='cyes'){S.modal.fn();S.modal=null;S.data.plan.stale=true;recompute();save(true);render();toast('בוצע')}
 });
 root.addEventListener('change',e=>{
   const el=e.target;
+  if(el.id==='ttFile'&&el.files&&el.files[0]){ttFile(el.files[0]);return}
   if(el.id==='csvFile'&&el.files&&el.files[0]){const f=el.files[0],r=new FileReader();r.onload=()=>applyImport(parseCSV(String(r.result).replace(/^\ufeff/,'')));r.readAsText(f,'utf-8');return}
   if(el.dataset.rf&&S.modal&&S.modal.r){if(/^(n|note|text)$/.test(el.dataset.rf))return;rf(el);render();return}
   const ch=el.dataset.ch;if(!ch)return;
   if(S.preview&&!/^(focus|onlyEmpty|release|yl)$/.test(ch)){toast('קריאה בלבד — זו גרסה ישנה');render();return}
   if(ch==='yl')return;
+  if(ch==='fxopt'){S.modal.choice[el.dataset.k]=el.value;return}
+  if(ch==='ttSheet'){const I=S.imp;I.sheet=el.value;I.rows=I.t.get(el.value);I.head=guessHeader(I.rows);I.map=guessMap(I.rows[I.head]||[]);render();return}
+  if(ch==='ttHead'){const I=S.imp;I.head=Math.max(0,(+el.value||1)-1);I.map=guessMap(I.rows[I.head]||[]);render();return}
+  if(ch==='ttMap'){S.imp.map[el.dataset.f]=el.value===''?null:+el.value;return}
+  if(ch==='ttSure'){S.imp.sure=el.checked;render();return}
+  if(ch==='ttPair'){S.imp.diff.pairs[+el.dataset.i].ok=el.checked;render();return}
+  if(ch==='ttMiss'){S.imp.miss[el.dataset.o]=Object.assign(S.imp.miss[el.dataset.o]||{},{v:el.value});render();return}
+  if(ch==='ttMissTo'){S.imp.miss[el.dataset.o].to=el.value;return}
+  if(ch==='ttFresh'){S.imp.fresh[el.dataset.n]=Object.assign(S.imp.fresh[el.dataset.n]||{},{v:el.value});render();return}
+  if(ch==='ttFreshFor'){S.imp.fresh[el.dataset.n].for=el.value;render();return}
+  if(ch==='mAdd'){if(!el.value)return;const M=S.data.mergeable=S.data.mergeable||{},a=el.dataset.st,b=el.value;M[a]=[...new Set([...(M[a]||[]),b])];M[b]=[...new Set([...(M[b]||[]),a])];save();render();return}
   if(ch==='focus'){S.focus=el.value||null;render();return}
   if(ch==='onlyEmpty'){S.onlyEmpty=el.checked;render();return}
   if(ch==='release'){S.modal.release=el.value;return}

@@ -428,6 +428,7 @@
     const positions = [];
     cfg.shifts.forEach(shift => shift.days.forEach(day => cfg.stations.forEach(st => {
       if (!st.shifts.includes(shift.id)) return;
+      if (cfg.skip && cfg.skip[shift.id + '@' + day + '@' + st.id]) return;
       const layer = stationLayer(cfg, st, shift, day);
       const elig = [], calm = {};
       staff.forEach((s, i) => {
@@ -555,7 +556,7 @@
     const C = compile(cfg.rules, staff);
     const all = [];
     cfg.shifts.forEach(shift => shift.days.forEach(day => cfg.stations.forEach(st => {
-      if (st.shifts.includes(shift.id)) all.push({ key: shift.id + '@' + day + '@' + st.id, shift, day, st, layer: stationLayer(cfg, st, shift, day) });
+      if (st.shifts.includes(shift.id) && !(cfg.skip && cfg.skip[shift.id + '@' + day + '@' + st.id])) all.push({ key: shift.id + '@' + day + '@' + st.id, shift, day, st, layer: stationLayer(cfg, st, shift, day) });
     })));
     const load = {}; staff.forEach(s => load[s.id] = []);
     Object.keys(assign).forEach(k => { if (load[assign[k]]) load[assign[k]].push(k); });
@@ -603,6 +604,91 @@
     };
   }
 
+
+  /* =================================================================
+     תיקון מינימלי, מחליפים זמניים
+     ================================================================= */
+  /** האם אדם יכול לעמוד בעמדה. מחזיר null אם כן, או סיבה */
+  function canStand(cfg, s, p, tt, shiftId, day, stId, opts) {
+    const sh = cfg.shifts.find(x => x.id === shiftId), st = cfg.stations.find(x => x.id === stId);
+    if (!sh || !st || !sh.days.includes(day)) return 'אין משמרת';
+    const pp = opts && opts.ignoreExcluded ? Object.assign({}, p, { excluded: false, target: Math.max(1, p.target) }) : p;
+    const f = formAllows(s, sh, day, pp); if (f) return f;
+    const pr = presence(s, sh, day, tt); if (!pr.ok) return pr.why;
+    if (!stationOk(s, pp, st, stationLayer(cfg, st, sh, day))) return 'לא מתאים/ה לעמדה';
+    return null;
+  }
+  const slotOf = k => { const a = k.split('@'); return a[0] + '@' + a[1]; };
+  function loads(assign) { const L = {}; Object.keys(assign).forEach(k => { const id = assign[k]; if (id) L[id] = (L[id] || 0) + 1; }); return L; }
+  function busyMap(assign) { const B = {}; Object.keys(assign).forEach(k => { if (assign[k]) B[assign[k] + '|' + slotOf(k)] = k; }); return B; }
+
+  function fitScore(cfg, s, p, key, assign, L, target) {
+    const [shId, d, stId] = key.split('@'), sh = cfg.shifts.find(x => x.id === shId), st = cfg.stations.find(x => x.id === stId);
+    const layer = stationLayer(cfg, st, sh, +d);
+    let sc = 3 * (target - (L[s.id] || 0)) / Math.max(1, target);
+    if (layer && s.layers) { if ([...layer].includes(s.layers[0])) sc += 2; else if ([...layer].some(x => s.layers.includes(x))) sc += 1; }
+    if (Object.keys(assign).some(k => assign[k] === s.id && k.endsWith('@' + stId))) sc += 1.5;
+    if (Object.keys(assign).some(k => assign[k] === s.id && k.split('@')[1] === d)) sc += 1;
+    return sc;
+  }
+
+  /**
+   * תיקון אחרי שינוי מערכת / צוות: משאיר כל שיבוץ שעדיין תקין, ומאייש רק את מה שנשבר.
+   * קודם מי שמתחת למכסה; אם אין — החלפה בצעד אחד; אחרת "לא נפתר".
+   */
+  function repair(cfg, staff, tt, assign, locked) {
+    const C = compile(cfg.rules, staff), by = {}; staff.forEach(s => by[s.id] = s);
+    const keys = [];
+    cfg.shifts.forEach(sh => sh.days.forEach(d => cfg.stations.forEach(st => {
+      const k = sh.id + '@' + d + '@' + st.id;
+      if (st.shifts.includes(sh.id) && !(cfg.skip && cfg.skip[k])) keys.push(k);
+    })));
+    const valid = (k, id) => { const s = by[id]; if (!s) return false; const [a, d, b] = k.split('@'); return !canStand(cfg, s, C.P[id], tt, a, +d, b); };
+    // שיבוץ ידני (נעול) גובר על כללים והעדפות — נשבר רק אם האדם לא נמצא בבית הספר בזמן הזה או הוחרג
+    const lockedOk = (k, id) => { const s = by[id]; if (!s || C.P[id].excluded) return false; const [a, d] = k.split('@'); const sh = cfg.shifts.find(x => x.id === a); return !!sh && presence(s, sh, +d, tt).ok; };
+    const A = {}, broken = [], lockBroken = [];
+    keys.forEach(k => { const id = assign[k]; if (!id) return; const isL = locked && locked[k] === id;
+      if (isL ? lockedOk(k, id) : valid(k, id)) A[k] = id; else { broken.push(k); if (isL) lockBroken.push(k); } });
+    const tgt = id => C.P[id].excluded ? 0 : C.P[id].target;
+    const changes = [], unresolved = [];
+    const todo = broken.slice();
+    todo.forEach(k => {
+      const L = loads(A), B = busyMap(A), slot = slotOf(k), from = assign[k] || null;
+      const free = s => !B[s.id + '|' + slot];
+      // 1. מישהו מתחת למכסה
+      let best = null, bs = -1e9;
+      staff.forEach(s => { if (!free(s) || (L[s.id] || 0) >= tgt(s.id) || !valid(k, s.id)) return; const sc = fitScore(cfg, s, C.P[s.id], k, A, L, tgt(s.id)); if (sc > bs) { bs = sc; best = s; } });
+      if (best) { A[k] = best.id; changes.push({ key: k, from, to: best.id, kind: 'replace' }); return; }
+      // 2. החלפה בצעד אחד: X (במכסה) עובר לכאן, ו־Z (מתחת למכסה) לוקח את המשבצת של X
+      for (const X of staff) {
+        if (!free(X) || !valid(k, X.id)) continue;
+        const mine = Object.keys(A).filter(k2 => A[k2] === X.id && !(locked && locked[k2]));
+        for (const k2 of mine) {
+          const s2 = slotOf(k2);
+          const Z = staff.find(z => z.id !== X.id && (L[z.id] || 0) < tgt(z.id) && !B[z.id + '|' + s2] && valid(k2, z.id));
+          if (Z) { A[k] = X.id; A[k2] = Z.id; changes.push({ key: k, from, to: X.id, kind: 'swap', via: k2 }); changes.push({ key: k2, from: X.id, to: Z.id, kind: 'swap', via: k }); return; }
+        }
+      }
+      unresolved.push(k);
+    });
+    const people = new Set(); changes.forEach(c => { if (c.from) people.add(c.from); if (c.to) people.add(c.to); });
+    return { assign: A, broken, changes, unresolved, lockBroken, people: [...people] };
+  }
+
+  /** מועמדים למחליף זמני במשבצת. absent = Set של מזהי נעדרים. extra = שיבוצי מחליפים קיימים {key:id} */
+  function subCandidates(cfg, staff, tt, assign, absent, key, extra) {
+    const C = compile(cfg.rules, staff), [shId, d, stId] = key.split('@'), slot = shId + '@' + d;
+    const all = Object.assign({}, assign); Object.keys(extra || {}).forEach(k => all[k] = extra[k]);
+    const eff = {}; Object.keys(all).forEach(k => { const id = all[k]; if (id && !absent.has(id)) eff[k] = id; });
+    Object.keys(extra || {}).forEach(k => { eff[k] = extra[k]; });
+    const L = loads(eff), B = busyMap(eff);
+    return staff.filter(s => !absent.has(s.id)).map(s => {
+      const p = C.P[s.id], tgt = p.excluded ? 0 : p.target;
+      const why = canStand(cfg, s, p, tt, shId, +d, stId, { ignoreExcluded: !!s.temp }) || (B[s.id + '|' + slot] && B[s.id + '|' + slot] !== key ? 'משובץ/ת באותו זמן' : null);
+      return { id: s.id, why, load: L[s.id] || 0, target: tgt, temp: !!s.temp, score: why ? -1e9 : (s.temp ? 8 : 0) + ((L[s.id] || 0) < tgt ? 5 : 0) + fitScore(cfg, s, p, key, eff, L, Math.max(1, tgt)) };
+    }).sort((a, b) => b.score - a.score);
+  }
+
   /* ---------- ייבוא מהגיליון (שורות גולמיות) ---------- */
   const DAYMAP = { 'ראשון': 0, 'שני': 1, 'שלישי': 2, 'רביעי': 3, 'חמישי': 4, 'שישי': 5 };
   const daysOf = txt => uniq((String(txt || '').match(/יום (ראשון|שני|שלישי|רביעי|חמישי|שישי)/g) || []).map(x => DAYMAP[x.slice(4)])).join('');
@@ -626,5 +712,5 @@
 
   return { DAYS, LAYERS, DEFAULT_CONFIG, ROLE, DCAT, OPT, SHIFT_NAME, PATTERN, STATIONS, AHMASH, SOFT, LEVEL, TYPES,
     buildStaff, defaultRules, compile, conflicts, addRule, setPersonal, newId, describe, whoText, whatText, slotsText, key, matches, setOf,
-    parseSheet, layerLetters, solve, report, presence, formAllows, stationLayer, stationOk, matchTimetable };
+    parseSheet, layerLetters, solve, report, canStand, repair, subCandidates, sameName, presence, formAllows, stationLayer, stationOk, matchTimetable };
 });
