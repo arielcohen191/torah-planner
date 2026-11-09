@@ -178,6 +178,8 @@ fieldset h3{font-size:15.5px;margin:18px 0 6px}
 .clist .qd{font-style:normal;font-size:11px}
 table.staff select,table.staff input{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:8px}
 table.staff td{height:auto;padding:4px 6px;background:transparent}
+.pst{font-size:12px;font-weight:600;border-radius:99px;padding:2px 9px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.pst.ok{background:var(--ok-bg);color:var(--ok)}.pst.mid{background:var(--mid-bg);color:#8a5a00}.pst.bad{background:var(--bad-bg);color:var(--bad)}
 body.nodata #v-overview>:not(#qview):not(.keep){display:none}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 @media (max-width:820px){.mb,.sgrid{grid-template-columns:1fr}main{padding:14px}header{padding:14px 14px 0}}
@@ -204,7 +206,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
       <button data-v="manage" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>ניהול גישה</button>
     </nav>
     <div id="classBox" hidden><h6>כיתות</h6><div class="nav clist" id="classList"></div></div>
-    <div class="rail-foot"><div class="who" id="who"></div><button class="btn sm" onclick="logout()">יציאה</button></div>
+    <div class="rail-foot"><div class="who" id="who"></div><span><button class="btn sm" onclick="changeMyPin()" title="שינוי הסיסמה שלי">🔑</button> <button class="btn sm" onclick="logout()">יציאה</button></span></div>
   </aside>
   <div class="main">
     <header class="topbar">
@@ -278,7 +280,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
   </section>
   <section class="view" id="v-manage">
     <h2>ניהול גישה</h2>
-    <p class="hint">מי נכנס למפת הכיתה, באיזה תפקיד ולאיזו כיתה. מחנך רואה רק את הכיתה שלו. הנהלה רואה את כל הכיתות. רק המנהל רואה את החלק האישי בשאלון של מחנכים אחרים.</p>
+    <p class="hint">מי נכנס למפת הכיתה, באיזה תפקיד ולאיזו כיתה. מחנך רואה רק את הכיתה שלו. הנהלה רואה את כל הכיתות ומנהלת את הגישה והסיסמאות. רק המנהל רואה את החלק האישי בשאלון של מחנכים אחרים.</p>
     <div class="box" id="manageBox"></div>
   </section>
   <section class="view" id="v-load">
@@ -299,12 +301,14 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
   </div>
 </div>
 
-<div id="gate" hidden><form class="gate-card" onsubmit="event.preventDefault();doLogin(this.ph.value,this.pin.value)">
-  <div class="mark" style="margin:0 auto 12px">כ״ר</div><h1>מפת כיתה</h1><p>כנפי רוח · ישיבות פדגוגיות</p>
+<div id="gate" hidden><form class="gate-card" id="gateForm" onsubmit="event.preventDefault();gateSubmit()">
+  <div class="mark" style="margin:0 auto 12px">כ״ר</div><h1>מפת כיתה</h1><p id="gateSub">כנפי רוח · ישיבות פדגוגיות</p>
   <label class="f">מספר טלפון<input name="ph" inputmode="tel" autocomplete="tel" placeholder="05X-XXXXXXX" required></label>
-  <label class="f">קוד אישי<input name="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••" required></label>
-  <button class="btn primary" style="justify-content:center">כניסה</button><div id="gateMsg" class="hint" style="text-align:center;min-height:20px"></div>
-  <p class="hint" style="text-align:center">אין לך קוד? פנו להרב אריאל.</p></form></div>
+  <label class="f" id="fPin" hidden>סיסמה<input name="pin" type="password" autocomplete="current-password"></label>
+  <label class="f" id="fNew1" hidden>יצירת סיסמה (4 תווים לפחות)<input name="n1" type="password" autocomplete="new-password"></label>
+  <label class="f" id="fNew2" hidden>הקלדה חוזרת<input name="n2" type="password" autocomplete="new-password"></label>
+  <button class="btn primary" id="gateBtn" style="justify-content:center">המשך</button><div id="gateMsg" class="hint" style="text-align:center;min-height:20px"></div>
+  <a href="#" id="gateBack" hidden onclick="gateStep('phone');return false" class="hint" style="text-align:center">← מספר אחר</a></form></div>
 <div class="ov" id="ov"><div class="modal" id="modal"></div></div>
 
 <script id="saved" type="application/json"></script>
@@ -712,12 +716,41 @@ async function rpc(fn,args){
   const r=await fetch(CFG.url+"/rest/v1/rpc/"+fn,{method:"POST",headers:{apikey:CFG.key,Authorization:"Bearer "+CFG.key,"Content-Type":"application/json"},body:JSON.stringify(args||{})});
   if(!r.ok)throw new Error("server "+r.status);return r.json();
 }
-const ERR={bad:"מספר הטלפון או הקוד שגויים",locked:"יותר מדי ניסיונות שגויים. נסו שוב בעוד 15 דקות",forbidden:"אין לך הרשאה לכיתה הזו",pin_format:"הקוד צריך להיות 4–8 ספרות",role:"תפקיד לא תקין"};
+const ERR={bad:"מספר הטלפון או הסיסמה שגויים",self:"אי אפשר להסיר את הגישה של עצמך",locked:"יותר מדי ניסיונות שגויים. נסו שוב בעוד 15 דקות",forbidden:"אין לך הרשאה לכיתה הזו",pin_format:"הסיסמה צריכה להיות באורך 4–30 תווים",role:"תפקיד לא תקין"};
 const SES_KEY="mapat-kita-session";
 let SES=null,USER=null,CUR_CLASS=null,CAN_EDIT_Q=false,_saveT=null;
 const ses=(v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(SES_KEY)||"null");if(v===null)localStorage.removeItem(SES_KEY);else localStorage.setItem(SES_KEY,JSON.stringify(v))}catch(e){return null}};
 const ROLE_HE={teacher:"מחנך/ת",admin:"הנהלה",principal:"מנהל"};
 
+let GSTEP="phone";
+function gateStep(s){GSTEP=s;const f=document.getElementById("gateForm");
+  document.getElementById("fPin").hidden=s!=="pin";document.getElementById("fNew1").hidden=s!=="new";document.getElementById("fNew2").hidden=s!=="new";
+  f.ph.readOnly=s!=="phone";document.getElementById("gateBack").hidden=s==="phone";
+  document.getElementById("gateBtn").textContent=s==="phone"?"המשך":s==="pin"?"כניסה":"יצירת סיסמה וכניסה";
+  document.getElementById("gateSub").textContent=s==="new"?"כניסה ראשונה: בחרו סיסמה אישית":"כנפי רוח · ישיבות פדגוגיות";
+  document.getElementById("gateMsg").textContent="";
+  setTimeout(()=>(s==="pin"?f.pin:s==="new"?f.n1:f.ph).focus(),50)}
+async function gateSubmit(){
+  const f=document.getElementById("gateForm"),msg=document.getElementById("gateMsg"),phone=f.ph.value.trim();
+  try{
+    if(GSTEP==="phone"){msg.textContent="בודק…";const r=await rpc("mk_check_phone",{p_phone:phone});
+      if(r.status==="none"){msg.textContent="למספר הזה עוד אין גישה. פנו להנהלה כדי לקבל גישה.";return}
+      gateStep(r.status==="new"?"new":"pin");return}
+    if(GSTEP==="pin"){doLogin(phone,f.pin.value);return}
+    if(f.n1.value.length<4){msg.textContent="הסיסמה צריכה להיות באורך 4 תווים לפחות";return}
+    if(f.n1.value!==f.n2.value){msg.textContent="הסיסמאות לא זהות";return}
+    msg.textContent="יוצר…";const u=await rpc("mk_create_pin",{p_phone:phone,p_new_pin:f.n1.value});
+    if(u.error){msg.textContent=u.error==="bad"?"לא ניתן ליצור סיסמה למספר הזה. אולי כבר נוצרה סיסמה? נסו להיכנס איתה, או פנו להנהלה לאיפוס.":(ERR[u.error]||u.error);return}
+    SES={phone,pin:f.n1.value};ses(SES);USER=u;afterLogin();
+  }catch(e){msg.textContent="אין חיבור לשרת כרגע. נסו שוב בעוד רגע."}
+}
+async function changeMyPin(){
+  const n=prompt("סיסמה חדשה (4 תווים לפחות):");if(n==null)return;
+  if(n.length<4){alert("הסיסמה צריכה להיות באורך 4 תווים לפחות");return}
+  if(prompt("הקלידו שוב את הסיסמה החדשה:")!==n){alert("הסיסמאות לא זהות");return}
+  const r=await rpc("mk_change_pin",{p_phone:SES.phone,p_pin:SES.pin,p_new_pin:n});
+  if(r.error){alert(ERR[r.error]||r.error);return}SES.pin=n;ses(SES);alert("הסיסמה עודכנה ✓");
+}
 async function doLogin(phone,pin,silent){
   const msg=document.getElementById("gateMsg");msg.textContent=silent?"":"מתחבר…";
   try{const u=await rpc("mk_login",{p_phone:phone,p_pin:pin});
@@ -725,7 +758,7 @@ async function doLogin(phone,pin,silent){
     SES={phone,pin};ses(SES);USER=u;afterLogin();
   }catch(e){msg.textContent="אין חיבור לשרת כרגע. נסו שוב בעוד רגע.";if(silent)showGate()}
 }
-function showGate(){document.getElementById("gate").hidden=false}
+function showGate(){document.getElementById("gate").hidden=false;gateStep("phone")}
 function logout(){ses(null);location.reload()}
 function afterLogin(){
   document.getElementById("gate").hidden=true;
@@ -785,26 +818,40 @@ async function renderManage(){
   STAFF=r.staff;STAFF_CLASSES=r.classes;drawStaff();
 }
 function drawStaff(){
-  const q=(document.getElementById("staffQ")||{}).value||"";
-  const L=STAFF.filter(s=>!q||s.name.includes(q)||s.phone.includes(q)).sort((a,b)=>(!!b.role-!!a.role)||a.name.localeCompare(b.name,"he"));
+  const q=(document.getElementById("staffQ")||{}).value||"";const onlyAcc=(document.getElementById("staffAcc")||{}).checked;
+  const L=STAFF.filter(s=>(!q||s.name.includes(q)||s.phone.includes(q))&&(!onlyAcc||s.role)).sort((a,b)=>(!!b.role-!!a.role)||a.name.localeCompare(b.name,"he"));
+  const st=s=>!s.role?'<span class="pst">אין גישה</span>':s.locked?'<span class="pst bad">🔒 נעול</span>':s.has_pin?'<span class="pst ok">יש סיסמה</span>':'<span class="pst mid">ממתין לכניסה ראשונה</span>';
   const el=document.getElementById("manageBox");
-  el.innerHTML=`<div class="filters"><input id="staffQ" placeholder="חיפוש שם או טלפון…" value="${esc(q)}" oninput="drawStaff();this.focus();this.setSelectionRange(this.value.length,this.value.length)"><span class="hint" style="margin:0">${STAFF.filter(s=>s.has_pin).length} מתוך ${STAFF.length} עם גישה</span></div>
-  <table class="map staff"><tr><th style="text-align:right">שם</th><th>טלפון</th><th>תפקיד</th><th>כיתה (מחנך)</th><th>קוד אישי</th><th></th></tr>
-  ${L.map((s,i)=>{const id=STAFF.indexOf(s);return `<tr>
+  el.innerHTML=`<div class="filters"><input id="staffQ" placeholder="חיפוש שם או טלפון…" value="${esc(q)}" oninput="drawStaff();const e=document.getElementById('staffQ');e.focus();e.setSelectionRange(e.value.length,e.value.length)">
+   <label class="hint" style="margin:0"><input type="checkbox" id="staffAcc" ${onlyAcc?"checked":""} onchange="drawStaff()"> רק עם גישה</label>
+   <span class="hint" style="margin:0">${STAFF.filter(s=>s.role).length} עם גישה · ${STAFF.filter(s=>s.has_pin).length} כבר נכנסו</span></div>
+  <table class="map staff"><tr><th style="text-align:right">שם</th><th>טלפון</th><th>תפקיד</th><th>כיתה (מחנך)</th><th>סיסמה</th><th></th></tr>
+  ${L.map(s=>{const id=STAFF.indexOf(s);return `<tr>
    <td class="nm" style="cursor:default">${esc(s.name)}</td><td dir="ltr" style="font-size:13px">${esc(s.phone)}</td>
-   <td><select id="r${id}">${["teacher","admin","principal"].map(r=>`<option value="${r}" ${s.role==r?"selected":""}>${ROLE_HE[r]}</option>`).join("")}</select></td>
+   <td><select id="r${id}"><option value="none" ${!s.role?"selected":""}>— אין גישה</option>${["teacher","admin","principal"].map(r=>`<option value="${r}" ${s.role==r?"selected":""}>${ROLE_HE[r]}</option>`).join("")}</select></td>
    <td><select id="c${id}"><option value="">—</option>${STAFF_CLASSES.map(c=>`<option ${s.class_name==c?"selected":""}>${esc(c)}</option>`).join("")}</select></td>
-   <td><input id="p${id}" size="7" inputmode="numeric" placeholder="${s.has_pin?"●●●● (קיים)":"אין גישה"}"> <button class="btn sm" onclick="document.getElementById('p${id}').value=String(Math.floor(1000+Math.random()*9000))">🎲</button></td>
+   <td>${st(s)} ${s.role?`<button class="btn sm" onclick="pinAction(${id},'reset')" title="מוחק את הסיסמה. בכניסה הבאה המשתמש יבחר סיסמה חדשה">איפוס</button> <button class="btn sm" onclick="pinAction(${id},'set')" title="קביעת סיסמה חדשה ידנית">קביעה</button>`:""}</td>
    <td><button class="btn primary sm" onclick="saveStaff(${id})">שמירה</button> <span id="m${id}" class="hint" style="margin:0"></span></td></tr>`}).join("")}</table>
-  <p class="hint" style="margin-top:10px">כדי לתת גישה: בחרו תפקיד וכיתה, הגרילו קוד ושמרו, ואז שלחו לאיש הצוות את הקישור ואת הקוד. כדי לאפס קוד, מקלידים קוד חדש ושומרים. הקוד מוצג רק ברגע השמירה, ולא נשמר בשום מקום גלוי.</p>`;
+  <p class="hint" style="margin-top:10px">כדי לתת גישה: בוחרים תפקיד, ולמחנך גם כיתה, ושומרים. אחר כך שולחים לאיש הצוות את הקישור. בכניסה הראשונה הוא מקליד את מספר הטלפון שלו ובוחר סיסמה בעצמו. שכח סיסמה? לוחצים "איפוס", ובכניסה הבאה הוא יבחר סיסמה חדשה.</p>`;
 }
-async function saveStaff(id){
-  const s=STAFF[id],pin=document.getElementById("p"+id).value.trim()||null,m=document.getElementById("m"+id);
+async function staffCall(id,action,newPin){
+  const s=STAFF[id],m=document.getElementById("m"+id),role=document.getElementById("r"+id).value;
+  if(action&&role==="none"){m.textContent="קודם צריך לשייך תפקיד";return}
   m.textContent="שומר…";
-  const r=await rpc("mk_staff_set",{p_phone:SES.phone,p_pin:SES.pin,p_target:s.phone,p_name:s.name,p_role:document.getElementById("r"+id).value,p_class:document.getElementById("c"+id).value,p_new_pin:pin});
-  if(r.error){m.textContent="⚠ "+(ERR[r.error]||r.error);return}
-  s.role=document.getElementById("r"+id).value;s.class_name=document.getElementById("c"+id).value;if(pin)s.has_pin=true;
-  m.innerHTML=pin?`✓ נשמר · קוד: <b dir="ltr">${pin}</b> <a href="#" onclick="navigator.clipboard.writeText(${JSON.stringify(`שלום ${s.name.split(" ")[0]}, זה הקישור למפת הכיתה לקראת הישיבות הפדגוגיות: ${location.origin}/mapat-kita/ · כניסה עם מספר הטלפון שלך והקוד ${pin}`)});this.textContent='הועתק ✓';return false">העתקת הודעה</a>`:"✓ נשמר";
+  const r=await rpc("mk_staff_set",{p_phone:SES.phone,p_pin:SES.pin,p_target:s.phone,p_name:s.name,p_role:role,p_class:document.getElementById("c"+id).value,p_pin_action:action||null,p_new_pin:newPin||null});
+  if(r.error){m.textContent="⚠ "+(ERR[r.error]||r.error);return false}
+  const was=!!s.role;s.role=role==="none"?null:role;s.class_name=document.getElementById("c"+id).value;
+  if(action==="reset"){s.has_pin=false;s.locked=false}if(action==="set"){s.has_pin=true;s.locked=false}if(!s.role)s.has_pin=false;
+  drawStaff();const m2=document.getElementById("m"+id);
+  const link=`${location.origin}/mapat-kita/`;
+  const txt=action==="set"?`שלום ${s.name.split(" ")[0]}, הסיסמה שלך למפת הכיתה עודכנה: ${newPin} · ${link}`:`שלום ${s.name.split(" ")[0]}, זה הקישור למפת הכיתה לקראת הישיבות הפדגוגיות: ${link} · נכנסים עם מספר הטלפון שלך, ובכניסה הראשונה בוחרים סיסמה.`;
+  if(m2)m2.innerHTML=(action==="reset"?"✓ אופס":action==="set"?"✓ הסיסמה עודכנה":"✓ נשמר")+(s.role&&(action||!was||!s.has_pin)?` · <a href="#" onclick='navigator.clipboard.writeText(${JSON.stringify(txt).replace(/'/g,"&#39;")});this.textContent="הועתק ✓";return false'>העתקת הודעה</a>`:"");
+}
+function saveStaff(id){staffCall(id,null)}
+function pinAction(id,a){
+  if(a==="reset"){if(confirm("לאפס את הסיסמה של "+STAFF[id].name+"? בכניסה הבאה הוא יבחר סיסמה חדשה."))staffCall(id,"reset");return}
+  const n=prompt("סיסמה חדשה עבור "+STAFF[id].name+" (4 תווים לפחות):");if(n==null)return;
+  if(n.length<4){alert("הסיסמה צריכה להיות באורך 4 תווים לפחות");return}staffCall(id,"set",n);
 }
 
 document.querySelector(".hero").hidden=false;
