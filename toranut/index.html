@@ -570,7 +570,7 @@ function viewHist(){
     '<div class="row noprint"><input type="text" id="vlabel" class="fsel" placeholder="הערה לגרסה (רשות)" style="max-width:220px"><button class="btn sm" data-act="vSave">שמירת גרסה עכשיו</button></div></div>';
   if(!S.versions.length)return h+'<div class="card"><p>עוד אין גרסאות. הן ייווצרו בהרצת השיבוץ הבאה.</p></div>';
   h+='<div class="card"><div class="list">'+S.versions.map((v,i)=>{const st=v.stats||{};
-    return '<div class="item '+(st.open?'orange':'green')+'"><div class="ver"><div><b style="font-size:18px">'+esc(v.label||stamp(v.at))+'</b>'+(i===0?' <span class="chip">האחרונה</span>':'')+
+    return '<div class="item '+(st.open?'orange':'green')+'"><div class="ver"><div><b style="font-size:18px"><bdi dir="ltr">'+esc(v.label||stamp(v.at))+'</bdi></b>'+(i===0?' <span class="chip">האחרונה</span>':'')+
       '<div class="small muted">'+esc([st.kind,v.by].filter(Boolean).join(' · '))+(st.demand?' · שובצו '+st.filled+'/'+st.demand+(st.open?' · <span style="color:var(--red)">חסרות '+st.open+'</span>':' · הכול מאויש'):'')+'</div></div>'+
       '<div class="row"><button class="btn sec sm" data-act="vView" data-id="'+v.id+'">צפייה בלוח</button><button class="btn sec sm" data-act="vRestore" data-id="'+v.id+'">שחזור</button></div></div></div>'}).join('')+'</div></div>';
   return h;
@@ -579,7 +579,7 @@ function previewBar(){
   if(!S.preview)return '';
   const cur=S.data.plan.assign||{},old=(S.preview.snap.plan||{}).assign||{};
   const keys=new Set([...Object.keys(cur),...Object.keys(old)]);let diff=0;keys.forEach(k=>{if(cur[k]!==old[k])diff++});
-  return '<div class="preview-bar noprint"><div><b>צפייה בגרסה '+esc(S.preview.meta.label||stamp(S.preview.meta.at))+'</b> · '+diff+' משבצות שונות מהשיבוץ הנוכחי · קריאה בלבד</div>'+
+  return '<div class="preview-bar noprint"><div><b>צפייה בגרסה <bdi dir="ltr">'+esc(S.preview.meta.label||stamp(S.preview.meta.at))+'</bdi></b> · '+diff+' משבצות שונות מהשיבוץ הנוכחי · קריאה בלבד</div>'+
     '<div class="row"><button class="btn sm" data-act="vRestore" data-id="'+S.preview.meta.id+'" style="background:#fff;color:#2b2f6b">שחזור הגרסה הזו</button><button class="btn sec sm" data-act="vExit">חזרה לנוכחית</button></div></div>';
 }
 async function viewVersion(id){
