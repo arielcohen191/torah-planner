@@ -1,0 +1,9 @@
+-- מפת כיתה (/mapat-kita): הוחל ב-Supabase כמיגרציות mapat_kita, mapat_kita_auth_fix, mapat_kita_sync_fix.
+-- טבלאות: mk_access (טלפון, תפקיד teacher/admin/principal, כיתה, pin_hash, can_manage, נעילה אחרי 5 ניסיונות),
+--          mk_class_data (שורות הגיליון לכל כיתה), mk_questionnaire (חלק א' / חלק ב'), mk_settings (sync_secret).
+-- כל הטבלאות: RLS ללא מדיניות + revoke מ-anon. גישה רק דרך RPC (security definer):
+--   mk_login(phone,pin) · mk_get(phone,pin,class) · mk_save_q(phone,pin,class,a,b)
+--   mk_staff_list(phone,pin) · mk_staff_set(phone,pin,target,name,role,class,new_pin) · mk_sync(secret,sheets)
+-- הרשאות: מחנך — הכיתה שלו בלבד; הנהלה — כל הכיתות; חלק ב' של השאלון — רק המנהל והמחנך שמילא.
+-- איפוס קוד ידני: update public.mk_access set pin_hash = extensions.crypt('1234', extensions.gen_salt('bf')), fails=0, locked_until=null where phone='05XXXXXXXX';
+-- סוד הסנכרון: select v from public.mk_settings where k='sync_secret';  (לא נשמר בריפו)

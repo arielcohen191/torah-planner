@@ -60,7 +60,7 @@ body{margin:0;background:var(--canvas);color:var(--ink);font-family:var(--f-ui);
 .view>h2,.sec2{font-size:18px;margin:26px 0 8px;font-weight:700}
 .view>h2:first-child{margin-top:4px}
 .hint{color:var(--muted);font-size:13px;margin:-4px 0 12px}
-@media (max-width:900px){.app{grid-template-columns:minmax(0,1fr)}.rail{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:0 12px}.brand{border:none;padding:12px 4px}.rail h6,.rail-foot{display:none}.nav{flex-direction:row;overflow-x:auto;padding:0 0 10px;width:100%}.nav button{white-space:nowrap;width:auto}.content{padding:12px}}
+@media (max-width:900px){.app{grid-template-columns:minmax(0,1fr)}.rail{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:0 12px}.brand{border:none;padding:12px 4px}.rail h6{display:none}.rail-foot{width:100%;border:0;padding:6px 4px}#classBox{width:100%}.clist{flex-direction:row;overflow-x:auto;max-height:none}.nav{flex-direction:row;overflow-x:auto;padding:0 0 10px;width:100%}.nav button{white-space:nowrap;width:auto}.content{padding:12px}}
 /* tiles */
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .tile{background:var(--card);border:1px solid transparent;box-shadow:var(--lift);border-radius:18px;padding:12px 14px;cursor:pointer;text-align:right;font:inherit;color:inherit;transition:.15s}
@@ -163,6 +163,22 @@ fieldset h3{font-size:15.5px;margin:18px 0 6px}
 .wt td:first-child{white-space:nowrap;width:70px}
 .dots{color:var(--bad);letter-spacing:-1px;font-size:12px}.dots i{color:#e5ddd2;font-style:normal}
 .cat{font-size:12px;color:var(--muted);background:var(--na-bg);border-radius:10px;padding:0 8px;margin-right:4px}
+#gate{position:fixed;inset:0;z-index:50;background:radial-gradient(circle at 80% 10%,rgba(255,255,255,.14) 0 180px,transparent 181px),radial-gradient(circle at 10% 90%,rgba(255,255,255,.1) 0 140px,transparent 141px),var(--grad);display:grid;place-items:center;padding:20px}
+.gate-card{background:var(--card);border-radius:22px;padding:30px 26px;width:min(400px,100%);box-shadow:0 20px 60px rgba(20,30,80,.35);display:flex;flex-direction:column;gap:12px;text-align:right}
+.gate-card h1{margin:0;font-size:22px;text-align:center}.gate-card>p{color:var(--muted);margin:0 0 8px;font-size:13.5px;text-align:center}
+.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+.f input{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;color:var(--ink);font-weight:400}
+.btn.sm{font-size:12.5px;padding:5px 10px}
+.rail-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rail-foot .btn{background:var(--rail-2);border-color:var(--rail-2);color:var(--rail-ink);box-shadow:none}
+.who b{display:block;color:#fff;font-size:13.5px}.who small{font-size:11.5px}
+.clist{max-height:42vh;overflow-y:auto}
+.clist button{padding:7px 12px;font-size:14px}
+.clist .dot{width:8px;height:8px;border-radius:50%;background:var(--rail-2);margin-inline-start:auto}.clist .dot.ok{background:#5fd394}
+.clist .qd{font-style:normal;font-size:11px}
+table.staff select,table.staff input{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:8px}
+table.staff td{height:auto;padding:4px 6px;background:transparent}
+body.nodata #v-overview>:not(#qview):not(.keep){display:none}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 @media (max-width:820px){.mb,.sgrid{grid-template-columns:1fr}main{padding:14px}header{padding:14px 14px 0}}
 @media print{
@@ -185,9 +201,10 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
       <button data-v="quality"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>שלמות הנתונים</button>
       <button data-v="q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>שאלון מחנך</button>
       <button data-v="me" class="sens"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>למנהל</button>
-      <button data-v="load"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>טעינת כיתה</button>
+      <button data-v="manage" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>ניהול גישה</button>
     </nav>
-    <div class="rail-foot">הנתונים נטענים בדפדפן בלבד ואינם נשמרים בשרת</div>
+    <div id="classBox" hidden><h6>כיתות</h6><div class="nav clist" id="classList"></div></div>
+    <div class="rail-foot"><div class="who" id="who"></div><button class="btn sm" onclick="logout()">יציאה</button></div>
   </aside>
   <div class="main">
     <header class="topbar">
@@ -203,7 +220,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
         <div id="demoTag"></div>
         <h2 id="ttl">מפת כיתה</h2>
         <div class="sub" id="subttl"></div>
-        <div class="acts"><button class="btn" id="loadBtn">📂 טעינת כיתה (CSV)</button><button class="btn" onclick="go('q')">📝 שאלון מחנך</button></div>
+        
       </div>
   <section class="view on" id="v-overview">
     <h2>במבט אחד</h2>
@@ -212,8 +229,8 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
     <h2>פילוח לפי תחומי תפקוד</h2>
     <p class="hint">ירוק = תקין · צהוב = לשים לב · אדום = דורש התערבות · אפור = לא מולא. לחיצה על פס מסננת את המפה.</p>
     <div class="dgrid" id="dgrid"></div>
-    <h2>קול המחנך</h2>
-    <p class="hint">מתוך שאלון המחנך, חלק א'.</p>
+    <h2 class="keep">קול המחנך</h2>
+    <p class="hint keep">מתוך שאלון המחנך, חלק א'.</p>
     <div id="qview"></div>
     <h2>מוקדים לישיבה</h2>
     <p class="hint">נגזר אוטומטית מהנתונים — נקודות פתיחה לשיחה, לא מסקנות.</p>
@@ -251,13 +268,18 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 
   <section class="view" id="v-q">
     <h2>שאלון מחנך לקראת הישיבה הפדגוגית</h2>
-    <p class="hint">ממלאים לפני הישיבה. התשובות נשמרות אוטומטית בדפדפן הזה. בסוף שומרים קובץ ושולחים לרב חגי: זה אותו כלי, עם הנתונים והתשובות בפנים.</p>
+    <p class="hint">ממלאים לפני הישיבה. כל שינוי נשמר אוטומטית בשרת. חלק א' גלוי להנהלה. חלק ב' גלוי רק לך ולמנהל.</p>
     <div id="qform"></div>
   </section>
   <section class="view" id="v-me">
     <h2>למנהל: המחנך בתפקיד</h2>
     <p class="hint">חלק ב' של השאלון. מקורות כוח, מה מוציא מאיזון ומה ישחרר. החלק הזה לא מוצג כשנתוני הרקע מוסתרים.</p>
     <div id="meview"></div>
+  </section>
+  <section class="view" id="v-manage">
+    <h2>ניהול גישה</h2>
+    <p class="hint">מי נכנס למפת הכיתה, באיזה תפקיד ולאיזו כיתה. מחנך רואה רק את הכיתה שלו. הנהלה רואה את כל הכיתות. רק המנהל רואה את החלק האישי בשאלון של מחנכים אחרים.</p>
+    <div class="box" id="manageBox"></div>
   </section>
   <section class="view" id="v-load">
     <h2>טעינת כיתה אחרת</h2>
@@ -277,13 +299,17 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
   </div>
 </div>
 
+<div id="gate" hidden><form class="gate-card" onsubmit="event.preventDefault();doLogin(this.ph.value,this.pin.value)">
+  <div class="mark" style="margin:0 auto 12px">כ״ר</div><h1>מפת כיתה</h1><p>כנפי רוח · ישיבות פדגוגיות</p>
+  <label class="f">מספר טלפון<input name="ph" inputmode="tel" autocomplete="tel" placeholder="05X-XXXXXXX" required></label>
+  <label class="f">קוד אישי<input name="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••" required></label>
+  <button class="btn primary" style="justify-content:center">כניסה</button><div id="gateMsg" class="hint" style="text-align:center;min-height:20px"></div>
+  <p class="hint" style="text-align:center">אין לך קוד? פנו להרב אריאל.</p></form></div>
 <div class="ov" id="ov"><div class="modal" id="modal"></div></div>
 
 <script id="saved" type="application/json"></script>
 <script>
-// כיתת דוגמה — שמות ונתונים בדויים
-window.PILOT={"className":"ו’4 (דוגמה)","teacher":"כיתת דוגמה","demo":true,"students":[{"n":1,"name":"אברהמי אורי","g":"1111111 . 1111 1112 1111111","be":"232","st":"ACG","hob":"כדורגל","good":"אורי הינו תלמיד נעים הליכות ובעל לב טוב. [טקסט דוגמה בדוי]"},{"n":2,"name":"בן דוד הלל","g":"1111131 . 1111 2222 1111212","be":"211","st":"ABC","hob":"מנגן בפסנתר","x":{"62":"1","64":"[הערת מורה לדוגמה]"},"good":"הלל הינו תלמיד סקרן, שואל שאלות ואוהב ללמוד. [טקסט דוגמה בדוי]"},{"n":3,"name":"גולן נריה","g":"1111111 . 1111 2211 1112222","be":"211","st":"ABFH","hob":"אוהב לצייר","good":"נריה הינו תלמיד חברותי ומאיר פנים. [טקסט דוגמה בדוי]"},{"n":4,"name":"דהן אלישע","g":"1111111 3 1111 1112 1111112","be":"","st":"ACG","hob":"כדורסל","good":"אלישע הינו תלמיד רציני, אחראי ומשקיע. [טקסט דוגמה בדוי]"},{"n":5,"name":"הלוי שקד","g":"1111111 . 1111 1111 1111111","be":"","st":"ABCDFG","hob":"אוהב לבנות בלגו","good":"שקד הינו תלמיד יצירתי ובעל חוש הומור. [טקסט דוגמה בדוי]"},{"n":6,"name":"ויסמן אביה","g":"1211111 3 1111 1111 1111111","be":"","st":"ABCDF","hob":"קורא הרבה","good":"אביה הינו תלמיד נעים הליכות ובעל לב טוב. [טקסט דוגמה בדוי]"},{"n":7,"name":"זכאי עידו","g":"1111111 . 1111 2111 1112121","be":"211","st":"AJCDE","hob":"אופניים","good":"עידו הינו תלמיד סקרן, שואל שאלות ואוהב ללמוד. [טקסט דוגמה בדוי]"},{"n":8,"name":"חדד יאיר","g":"1113121 . 1131 3332 3.13123","be":"","st":"ABJ","hob":"","e":"רגשי - חברתי","good":"יאיר הינו תלמיד חברותי ומאיר פנים. [טקסט דוגמה בדוי]"},{"n":9,"name":"טל אמיתי","g":"2111111 3 1133 2223 3.11122","be":"","st":"ABE","hob":"אוהב בעלי חיים","e":"התנהגותי","s":"[פירוט לדוגמה]","m":"שילוב","good":"אמיתי הינו תלמיד רציני, אחראי ומשקיע. [טקסט דוגמה בדוי]"},{"n":10,"name":"יוסף נחום","g":"2113121 . 1111 2322 2.22222","be":"211","st":"IJBD","hob":"","m":"שילוב","good":"נחום הינו תלמיד יצירתי ובעל חוש הומור. [טקסט דוגמה בדוי]"},{"n":11,"name":"כרמי בנימין","g":"1111111 3 2111 1121 1111111","be":"211","st":"ABCDEFG","hob":"","good":"בנימין הינו תלמיד נעים הליכות ובעל לב טוב. [טקסט דוגמה בדוי]"},{"n":12,"name":"לוין אהרון","g":"1111111 . 1111 1111 1111221","be":"212","st":"CDIG","hob":"כדורגל","good":"אהרון הינו תלמיד סקרן, שואל שאלות ואוהב ללמוד. [טקסט דוגמה בדוי]"},{"n":13,"name":"מזרחי נתנאל","g":"3111111 . 1133 2222 1111112","be":"","st":"ABECG","hob":"מנגן בפסנתר","e":"רגשי","s":"[פירוט לדוגמה]","m":"שילוב","good":"נתנאל הינו תלמיד חברותי ומאיר פנים. [טקסט דוגמה בדוי]"},{"n":14,"name":"נחמני הדר","g":"1112111 . 1111 1111 1111111","be":"211","st":"ABCF","hob":"אוהב לצייר","good":"הדר הינו תלמיד רציני, אחראי ומשקיע. [טקסט דוגמה בדוי]"},{"n":15,"name":"סלע יונתן","g":"1111121 3 1133 3333 2.13133","be":"211","st":"IBH","hob":"כדורסל","e":"טבלת עיצוב התנהגות","s":"[פירוט לדוגמה]","m":"מענה חברתי/העצמה","good":"יונתן הינו תלמיד יצירתי ובעל חוש הומור. [טקסט דוגמה בדוי]"},{"n":16,"name":"עמר אליאב","g":"2111111 . 1111 1111 1111111","be":"211","st":"AJCDGFE","hob":"אוהב לבנות בלגו","m":"שילוב","good":"אליאב הינו תלמיד נעים הליכות ובעל לב טוב. [טקסט דוגמה בדוי]"},{"n":17,"name":"פז מתן","g":"1111111 3 1131 2222 1112122","be":"211","st":"BJI","hob":"קורא הרבה","e":"רגשי - חברתי","good":"מתן הינו תלמיד סקרן, שואל שאלות ואוהב ללמוד. [טקסט דוגמה בדוי]"},{"n":18,"name":"צדוק אחיה","g":"1131111 . 1111 1122 2.11112","be":"","st":"BCGF","hob":"אופניים","good":"אחיה הינו תלמיד חברותי ומאיר פנים. [טקסט דוגמה בדוי]"},{"n":19,"name":"קורן ישי","g":"1111111 . 1133 2222 2113222","be":"211","st":"EG","hob":"","e":"רגשי","s":"[פירוט לדוגמה]","good":"ישי הינו תלמיד רציני, אחראי ומשקיע. [טקסט דוגמה בדוי]"},{"n":20,"name":"רוזן טוביה","g":"2111111 . 1113 1112 1111111","be":"211","st":"FBCE","hob":"אוהב בעלי חיים","s":"[פירוט לדוגמה]","m":"מענה חברתי/העצמה","good":"טוביה הינו תלמיד יצירתי ובעל חוש הומור. [טקסט דוגמה בדוי]"},{"n":21,"name":"שגיא עוז","g":"2121111 3 1131 2222 1111122","be":"211","st":"ADG","hob":"","e":"רגשי","m":"שילוב","good":"עוז הינו תלמיד נעים הליכות ובעל לב טוב. [טקסט דוגמה בדוי]"},{"n":22,"name":"תמיר יהונתן","g":"1111111 3 1111 1211 1111111","be":"","st":"JC","hob":"","good":"יהונתן הינו תלמיד סקרן, שואל שאלות ואוהב ללמוד. [טקסט דוגמה בדוי]"}]};
-
+window.PILOT={className:"",teacher:"",students:[]};
 // ---------- schema (column indexes in the template sheet) ----------
 const STRENGTHS={A:"לב טוב ואכפתיות",B:"שמחת חיים ואופטימיות",C:"דרך ארץ וכבוד",D:"אחריות וארגון",E:"נחישות והתמדה",F:"סקרנות אינטלקטואלית",G:"יושרה ואמינות",H:"יצירתיות וחשיבה מקורית",I:"כישורים מעשיים / פיזיים",J:"מנהיגות והובלה"};
 const IND={ // col: [label, {value:text}]
@@ -394,7 +420,7 @@ function go(view,filter){
   document.querySelector(".hero").hidden=view!="overview";
   document.querySelectorAll("#nav button").forEach(b=>{b.classList.toggle("on",b.dataset.v==view);if(b.dataset.v==view){const t=b.textContent.trim();document.getElementById("pageTitle").textContent=t;document.getElementById("crumb").textContent="מפת כיתה / "+t}});
   document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id=="v-"+view));
-  if(view=="map")renderMap();if(view=="q")renderQForm();if(view=="me")renderMeView();window.scrollTo(0,0);
+  if(view=="map")renderMap();if(view=="manage")renderManage();if(view=="q")renderQForm();if(view=="me")renderMeView();window.scrollTo(0,0);
 }
 
 // ---------- renderers ----------
@@ -566,7 +592,7 @@ function renderQForm(){
   <div class="qhead"><div><label>ממלא/ת: <input value="${esc(Q.who)}" placeholder="שם" oninput="qSet('who',this.value)"></label>
     <label>תאריך: <input type="date" value="${Q.date}" oninput="qSet('date',this.value)"></label></div>
     <div><span id="qstat" class="hint" style="margin:0"></span>
-    <button class="chip" onclick="exportFile()">📤 שמירת קובץ לשליחה לרב חגי</button>
+    
     <button class="chip" onclick="if(confirm('לנקות את כל התשובות בשאלון?')){Q=blankQ();qChanged();renderQForm()}">ניקוי</button></div></div>
 
   <fieldset><legend>חלק א' · הכיתה שלי <span class="tagm">יוצג בישיבה</span></legend>
@@ -587,7 +613,7 @@ function renderQForm(){
   </fieldset>
 
   <fieldset class="me"><legend>חלק ב' · אני בתפקיד <span class="tagm s">🔒 למנהל בלבד · לא מוצג בהקרנה</span></legend>
-   ${!window._meOpen?`<p>החלק הזה נועד לשיחה אישית עם הרב חגי, ולא לישיבה עצמה. <button class="chip" onclick="window._meOpen=1;renderQForm()">פתיחת החלק האישי</button></p>`:`
+   ${!window._meOpen?`<p>החלק הזה גלוי רק לך ולמנהל, ולא מוצג בישיבה. <button class="chip" onclick="window._meOpen=1;renderQForm()">פתיחת החלק האישי</button></p>`:`
    <h3>5. באילו תפקידים אני משמש השנה?</h3>
    <div class="chips">${ROLES.map(r=>`<button class="ch ${m.roles.includes(r)?'on':''}" onclick="qToggle('me.roles','${r}')">${r}</button>`).join("")}</div>
    <h3>6. מאיפה אני מקבל כוח?</h3>
@@ -611,7 +637,7 @@ function renderQView(){
   const byName=n=>STATE.rows.find(s=>s.name==n);
   const sc=n=>{const s=byName(n);return s?chip(s):esc(n)};
   const any=W.length||c.discuss.length||c.bright||c.needs;
-  box.innerHTML=!any?`<div class="icard n"><h4>שאלון המחנך עוד לא מולא</h4><p>מומלץ למלא לפני הישיבה, וזה לוקח בערך 10 דקות. <button class="chip" onclick="go('q')">למילוי השאלון</button></p></div>`:`
+  box.innerHTML=!any?`<div class="icard n"><h4>שאלון המחנך עוד לא מולא</h4><p>${(typeof CAN_EDIT_Q!=="undefined"&&!CAN_EDIT_Q)?"המחנך עוד לא מילא את השאלון.":`מומלץ למלא לפני הישיבה, וזה לוקח בערך 10 דקות. <button class="chip" onclick="go('q')">למילוי השאלון</button>`}</p></div>`:`
    <div class="ins">
     ${W.length?`<div class="icard y" style="grid-column:1/-1"><h4>מה מטריד את המחנך${Q.who?` (${esc(Q.who)})`:""}, לפי עוצמה</h4>
       <table class="wt">${W.map(w=>`<tr><td>${lvlDots(w.lvl)}</td><td><b>${esc(w.t)}</b> <span class="cat">${esc(w.cat)}</span>${w.help?`<div class="hint" style="margin:2px 0 0">↳ מענה מבוקש: ${esc(w.help)}</div>`:""}</td><td>${w.stu.map(sc).join("")}</td></tr>`).join("")}</table></div>`:""}
@@ -669,7 +695,6 @@ function exportFile(){
 document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>go(b.dataset.v));
 document.getElementById("q").oninput=renderMap;
 document.getElementById("fsel").onchange=e=>{STATE.filter=e.target.value||null;renderMap()};
-document.getElementById("loadBtn").onclick=()=>go("load");
 document.getElementById("sensBtn").onclick=e=>{STATE.proj=!STATE.proj;document.body.classList.toggle("proj",STATE.proj);
   if(STATE.proj&&document.getElementById("v-me").classList.contains("on"))go("overview");e.target.textContent=STATE.proj?"🔒 נתוני רקע רגישים: מוסתרים":"🔓 נתוני רקע רגישים: מוצגים";e.target.classList.toggle("on",!STATE.proj)};
 const drop=document.getElementById("drop"),file=document.getElementById("file");
@@ -681,9 +706,109 @@ function readFile(f){window.SAVED=null;window._isDemo=false;if(!f)return;const r
   if(!rows.length){alert("לא נמצאו שורות תלמידים בקובץ. ודאו שזה CSV של לשונית כיתה לפי התבנית.");return}
   const nm=f.name.replace(/\.csv$/i,"").split(" - ").pop().trim();const m=nm.match(/^(\S+)\s*(.*)$/)||[];
   load(rows,m[1]||nm,(m[2]||"").trim());go("overview")};rd.readAsText(f,"utf-8")}
-document.getElementById("backPilot").onclick=()=>{window._isDemo=!!PILOT.demo;load(expandPilot(PILOT),PILOT.className,PILOT.teacher);go("overview")};
-(function(){let S=null;try{S=JSON.parse(document.getElementById("saved").textContent||"null")}catch(e){}
-  window.SAVED=S;if(S&&S.raw){load(S.raw,S.cls,S.teacher)}else{window._isDemo=!!PILOT.demo;load(expandPilot(PILOT),PILOT.className,PILOT.teacher)}})();
+// ================= חיבור לשרת (Supabase) · כניסה, כיתות, שמירת שאלון, ניהול צוות =================
+const CFG={url:"https://onocjgbtensczpdbeanf.supabase.co",key:"sb_publishable_JpV-E-qPnV9ZdnRnY9Kv8Q_TaRzCnyc"};
+async function rpc(fn,args){
+  const r=await fetch(CFG.url+"/rest/v1/rpc/"+fn,{method:"POST",headers:{apikey:CFG.key,Authorization:"Bearer "+CFG.key,"Content-Type":"application/json"},body:JSON.stringify(args||{})});
+  if(!r.ok)throw new Error("server "+r.status);return r.json();
+}
+const ERR={bad:"מספר הטלפון או הקוד שגויים",locked:"יותר מדי ניסיונות שגויים. נסו שוב בעוד 15 דקות",forbidden:"אין לך הרשאה לכיתה הזו",pin_format:"הקוד צריך להיות 4–8 ספרות",role:"תפקיד לא תקין"};
+const SES_KEY="mapat-kita-session";
+let SES=null,USER=null,CUR_CLASS=null,CAN_EDIT_Q=false,_saveT=null;
+const ses=(v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(SES_KEY)||"null");if(v===null)localStorage.removeItem(SES_KEY);else localStorage.setItem(SES_KEY,JSON.stringify(v))}catch(e){return null}};
+const ROLE_HE={teacher:"מחנך/ת",admin:"הנהלה",principal:"מנהל"};
+
+async function doLogin(phone,pin,silent){
+  const msg=document.getElementById("gateMsg");msg.textContent=silent?"":"מתחבר…";
+  try{const u=await rpc("mk_login",{p_phone:phone,p_pin:pin});
+    if(u.error){if(silent){ses(null);showGate()}else msg.textContent=ERR[u.error]||u.error;return}
+    SES={phone,pin};ses(SES);USER=u;afterLogin();
+  }catch(e){msg.textContent="אין חיבור לשרת כרגע. נסו שוב בעוד רגע.";if(silent)showGate()}
+}
+function showGate(){document.getElementById("gate").hidden=false}
+function logout(){ses(null);location.reload()}
+function afterLogin(){
+  document.getElementById("gate").hidden=true;
+  document.getElementById("who").innerHTML=`<b>${esc(USER.name)}</b><small>${ROLE_HE[USER.role]||""}${USER.class_name?" · "+esc(USER.class_name):""}</small>`;
+  document.querySelector('#nav [data-v="manage"]').hidden=!USER.can_manage;
+  const isMgmt=USER.role!=="teacher";
+  document.getElementById("classBox").hidden=!isMgmt;
+  if(isMgmt)renderClassList();
+  const start=USER.class_name||(USER.classes.find(c=>c.has_data)||USER.classes[0]||{}).class_name;
+  if(start)openClass(start);else showNoClass("לא שויכה לך כיתה. פנו להרב אריאל.");
+}
+function renderClassList(){
+  document.getElementById("classList").innerHTML=USER.classes.map(c=>`<button data-c="${esc(c.class_name)}" class="${c.class_name==CUR_CLASS?'on':''}" onclick="openClass(this.dataset.c)" title="${c.teacher?esc(c.teacher):'לא שויך מחנך'}">
+    <span>${esc(c.class_name)}</span><i class="dot ${c.has_data?'ok':''}" title="${c.has_data?'יש נתונים':'אין עדיין נתונים'}"></i>${c.has_q?'<i class="qd" title="השאלון מולא">📝</i>':''}</button>`).join("");
+}
+async function openClass(c){
+  CUR_CLASS=c;if(USER.classes.length)renderClassList();
+  document.getElementById("ttl").textContent="טוען את "+c+"…";
+  let d;try{d=await rpc("mk_get",{p_phone:SES.phone,p_pin:SES.pin,p_class:c})}catch(e){showNoClass("אין חיבור לשרת כרגע.");return}
+  if(d.error){if(d.error==="bad"||d.error==="locked"){logout();return}showNoClass(ERR[d.error]||d.error);return}
+  CAN_EDIT_Q=!!d.can_edit_q;
+  window._serverQ=d.q;window._serverMeta=d;
+  document.querySelector('#nav [data-v="q"]').hidden=!CAN_EDIT_Q;
+  const rows=d.rows?rowsFromSheet(d.rows):[];
+  document.body.classList.toggle("nodata",!rows.length);
+  load(rows,d.class_name,d.teacher||"");
+  const sync=d.synced_at?new Date(d.synced_at).toLocaleString("he-IL",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}):null;
+  document.getElementById("subttl").textContent=(d.teacher?"מחנך: "+d.teacher+" · ":"")+(rows.length?rows.length+" תלמידים · ":"")+(sync?"עודכן מהטבלה "+sync:"");
+  document.getElementById("demoTag").innerHTML=rows.length?"":`<span class="demo">הטבלה של ${esc(d.class_name)} עוד לא סונכרנה מגוגל שיטס.${CAN_EDIT_Q?" בינתיים אפשר כבר למלא את שאלון המחנך.":""}</span>`;
+  go(document.querySelector("#nav button.on:not([hidden])")?.dataset.v||"overview");
+}
+function showNoClass(t){document.getElementById("ttl").textContent=t;document.getElementById("subttl").textContent=""}
+
+// ----- questionnaire ⇄ server -----
+qLoad=function(){
+  const s=window._serverQ;Q=blankQ();
+  if(s){const a=s.part_a||{};if(a.cls)Q.cls=Object.assign(Q.cls,a.cls);Q.who=a.who||s.filled_by||"";Q.date=a.date||Q.date;
+    if(s.part_b)Q.me=Object.assign(Q.me,s.part_b);}
+  if(!Q.who&&CAN_EDIT_Q)Q.who=USER.name;
+};
+qSave=function(){
+  if(!CAN_EDIT_Q)return;
+  const st=document.getElementById("qstat");if(st)st.textContent="שומר…";
+  clearTimeout(_saveT);_saveT=setTimeout(async()=>{
+    try{const r=await rpc("mk_save_q",{p_phone:SES.phone,p_pin:SES.pin,p_class:CUR_CLASS,p_part_a:{who:Q.who,date:Q.date,cls:Q.cls},p_part_b:Q.me});
+      const st=document.getElementById("qstat");if(st)st.textContent=r.error?"⚠ "+(ERR[r.error]||r.error):"✓ נשמר "+new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
+    }catch(e){const st=document.getElementById("qstat");if(st)st.textContent="⚠ לא נשמר — אין חיבור. ננסה שוב בשינוי הבא."}
+  },900);
+};
+
+// ----- ניהול צוות -----
+let STAFF=null,STAFF_CLASSES=[];
+async function renderManage(){
+  const el=document.getElementById("manageBox");el.innerHTML='<p class="hint">טוען…</p>';
+  const r=await rpc("mk_staff_list",{p_phone:SES.phone,p_pin:SES.pin});
+  if(r.error){el.innerHTML=`<p class="hint">${ERR[r.error]||r.error}</p>`;return}
+  STAFF=r.staff;STAFF_CLASSES=r.classes;drawStaff();
+}
+function drawStaff(){
+  const q=(document.getElementById("staffQ")||{}).value||"";
+  const L=STAFF.filter(s=>!q||s.name.includes(q)||s.phone.includes(q)).sort((a,b)=>(!!b.role-!!a.role)||a.name.localeCompare(b.name,"he"));
+  const el=document.getElementById("manageBox");
+  el.innerHTML=`<div class="filters"><input id="staffQ" placeholder="חיפוש שם או טלפון…" value="${esc(q)}" oninput="drawStaff();this.focus();this.setSelectionRange(this.value.length,this.value.length)"><span class="hint" style="margin:0">${STAFF.filter(s=>s.has_pin).length} מתוך ${STAFF.length} עם גישה</span></div>
+  <table class="map staff"><tr><th style="text-align:right">שם</th><th>טלפון</th><th>תפקיד</th><th>כיתה (מחנך)</th><th>קוד אישי</th><th></th></tr>
+  ${L.map((s,i)=>{const id=STAFF.indexOf(s);return `<tr>
+   <td class="nm" style="cursor:default">${esc(s.name)}</td><td dir="ltr" style="font-size:13px">${esc(s.phone)}</td>
+   <td><select id="r${id}">${["teacher","admin","principal"].map(r=>`<option value="${r}" ${s.role==r?"selected":""}>${ROLE_HE[r]}</option>`).join("")}</select></td>
+   <td><select id="c${id}"><option value="">—</option>${STAFF_CLASSES.map(c=>`<option ${s.class_name==c?"selected":""}>${esc(c)}</option>`).join("")}</select></td>
+   <td><input id="p${id}" size="7" inputmode="numeric" placeholder="${s.has_pin?"●●●● (קיים)":"אין גישה"}"> <button class="btn sm" onclick="document.getElementById('p${id}').value=String(Math.floor(1000+Math.random()*9000))">🎲</button></td>
+   <td><button class="btn primary sm" onclick="saveStaff(${id})">שמירה</button> <span id="m${id}" class="hint" style="margin:0"></span></td></tr>`}).join("")}</table>
+  <p class="hint" style="margin-top:10px">כדי לתת גישה: בחרו תפקיד וכיתה, הגרילו קוד ושמרו, ואז שלחו לאיש הצוות את הקישור ואת הקוד. כדי לאפס קוד, מקלידים קוד חדש ושומרים. הקוד מוצג רק ברגע השמירה, ולא נשמר בשום מקום גלוי.</p>`;
+}
+async function saveStaff(id){
+  const s=STAFF[id],pin=document.getElementById("p"+id).value.trim()||null,m=document.getElementById("m"+id);
+  m.textContent="שומר…";
+  const r=await rpc("mk_staff_set",{p_phone:SES.phone,p_pin:SES.pin,p_target:s.phone,p_name:s.name,p_role:document.getElementById("r"+id).value,p_class:document.getElementById("c"+id).value,p_new_pin:pin});
+  if(r.error){m.textContent="⚠ "+(ERR[r.error]||r.error);return}
+  s.role=document.getElementById("r"+id).value;s.class_name=document.getElementById("c"+id).value;if(pin)s.has_pin=true;
+  m.innerHTML=pin?`✓ נשמר · קוד: <b dir="ltr">${pin}</b> <a href="#" onclick="navigator.clipboard.writeText(${JSON.stringify(`שלום ${s.name.split(" ")[0]}, זה הקישור למפת הכיתה לקראת הישיבות הפדגוגיות: ${location.origin}/mapat-kita/ · כניסה עם מספר הטלפון שלך והקוד ${pin}`)});this.textContent='הועתק ✓';return false">העתקת הודעה</a>`:"✓ נשמר";
+}
+
+document.querySelector(".hero").hidden=false;
+(function(){const s=ses();if(s&&s.phone){SES=s;doLogin(s.phone,s.pin,true)}else showGate()})();
 </script>
 </body>
 </html>
