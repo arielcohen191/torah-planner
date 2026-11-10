@@ -44,6 +44,10 @@ h2{margin:0;font-size:20px;font-weight:600}
 .btn.sec[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
 .btn.wide{width:100%;min-height:56px;font-size:18px}
 .link{background:none;border:0;color:var(--brand);font-size:16px;padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:-8px}
+.pills button{min-height:44px;padding:0 16px;border:1.5px solid #c9d1db;border-radius:999px;background:#fff;font-size:15px;font-weight:500}
+.pills button[aria-pressed="true"]{background:var(--rail);border-color:var(--rail);color:#fff;font-weight:600}
+.pills button:focus-visible{outline:3px solid #1f2a37;outline-offset:2px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .kpi{border:0;font:inherit;text-align:right;cursor:pointer;border-radius:var(--r-lg);padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:116px;text-decoration:none;transition:transform .12s,box-shadow .12s}
@@ -151,11 +155,18 @@ function holiday(s){
   for(const h of (S.hol||[]))if(h&&h.from&&h.off!==false&&String(h.off)!=='false'&&s>=h.from&&s<=(h.to||h.from))return h.name||h.title||'חופשה';
   return dow(s)===6?'שבת':null;
 }
+/* בתים: כל שתי שכבות הן בית. מנהל/ת בית נכנס/ת ישר לבית שלו/ה, ויכול/ה לעבור לבתים אחרים. */
+const HOUSES=[{id:'ab',label:'בית א׳–ב׳',layers:['א','ב'],heads:['גילה פרטוש']},{id:'gd',label:'בית ג׳–ד׳',layers:['ג','ד'],heads:[]},{id:'hv',label:'בית ה׳–ו׳',layers:['ה','ו'],heads:['אוריה עובד']}];
+const nameKey=n=>String(n||'').replace(/^הרב\s+/,'').split(/\s+/).filter(Boolean).sort().join(' ');
+const houseOf=n=>{const k=nameKey(n),h=HOUSES.find(h=>h.heads.some(x=>nameKey(x)===k));return h?h.id:'all'};
+const H=()=>HOUSES.find(h=>h.id===S.house)||null;
+const clsIn=c=>{const h=H();return !h||h.layers.includes(String(c).trim()[0])};
+const layerLetters=t=>{t=String(t||'');const m=t.match(/\(([^)]+)\)/);return ((m?m[1]:t).match(/[א-ו]/g))||[]};
 const SUBJ={torah:'תורה',navi:'נביא',mishna:'משנה',gemara:'גמרא'};
 const hourNum=h=>{const m=String(h||'').match(/\d+/);return m?+m[0]:0};
 const plural=(n,one,many)=>n===1?one:n+' '+many;
 
-const S={view:'home',filter:0,phone:null,me:null,date:null,milui:null,miluiMonth:null,tor:null,say:null,mk:null,plans:null,hol:null,err:{},busy:false};
+const S={view:'home',filter:0,house:null,phone:null,me:null,date:null,milui:null,miluiMonth:null,tor:null,say:null,mk:null,plans:null,hol:null,err:{},busy:false};
 try{S.phone=localStorage.getItem('milui_phone')}catch(e){}
 const root=document.getElementById('root');
 function schoolDay(s){let d=s;for(let i=0;i<7&&dow(d)===6;i++)d=addDays(d,1);return d}
@@ -183,7 +194,7 @@ async function loadMilui(){
   d.TN={};d.teachers.forEach(t=>d.TN[t.name]=t.id);
   d.slots=d.slots.map(a=>({id:a[0],tid:a[1],day:a[2],hour:a[3],kind:a[4],subject:a[5]||'',classes:a[6]||[]}));
   d.SL={};d.byTD={};d.slots.forEach(s=>{d.SL[s.id]=s;(d.byTD[s.tid+'|'+s.day]=d.byTD[s.tid+'|'+s.day]||[]).push(s)});
-  S.milui=d;S.miluiMonth=m;S.me=d.me;
+  S.milui=d;S.miluiMonth=m;S.me=d.me;if(!S.house)S.house=houseOf(S.me);
 }
 async function loadAll(force){
   if(force){S.milui=null;S.tor=null;S.say=null;S.mk=null;S.plans=null}
@@ -205,13 +216,15 @@ function openItems(date){
   if(holiday(date))return[];
   const out=[],d=dow(date);
   for(const a of absOn(date))for(const s of (S.milui.byTD[a.teacher_id+'|'+d]||[])){
-    if(!isLesson(s))continue;if(a.hours&&!a.hours.includes(s.hour))continue;
+    if(!isLesson(s))continue;if(a.hours&&!a.hours.includes(s.hour))continue;if(!s.classes.some(clsIn))continue;
     const x=S.milui.assignments.find(x=>x.date===date&&x.slot_id===s.id);
     out.push({slot:s,abs:a,status:x?(x.status==='asking'?'asking':'done'):'open'});
   }
   return out.sort((p,q)=>p.slot.hour-q.slot.hour);
 }
+function absHouse(date){if(!H())return absOn(date);const it=openItems(date);return absOn(date).filter(a=>it.some(i=>i.abs.id===a.id))}
 function payUndone(){
+  if(H())return 0;
   const m=monthStart(S.date),e=monthEnd(S.date),t=today();
   return S.milui.assignments.filter(x=>x.status==='assigned'&&x.substitute_id&&x.date>=m&&x.date<=e&&x.date<=t&&!x.comp_done).length;
 }
@@ -228,21 +241,22 @@ function torAbsent(date){
 function torDay(date){
   const T=window.Toranut,d=S.tor.data||{},plan=d.plan||{},A=plan.assign||{},subs=plan.subs||{},day=dow(date);
   const P={};(d.staff||[]).forEach(s=>P[s.id]=s);
-  const abs=torAbsent(date),shifts=[],stIdx={};
+  const abs=torAbsent(date),shifts=[],stIdx={},Y=d.yards||T.DEFAULT_CONFIG.yards||{},hs=H();
   T.DEFAULT_CONFIG.stations.forEach((s,i)=>stIdx[s.id]=i);
   let missing=0,missingLong=0,total=0;
   T.DEFAULT_CONFIG.shifts.forEach(sh=>{
     const rows=Object.keys(A).filter(k=>{const p=k.split('@');return p[0]===sh.id&&+p[1]===day}).sort((a,b)=>(stIdx[a.split('@')[2]]||0)-(stIdx[b.split('@')[2]]||0)).map(k=>{
       const st=T.DEFAULT_CONFIG.stations.find(x=>x.id===k.split('@')[2]),sid=A[k],p=P[sid];
       const row={station:st?st.name.split(' (')[0]:k.split('@')[2],name:p?p.name:'—',gone:false,sub:null};
+      if(hs){const L=st?[...(st.layer?[st.layer]:[]),...(st.yard?layerLetters(((Y[sh.id]||{})[st.yard]||[])[day]):[])]:[];if(!L.some(x=>hs.layers.includes(x)))return null}
       total++;
       const ab=abs[sid],at=(day===5&&sh.fri)||sh.after;
       const need=sh.kind==='morning'?[1]:sh.kind==='break'?[at,at+1]:[at];
       if(ab&&(!ab.hours||need.every(x=>ab.hours.includes(x)))){const v=subs[k];row.gone=true;row.daily=!!ab.daily;if(v&&v.abs===ab.key&&P[v.id])row.sub=P[v.id].name;else{missing++;if(!ab.daily)missingLong++}}
-      return row});
+      return row}).filter(Boolean);
     if(rows.length)shifts.push({label:sh.label,rows});
   });
-  return {shifts,missing,missingLong,total,stale:!!plan.stale,open:(plan.stats||{}).open||0,ran:!!plan.at};
+  return {shifts,missing,missingLong,total,stale:!hs&&!!plan.stale,open:hs?0:(plan.stats||{}).open||0,ran:!!plan.at};
 }
 
 /* ---------- סיירות ---------- */
@@ -252,8 +266,8 @@ function sayDay(date){
   return (d.outings||[]).filter(o=>o.date===date).sort((a,b)=>hourNum(a.hour)-hourNum(b.hour)).map(o=>{
     const p=pat(o.patrol),picks=o.picks||{};
     return {hour:o.hour||'',name:p.name,color:p.color,act:p.kind==='activity',done:!!o.done,
-      groups:Object.keys(picks).map(c=>({cls:c,names:(picks[c]||[]).map(id=>stu[id]).filter(Boolean)}))};
-  });
+      groups:Object.keys(picks).filter(clsIn).map(c=>({cls:c,names:(picks[c]||[]).map(id=>stu[id]).filter(Boolean)}))};
+  }).filter(o=>!H()||o.groups.length);
 }
 
 /* ---------- תצוגה ---------- */
@@ -268,6 +282,7 @@ const skel='<div class="skel" style="width:70%"></div><div class="skel" style="w
 const shortDate=d=>parse(d).getDate()+'.'+(parse(d).getMonth()+1);
 
 /* ---------- משימות לפי דחיפות (נגזרות אוטומטית מכל הכלים) ---------- */
+const mkTotal=()=>H()&&S.milui&&(S.milui.classes||[]).length?S.milui.classes.filter(c=>clsIn(c.name)).length:S.mk.classes_total;
 function nextSchoolDay(d){let x=addDays(d,1);for(let i=0;i<30&&holiday(x);i++)x=addDays(x,1);return x}
 function tasks(){
   const out=[],d=S.date,hol=holiday(d),add=(u,tool,title,sub)=>out.push({u,tool,title,sub});
@@ -292,9 +307,9 @@ function tasks(){
   }
   if(S.say&&!hol)sayDay(d).forEach(o=>{const e=o.groups.filter(g=>!g.names.length);
     if(e.length&&!o.done)add(2,'sayarot',o.name+' · '+o.hour+': עוד לא נבחרו תלמידים',e.map(g=>g.cls).join(', '))});
-  if(S.mk){const m=S.mk,n=(m.classes_synced||[]).length;
-    if(n<m.classes_total)add(3,'mapat','מפת כיתה: יש נתונים רק ל־'+n+' מתוך '+m.classes_total+' כיתות','לקראת הישיבות הפדגוגיות · '+plural(m.q_filled,'שאלון צוות אחד מולא','שאלוני צוות מולאו'))}
-  if(S.plans&&S.milui){const st=S.milui.teachers.filter(t=>t.active&&!t.is_external).length;
+  if(S.mk){const m=S.mk,n=(m.classes_synced||[]).filter(c=>clsIn(c.name)).length,tot=mkTotal();
+    if(n<tot)add(3,'mapat','מפת כיתה: יש נתונים רק ל־'+n+' מתוך '+tot+' כיתות','לקראת הישיבות הפדגוגיות · '+plural(m.q_filled,'שאלון צוות אחד מולא','שאלוני צוות מולאו'))}
+  if(S.plans&&S.milui&&!H()){const st=S.milui.teachers.filter(t=>t.active&&!t.is_external).length;
     if(S.plans.length<st)add(3,'hespek','תוכניות הספק: '+S.plans.length+' מתוך '+st+' מורים שמרו תוכנית','')}
   return out.sort((a,b)=>a.u-b.u);
 }
@@ -321,12 +336,12 @@ function viewHome(){
 /* ---------- מסכי הכלים: תמונת מצב כמו במסך הבית של כל כלי ---------- */
 function viewMilui(){
   if(S.err.milui)return goTile('milui')+failed;if(!S.milui)return goTile('milui')+panel('לוח היום',skel);
-  const hol=holiday(S.date),items=openItems(S.date),abs=hol?[]:absOn(S.date),c=k=>items.filter(i=>i.status===k).length;
+  const hol=holiday(S.date),items=openItems(S.date),abs=hol?[]:absHouse(S.date),c=k=>items.filter(i=>i.status===k).length;
   let h='<section class="kpis" aria-label="מצב היום">'+kpiLink('k-red','פתוחים','שיעורים בלי מורה',c('open'),'/milui/','מצא מחליף')+kpiLink('k-orange','בבירור','מחכים לתשובה',c('asking'),'/milui/','לרשימה')+
     kpiLink('k-green','שובצו','יש מחליף',c('done'),'/milui/','לרשימה')+kpiLink('k-blue','נעדרים','מורים ביום הזה',new Set(abs.map(a=>a.teacher_id)).size,'/milui/','להיעדרויות')+'</section>'+goTile('milui');
   let b='';
   if(hol)b='<div class="empty">'+esc(hol)+' — אין שיעורים למלא.</div>';
-  else if(!abs.length)b='<div class="empty">אין מורים נעדרים ביום הזה.</div>';
+  else if(!abs.length)b='<div class="empty">'+(H()?'אין שיעורים של נעדרים ב'+H().label+' ביום הזה.':'אין מורים נעדרים ביום הזה.')+'</div>';
   else abs.forEach(a=>{
     const t=S.milui.T[a.teacher_id]||{name:'?'},mine=items.filter(i=>i.abs.id===a.id);
     const o=mine.filter(i=>i.status==='open'),q=mine.filter(i=>i.status==='asking'),ok=mine.filter(i=>i.status==='done');
@@ -346,7 +361,7 @@ function viewToranut(){
   const td=torDay(S.date),hol=holiday(S.date),miss=hol?0:td.missing,subs=td.shifts.reduce((n,sh)=>n+sh.rows.filter(r=>r.sub).length,0);
   let h='<section class="kpis" aria-label="מצב התורנויות">'+kpiLink(miss?(td.missingLong?'k-red':'k-orange'):'k-green','תורנים נעדרים','עמדות בלי מחליף רשום',miss,'/toranut/','לטיפול')+
     kpiLink('k-blue','עמדות','משובצות ביום הזה',hol?0:td.total,'/toranut/','ללוח')+kpiLink('k-green','מחליפים','שובצו במקום נעדרים',hol?0:subs,'/toranut/','ללוח')+
-    kpiLink(td.open?'k-orange':'k-green','פתוחות בלוח','עמדות שבועיות בלי תורן',td.open,'/toranut/','לשיבוץ')+'</section>'+goTile('toranut');
+    kpiLink(td.open?'k-orange':'k-green','פתוחות בלוח',H()?'נספר רק בכל בית הספר':'עמדות שבועיות בלי תורן',H()?'–':td.open,'/toranut/','לשיבוץ')+'</section>'+goTile('toranut');
   let b='';
   if(td.stale)b+='<a class="note" href="/toranut/">הכללים או הצוות השתנו מאז הרצת השיבוץ האחרונה — כדאי להריץ מחדש ←</a>';
   if(!td.ran&&!td.total)b+='<div class="empty">עוד לא הורץ שיבוץ תורנויות.</div>';
@@ -354,13 +369,14 @@ function viewToranut(){
   else if(!td.shifts.length)b+='<div class="empty">אין תורנויות משובצות ליום הזה.</div>';
   else b+='<div class="shifts">'+td.shifts.map(sh=>'<div class="shift"><h3>'+esc(sh.label)+'</h3>'+sh.rows.map(r=>
     '<div class="duty"><span class="st">'+esc(r.station)+'</span><span class="nm">'+(r.gone?(r.sub?esc(r.sub)+' <span class="tag grey">מחליף/ה</span>':'<span class="gone">'+esc(r.name)+'</span> <span class="tag red">נעדר/ת</span>'):esc(r.name))+'</span></div>').join('')+'</div>').join('')+'</div>';
+  if(H())b+='<div class="small muted">מוצגות רק עמדות של '+H().label+' (קומות השכבה והמגרש של היום). שער, אחמ״ש ושאר העמדות הכלליות — בתצוגת "כל בית הספר".</div>';
   if(S.tor.updated_at)b+='<div class="small muted">עדכון אחרון: '+esc(S.tor.updated_by||'')+' · '+fmtWhen(S.tor.updated_at)+'</div>';
   return h+panel('תורני היום לפי משמרת',b);
 }
 function viewSayarot(){
   if(S.err.say)return goTile('sayarot')+failed;if(!S.say)return goTile('sayarot')+panel('יציאות',skel);
   const hol=holiday(S.date),list=hol?[]:sayDay(S.date),noPick=list.filter(o=>!o.done&&o.groups.some(g=>!g.names.length)).length;
-  const wk=(S.say.outings||[]).filter(o=>o.date>=S.date&&o.date<=addDays(S.date,7)&&!o.done).length;
+  const wk=(S.say.outings||[]).filter(o=>o.date>=S.date&&o.date<=addDays(S.date,7)&&!o.done&&Object.keys(o.picks||{}).some(clsIn)).length;
   let h='<section class="kpis" aria-label="מצב הסיירות">'+kpiLink('k-purple','יציאות','סיירות ופעילויות ביום הזה',list.length,'/sayarot/','לרשימה')+kpiLink('k-green','בוצעו','סומנו כבוצעו',list.filter(o=>o.done).length,'/sayarot/','לרשימה')+
     kpiLink(noPick?'k-orange':'k-green','בלי תלמידים','יציאות שעוד לא שובצו',noPick,'/sayarot/','לשיבוץ')+kpiLink('k-blue','בשבוע הקרוב','יציאות מתוכננות',wk,'/sayarot/','ללוח')+'</section>'+goTile('sayarot');
   const b=hol?'<div class="empty">'+esc(hol)+'</div>':!list.length?'<div class="empty">אין יציאות משובצות ליום הזה.</div>':
@@ -370,19 +386,20 @@ function viewSayarot(){
 }
 function viewMapat(){
   if(S.err.mk)return goTile('mapat')+failed;if(!S.mk)return goTile('mapat')+panel('מצב הנתונים',skel);
-  const m=S.mk,cs=m.classes_synced||[];
-  const h='<section class="kpis k3" aria-label="מצב מפת הכיתה">'+kpiLink(cs.length<m.classes_total?'k-orange':'k-green','כיתות עם נתונים','מתוך '+m.classes_total+' כיתות',cs.length,'/mapat-kita/','למפות')+
+  const m=S.mk,cs=(m.classes_synced||[]).filter(c=>clsIn(c.name)),tot=mkTotal();
+  const h='<section class="kpis k3" aria-label="מצב מפת הכיתה">'+kpiLink(cs.length<tot?'k-orange':'k-green','כיתות עם נתונים','מתוך '+tot+' כיתות',cs.length,'/mapat-kita/','למפות')+
     kpiLink('k-blue','שאלוני צוות','מולאו עד עכשיו',m.q_filled,'/mapat-kita/','לשאלונים')+kpiLink('k-purple','נכנסו לכלי','מתוך '+m.staff_access+' בעלי גישה',m.staff_entered,'/mapat-kita/','לניהול גישה')+'</section>'+goTile('mapat');
   const b=cs.length?cs.map(c=>'<div class="duty"><span class="nm" style="text-align:right">'+esc(cls(c.name))+' · '+c.students+' תלמידים</span><span class="st">סונכרן '+fmtWhen(c.synced_at)+'</span></div>').join(''):'<div class="empty">עוד לא סונכרנה אף כיתה.</div>';
   return h+panel('כיתות שסונכרנו מהגיליון',b+(m.q_last?'<div class="small muted">שאלון אחרון מולא: '+fmtWhen(m.q_last)+'</div>':''));
 }
 function viewHespek(){
   if(S.err.plans)return goTile('hespek')+failed;if(!S.plans)return goTile('hespek')+panel('תוכניות',skel);
-  const P=S.plans,total=P.reduce((n,p)=>n+Object.keys((p.data&&p.data.plans)||{}).length,0);
-  const staff=S.milui?S.milui.teachers.filter(t=>t.active&&!t.is_external).length:null;
+  const plansOf=p=>Object.values((p.data&&p.data.plans)||{}).filter(x=>!H()||clsIn(x.grade));
+  const P=S.plans.filter(p=>plansOf(p).length),total=P.reduce((n,p)=>n+plansOf(p).length,0);
+  const staff=S.milui&&!H()?S.milui.teachers.filter(t=>t.active&&!t.is_external).length:null;
   const h='<section class="kpis k3" aria-label="מצב תוכניות ההספק">'+kpiLink('k-blue','מורים','שמרו תוכנית'+(staff?' · מתוך '+staff:''),P.length,'/','ללוח הצוות')+
     kpiLink('k-green','תוכניות הספק','נשמרו במערכת',total,'/','לתוכניות')+kpiLink('k-purple','שמירה אחרונה',P.length?esc((P[0].data&&P[0].data.teacher)||''):'—','<span style="font-size:34px">'+(P.length?shortDate(iso(new Date(P[0].updated_at))):'—')+'</span>','/','לתוכניות')+'</section>'+goTile('hespek');
-  const b=P.length?P.map(p=>{const pl=Object.values((p.data&&p.data.plans)||{});
+  const b=P.length?P.map(p=>{const pl=plansOf(p);
     return '<div class="duty"><span class="nm" style="text-align:right">'+esc((p.data&&p.data.teacher)||'')+'</span><span class="st">'+esc(pl.map(x=>[SUBJ[x.subject]||x.subject,x.book,String(x.cls||'').length>1?cls(x.cls):x.grade?x.grade+'׳'+(x.cls||''):''].filter(Boolean).join(' ')).join(' · '))+'</span></div>'}).join(''):'<div class="empty">עוד לא נשמרו תוכניות.</div>';
   return h+panel('תוכניות לפי מורה',b);
 }
@@ -396,6 +413,9 @@ function render(){
   const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view);
   let h='<header class="card topbar"><div><h1>'+esc(S.view==='home'?(S.me?greet(S.me):'לוח הנהלה'):v[1])+'</h1><div class="muted">'+(S.view==='home'?'':'תמונת מצב · ')+fmtFull(S.date)+(isToday?' · היום':'')+(S.loadedAt?' · עודכן '+pad(S.loadedAt.getHours())+':'+pad(S.loadedAt.getMinutes()):'')+'</div></div>'+
     '<div class="chips"><button class="btn sec" data-act="day" data-n="-1">יום קודם</button><button class="btn sec" data-act="today" aria-pressed="'+isToday+'">היום</button><button class="btn sec" data-act="day" data-n="1">יום הבא</button><button class="btn" data-act="refresh">'+(S.busy?'מרענן…':'רענון')+'</button></div></header>';
+  const mine=houseOf(S.me);
+  h+='<div class="pills" role="group" aria-label="תצוגה לפי בית"><button type="button" data-act="house" data-v="all" aria-pressed="'+(!H())+'">כל בית הספר</button>'+
+    HOUSES.map(x=>'<button type="button" data-act="house" data-v="'+x.id+'" aria-pressed="'+(S.house===x.id)+'">'+x.label+(mine===x.id?' · הבית שלי':'')+'</button>').join('')+'</div>';
   if(hol)h+='<div class="card banner">'+esc(hol)+' — אין לימודים ביום הזה.</div>';
   h+=({home:viewHome,milui:viewMilui,toranut:viewToranut,sayarot:viewSayarot,mapat:viewMapat,hespek:viewHespek}[S.view]||viewHome)();
   root.innerHTML=shell(h);
@@ -406,7 +426,7 @@ function renderLogin(err){
    (err?'<div class="err" role="alert">'+esc(err)+'</div>':'')+'<button class="btn wide" type="submit">כניסה</button></form></div>';
   root.querySelector('#ph').focus();
 }
-function logout(msg){S.phone=null;S.me=null;S.milui=null;S.tor=null;S.mk=null;try{localStorage.removeItem('milui_phone')}catch(e){};renderLogin(msg)}
+function logout(msg){S.phone=null;S.me=null;S.house=null;S.milui=null;S.tor=null;S.mk=null;try{localStorage.removeItem('milui_phone')}catch(e){};renderLogin(msg)}
 async function refresh(force){
   S.busy=true;render();
   try{await loadAll(force)}catch(e){S.busy=false;if(e.message==='no_access')return logout('המספר הזה לא מורשה להיכנס.');console.error(e)}
@@ -421,6 +441,7 @@ root.addEventListener('submit',async e=>{
 root.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');if(g){S.view=g.dataset.go;S.filter=0;history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='house'){S.house=b.dataset.v;return render()}
   if(a==='filter'){const v=+b.dataset.v;S.filter=S.filter===v?0:v;return render()}
   if(a==='logout')return logout();
   if(a==='refresh')return refresh(true);
