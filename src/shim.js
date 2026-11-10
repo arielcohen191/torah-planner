@@ -16,7 +16,7 @@
   async function phoneId(p){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('tel:'+normPhone(p)));return 'p'+Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('').slice(0,40)}
   var owner={id:ls('planner-id')||null,name:ls('planner-name')||''};
   function snap(id,data){return {id:id,exists:!!data,data:function(){return data},metadata:{fromCache:false,hasPendingWrites:false}}}
-  var cache=null,settings=null,docSubs=[],colSubs=[],setSubs=[];
+  var curr=null,currSubs=[];var cache=null,settings=null,docSubs=[],colSubs=[],setSubs=[];
   function emit(){
     var mine=cache&&cache.find(function(r){return r.id===owner.id});
     docSubs.forEach(function(f){f(snap(owner.id,mine?mine.data:null))});
@@ -26,6 +26,9 @@
   async function refreshSettings(){try{settings=await rpc('get_settings',{code:CODE});setSubs.forEach(function(f){f(snap('school',settings))})}catch(e){}}
   var db={
     doc:function(p){
+      if(p==='settings/curriculum')return {
+        set:async function(d){await rpc('save_curriculum',{code:CODE,map:d.map||{}});curr=d;currSubs.forEach(function(f){f(snap('curriculum',curr))})},
+        onSnapshot:function(f){currSubs.push(f);rpc('get_curriculum',{code:CODE}).then(function(r){curr=r;f(snap('curriculum',r))}).catch(function(){});return function(){}}};
       if(p==='settings/school')return {
         set:async function(d){await rpc('save_settings',{code:CODE,holidays:d.holidays||[]});await refreshSettings()},
         onSnapshot:function(f){setSubs.push(f);if(settings)f(snap('school',settings));else refreshSettings();return function(){}}};
