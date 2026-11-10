@@ -16,7 +16,7 @@
   async function phoneId(p){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('tel:'+normPhone(p)));return 'p'+Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('').slice(0,40)}
   var owner={id:ls('planner-id')||null,name:ls('planner-name')||''};
   function snap(id,data){return {id:id,exists:!!data,data:function(){return data},metadata:{fromCache:false,hasPendingWrites:false}}}
-  var curr=null,currSubs=[];var cache=null,settings=null,docSubs=[],colSubs=[],setSubs=[];
+  var curr=null,currSubs=[],rolesSubs=[];var cache=null,settings=null,docSubs=[],colSubs=[],setSubs=[];
   function emit(){
     var mine=cache&&cache.find(function(r){return r.id===owner.id});
     docSubs.forEach(function(f){f(snap(owner.id,mine?mine.data:null))});
@@ -26,6 +26,9 @@
   async function refreshSettings(){try{settings=await rpc('get_settings',{code:CODE});setSubs.forEach(function(f){f(snap('school',settings))})}catch(e){}}
   var db={
     doc:function(p){
+      if(p==='settings/roles')return {
+        set:async function(d){await rpc('save_roles',{code:CODE,roles:d});rolesSubs.forEach(function(f){f(snap('roles',d))})},
+        onSnapshot:function(f){rolesSubs.push(f);rpc('get_roles',{code:CODE}).then(function(r){f(snap('roles',r||{}))}).catch(function(){f(snap('roles',{}))});return function(){}}};
       if(p==='settings/curriculum')return {
         set:async function(d){await rpc('save_curriculum',{code:CODE,map:d.map||{}});curr=d;currSubs.forEach(function(f){f(snap('curriculum',curr))})},
         onSnapshot:function(f){currSubs.push(f);rpc('get_curriculum',{code:CODE}).then(function(r){curr=r;f(snap('curriculum',r))}).catch(function(){});return function(){}}};
@@ -40,7 +43,7 @@
   };
   setInterval(function(){if(!document.hidden)refresh()},45000);
   var avatar=function(){return 'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><rect width="36" height="36" rx="18" fill="#2f6fd6"/><text x="18" y="23" font-size="15" text-anchor="middle" fill="#fff" font-family="Arial">'+(normName(owner.name)[0]||'?')+'</text></svg>')};
-  var user={id:async function(){return owner.id},canEdit:async function(){return true},can:async function(){return true},isOwner:async function(){return true},
+  var user={id:async function(){return owner.id},canEdit:async function(){return false},can:async function(){return true},isOwner:async function(){return false},
     me:async function(){return {id:owner.id,name:owner.name,avatarUrl:avatar(),isOwner:false,canEdit:false}}};
   var downloads={save:async function(o){var b=o.data instanceof Blob?o.data:new Blob([o.data]);var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=o.filename;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500)}};
 
