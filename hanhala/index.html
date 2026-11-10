@@ -24,9 +24,10 @@ a{color:inherit}
 nav.rail{flex:0 0 112px;background:var(--rail);display:flex;flex-direction:column;gap:6px;padding:24px 8px;padding-top:calc(24px + env(safe-area-inset-top,0px))}
 .rail .brand{color:#fff;font-weight:700;font-size:15px;text-align:center;padding-bottom:16px;border-bottom:1px solid #3a4756;margin-bottom:4px;line-height:1.3}
 .rail .brand small{display:block;font-weight:400;color:var(--rail-ink);font-size:13px}
-.rail a{display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 4px;border-radius:var(--r-md);color:var(--rail-ink);font-size:14px;text-decoration:none;text-align:center;line-height:1.25}
-.rail a:hover{background:#31404f;color:#fff}
-.rail a[aria-current="page"]{background:var(--active);color:#fff;font-weight:600}
+.rail button{background:none;border:0;font:inherit;width:100%}
+.rail a,.rail button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 4px;border-radius:var(--r-md);color:var(--rail-ink);font-size:14px;text-decoration:none;text-align:center;line-height:1.25}
+.rail a:hover,.rail button:hover{background:#31404f;color:#fff}
+.rail button[aria-current="page"]{background:var(--active);color:#fff;font-weight:600}
 .rail .spacer{flex:1}
 .rail .who{color:var(--rail-ink);font-size:13px;text-align:center}
 main{flex:1;min-width:0;padding:24px 32px 48px;display:flex;flex-direction:column;gap:24px}
@@ -45,9 +46,11 @@ h2{margin:0;font-size:20px;font-weight:600}
 .link{background:none;border:0;color:var(--brand);font-size:16px;padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
-.kpi{border-radius:var(--r-lg);padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:116px;text-decoration:none;transition:transform .12s,box-shadow .12s}
+.kpi{border:0;font:inherit;text-align:right;cursor:pointer;border-radius:var(--r-lg);padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:116px;text-decoration:none;transition:transform .12s,box-shadow .12s}
 .kpi:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(31,42,55,.18)}
-.kpi:focus-visible,.tool:focus-visible,.rail a:focus-visible,.btn:focus-visible{outline:3px solid #1f2a37;outline-offset:2px}
+.kpi[aria-pressed="true"]{outline:4px solid #1f2a37;outline-offset:2px}
+.kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kpi:focus-visible,.gotile:focus-visible,.task:focus-visible,.rail button:focus-visible,.btn:focus-visible{outline:3px solid #1f2a37;outline-offset:2px}
 .kpi b{display:block;font-size:20px;font-weight:600}.kpi span{display:block;font-size:15px}
 .kpi .go{font-size:13px;opacity:.9;margin-top:6px;text-decoration:underline;text-underline-offset:3px}
 .kpi .n{font-size:64px;line-height:64px;font-weight:200}
@@ -57,11 +60,21 @@ h2{margin:0;font-size:20px;font-weight:600}
 .tool{display:flex;flex-direction:column;overflow:hidden}
 .tool.span2{grid-column:1/-1}
 .thead{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--brand);color:#fff;padding:12px 20px;text-decoration:none}
-.thead:hover{background:var(--brand-dark)}
 .thead h2{font-size:19px}
 .thead .open{font-size:15px;white-space:nowrap;text-decoration:underline;text-underline-offset:3px}
 .tbody{padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px}
 .item{background:var(--card-muted);border-radius:var(--r-sm);border-right:6px solid var(--line);padding:12px 16px;display:flex;flex-direction:column;gap:4px}
+.item.s-info{border-right-color:var(--blue)}
+.task{border-top:0;border-bottom:0;border-left:0;font:inherit;text-align:right;width:100%;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;cursor:pointer}
+.task:hover{background:#eaf0f6}
+.task .tx{display:flex;flex-direction:column;gap:2px;min-width:0}.task .tx b{font-size:18px;font-weight:600}
+.ghead{color:#fff;border-radius:var(--r-sm);padding:8px 16px;font-size:17px;font-weight:600;display:flex;justify-content:space-between;margin-top:4px}
+.okline{display:flex;align-items:center;gap:10px;color:var(--green-ink);font-size:18px;font-weight:600}
+.gotile{display:flex;align-items:center;gap:16px;background:var(--rail);color:#fff;border-radius:var(--r-lg);padding:18px 24px;text-decoration:none;min-height:84px;transition:transform .12s,box-shadow .12s}
+.gotile:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(31,42,55,.25)}
+.gotile svg{width:34px;height:34px;flex:none}
+.gotile b{display:block;font-size:20px;font-weight:600}.gotile span span{font-size:15px;color:var(--rail-ink)}
+.gotile .arr{margin-inline-start:auto;font-size:30px;font-weight:200}
 .item.s-open{border-right-color:var(--red)}.item.s-asking{border-right-color:var(--orange)}.item.s-ok{border-right-color:var(--green)}
 .item .t{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px}
 .item .t b{font-size:18px;font-weight:600}
@@ -91,17 +104,18 @@ input[type=tel]{min-height:56px;border:1.5px solid #c9d1db;border-radius:var(--r
 .skel{height:18px;border-radius:4px;background:linear-gradient(90deg,#edf0f4,#f7f9fb,#edf0f4);background-size:200% 100%;animation:sk 1.2s linear infinite}
 @keyframes sk{to{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){.skel{animation:none}.kpi{transition:none}}
-@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:760px){
  .app{flex-direction:column}
  nav.rail{flex:none;flex-direction:row;align-items:center;overflow-x:auto;padding:8px;padding-top:calc(8px + env(safe-area-inset-top,0px));gap:4px}
  .rail .brand{border:0;margin:0;padding:0 8px;white-space:nowrap}.rail .brand small{display:none}
- .rail a{flex:none;flex-direction:row;padding:8px 12px;white-space:nowrap}.rail a svg{width:20px;height:20px}
+ .rail button{flex:none;width:auto;flex-direction:row;padding:8px 12px;white-space:nowrap}.rail button svg{width:20px;height:20px}
  .rail .spacer{display:none}.rail .who{white-space:nowrap;padding:0 8px}.rail .who br{display:none}
  main{padding:16px 12px 40px;gap:16px}
  .topbar{padding:14px 16px}h1{font-size:22px;line-height:28px}
  .kpis{gap:10px}.kpi{min-height:96px;padding:14px 16px}.kpi .n{font-size:46px;line-height:46px}.kpi b{font-size:17px}
- .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .kpis.k3{grid-template-columns:minmax(0,1fr)}.kpis.k3 .kpi{min-height:76px}
+ .gotile{padding:14px 16px}.gotile b{font-size:18px}.task{flex-direction:column;align-items:flex-start;gap:4px}
 }
 </style>
 </head>
@@ -141,13 +155,16 @@ const SUBJ={torah:'תורה',navi:'נביא',mishna:'משנה',gemara:'גמרא'
 const hourNum=h=>{const m=String(h||'').match(/\d+/);return m?+m[0]:0};
 const plural=(n,one,many)=>n===1?one:n+' '+many;
 
-const S={phone:null,me:null,date:null,milui:null,miluiMonth:null,tor:null,say:null,mk:null,plans:null,hol:null,err:{},busy:false};
+const S={view:'home',filter:0,phone:null,me:null,date:null,milui:null,miluiMonth:null,tor:null,say:null,mk:null,plans:null,hol:null,err:{},busy:false};
 try{S.phone=localStorage.getItem('milui_phone')}catch(e){}
 const root=document.getElementById('root');
 function schoolDay(s){let d=s;for(let i=0;i<7&&dow(d)===6;i++)d=addDays(d,1);return d}
 S.date=schoolDay(today());
+const hashView=()=>{const k=location.hash.slice(1);return ['milui','toranut','sayarot','mapat','hespek'].includes(k)?k:'home'};
+S.view=hashView();
 
 const ICON={
+ ok:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M7 12.5l3.2 3.2L17 9"/></svg>',
  home:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
  milui:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M15 15c3 0 6 1.6 6 4.5"/></svg>',
  toranut:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5L15.5 10"/></svg>',
@@ -155,7 +172,6 @@ const ICON={
  mapat:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
  hespek:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>'
 };
-const TOOLS=[['home','לוח הנהלה','/hanhala/'],['milui','מילוי מקום','/milui/'],['toranut','תורנויות חצר','/toranut/'],['sayarot','סיירות','/sayarot/'],['mapat','מפת כיתה','/mapat-kita/'],['hespek','מתכנן הספק','/']];
 
 /* ---------- טעינה: כל כלי בנפרד, כדי שתקלה באחד לא תפיל את הלוח ---------- */
 async function part(key,fn){try{delete S.err[key];await fn()}catch(e){if(e.message==='no_access')throw e;console.error(key,e);S.err[key]=true}}
@@ -241,101 +257,147 @@ function sayDay(date){
 }
 
 /* ---------- תצוגה ---------- */
-function kpi(c,title,sub,n,href,go){return '<a class="kpi '+c+'" href="'+href+'"><div><b>'+title+'</b><span>'+sub+'</span><span class="go">'+go+' ←</span></div><div class="n">'+n+'</div></a>'}
-function tool(title,href,body,span){return '<section class="card tool'+(span?' span2':'')+'"><a class="thead" href="'+href+'"><h2>'+title+'</h2><span class="open">פתיחת הכלי ←</span></a><div class="tbody">'+body+'</div></section>'}
+const VIEWS=[['home','משימות','לוח הנהלה'],['milui','מילוי מקום','/milui/'],['toranut','תורנויות חצר','/toranut/'],['sayarot','סיירות','/sayarot/'],['mapat','מפת כיתה','/mapat-kita/'],['hespek','מתכנן הספק','/']];
+const viewOf=k=>VIEWS.find(v=>v[0]===k)||VIEWS[0];
+function kpiLink(c,title,sub,n,href,go){return '<a class="kpi '+c+'" href="'+href+'"><div><b>'+title+'</b><span>'+sub+'</span><span class="go">'+go+' ←</span></div><div class="n">'+n+'</div></a>'}
+function kpiBtn(c,title,sub,n,act,val,go,pressed){return '<button type="button" class="kpi '+c+'" data-act="'+act+'" data-v="'+val+'"'+(pressed!=null?' aria-pressed="'+pressed+'"':'')+'><div><b>'+title+'</b><span>'+sub+'</span><span class="go">'+go+' ←</span></div><div class="n">'+n+'</div></button>'}
+function goTile(k){const v=viewOf(k);return '<a class="gotile" href="'+v[2]+'">'+ICON[k]+'<span><b>למעבר לכלי '+v[1]+'</b><span>פתיחת הכלי המלא לעריכה ולטיפול</span></span><span class="arr" aria-hidden="true">←</span></a>'}
+function panel(title,body){return '<section class="card tool"><div class="thead"><h2>'+title+'</h2></div><div class="tbody">'+body+'</div></section>'}
 const failed='<div class="note bad">הנתונים של הכלי הזה לא נטענו כרגע. אפשר לפתוח את הכלי עצמו או לרענן.</div>';
 const skel='<div class="skel" style="width:70%"></div><div class="skel" style="width:50%"></div><div class="skel" style="width:60%"></div>';
+const shortDate=d=>parse(d).getDate()+'.'+(parse(d).getMonth()+1);
 
-function miluiBody(items){
-  if(S.err.milui)return failed;if(!S.milui)return skel;
-  const hol=holiday(S.date),abs=absOn(S.date);let h='';
-  if(hol)h+='<div class="empty">'+esc(hol)+' — אין שיעורים למלא.</div>';
-  else if(!abs.length)h+='<div class="empty">אין מורים נעדרים ביום הזה.</div>';
+/* ---------- משימות לפי דחיפות (נגזרות אוטומטית מכל הכלים) ---------- */
+function nextSchoolDay(d){let x=addDays(d,1);for(let i=0;i<30&&holiday(x);i++)x=addDays(x,1);return x}
+function tasks(){
+  const out=[],d=S.date,hol=holiday(d),add=(u,tool,title,sub)=>out.push({u,tool,title,sub});
+  const dayWord=d===today()?'היום':'ביום '+DAYS[dow(d)];
+  if(S.milui){
+    const tn=i=>(S.milui.T[i.abs.teacher_id]||{}).name||'';
+    const les=i=>'שעה '+i.slot.hour+' · '+(i.slot.subject||'שיעור')+' · '+i.slot.classes.map(cls).join(', ');
+    openItems(d).forEach(i=>{
+      if(i.status==='open')add(1,'milui','שיעור בלי מורה: '+les(i),'במקום '+tn(i)+' · צריך למצוא מחליף');
+      else if(i.status==='asking')add(2,'milui','מחכים לתשובה ממחליף: '+les(i),'במקום '+tn(i));
+    });
+    const nd=nextSchoolDay(d),no=openItems(nd).filter(i=>i.status==='open');
+    if(no.length){const names=[...new Set(no.map(tn))];add(2,'milui','ליום '+DAYS[dow(nd)]+' ('+shortDate(nd)+'): '+plural(no.length,'שיעור אחד','שיעורים')+' עדיין בלי מחליף','נעדרים: '+names.join(', '))}
+    const pu=payUndone();if(pu)add(3,'milui',plural(pu,'מילוי מקום אחד מחכה','מילויי מקום מחכים')+' לתגמול','התחשבנות החודש עם ממלאי המקום');
+  }
+  if(S.tor&&window.Toranut){
+    const td=torDay(d);
+    if(!hol)td.shifts.forEach(sh=>sh.rows.forEach(r=>{if(r.gone&&!r.sub)add(1,'toranut','תורנות בלי תורן: '+r.station,sh.label.split(' (')[0]+' · '+r.name+' נעדר/ת '+dayWord+', אין מחליף רשום')}));
+    if(td.open)add(2,'toranut',plural(td.open,'עמדה אחת','עמדות')+' בלוח התורנויות השבועי בלי תורן','צריך לשבץ או להריץ שיבוץ מחדש');
+    if(td.stale)add(3,'toranut','להריץ מחדש את שיבוץ התורנויות','הכללים או הצוות השתנו מאז ההרצה האחרונה');
+    if(!td.ran&&!td.total)add(3,'toranut','עוד לא הורץ שיבוץ תורנויות','');
+  }
+  if(S.say&&!hol)sayDay(d).forEach(o=>{const e=o.groups.filter(g=>!g.names.length);
+    if(e.length&&!o.done)add(2,'sayarot',o.name+' · '+o.hour+': עוד לא נבחרו תלמידים',e.map(g=>g.cls).join(', '))});
+  if(S.mk){const m=S.mk,n=(m.classes_synced||[]).length;
+    if(n<m.classes_total)add(3,'mapat','מפת כיתה: יש נתונים רק ל־'+n+' מתוך '+m.classes_total+' כיתות','לקראת הישיבות הפדגוגיות · '+plural(m.q_filled,'שאלון צוות אחד מולא','שאלוני צוות מולאו'))}
+  if(S.plans&&S.milui){const st=S.milui.teachers.filter(t=>t.active&&!t.is_external).length;
+    if(S.plans.length<st)add(3,'hespek','תוכניות הספק: '+S.plans.length+' מתוך '+st+' מורים שמרו תוכנית','')}
+  return out.sort((a,b)=>a.u-b.u);
+}
+const URG={1:['דחוף','k-red','s-open','red'],2:['להיום','k-orange','s-asking','orange'],3:['למעקב','k-blue','s-info','grey']};
+function viewHome(){
+  const all=tasks(),cnt=u=>all.filter(t=>t.u===u).length,f=S.filter;
+  const loading=!S.milui&&!S.err.milui;
+  let h='<section class="kpis k3" aria-label="משימות לפי דחיפות">'+
+    kpiBtn('k-red','דחוף','לטיפול מיידי',loading?'–':cnt(1),'filter',1,'הצג',f===1)+
+    kpiBtn('k-orange','להיום','לסגור עד סוף היום',loading?'–':cnt(2),'filter',2,'הצג',f===2)+
+    kpiBtn('k-blue','למעקב','לא בוער',loading?'–':cnt(3),'filter',3,'הצג',f===3)+'</section>';
+  const errs=Object.keys(S.err).filter(k=>k!=='hol');
+  if(errs.length)h+='<div class="note bad">חלק מהכלים לא נטענו כרגע, ולכן ייתכן שחסרות משימות. נסו לרענן.</div>';
+  const show=f?all.filter(t=>t.u===f):all;let body='';
+  if(loading)body=skel;
+  else if(!show.length)body='<div class="okline">'+ICON.ok+(f?'אין משימות בקבוצה הזאת.':'אין משימות פתוחות. הכול מטופל.')+'</div>';
+  else [1,2,3].forEach(u=>{const g=show.filter(t=>t.u===u);if(!g.length)return;
+    body+='<div class="ghead '+URG[u][1]+'">'+URG[u][0]+'<span>'+g.length+'</span></div>'+g.map(t=>
+     '<button type="button" class="item task '+URG[u][2]+'" data-go="'+t.tool+'"><span class="tx"><b>'+esc(t.title)+'</b>'+(t.sub?'<span class="small muted">'+esc(t.sub)+'</span>':'')+'</span><span class="tag '+URG[u][3]+'">'+viewOf(t.tool)[1]+' ←</span></button>').join('')});
+  h+='<section class="card tool"><div class="thead"><h2>משימות לפי דחיפות</h2>'+(f?'<button class="link" style="color:#fff" data-act="filter" data-v="0">הצג הכול</button>':'')+'</div><div class="tbody">'+body+'</div></section>';
+  return h;
+}
+
+/* ---------- מסכי הכלים: תמונת מצב כמו במסך הבית של כל כלי ---------- */
+function viewMilui(){
+  if(S.err.milui)return goTile('milui')+failed;if(!S.milui)return goTile('milui')+panel('לוח היום',skel);
+  const hol=holiday(S.date),items=openItems(S.date),abs=hol?[]:absOn(S.date),c=k=>items.filter(i=>i.status===k).length;
+  let h='<section class="kpis" aria-label="מצב היום">'+kpiLink('k-red','פתוחים','שיעורים בלי מורה',c('open'),'/milui/','מצא מחליף')+kpiLink('k-orange','בבירור','מחכים לתשובה',c('asking'),'/milui/','לרשימה')+
+    kpiLink('k-green','שובצו','יש מחליף',c('done'),'/milui/','לרשימה')+kpiLink('k-blue','נעדרים','מורים ביום הזה',new Set(abs.map(a=>a.teacher_id)).size,'/milui/','להיעדרויות')+'</section>'+goTile('milui');
+  let b='';
+  if(hol)b='<div class="empty">'+esc(hol)+' — אין שיעורים למלא.</div>';
+  else if(!abs.length)b='<div class="empty">אין מורים נעדרים ביום הזה.</div>';
   else abs.forEach(a=>{
     const t=S.milui.T[a.teacher_id]||{name:'?'},mine=items.filter(i=>i.abs.id===a.id);
     const o=mine.filter(i=>i.status==='open'),q=mine.filter(i=>i.status==='asking'),ok=mine.filter(i=>i.status==='done');
-    const st=o.length?'s-open':q.length?'s-asking':'s-ok';
     const tags=[];
     if(o.length)tags.push('<span class="tag red">'+plural(o.length,'שיעור אחד פתוח','שיעורים פתוחים')+'</span>');
     if(q.length)tags.push('<span class="tag orange">בבירור: '+q.length+'</span>');
     if(ok.length)tags.push('<span class="tag green">שובצו: '+ok.length+'</span>');
     if(!mine.length)tags.push('<span class="tag grey">אין שיעורים מול כיתה</span>');
-    h+='<div class="item '+st+'"><div class="t"><b>'+esc(t.name)+'</b><span class="chips" style="gap:12px">'+tags.join('')+'</span></div>'+
-      '<div class="small muted">'+(a.hours?'שעות '+a.hours.join(', '):'כל היום')+(a.date_to&&a.date_to!==a.date_from?' · עד '+parse(a.date_to).getDate()+'.'+(parse(a.date_to).getMonth()+1):!a.date_to?' · עד הודעה חדשה':'')+
-      (o.length?' · פתוח: '+o.map(i=>'שעה '+i.slot.hour+' '+esc(i.slot.classes.map(cls).join(', '))).join(' | '):'')+'</div></div>';
-  });
-  const pu=payUndone();
-  if(pu)h+='<a class="note" href="/milui/">'+plural(pu,'מילוי מקום אחד','מילויי מקום')+' מהחודש מחכים לתגמול ←</a>';
-  return h;
+    b+='<div class="item '+(o.length?'s-open':q.length?'s-asking':'s-ok')+'"><div class="t"><b>'+esc(t.name)+'</b><span class="chips" style="gap:12px">'+tags.join('')+'</span></div>'+
+      '<div class="small muted">'+(a.hours?'שעות '+a.hours.join(', '):'כל היום')+(a.date_to&&a.date_to!==a.date_from?' · עד '+shortDate(a.date_to):!a.date_to?' · עד הודעה חדשה':'')+
+      (o.length?' · פתוח: '+o.map(i=>'שעה '+i.slot.hour+' '+esc(i.slot.classes.map(cls).join(', '))).join(' | '):'')+'</div></div>'});
+  const pu=payUndone();if(pu)b+='<a class="note" href="/milui/">'+plural(pu,'מילוי מקום אחד','מילויי מקום')+' מהחודש מחכים לתגמול ←</a>';
+  return h+panel('היעדרויות ושיעורים',b);
 }
-function torBody(td){
-  if(S.err.tor)return failed;if(!S.tor)return skel;
-  if(!td.ran&&!td.total)return '<div class="empty">עוד לא הורץ שיבוץ תורנויות.</div>';
-  let h='';
-  if(td.missing&&!holiday(S.date))h+='<a class="note bad" href="/toranut/">'+plural(td.missing,'עמדה אחת שהתורן שלה נעדר','עמדות שהתורן שלהן נעדר')+' ביום הזה, בלי מחליף רשום ←</a>';
-  if(td.open)h+='<a class="note bad" href="/toranut/">'+plural(td.open,'עמדה אחת','עמדות')+' בלוח השבועי בלי תורן ←</a>';
-  if(td.stale)h+='<a class="note" href="/toranut/">הכללים או הצוות השתנו מאז הרצת השיבוץ האחרונה — כדאי להריץ מחדש ←</a>';
-  if(holiday(S.date))h+='<div class="empty">'+esc(holiday(S.date))+' — אין תורנויות.</div>';
-  else if(!td.shifts.length)h+='<div class="empty">אין תורנויות משובצות ליום הזה.</div>';
-  else h+='<div class="shifts">'+td.shifts.map(sh=>'<div class="shift"><h3>'+esc(sh.label)+'</h3>'+sh.rows.map(r=>
+function viewToranut(){
+  if(S.err.tor)return goTile('toranut')+failed;if(!S.tor)return goTile('toranut')+panel('תורנים',skel);
+  const td=torDay(S.date),hol=holiday(S.date),miss=hol?0:td.missing,subs=td.shifts.reduce((n,sh)=>n+sh.rows.filter(r=>r.sub).length,0);
+  let h='<section class="kpis" aria-label="מצב התורנויות">'+kpiLink(miss?'k-red':'k-green','תורנים נעדרים','עמדות בלי מחליף רשום',miss,'/toranut/','לטיפול')+
+    kpiLink('k-blue','עמדות','משובצות ביום הזה',hol?0:td.total,'/toranut/','ללוח')+kpiLink('k-green','מחליפים','שובצו במקום נעדרים',hol?0:subs,'/toranut/','ללוח')+
+    kpiLink(td.open?'k-orange':'k-green','פתוחות בלוח','עמדות שבועיות בלי תורן',td.open,'/toranut/','לשיבוץ')+'</section>'+goTile('toranut');
+  let b='';
+  if(td.stale)b+='<a class="note" href="/toranut/">הכללים או הצוות השתנו מאז הרצת השיבוץ האחרונה — כדאי להריץ מחדש ←</a>';
+  if(!td.ran&&!td.total)b+='<div class="empty">עוד לא הורץ שיבוץ תורנויות.</div>';
+  else if(hol)b+='<div class="empty">'+esc(hol)+' — אין תורנויות.</div>';
+  else if(!td.shifts.length)b+='<div class="empty">אין תורנויות משובצות ליום הזה.</div>';
+  else b+='<div class="shifts">'+td.shifts.map(sh=>'<div class="shift"><h3>'+esc(sh.label)+'</h3>'+sh.rows.map(r=>
     '<div class="duty"><span class="st">'+esc(r.station)+'</span><span class="nm">'+(r.gone?(r.sub?esc(r.sub)+' <span class="tag grey">מחליף/ה</span>':'<span class="gone">'+esc(r.name)+'</span> <span class="tag red">נעדר/ת</span>'):esc(r.name))+'</span></div>').join('')+'</div>').join('')+'</div>';
-  if(S.tor.updated_at)h+='<div class="small muted">עדכון אחרון: '+esc(S.tor.updated_by||'')+' · '+fmtWhen(S.tor.updated_at)+'</div>';
-  return h;
+  if(S.tor.updated_at)b+='<div class="small muted">עדכון אחרון: '+esc(S.tor.updated_by||'')+' · '+fmtWhen(S.tor.updated_at)+'</div>';
+  return h+panel('תורני היום לפי משמרת',b);
 }
-function sayBody(list){
-  if(S.err.say)return failed;if(!S.say)return skel;
-  if(!list.length)return '<div class="empty">אין יציאות משובצות ליום הזה.</div>';
-  return list.map(o=>'<div class="item" style="border-right-color:'+esc(o.color)+'"><div class="t"><b>'+esc(o.name)+'</b><span class="tag '+(o.done?'green':'grey')+'">'+esc(o.hour)+(o.done?' · בוצע':'')+'</span></div>'+
+function viewSayarot(){
+  if(S.err.say)return goTile('sayarot')+failed;if(!S.say)return goTile('sayarot')+panel('יציאות',skel);
+  const hol=holiday(S.date),list=hol?[]:sayDay(S.date),noPick=list.filter(o=>!o.done&&o.groups.some(g=>!g.names.length)).length;
+  const wk=(S.say.outings||[]).filter(o=>o.date>=S.date&&o.date<=addDays(S.date,7)&&!o.done).length;
+  let h='<section class="kpis" aria-label="מצב הסיירות">'+kpiLink('k-purple','יציאות','סיירות ופעילויות ביום הזה',list.length,'/sayarot/','לרשימה')+kpiLink('k-green','בוצעו','סומנו כבוצעו',list.filter(o=>o.done).length,'/sayarot/','לרשימה')+
+    kpiLink(noPick?'k-orange':'k-green','בלי תלמידים','יציאות שעוד לא שובצו',noPick,'/sayarot/','לשיבוץ')+kpiLink('k-blue','בשבוע הקרוב','יציאות מתוכננות',wk,'/sayarot/','ללוח')+'</section>'+goTile('sayarot');
+  const b=hol?'<div class="empty">'+esc(hol)+'</div>':!list.length?'<div class="empty">אין יציאות משובצות ליום הזה.</div>':
+    list.map(o=>'<div class="item" style="border-right-color:'+esc(o.color)+'"><div class="t"><b>'+esc(o.name)+'</b><span class="tag '+(o.done?'green':'grey')+'">'+esc(o.hour)+(o.done?' · בוצע':'')+'</span></div>'+
     o.groups.map(g=>'<div class="small"><span class="muted">'+esc(g.cls)+':</span> '+(g.names.length?esc(g.names.join(', ')):'<span class="tag orange">עוד לא נבחרו תלמידים</span>')+'</div>').join('')+'</div>').join('');
+  return h+panel('יציאות היום',b);
 }
-function mkBody(){
-  if(S.err.mk)return failed;if(!S.mk)return skel;
+function viewMapat(){
+  if(S.err.mk)return goTile('mapat')+failed;if(!S.mk)return goTile('mapat')+panel('מצב הנתונים',skel);
   const m=S.mk,cs=m.classes_synced||[];
-  let h='<div class="stats"><div class="stat"><b class="n">'+cs.length+'<span style="font-size:18px"> / '+m.classes_total+'</span></b><span>כיתות עם נתונים</span></div>'+
-    '<div class="stat"><b class="n">'+m.q_filled+'</b><span>שאלוני צוות שמולאו</span></div>'+
-    '<div class="stat"><b class="n">'+m.staff_entered+'<span style="font-size:18px"> / '+m.staff_access+'</span></b><span>אנשי צוות שנכנסו</span></div></div>';
-  if(cs.length)h+='<div class="small muted">'+cs.map(c=>esc(cls(c.name))+' · '+c.students+' תלמידים · סונכרן '+fmtWhen(c.synced_at)).join(' | ')+'</div>';
-  return h;
+  const h='<section class="kpis k3" aria-label="מצב מפת הכיתה">'+kpiLink(cs.length<m.classes_total?'k-orange':'k-green','כיתות עם נתונים','מתוך '+m.classes_total+' כיתות',cs.length,'/mapat-kita/','למפות')+
+    kpiLink('k-blue','שאלוני צוות','מולאו עד עכשיו',m.q_filled,'/mapat-kita/','לשאלונים')+kpiLink('k-purple','נכנסו לכלי','מתוך '+m.staff_access+' בעלי גישה',m.staff_entered,'/mapat-kita/','לניהול גישה')+'</section>'+goTile('mapat');
+  const b=cs.length?cs.map(c=>'<div class="duty"><span class="nm" style="text-align:right">'+esc(cls(c.name))+' · '+c.students+' תלמידים</span><span class="st">סונכרן '+fmtWhen(c.synced_at)+'</span></div>').join(''):'<div class="empty">עוד לא סונכרנה אף כיתה.</div>';
+  return h+panel('כיתות שסונכרנו מהגיליון',b+(m.q_last?'<div class="small muted">שאלון אחרון מולא: '+fmtWhen(m.q_last)+'</div>':''));
 }
-function plansBody(){
-  if(S.err.plans)return failed;if(!S.plans)return skel;
+function viewHespek(){
+  if(S.err.plans)return goTile('hespek')+failed;if(!S.plans)return goTile('hespek')+panel('תוכניות',skel);
   const P=S.plans,total=P.reduce((n,p)=>n+Object.keys((p.data&&p.data.plans)||{}).length,0);
   const staff=S.milui?S.milui.teachers.filter(t=>t.active&&!t.is_external).length:null;
-  let h='<div class="stats"><div class="stat"><b class="n">'+P.length+(staff?'<span style="font-size:18px"> / '+staff+'</span>':'')+'</b><span>מורים ששמרו תוכנית</span></div>'+
-    '<div class="stat"><b class="n">'+total+'</b><span>תוכניות הספק</span></div>'+
-    '<div class="stat"><b class="n" style="font-size:24px">'+(P.length?fmtWhen(P[0].updated_at):'—')+'</b><span>שמירה אחרונה</span></div></div>';
-  h+=P.slice(0,6).map(p=>{const pl=Object.values((p.data&&p.data.plans)||{});
-    return '<div class="duty"><span class="nm" style="text-align:right">'+esc((p.data&&p.data.teacher)||'')+'</span><span class="st">'+esc(pl.map(x=>[SUBJ[x.subject]||x.subject,x.book,String(x.cls||'').length>1?cls(x.cls):x.grade?x.grade+'׳'+(x.cls||''):''].filter(Boolean).join(' ')).join(' · '))+'</span></div>'}).join('');
-  if(!P.length)h+='<div class="empty">עוד לא נשמרו תוכניות.</div>';
-  return h;
+  const h='<section class="kpis k3" aria-label="מצב תוכניות ההספק">'+kpiLink('k-blue','מורים','שמרו תוכנית'+(staff?' · מתוך '+staff:''),P.length,'/','ללוח הצוות')+
+    kpiLink('k-green','תוכניות הספק','נשמרו במערכת',total,'/','לתוכניות')+kpiLink('k-purple','שמירה אחרונה',P.length?esc((P[0].data&&P[0].data.teacher)||''):'—','<span style="font-size:34px">'+(P.length?shortDate(iso(new Date(P[0].updated_at))):'—')+'</span>','/','לתוכניות')+'</section>'+goTile('hespek');
+  const b=P.length?P.map(p=>{const pl=Object.values((p.data&&p.data.plans)||{});
+    return '<div class="duty"><span class="nm" style="text-align:right">'+esc((p.data&&p.data.teacher)||'')+'</span><span class="st">'+esc(pl.map(x=>[SUBJ[x.subject]||x.subject,x.book,String(x.cls||'').length>1?cls(x.cls):x.grade?x.grade+'׳'+(x.cls||''):''].filter(Boolean).join(' ')).join(' · '))+'</span></div>'}).join(''):'<div class="empty">עוד לא נשמרו תוכניות.</div>';
+  return h+panel('תוכניות לפי מורה',b);
 }
 function shell(inner){
-  return '<div class="app"><nav class="rail" aria-label="כלי בית הספר"><div class="brand">כנפי רוח<small>הנהלה</small></div>'+
-   TOOLS.map(([k,l,u])=>'<a href="'+u+'"'+(k==='home'?' aria-current="page"':'')+'>'+ICON[k]+l+'</a>').join('')+
+  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand">כנפי רוח<small>הנהלה</small></div>'+
+   VIEWS.map(([k,l])=>'<button type="button" data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>').join('')+
    '<div class="spacer"></div><div class="who">'+esc(S.me||'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+'</main></div>';
 }
 function render(){
   if(!S.phone)return renderLogin();
-  const t=today(),isToday=S.date===schoolDay(t),hol=holiday(S.date);
-  const items=S.milui?openItems(S.date):[],open=items.filter(i=>i.status==='open').length,asking=items.filter(i=>i.status==='asking').length;
-  const absN=S.milui&&!hol?new Set(absOn(S.date).map(a=>a.teacher_id)).size:0;
-  const td=S.tor&&window.Toranut?torDay(S.date):{shifts:[],missing:0,total:0};
-  const sl=S.say&&!hol?sayDay(S.date):[];
-  const dash=v=>v==null?'–':v,miss=hol?0:td.missing;
-  let h='<header class="card topbar"><div><h1>'+esc(S.me?greet(S.me):'לוח הנהלה')+'</h1><div class="muted">'+fmtFull(S.date)+(isToday?' · היום':'')+(S.loadedAt?' · עודכן '+pad(S.loadedAt.getHours())+':'+pad(S.loadedAt.getMinutes()):'')+'</div></div>'+
+  const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view);
+  let h='<header class="card topbar"><div><h1>'+esc(S.view==='home'?(S.me?greet(S.me):'לוח הנהלה'):v[1])+'</h1><div class="muted">'+(S.view==='home'?'':'תמונת מצב · ')+fmtFull(S.date)+(isToday?' · היום':'')+(S.loadedAt?' · עודכן '+pad(S.loadedAt.getHours())+':'+pad(S.loadedAt.getMinutes()):'')+'</div></div>'+
     '<div class="chips"><button class="btn sec" data-act="day" data-n="-1">יום קודם</button><button class="btn sec" data-act="today" aria-pressed="'+isToday+'">היום</button><button class="btn sec" data-act="day" data-n="1">יום הבא</button><button class="btn" data-act="refresh">'+(S.busy?'מרענן…':'רענון')+'</button></div></header>';
   if(hol)h+='<div class="card banner">'+esc(hol)+' — אין לימודים ביום הזה.</div>';
-  h+='<section class="kpis" aria-label="תמונת מצב ליום">'+
-    kpi(open?'k-red':'k-green','שיעורים פתוחים',open?(asking?asking+' נוספים בבירור':'בלי מורה מחליף'):(asking?asking+' בבירור':'הכול מכוסה'),dash(S.milui?open:null),'/milui/','למילוי מקום')+
-    kpi('k-blue','מורים נעדרים','ביום הזה',dash(S.milui?absN:null),'/milui/','להיעדרויות')+
-    kpi(miss?'k-orange':'k-green','תורנים נעדרים',miss?'עמדות בלי מחליף רשום':'מתוך '+(hol?0:td.total)+' עמדות ביום הזה',dash(S.tor?miss:null),'/toranut/','ללוח התורנויות')+
-    kpi('k-purple','יציאות סיירות','סיירות ופעילויות',dash(S.say?sl.length:null),'/sayarot/','לסיירות')+'</section>';
-  h+='<div class="grid">'+
-    tool('מילוי מקום · היעדרויות','/milui/',miluiBody(items))+
-    tool('סיירות ופעילויות','/sayarot/',hol?'<div class="empty">'+esc(hol)+'</div>':sayBody(sl))+
-    tool('תורנויות חצר','/toranut/',torBody(td),true)+
-    tool('מפת כיתה · ישיבות פדגוגיות','/mapat-kita/',mkBody())+
-    tool('מתכנן הספק','/',plansBody())+'</div>';
+  h+=({home:viewHome,milui:viewMilui,toranut:viewToranut,sayarot:viewSayarot,mapat:viewMapat,hespek:viewHespek}[S.view]||viewHome)();
   root.innerHTML=shell(h);
 }
 function renderLogin(err){
@@ -357,7 +419,9 @@ root.addEventListener('submit',async e=>{
     S.phone=ph;S.me=n;try{localStorage.setItem('milui_phone',ph)}catch(x){}refresh(true)}catch(x){renderLogin('אין חיבור לשרת. נסו שוב.')}
 });
 root.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]');if(g){S.view=g.dataset.go;S.filter=0;history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='filter'){const v=+b.dataset.v;S.filter=S.filter===v?0:v;return render()}
   if(a==='logout')return logout();
   if(a==='refresh')return refresh(true);
   if(a==='today'){S.date=schoolDay(today());return refresh(false)}
@@ -365,6 +429,7 @@ root.addEventListener('click',e=>{
 });
 /* רענון אוטומטי כשחוזרים ללשונית אחרי יותר מ־5 דקות */
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.phone&&S.loadedAt&&Date.now()-S.loadedAt>3e5)refresh(true)});
+window.addEventListener('popstate',()=>{S.view=hashView();if(S.phone)render()});
 if(S.phone)refresh(true);else renderLogin();
 </script>
 </body>
