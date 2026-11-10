@@ -175,7 +175,7 @@ function migrate(){
   const d=S.data;
   if(d.version>=2&&d.rules&&d.staff)return false;
   const old={};(d.staff||[]).forEach(s=>old[s.name]=s);
-  const fresh=T.buildStaff(d.formRows||[],S.tt);
+  const fresh=T.buildStaff(d.formRows||[],S.tt,d.links);
   fresh.forEach(s=>{const o=old[s.name];if(o)s.id=o.id});
   d.staff=fresh;d.rules=T.postRules(T.defaultRules(fresh),fresh).rules;d.version=2;d.rulesFrom='גיליון "כללים" · 6.11.2026';
   return true;
@@ -388,16 +388,61 @@ function placeFocus(k){
 /* ---------- צוות ---------- */
 function rCell(s){if(!s.post)return '<span class="muted">—</span>';const r=(S.data.rules||[]).find(x=>x.src==='sheetR'&&x.who.ids&&x.who.ids[0]===s.id);
   return esc(s.post)+'<div class="muted">'+esc(!r?'לא הוחל':r.type==='post'?T.postText(r):'לא לשבץ')+'</div>'}
+function dupOpts(){return S.data.staff.filter(x=>!x.form&&!x.manual&&x.tt)}
+function linkCell(s){
+  if(s.manual)return '<div class="small muted">נוסף/ה ידנית · <button type="button" class="link" data-act="pDel" data-id="'+s.id+'" style="background:none;border:0;padding:0;color:var(--red);text-decoration:underline;font-size:inherit">הסרה</button></div>';
+  if(!s.form||s.tt)return '';
+  const o=dupOpts();if(!o.length)return '';
+  return '<details class="small noprint"><summary class="muted" style="cursor:pointer">לא במערכת השעות · כפילות?</summary>זה אותו אדם כמו: <select data-ch="link" data-id="'+s.id+'" class="fsel" style="width:auto;display:inline-block;padding:2px 6px"><option value="">—</option>'+o.map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join('')+'</select></details>'}
+/* מיזוג כפילות: האדם מהשאלון (keep) מקבל את מערכת השעות, השיבוצים והחריגים של הכפיל מהמערכת (dup), והכפיל נמחק */
+function mergeStaff(keepId,dupId){
+  const k=S.data.staff.find(x=>x.id===keepId),d=S.data.staff.find(x=>x.id===dupId);if(!k||!d)return;
+  k.tt=d.tt;if(!k.layers||k.layers==='*')k.layers=d.layers;
+  if(k.form){S.data.links=S.data.links||{};S.data.links[k.name]=d.tt}
+  const A=S.data.plan.assign||{},Lk=S.data.plan.locked||{},busy=new Set(Object.keys(A).filter(x=>A[x]===keepId).map(x=>x.split('@').slice(0,2).join('@')));
+  Object.keys(A).forEach(x=>{if(A[x]!==dupId)return;const sd=x.split('@').slice(0,2).join('@');if(busy.has(sd)){delete A[x];delete Lk[x]}else{A[x]=keepId;busy.add(sd);if(Lk[x])Lk[x]=keepId}});
+  S.data.rules=S.data.rules.filter(r=>{if(!(r.who&&r.who.ids&&r.who.ids.includes(dupId)))return true;
+    if(r.src==='personal'&&S.data.rules.some(q=>q!==r&&q.src==='personal'&&q.type===r.type&&q.who.ids&&q.who.ids[0]===keepId))return false;
+    r.who.ids=[...new Set(r.who.ids.map(i=>i===dupId?keepId:i))];return true});
+  S.data.staff=S.data.staff.filter(x=>x.id!==dupId);
+  S.data.plan.stale=true;recompute();save(true);render();toast('אוחדו: '+k.name+' = '+d.name);
+}
+function personModal(){
+  const M=S.modal,used=new Set(S.data.staff.filter(x=>x.form||x.manual).map(x=>x.tt).filter(Boolean));
+  const tts=Object.keys(S.tt).filter(n=>!used.has(n)).sort();
+  return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" data-act="noop" style="max-width:520px"><div class="mhead">הוספת איש צוות</div><div class="mbody">'+
+    '<label class="small"><b>שם</b><input id="pName" class="fsel" value="'+esc(M.name||'')+'" placeholder="שם פרטי ומשפחה"></label>'+
+    '<label class="small"><b>תפקיד</b><select id="pRole" class="fsel">'+Object.keys(roleName).map(r=>'<option value="'+r+'"'+(M.role===r?' selected':'')+'>'+roleName[r]+'</option>').join('')+'</select></label>'+
+    '<label class="small"><b>במערכת השעות</b> (אם מופיע/ה — הימים והשכבות יילקחו משם)<select id="pTT" class="fsel"><option value="">לא מופיע/ה במערכת</option>'+tts.map(n=>'<option'+(M.tt===n?' selected':'')+'>'+esc(n)+'</option>').join('')+'</select></label>'+
+    '<div class="small"><b>ימי עבודה</b><div class="chips">'+[0,1,2,3,4,5].map(d=>'<label class="chip"><input type="checkbox" class="pDay" value="'+d+'" checked> '+D[d]+'</label>').join('')+'</div></div>'+
+    '<label class="small"><b>שכבות</b> (למשל: ו, או גה)<input id="pLay" class="fsel" value="'+esc(M.layers||'')+'"></label>'+
+    '<div class="small muted">אחרי ההוספה: עמדה בהפסקות, מכסה ואחמ"ש — בטבלת הצוות או ב"+ כלל חדש".</div>'+
+    '</div><div class="mfoot"><button class="btn sec sm" data-act="close">ביטול</button><button class="btn sm" data-act="pSave">הוספה</button></div></div></div>'}
+function personSave(){
+  const v=id=>(document.getElementById(id)||{}).value||'';
+  const name=v('pName').trim().replace(/\s+/g,' ');if(!name){toast('לכתוב שם');return}
+  if(S.data.staff.some(x=>x.name===name)){toast('כבר יש איש צוות בשם הזה');return}
+  const tt=v('pTT'),t=tt&&S.tt[tt];
+  let days=[...document.querySelectorAll('.pDay:checked')].map(x=>+x.value);
+  if(t)days=t.p.map((p,i)=>/[^.]/.test(p)?i:-1).filter(i=>i>=0);
+  const lay=(v('pLay').replace(/[^א-ו*]/g,'')||(t?String(t.l||'').slice(0,2):'')||'*');
+  const rec={id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,tt:tt||null,role:v('pRole')||'teacher',layers:lay,days,dcat:days.length>=4?'45':days.length===3?'3':'12',option:'N',pref:[],noMorning:[],noEnd:[],obstacle:'',note:'',post:'',form:false,manual:true,flag:''};
+  S.data.staff.push(rec);
+  const dup=tt&&S.data.staff.find(x=>x.id!==rec.id&&!x.form&&!x.manual&&x.tt===tt);
+  S.modal=null;
+  if(dup){mergeStaff(rec.id,dup.id);return}
+  S.data.plan.stale=true;recompute();save(true);render();toast('נוסף/ה: '+name+' — אפשר להריץ שיבוץ');
+}
 function viewStaff(){
   const R2=S.R.people.reduce((m,p)=>(m[p.id]=p,m),{});
   const f=S.staffFilter,q=S.q.trim();
   const list=S.data.staff.filter(s=>{const p=prof(s.id);return (f==='all'||(f==='flag'&&s.flag)||(f==='out'&&p.excluded)||(f==='lo'&&!p.excluded&&R2[s.id].got<R2[s.id].target)||(f==='noR'&&!p.excluded&&!s.post)||(f===s.role))&&(!q||s.name.includes(q))});
-  let h='<div class="card topbar"><div><h1>צוות</h1><div class="muted small">'+S.data.staff.length+' אנשים · הערכים כאן מחושבים מהכללים. שינוי כאן יוצר "חריג אישי" (מופיע במסך "כללים").</div></div><div class="row noprint">'+runBtn(' sm')+'</div></div>';
+  let h='<div class="card topbar"><div><h1>צוות</h1><div class="muted small">'+S.data.staff.length+' אנשים · הערכים כאן מחושבים מהכללים. שינוי כאן יוצר "חריג אישי" (מופיע במסך "כללים").</div></div><div class="row noprint"><button class="btn sec sm" data-act="pNew">+ איש צוות</button>'+runBtn(' sm')+'</div></div>';
   h+='<div class="row noprint"><div class="tabs">'+[['all','כולם'],['flag','לבדיקה'],['lo','מתחת למכסה'],['noR','בלי עמדה בהפסקות'],['out','מוחרגים'],['teacher','מורים'],['aide','סייעות']].map(x=>'<button data-act="sf" data-f="'+x[0]+'" aria-pressed="'+(f===x[0])+'">'+x[1]+'</button>').join('')+'</div><input type="search" id="q" placeholder="חיפוש שם" value="'+esc(S.q)+'" style="max-width:240px"></div>';
   const mark=(s,type)=>S.data.rules.some(r=>r.src==='personal'&&r.type===type&&r.who.ids&&r.who.ids[0]===s.id)?' style="border-color:var(--orange);background:#fff8e6"':'';
   h+='<div class="card tablewrap"><table class="staff"><thead><tr><th>שם</th><th>תפקיד</th><th>שכבות</th><th>ימים</th><th>משובץ/ת</th><th>אחמ"ש</th><th>מכסה</th><th>שובץ</th><th>מתכונת</th><th>עמדה בהפסקות (הנחיית המנהל)</th><th>מה כתב/ה</th></tr></thead><tbody>'+
    list.map(s=>{const p=R2[s.id],c=prof(s.id);
-     return '<tr class="'+(c.excluded?'out':'')+'"><td><button type="button" class="link" data-act="focus" data-id="'+s.id+'" title="הצגה בלוח" style="background:none;border:0;padding:0;color:var(--brand-dark);font-weight:600;text-decoration:underline;font-size:inherit;text-align:right">'+esc(s.name)+'</button>'+(s.flag?'<div class="small" style="color:var(--orange)">'+esc(s.flag)+'</div>':'')+(s.tt?'':'<div class="small muted">לא במערכת השעות</div>')+'</td>'+
+     return '<tr class="'+(c.excluded?'out':'')+'"><td><button type="button" class="link" data-act="focus" data-id="'+s.id+'" title="הצגה בלוח" style="background:none;border:0;padding:0;color:var(--brand-dark);font-weight:600;text-decoration:underline;font-size:inherit;text-align:right">'+esc(s.name)+'</button>'+linkCell(s)+(s.flag?'<div class="small" style="color:var(--orange)">'+esc(s.flag)+'</div>':'')+(s.tt?'':'<div class="small muted">לא במערכת השעות</div>')+'</td>'+
      '<td>'+roleName[s.role]+'</td><td>'+esc(s.layers)+'</td><td class="small">'+dayList(s.days)+'</td>'+
      '<td><select data-ch="status" data-id="'+s.id+'"'+mark(s,'exclude')+'><option value="in"'+(!c.excluded?' selected':'')+'>כן</option><option value="out"'+(c.excluded?' selected':'')+'>מוחרג/ת</option></select></td>'+
      '<td><select data-ch="ahmash" data-id="'+s.id+'"'+mark(s,'ahmash')+'>'+[['no','לא'],['can','גם'],['only','רק אחמ"ש']].map(o=>'<option value="'+o[0]+'"'+(c.ahmash===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></td>'+
@@ -979,6 +1024,7 @@ function renderModal(){
   if(S.modal.kind==='notify')return notifyModal();
   if(S.modal.kind==='fixplan')return fixPlanModal();
   if(S.modal.kind==='import')return importModal();
+  if(S.modal.kind==='person')return personModal();
   if(S.modal.kind==='confirm')return '<div class="overlay" data-act="close"><div class="modal" role="alertdialog" aria-modal="true" data-act="noop"><div class="mhead">'+esc(S.modal.title)+'</div><div class="mbody"><p>'+esc(S.modal.text)+'</p></div><div class="mfoot"><button class="btn sec sm" data-act="close">ביטול</button><button class="btn sm" data-act="cyes" style="background:var(--red)">'+esc(S.modal.yes)+'</button></div></div></div>';
   const M=S.modal,[sid,dd,stid]=M.k.split('@'),sh=shiftOf(sid),st=stOf(stid),d=+dd;
   const A=S.data.plan.assign,cur=A[M.k];
@@ -1052,7 +1098,9 @@ async function applyImport(values){
   if(!rows.length){toast('לא נמצאו תשובות. ודאו שזה הגיליון "תגובות לטופס 1".');return false}
   const before=(S.data.formRows||[]).length;
   if(before&&rows.length<before*0.7&&!confirm('בקובץ יש רק '+rows.length+' תשובות, ולפני כן היו '+before+'. מי שלא מופיע בקובץ ירד מהשיבוץ. להמשיך?'))return false;
-  const fresh=T.buildStaff(rows,S.tt);
+  let fresh=T.buildStaff(rows,S.tt,S.data.links);
+  const man=S.data.staff.filter(s=>s.manual&&!fresh.some(f=>f.name===s.name&&f.form));
+  fresh=fresh.filter(f=>!(!f.form&&man.some(m=>m.tt&&m.tt===f.tt))).concat(man);
   const old={};S.data.staff.forEach(s=>old[s.name]=s);
   let added=0;
   fresh.forEach(s=>{const o=old[s.name];if(o)s.id=o.id;else{added++;s.id='s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}});
@@ -1096,9 +1144,12 @@ function rf(el){
 root.addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const a=b.dataset.act;
-  if(S.preview&&!(a==='cyes'&&S.modal&&S.modal.restore)&&/^(run|import|yImport|pick|clear|unlock|place|placeAt|fix|kFix|radd|redit|rdel|rreset|rsave|rconfirm|cyes|yEdit|ySave|yClear|impPaste|vSave|abAdd|abEnd|abOpenEnd|abBack|abOk|subPick|subClear|subAuto|subSet|fixNow|fixApply|ttApply|ttUndo|mRem|mDel)$/.test(a)){toast('זו גרסה ישנה (קריאה בלבד). לחצו "שחזור" כדי לעבוד עליה, או "חזרה לנוכחית".');return}
+  if(S.preview&&!(a==='cyes'&&S.modal&&S.modal.restore)&&/^(run|pNew|pSave|pDel|import|yImport|pick|clear|unlock|place|placeAt|fix|kFix|radd|redit|rdel|rreset|rsave|rconfirm|cyes|yEdit|ySave|yClear|impPaste|vSave|abAdd|abEnd|abOpenEnd|abBack|abOk|subPick|subClear|subAuto|subSet|fixNow|fixApply|ttApply|ttUndo|mRem|mDel)$/.test(a)){toast('זו גרסה ישנה (קריאה בלבד). לחצו "שחזור" כדי לעבוד עליה, או "חזרה לנוכחית".');return}
   if(S.preview&&a==='cell'){toast('קריאה בלבד — זו גרסה ישנה');return}
   if(a==='printYards'){printYards();return}
+  if(a==='pNew'){S.modal={kind:'person',role:'teacher'};render();return}
+  if(a==='pSave'){personSave();return}
+  if(a==='pDel'){const s=S.data.staff.find(x=>x.id===b.dataset.id);if(!s||!confirm('להסיר את '+s.name+' מהצוות? השיבוצים שלו/ה יתפנו.'))return;const A=S.data.plan.assign;Object.keys(A).forEach(k=>{if(A[k]===s.id){delete A[k];delete S.data.plan.locked[k]}});S.data.rules=S.data.rules.filter(r=>!(r.src==='personal'&&r.who.ids&&r.who.ids[0]===s.id));S.data.staff=S.data.staff.filter(x=>x!==s);S.data.plan.stale=true;recompute();save(true);render();return}
   if(a==='goAbs'){S.view='abs';render();window.scrollTo(0,0);return}
   if(a==='fixNow'){openFixPlan('בדיקת תקינות');return}
   if(a==='fixApply'){fixApply();return}
@@ -1191,6 +1242,7 @@ root.addEventListener('change',e=>{
   if(ch==='focus'){S.focus=el.value||null;render();return}
   if(ch==='onlyEmpty'){S.onlyEmpty=el.checked;render();return}
   if(ch==='release'){S.modal.release=el.value;return}
+  if(ch==='link'){if(el.value)mergeStaff(el.dataset.id,el.value);return}
   if(el.dataset.id){const id=el.dataset.id,s=S.data.staff.find(x=>x.id===id);
     if(ch==='status')setPersonal(id,'exclude',{v:el.value==='out'});
     else if(ch==='ahmash')setPersonal(id,'ahmash',{v:el.value});

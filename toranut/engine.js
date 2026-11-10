@@ -108,17 +108,20 @@
   }
 
   /* ---------- אנשי צוות מהשאלון (בלי החלטות — אלה בכללים) ---------- */
-  function buildStaff(rows, tt) {
+  /** links: {שם בשאלון: שם במערכת} — קישור ידני כשהשם לא תואם (למשל שם באנגלית) */
+  function buildStaff(rows, tt, links) {
     const staff = [], usedTT = {};
+    links = links || {};
     rows.forEach(r => {
       const [last, first, role, l1, l2, dcat, days, obstacle, opt, pref, noM, noE, note, post] = r;
-      const ttName = matchTimetable(last, first, tt);
+      const nm = (first + ' ' + last).replace(/\s+/g, ' ').trim();
+      const ttName = (links[nm] && tt[links[nm]]) ? links[nm] : matchTimetable(last, first, tt);
       if (ttName) usedTT[ttName] = 1;
       const layers = l1 === '*' ? '*' : uniq([l1, l2].filter(x => x && x !== '*')).join('') + (l2 === '*' ? '*' : '');
       // השאלון לא תמיד כולל שכבה — אז לוקחים את השכבות שבהן מלמד/ת הכי הרבה שעות לפי מערכת השעות
       const ttL = ttName && tt[ttName] ? String(tt[ttName].l || '').slice(0, 2) : '';
       staff.push({
-        id: 's' + (staff.length + 1), name: (first + ' ' + last).replace(/\s+/g, ' ').trim(), tt: ttName || null,
+        id: 's' + (staff.length + 1), name: nm, tt: ttName || null,
         role: { T: 'teacher', A: 'aide', M: 'admin', O: 'other' }[role] || 'teacher',
         layers: layers || ttL, days: digits(days), dcat, option: opt, pref: digits(pref), noMorning: digits(noM), noEnd: digits(noE),
         obstacle: obstacle || '', note: note || '', post: post || '', form: true,
