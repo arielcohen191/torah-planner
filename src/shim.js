@@ -59,7 +59,8 @@
       document.body.appendChild(box);
       var P=document.getElementById('gatePhone'),N=document.getElementById('gateName'),M=document.getElementById('gateMsg');
       // known number -> fill the name it was saved with
-      P.addEventListener('change',async function(){if(normPhone(P.value).length<9)return;var id=await phoneId(P.value);try{var list=await rpc('list_plans',{code:CODE});var r=list.find(function(x){return x.id===id});if(r&&r.data&&r.data.teacher&&!N.value){N.value=r.data.teacher;M.textContent='שמחים לראות אותך שוב!'}}catch(e){}});
+      P.addEventListener('change',async function(){if(normPhone(P.value).length<9)return;var id=await phoneId(P.value);try{var list=await rpc('list_plans',{code:CODE});var r=list.find(function(x){return x.id===id});if(r&&r.data&&r.data.teacher&&!N.value){N.value=r.data.teacher;M.textContent='שמחים לראות אותך שוב!';return}}catch(e){}
+        try{var st=await staff.list();var t=(st||[]).find(function(x){return x.pid===id});if(t&&!N.value){N.value=t.name;M.textContent='מצאנו אותך ברשימת הצוות. אפשר לתקן את השם.'}}catch(e){}});
       document.getElementById('gateForm').addEventListener('submit',async function(e){e.preventDefault();
         var ph=normPhone(P.value),n=N.value.trim();
         if(!/^0[2-9][0-9]{7,8}$/.test(ph)){M.textContent='נא לכתוב מספר טלפון תקין.';return}
@@ -70,7 +71,8 @@
     async function start(){if(owner.id&&owner.id.charAt(0)==='p'&&owner.name)resolve();else ask()}
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
   });
-  window.claude={standalone:true,use:async function(n){await ready;return {db:db,user:user,downloads:downloads}[n]||null}};
+  var staffP=null,staff={list:function(){return staffP||(staffP=rpc('planner_staff',{}).catch(function(){staffP=null;return []}))}};
+  window.claude={standalone:true,use:async function(n){await ready;return {db:db,user:user,downloads:downloads,staff:staff}[n]||null}};
 
   ready.then(function(){
     /* always-visible user chip in the top bar (desktop and phone) */

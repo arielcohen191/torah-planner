@@ -651,7 +651,8 @@ table.wk input[type=checkbox]{width:20px;height:20px}
       document.body.appendChild(box);
       var P=document.getElementById('gatePhone'),N=document.getElementById('gateName'),M=document.getElementById('gateMsg');
       // known number -> fill the name it was saved with
-      P.addEventListener('change',async function(){if(normPhone(P.value).length<9)return;var id=await phoneId(P.value);try{var list=await rpc('list_plans',{code:CODE});var r=list.find(function(x){return x.id===id});if(r&&r.data&&r.data.teacher&&!N.value){N.value=r.data.teacher;M.textContent='שמחים לראות אותך שוב!'}}catch(e){}});
+      P.addEventListener('change',async function(){if(normPhone(P.value).length<9)return;var id=await phoneId(P.value);try{var list=await rpc('list_plans',{code:CODE});var r=list.find(function(x){return x.id===id});if(r&&r.data&&r.data.teacher&&!N.value){N.value=r.data.teacher;M.textContent='שמחים לראות אותך שוב!';return}}catch(e){}
+        try{var st=await staff.list();var t=(st||[]).find(function(x){return x.pid===id});if(t&&!N.value){N.value=t.name;M.textContent='מצאנו אותך ברשימת הצוות. אפשר לתקן את השם.'}}catch(e){}});
       document.getElementById('gateForm').addEventListener('submit',async function(e){e.preventDefault();
         var ph=normPhone(P.value),n=N.value.trim();
         if(!/^0[2-9][0-9]{7,8}$/.test(ph)){M.textContent='נא לכתוב מספר טלפון תקין.';return}
@@ -662,7 +663,8 @@ table.wk input[type=checkbox]{width:20px;height:20px}
     async function start(){if(owner.id&&owner.id.charAt(0)==='p'&&owner.name)resolve();else ask()}
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
   });
-  window.claude={standalone:true,use:async function(n){await ready;return {db:db,user:user,downloads:downloads}[n]||null}};
+  var staffP=null,staff={list:function(){return staffP||(staffP=rpc('planner_staff',{}).catch(function(){staffP=null;return []}))}};
+  window.claude={standalone:true,use:async function(n){await ready;return {db:db,user:user,downloads:downloads,staff:staff}[n]||null}};
 
   ready.then(function(){
     /* always-visible user chip in the top bar (desktop and phone) */
@@ -1170,7 +1172,7 @@ function renderHero(){
    <div class="hstats"><div class="hs"><b>${weeks}</b>שבועות לסוף השנה</div>${next?`<div class="hs"><b>${days} ימים</b>עד ${esc(next.name)}</div>`:''}<div class="hs"><b>${mineN}</b>${mineN===1?'תוכנית שמורה':'תוכניות שמורות'}</div></div></div>
    <div class="yr">${ring(pct,92,'#fff','השנה עברה '+Math.round(pct)+'%',9)}<div>מהשנה מאחורינו</div></div>`;
 }
-let meName='';
+let meName='',STAFF=[];
 /* ---------- roles: הנהלה sees everything; רכז sees all teachers in his subjects; מורה sees his own plans ---------- */
 const myCoord=()=>ROLES.coords?.[uid]||null;
 const coordSubs=()=>isAdmin?Object.keys(SUBJECTS):(myCoord()?.subjects||[]);
@@ -1205,6 +1207,7 @@ function renderRoles(){
   const chips=DOMAINS.filter(d=>d[0]!=='other').map(d=>`<div class="role-dom"><b>${d[1]}</b>${d[2].map(k=>`<label class="pg-apply"><input type="checkbox" data-rsub="${k}"> ${SUBJECTS[k].label}</label>`).join('')}</div>`).join('');
   el.innerHTML=`<div class="w"><div class="w-h"><h2>הוספת הרשאה</h2></div><div class="w-b">
     <p class="hint">מזהים כל איש צוות לפי מספר הטלפון שאיתו הוא נכנס לאתר. אפשר גם בלי טלפון: ההרשאה תחכה, ותינתן אוטומטית כשמישהו בשם הזה ייכנס בפעם הראשונה. מורה בלי הרשאה רואה רק את התוכניות שלו.</p>
+    ${STAFF.length?`<label class="f" style="margin-bottom:12px">בחירה מרשימת הצוות<select id="rStaff"><option value="">— בחרו איש צוות —</option>${STAFF.map(t=>`<option value="${esc(t.pid)}" data-name="${esc(t.name)}" data-tail="${esc(t.tail)}">${esc(t.name)} · …${esc(t.tail)}</option>`).join('')}</select><small style="color:var(--muted);font-weight:400">הרשימה מגיעה ממערכת מילוי המקום, לפי מספרי הטלפון בסמארטסקול</small></label>`:''}
     <div class="fields"><label class="f">טלפון (לא חובה)<input id="rPhone" type="tel" dir="ltr" style="text-align:right" placeholder="050-1234567"></label><label class="f">שם<input id="rName" placeholder="לדוגמה: הרב יוסי"></label>
     <label class="f">תפקיד<select id="rRole"><option value="coord">רכז/ת מקצוע</option><option value="admin">הנהלה – רואה הכול</option></select></label></div>
     <div id="rSubs" class="role-subs">${chips}</div>
@@ -1215,10 +1218,14 @@ function renderRoles(){
     ${PN.map((r,i)=>`<tr><td><b>${esc(r.name)}</b></td><td><small style="color:var(--muted)">ממתין לכניסה ראשונה</small></td><td><span class="chip">${r.role==='admin'?'הנהלה':'רכז/ת'}</span></td><td>${r.role==='admin'?'הכול':(r.subjects||[]).map(k=>esc(SUBJECTS[k]?.label||k)).join(', ')}</td><td><button class="btn ghost danger" data-rpdel="${i}">הסרה</button></td></tr>`).join('')}
     ${!A.length&&!C.length&&!PN.length?'<tr><td colspan="5" class="empty">אין עדיין הרשאות.</td></tr>':''}</tbody></table></div></div>`;
   const rr=$('#rRole');rr.onchange=()=>{$('#rSubs').hidden=rr.value!=='coord'};
+  const rs=$('#rStaff');if(rs)rs.onchange=()=>{const o=rs.selectedOptions[0];$('#rName').value=o?.dataset.name?o.dataset.name.replace(/^הרב\s+/,''):'';$('#rPhone').value='';$('#rPhone').disabled=!!rs.value};
 }
 async function saveRoles(next){try{await db.doc('settings/roles').set(next);ROLES=next;applyRoles();toast('ההרשאות נשמרו')}catch(e){toast('השמירה נכשלה')}}
 document.addEventListener('click',async e=>{
-  if(e.target.closest('#rAdd')){const ph=normPhone($('#rPhone').value),name=$('#rName').value.trim(),role=$('#rRole').value;
+  if(e.target.closest('#rAdd')){const ph=normPhone($('#rPhone').value),name=$('#rName').value.trim(),role=$('#rRole').value,so=$('#rStaff')?.selectedOptions[0];
+    if(so&&so.value){if(!name){$('#rMsg').textContent='נא לכתוב שם';return}const subs0=$$('[data-rsub]').filter(x=>x.checked).map(x=>x.dataset.rsub);if(role==='coord'&&!subs0.length){$('#rMsg').textContent='נא לבחור לפחות מקצוע אחד';return}
+      const id=so.value,next={admins:{...(ROLES.admins||{})},coords:{...(ROLES.coords||{})},pending:(ROLES.pending||[]).filter(r=>r.name!==name)};delete next.admins[id];delete next.coords[id];
+      if(role==='admin')next.admins[id]={name,tail:so.dataset.tail};else next.coords[id]={name,tail:so.dataset.tail,subjects:subs0};saveRoles(next);return}
     if(ph&&!/^0[2-9][0-9]{7,8}$/.test(ph)){$('#rMsg').textContent='מספר טלפון לא תקין';return}if(!name){$('#rMsg').textContent='נא לכתוב שם';return}
     const subs=$$('[data-rsub]').filter(x=>x.checked).map(x=>x.dataset.rsub);if(role==='coord'&&!subs.length){$('#rMsg').textContent='נא לבחור לפחות מקצוע אחד';return}
     if(!ph){saveRoles({...ROLES,pending:[...(ROLES.pending||[]).filter(r=>r.name!==name),{name,role,subjects:role==='coord'?subs:[]}]});return}
@@ -1666,6 +1673,7 @@ initForm();renderSubjPick();renderLedger();renderHero();
   $('[data-v="team"]').hidden=!isAdmin;
   try{db=await window.claude.use('db')}catch(e){}
   if(!db)return;
+  try{const st=await window.claude.use('staff');if(st){STAFF=await st.list()||[];renderRoles()}}catch(e){}
   db.doc('settings/roles').onSnapshot(s=>{const d=s.exists?s.data():{};ROLES={admins:d.admins||{},coords:d.coords||{},pending:d.pending||[]};applyRoles()},()=>{});
   db.doc('settings/curriculum').onSnapshot(s=>{CURR=(s.exists&&s.data().map)||{};renderCurr()},()=>{});
   db.doc('settings/school').onSnapshot(s=>{schoolHol=(s.exists&&Array.isArray(s.data().holidays))?s.data().holidays:[];renderLedger();if(step===3)b3();renderHol()},()=>{});
