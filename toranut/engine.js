@@ -153,7 +153,7 @@
   const PATTERN = { day: 'יום תורנות מרוכז (+ תורנות בודדת ביום אחר)', spread: 'פריסה — תורנות אחת בכל יום', free: 'לפי צורכי המערכת' };
   const STATIONS = { any: 'כל עמדה', noPatrol: 'עמדה סטטית בלבד (לא פטרול)', seat: 'עמדה עם ישיבה', ownFloor: 'רק בקומה של השכבה שלו/ה' };
   const AHMASH = { no: 'לא אחמ"ש', can: 'יכול/ה גם אחמ"ש', only: 'אחמ"ש בלבד' };
-  const SOFT = { sameStation: 'אותה עמדה בכל התורנויות', layer: 'ליד תלמידי השכבה (לפי חלוקת החצרות)', calm: 'ביום/שעה רגועים (לא לפני שיעור)', endSame: 'סוף יום — אותו תורן של אותו יום', prefDays: 'הימים המועדפים מהשאלון' };
+  const SOFT = { sameStation: 'אותה עמדה בכל התורנויות', layer: 'ליד תלמידי השכבה (לפי חלוקת החצרות)', calm: 'ביום/שעה רגועים (לא לפני שיעור)', endSame: 'סוף יום — אותו תורן של אותו יום', prefDays: 'הימים המועדפים מהשאלון', near: 'בהפסקה — ליד הכיתה שלימד/ה לפני או ילמד/ה אחרי' };
   const LEVEL = ['כבוי', 'נמוך', 'רגיל', 'גבוה'];
 
   const TYPES = {
@@ -321,7 +321,7 @@
       });
       P[s.id] = p;
     });
-    const W = { sameStation: 2, layer: 2, calm: 2, endSame: 2, prefDays: 2 };
+    const W = { sameStation: 2, layer: 2, calm: 2, endSame: 2, prefDays: 2, near: 3 };
     (rules || []).forEach(r => { if (r.on !== false && r.type === 'soft') W[r.factor] = +r.w; });
     return { P, W };
   }
@@ -385,6 +385,7 @@
     add(S, { type: 'soft', factor: 'sameStation', w: 3, who: {} }, 'עמדות קבועות — שיכיר את הנהלים והתורפות (דגש על השער ופינוי החצרות)');
     add(S, { type: 'soft', factor: 'layer', w: 3, who: {} }, 'איש צוות עם תלמידי כיתתו/שכבתו');
     add(S, { type: 'soft', factor: 'calm', w: 2, who: {} }, 'לשבץ מורה ביום רגוע/פחות עמוס שלו');
+    add(S, { type: 'soft', factor: 'near', w: 3, who: {} }, 'בהפסקה — ליד הכיתה שלימד/ה לפניה או ילמד/ה אחריה (לפי מערכת השעות)');
     add(S, { type: 'soft', factor: 'prefDays', w: 2, who: {} });
     add(S, { type: 'soft', factor: 'endSame', w: 2, who: {} }, 'סוף יום — לשבץ את אותו תורן');
     add(S, { type: 'note', text: 'למעט הפטרול — עמדות סטטיות, קבועות ומסומנות', who: {} });
@@ -500,21 +501,32 @@
   /* ---------- PRNG ---------- */
   function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
+  /** בהפסקה: 2 = לימד/ה את השכבה בשעה שלפני, 1 = ילמד/ה אותה בשעה שאחרי, 0 = לא */
+  function nearClass(s, shift, day, layer, tt) {
+    if (shift.kind !== 'break' || !layer) return 0;
+    const t = s.tt && tt[s.tt], c = t && t.c && t.c[day];
+    if (!c) return 0;
+    const a = afterHour(shift, day), L = [...layer];
+    if (L.includes(c[a - 1])) return 2;
+    if (L.includes(c[a])) return 1;
+    return 0;
+  }
   function prepare(cfg, staff, tt, C) {
     const positions = [];
     cfg.shifts.forEach(shift => shift.days.forEach(day => cfg.stations.forEach(st => {
       if (!st.shifts.includes(shift.id)) return;
       if (cfg.skip && cfg.skip[shift.id + '@' + day + '@' + st.id]) return;
       const layer = stationLayer(cfg, st, shift, day);
-      const elig = [], calm = {};
+      const elig = [], calm = {}, near = {};
       staff.forEach((s, i) => {
         const p = C.P[s.id];
         if (formAllows(s, shift, day, p)) return;
         const pr = presence(s, shift, day, tt); if (!pr.ok) return;
         if (!stationOk(s, p, st, layer, shift.id, day)) return;
         elig.push(i); calm[i] = pr.calm !== false;
+        near[i] = nearClass(s, shift, day, layer, tt);
       });
-      positions.push({ key: shift.id + '@' + day + '@' + st.id, shift, day, st, layer, elig, calm });
+      positions.push({ key: shift.id + '@' + day + '@' + st.id, shift, day, st, layer, elig, calm, near });
     })));
     const opts = staff.map(() => 0);
     positions.forEach(p => p.elig.forEach(i => opts[i]++));
@@ -556,6 +568,7 @@
     const rank = s.pref.indexOf(day);
     if (rank >= 0) sc += [1.25, 0.75, 0.4][rank] * W.prefDays;
     if (shift.kind === 'break' && pos.calm[i]) sc += 0.5 * W.calm;
+    if (pos.near && pos.near[i] && W.near) sc += (pos.near[i] === 2 ? 1.5 : 1) * W.near;
     if (shift.kind === 'end' && onDay) sc += 1.5 * W.endSame;
     if (p.stations === 'seat' && st.seat) sc += 2;
     if (p.post && p.post[shift.id] && postMatch(p.post[shift.id], st, layer, day)) sc += p.post[shift.id].soft ? 6 : 2;
