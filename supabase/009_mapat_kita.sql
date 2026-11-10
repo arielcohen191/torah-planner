@@ -11,3 +11,5 @@
 --   mk_change_pin לשינוי עצמי. הנהלה (admin/principal) מנהלת גישה: mk_staff_set(..., p_pin_action 'reset'|'set', p_new_pin); p_role='none' מסיר גישה.
 -- עדכון (mapat_kita_staff_q): השאלון לכל איש צוות — mk_staff_q(phone pk, part_a, part_b). פריטי חלק א' משויכים לכיתה (cls).
 --   mk_my_q / mk_save_q(phone,pin,a,b) · mk_get מחזיר voices (כל מי שכתב על הכיתה) · mk_staff_map — מנהל בלבד, כולל חלק ב'.
+-- עדכון (mapat_kita_reading): mk_reading (מיפוי קריאה מקובץ השפה, לפי כיתה) · mk_set_reading (הנהלה מעלה את הקובץ) ·
+--   mk_get_settings / mk_set_sync_url (קישור Web App ל"עדכון עכשיו") · mk_get מחזיר גם reading ו-sync_url.
