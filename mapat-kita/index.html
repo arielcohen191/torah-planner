@@ -213,6 +213,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
       <div><div class="crumb" id="crumb">מפת כיתה / תמונת כיתה</div><h1 id="pageTitle">תמונת כיתה</h1></div>
       <div class="topacts">
         <button class="btn" id="sensBtn" title="נתוני רקע משפחתי, רווחה וכו' — מוסתרים כברירת מחדל להקרנה">🔒 נתוני רקע רגישים: מוסתרים</button>
+        <button class="btn" id="syncNowBtn" hidden onclick="syncNowFromTool(this)" title="מושך עכשיו את הנתונים העדכניים מגוגל שיטס">🔄 עדכון מהגיליון</button>
         <button class="btn" onclick="window.print()">🖨️ הדפסה</button>
       </div>
     </header>
@@ -281,6 +282,9 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
   <section class="view" id="v-manage">
     <h2>ניהול גישה</h2>
     <p class="hint">מי נכנס למפת הכיתה, באיזה תפקיד ולאיזו כיתה. מחנך רואה רק את הכיתה שלו. הנהלה רואה את כל הכיתות ומנהלת את הגישה והסיסמאות. רק המנהל רואה את החלק האישי בשאלון של מחנכים אחרים.</p>
+    <h2>מקורות נתונים</h2>
+    <div id="srcBox"></div>
+    <h2>משתמשים והרשאות</h2>
     <div class="box" id="manageBox"></div>
   </section>
   <section class="view" id="v-load">
@@ -782,7 +786,7 @@ async function openClass(c){
   let d;try{d=await rpc("mk_get",{p_phone:SES.phone,p_pin:SES.pin,p_class:c})}catch(e){showNoClass("אין חיבור לשרת כרגע.");return}
   if(d.error){if(d.error==="bad"||d.error==="locked"){logout();return}showNoClass(ERR[d.error]||d.error);return}
   VOICES=d.voices||[];
-  const rows=d.rows?rowsFromSheet(d.rows):[];
+  const rows=mergeReading(d.rows?rowsFromSheet(d.rows):[],d.reading);window._syncUrl=d.sync_url||null;updateSyncBtn();
   document.body.classList.toggle("nodata",!rows.length);
   load(rows,d.class_name,d.teacher||"");
   const sync=d.synced_at?new Date(d.synced_at).toLocaleString("he-IL",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}):null;
@@ -811,7 +815,7 @@ qSave=function(){
 
 // ----- ניהול צוות -----
 let STAFF=null,STAFF_CLASSES=[];
-async function renderManage(){
+async function renderManage(){renderSources();
   const el=document.getElementById("manageBox");el.innerHTML='<p class="hint">טוען…</p>';
   const r=await rpc("mk_staff_list",{p_phone:SES.phone,p_pin:SES.pin});
   if(r.error){el.innerHTML=`<p class="hint">${ERR[r.error]||r.error}</p>`;return}
@@ -999,6 +1003,97 @@ renderMeView=async function(){
        ${s.part_b.oneThing?`<div class="note y">דבר אחד שישחרר: ${esc(s.part_b.oneThing)}</div>`:""}</div>`}).join("")}
     </div></div>`}`;
 };
+
+// ================= v4: נתוני שפה (מיפוי קריאה) · סנכרון ועדכון עכשיו =================
+IND[66]=["קריאה — הבנת הנקרא",{1:"85–100",2:"60–84",3:"מתחת ל־60"}];
+DOMAINS.find(d=>d.id==="ach").cols.push(66);DOMAINS.find(d=>d.id==="ach").txt=70;
+SUBJ.push({n:"מיפוי קריאה (שפה)",c:66});
+const PROF_SHORT=["שטף + כישורי שפה","כישורי שפה","שטף קריאה","ניטור הבנה והבעה","קוראים מיומנים"];
+const rtoks=t=>String(t||"").replace(/["'״׳]/g,"").split(/\s+/).filter(Boolean);
+function readingFor(name,list){
+  const T=rtoks(name),ex=list.find(x=>rtoks(x.n).join(" ")===T.join(" "));if(ex)return ex;
+  const c=list.filter(x=>{const R=rtoks(x.n);return R.length&&(R.every(w=>T.includes(w))||T.every(w=>R.includes(w)))});
+  return c.length===1?c[0]:null;
+}
+function mergeReading(rows,rd){
+  window._reading=rd||null;if(!rd||!rd.students)return rows;
+  return rows.map(r=>{const e=readingFor(r[2],rd.students);r=r.slice();while(r.length<71)r.push("");
+    if(e){const sc=parseFloat(e.s);r[66]=isNaN(sc)?"":String(sc>=85?1:sc>=60?2:3);r[67]=e.p==null?"":String(e.p);r[68]=isNaN(sc)?"":String(Math.round(sc));
+      r[70]=[e.p!=null?"פרופיל: "+(PROF_SHORT[e.p]||""):"",!isNaN(sc)?"ציון הבנת הנקרא: "+Math.round(sc):"",e.c||""].filter(Boolean).join(" · ")}
+    return r});
+}
+// כרטיס מיפוי קריאה בתמונת הכיתה
+const _ri=qInsights;
+qInsights=function(R){
+  const I=_ri(R),rd=window._reading;if(!rd)return I;
+  const by=[0,1,2,3,4].map(p=>R.filter(s=>s.r[67]===String(p)));
+  const none=R.filter(s=>s.r[67]===""&&s.r[68]==="");
+  const low=R.filter(s=>s.r[68]!==""&&+s.r[68]<60);
+  I.push(["y","מיפוי קריאה (שפה)",`${esc(rd.period||"")} · לפי קובץ המיפוי של צוות השפה. פרופילים: ${PROF_SHORT.map((p,i)=>p+" "+by[i].length).join(" · ")}. ${low.length?`<b>${low.length}</b> תלמידים עם ציון הבנת הנקרא מתחת ל־60:`:""}`,low]);
+  if(none.length)I.push(["n","לא נבדקו במיפוי הקריאה",`לתלמידים האלה אין נתון בקובץ המיפוי. אולי לא ביצעו את המבדק, ואולי השם שם כתוב אחרת:`,none]);
+  return I;
+};
+
+// ----- עדכון עכשיו מהגיליון (Apps Script Web App) -----
+async function syncNowFromTool(btn){
+  const url=window._syncUrl;if(!url){go("manage");return}
+  btn.disabled=true;const t=btn.textContent;btn.textContent="מעדכן מהגיליון…";
+  try{await fetch(url,{mode:"no-cors"})}catch(e){}
+  setTimeout(async()=>{await openClass(CUR_CLASS);btn.disabled=false;btn.textContent=t},4000);
+}
+
+// ----- מקורות נתונים (במסך ניהול גישה) -----
+async function renderSources(){
+  const el=document.getElementById("srcBox");if(!el)return;
+  const s=await rpc("mk_get_settings",{p_phone:SES.phone,p_pin:SES.pin});if(s.error){el.innerHTML="";return}
+  window._syncUrl=s.sync_url||null;
+  const when=t=>t?new Date(t).toLocaleString("he-IL",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
+  el.innerHTML=`<div class="sgrid">
+   <div class="box"><h2>טבלאות הכיתות (גוגל שיטס)</h2>
+    <p class="hint" style="margin:0 0 10px">${s.n_classes} כיתות במערכת · עדכון אחרון ${when(s.last_sync)}. הסקריפט בגיליון שולח את כל הלשוניות אוטומטית כל 5 דקות.</p>
+    <label class="f">קישור "עדכון עכשיו" (Web App של הסקריפט)<input id="syncUrl" dir="ltr" value="${esc(s.sync_url||"")}" placeholder="https://script.google.com/macros/s/…/exec"></label>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary sm" onclick="saveSyncUrl()">שמירת הקישור</button>
+    ${s.sync_url?`<button class="btn sm" onclick="syncNowFromTool(this)">🔄 עדכון עכשיו</button>`:""}<span id="syncMsg" class="hint" style="margin:0"></span></div>
+   </div>
+   <div class="box"><h2>נתוני שפה — מיפוי קריאה</h2>
+    <p class="hint" style="margin:0 0 10px">מעלים את הקובץ "מיפוי-קריאה-כיתות-א-ו" (xlsm או xlsx) כמו שהוא. כל לשונית כיתה נקלטת, והנתונים מופיעים בתחום "הישגים" ובכרטיס התלמיד. אחרי כל מבדק חדש פשוט מעלים שוב.</p>
+    <input type="file" id="readFile" accept=".xlsm,.xlsx,.xls" onchange="uploadReading(this.files[0])">
+    <div id="readMsg" class="hint" style="margin:8px 0 0">${window._readMsg||""}</div>
+    ${s.reading.length?`<p class="hint" style="margin:10px 0 0">כבר במערכת: ${s.reading.map(r=>`${esc(r.class_key)} (${r.n})`).join(" · ")} · הועלה ${when(s.reading[0].uploaded_at)}</p>`:""}
+   </div></div>`;
+}
+async function saveSyncUrl(){
+  const v=document.getElementById("syncUrl").value.trim(),m=document.getElementById("syncMsg");
+  const r=await rpc("mk_set_sync_url",{p_phone:SES.phone,p_pin:SES.pin,p_url:v});
+  m.textContent=r.error?(r.error==="url"?"⚠ הקישור צריך להתחיל ב־https://script.google.com/":"⚠ "+(ERR[r.error]||r.error)):"✓ נשמר";
+  if(!r.error){window._syncUrl=v||null;setTimeout(renderSources,600);updateSyncBtn()}
+}
+function loadXLSX(){return window.XLSX?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement("script");s.src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+function parseReadingBook(wb){
+  const clean=v=>String(v==null?"":v).replace(/\s+/g," ").trim();const out=[];
+  wb.SheetNames.forEach(nm=>{
+    const g=XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,defval:"",raw:true}).map(r=>r.map(clean));
+    const hdr=g.findIndex(r=>r.some(c=>c.includes("מיומנים"))),sc=g.findIndex(r=>r[0]==="שם התלמיד");
+    const teacher=((g.flat().find(c=>c.includes("שם המורה"))||"").replace(/^.*שם המורה\s*:?\s*/,""));
+    const period=g.flat().find(c=>c.includes("תשפ"))||"";
+    const recs=[];const find=n=>recs.find(x=>{const A=rtoks(x.n),B=rtoks(n);return A.join(" ")===B.join(" ")||(A.length&&B.length&&(A.every(w=>B.includes(w))||B.every(w=>A.includes(w))))});
+    if(hdr>=0)for(const r of g.slice(hdr+1)){if(r.some(c=>c.includes("מספר תלמידים")))break;r.slice(0,5).forEach((c,j)=>{if(c&&!find(c))recs.push({n:c,p:j,s:"",c:""})})}
+    if(sc>=0)for(const r of g.slice(sc+1)){if(!r[0])continue;let e=find(r[0]);if(!e){e={n:r[0],p:null,s:"",c:""};recs.push(e)}else if(rtoks(r[0]).length>rtoks(e.n).length)e.n=r[0];
+      const v=r[1];e.s=(v===""||v==="-")?"":String(v);e.c=r[2]||""}
+    if(recs.length)out.push({title:nm,teacher,period,profiles:hdr>=0?g[hdr].slice(0,5):[],students:recs});
+  });
+  return out;
+}
+async function uploadReading(f){
+  const m=document.getElementById("readMsg");if(!f)return;m.textContent="קורא את הקובץ…";
+  try{await loadXLSX();const wb=XLSX.read(await f.arrayBuffer(),{type:"array"});const cls=parseReadingBook(wb);
+    if(!cls.length){m.textContent="⚠ לא נמצאו בקובץ לשוניות מיפוי עם תלמידים";return}
+    const r=await rpc("mk_set_reading",{p_phone:SES.phone,p_pin:SES.pin,p_classes:cls});
+    m.innerHTML=window._readMsg=r.error?"⚠ "+(ERR[r.error]||r.error):`✓ נקלטו ${r.classes} כיתות: ${cls.map(c=>esc(c.title)+" ("+c.students.length+")").join(" · ")}`;
+    if(!r.error){setTimeout(renderSources,800);if(CUR_CLASS)openClass(CUR_CLASS)}
+  }catch(e){m.textContent="⚠ לא הצלחתי לקרוא את הקובץ: "+e.message}
+}
+function updateSyncBtn(){const b=document.getElementById("syncNowBtn");if(b)b.hidden=!(USER&&USER.role!=="teacher"&&window._syncUrl)}
 
 document.querySelector(".hero").hidden=false;
 (function(){const s=ses();if(s&&s.phone){SES=s;doLogin(s.phone,s.pin,true)}else showGate()})();

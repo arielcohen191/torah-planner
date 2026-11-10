@@ -168,6 +168,8 @@ function config(){
 function curAssign(){return S.preview?((S.preview.snap.plan||{}).assign||{}):(S.data.plan.assign||{})}
 function recompute(){_brk=null;S.cfg=config();S.C=T.compile(S.cfg.rules,S.data.staff);S.R=T.report(S.cfg,S.data.staff,S.tt,curAssign())}
 
+/* אנשי צוות בלי שכבה (השאלון לא כלל שכבה) — משלימים לפי מערכת השעות: השכבות שבהן מלמד/ת הכי הרבה שעות */
+function fillLayers(){let n=0;(S.data.staff||[]).forEach(s=>{if(!s.layers&&s.tt&&S.tt[s.tt]&&S.tt[s.tt].l){s.layers=String(S.tt[s.tt].l).slice(0,2);n++}});return n>0}
 /* גרסה 2: הכללים יושבים ב־data.rules ולא על אנשי הצוות */
 function migrate(){
   const d=S.data;
@@ -183,7 +185,7 @@ async function load(){
   S.me=r.me;S.tt=r.tt||{};S.data=r.data||{};S.at=r.updated_at;S.abs=r.absences||[];S.phones=r.phones||{};_brk=null;
   if(!S.data.plan)S.data.plan={assign:{},locked:{}};
   if(!S.data.plan.locked)S.data.plan.locked={};
-  if(migrate())await save(true);
+  if(migrate()|fillLayers())await save(true);
   recompute();
 }
 let saveT;
