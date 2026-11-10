@@ -204,7 +204,7 @@ const ruleOf=id=>(S.data.rules||[]).find(r=>r.id===id);
 const prof=id=>S.C.P[id];
 const roleName={teacher:'מורה',aide:'סייע/ת',admin:'מנהלה',other:'אחר'};
 const dayList=a=>a&&a.length?a.map(d=>D[d]).join(', '):'—';
-const SRC={sheet:['גיליון','#e8eef5'],sheetR:['עמודה R','#e6f4f4'],form:['שאלון','#eef7e8'],personal:['חריג אישי','#fff4e0'],site:['נוסף באתר','#f1e9fb']};
+const SRC={sheet:['גיליון','#e8eef5'],sheetR:['הנחיית המנהל (R)','#e6f4f4'],form:['שאלון','#eef7e8'],personal:['חריג אישי','#fff4e0'],site:['נוסף באתר','#f1e9fb']};
 const srcChip=r=>{const s=SRC[r.src]||SRC.site;return '<span class="chip" style="background:'+s[1]+'">'+s[0]+'</span>'};
 function kpi(cls,title,sub,n,act,go){
   const inner='<div><b>'+title+'</b><span>'+sub+'</span>'+(go?'<span class="go">'+go+' ←</span>':'')+'</div><div class="n">'+n+'</div>';
@@ -391,11 +391,11 @@ function rCell(s){if(!s.post)return '<span class="muted">—</span>';const r=(S.
 function viewStaff(){
   const R2=S.R.people.reduce((m,p)=>(m[p.id]=p,m),{});
   const f=S.staffFilter,q=S.q.trim();
-  const list=S.data.staff.filter(s=>{const p=prof(s.id);return (f==='all'||(f==='flag'&&s.flag)||(f==='out'&&p.excluded)||(f==='lo'&&!p.excluded&&R2[s.id].got<R2[s.id].target)||(f===s.role))&&(!q||s.name.includes(q))});
+  const list=S.data.staff.filter(s=>{const p=prof(s.id);return (f==='all'||(f==='flag'&&s.flag)||(f==='out'&&p.excluded)||(f==='lo'&&!p.excluded&&R2[s.id].got<R2[s.id].target)||(f==='noR'&&!p.excluded&&!s.post)||(f===s.role))&&(!q||s.name.includes(q))});
   let h='<div class="card topbar"><div><h1>צוות</h1><div class="muted small">'+S.data.staff.length+' אנשים · הערכים כאן מחושבים מהכללים. שינוי כאן יוצר "חריג אישי" (מופיע במסך "כללים").</div></div><div class="row noprint">'+runBtn(' sm')+'</div></div>';
-  h+='<div class="row noprint"><div class="tabs">'+[['all','כולם'],['flag','לבדיקה'],['lo','מתחת למכסה'],['out','מוחרגים'],['teacher','מורים'],['aide','סייעות']].map(x=>'<button data-act="sf" data-f="'+x[0]+'" aria-pressed="'+(f===x[0])+'">'+x[1]+'</button>').join('')+'</div><input type="search" id="q" placeholder="חיפוש שם" value="'+esc(S.q)+'" style="max-width:240px"></div>';
+  h+='<div class="row noprint"><div class="tabs">'+[['all','כולם'],['flag','לבדיקה'],['lo','מתחת למכסה'],['noR','בלי עמדה בהפסקות'],['out','מוחרגים'],['teacher','מורים'],['aide','סייעות']].map(x=>'<button data-act="sf" data-f="'+x[0]+'" aria-pressed="'+(f===x[0])+'">'+x[1]+'</button>').join('')+'</div><input type="search" id="q" placeholder="חיפוש שם" value="'+esc(S.q)+'" style="max-width:240px"></div>';
   const mark=(s,type)=>S.data.rules.some(r=>r.src==='personal'&&r.type===type&&r.who.ids&&r.who.ids[0]===s.id)?' style="border-color:var(--orange);background:#fff8e6"':'';
-  h+='<div class="card tablewrap"><table class="staff"><thead><tr><th>שם</th><th>תפקיד</th><th>שכבות</th><th>ימים</th><th>משובץ/ת</th><th>אחמ"ש</th><th>מכסה</th><th>שובץ</th><th>מתכונת</th><th>עמדה בהפסקות (R)</th><th>מה כתב/ה</th></tr></thead><tbody>'+
+  h+='<div class="card tablewrap"><table class="staff"><thead><tr><th>שם</th><th>תפקיד</th><th>שכבות</th><th>ימים</th><th>משובץ/ת</th><th>אחמ"ש</th><th>מכסה</th><th>שובץ</th><th>מתכונת</th><th>עמדה בהפסקות (הנחיית המנהל)</th><th>מה כתב/ה</th></tr></thead><tbody>'+
    list.map(s=>{const p=R2[s.id],c=prof(s.id);
      return '<tr class="'+(c.excluded?'out':'')+'"><td><button type="button" class="link" data-act="focus" data-id="'+s.id+'" title="הצגה בלוח" style="background:none;border:0;padding:0;color:var(--brand-dark);font-weight:600;text-decoration:underline;font-size:inherit;text-align:right">'+esc(s.name)+'</button>'+(s.flag?'<div class="small" style="color:var(--orange)">'+esc(s.flag)+'</div>':'')+(s.tt?'':'<div class="small muted">לא במערכת השעות</div>')+'</td>'+
      '<td>'+roleName[s.role]+'</td><td>'+esc(s.layers)+'</td><td class="small">'+dayList(s.days)+'</td>'+
@@ -417,7 +417,7 @@ function viewRules(){
   const shown=rules.filter(r=>f==='all'||r.src===f);
   let h='<div class="card topbar"><div><h1>כללי שיבוץ</h1><div class="muted small">'+rules.length+' כללים'+(S.data.rulesFrom?' · נטענו מ'+esc(S.data.rulesFrom):'')+'. כשכמה כללים חלים על אותו אדם — הכלל שמופיע מאוחר יותר ברשימה גובר.</div></div>'+
    '<div class="row noprint"><button class="btn" data-act="radd">+ כלל חדש</button>'+runBtn(' sec sm')+'</div></div>';
-  h+='<div class="row noprint"><div class="tabs">'+[['all','הכול'],['sheet','מהגיליון'],['sheetR','עמודה R'],['form','מהשאלון'],['site','נוספו באתר'],['personal','חריגים אישיים']].map(x=>'<button data-act="rf" data-f="'+x[0]+'" aria-pressed="'+(f===x[0])+'">'+x[1]+' ('+(x[0]==='all'?rules.length:rules.filter(r=>r.src===x[0]).length)+')</button>').join('')+'</div></div>';
+  h+='<div class="row noprint"><div class="tabs">'+[['all','הכול'],['sheet','מהגיליון'],['sheetR','הנחיית המנהל (R)'],['form','מהשאלון'],['site','נוספו באתר'],['personal','חריגים אישיים']].map(x=>'<button data-act="rf" data-f="'+x[0]+'" aria-pressed="'+(f===x[0])+'">'+x[1]+' ('+(x[0]==='all'?rules.length:rules.filter(r=>r.src===x[0]).length)+')</button>').join('')+'</div></div>';
   GROUPS.forEach(([gid,title,types])=>{
     const list=shown.filter(r=>types.includes(r.type));if(!list.length)return;
     h+='<div class="card" id="rg-'+gid+'"><h2>'+title+'</h2><div class="list">'+list.map(r=>{
@@ -1058,7 +1058,7 @@ async function applyImport(values){
   fresh.forEach(s=>{const o=old[s.name];if(o)s.id=o.id;else{added++;s.id='s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}});
   const gone=S.data.staff.filter(s=>!fresh.some(f=>f.id===s.id)).length;
   S.data.formRows=rows;S.data.staff=fresh;const pr=applyR();S.data.plan.stale=true;S.modal=null;recompute();await save(true);render();
-  toast('עודכן מהשאלון: '+rows.length+' תשובות'+(added?' · '+added+' חדשים':'')+(gone?' · '+gone+' ירדו':'')+' · '+pr.added+' כללי עמדות מעמודה R'+(pr.unknown.length?' · '+pr.unknown.length+' לא זוהו':''));
+  toast('עודכן מהשאלון: '+rows.length+' תשובות'+(added?' · '+added+' חדשים':'')+(gone?' · '+gone+' ירדו':'')+' · '+pr.added+' הנחיות עמדה מעמודה R'+(pr.none.length?' · '+pr.none.length+' עוד בלי עמדה':'')+(pr.unknown.length?' · '+pr.unknown.length+' לא זוהו':''));
   return true;
 }
 function importModal(){

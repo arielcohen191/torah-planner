@@ -278,18 +278,20 @@
     const add = [], unknown = [], flags = [];
     // מי שכבר יש לו כלל עמדות שנערך באתר — לא דורסים
     const own = new Set(keep.filter(r => r.type === 'post' && r.who && r.who.ids && r.who.ids.length === 1).map(r => r.who.ids[0]));
+    const none = [];
     staff.forEach(s => {
+      if (!s.post && !own.has(s.id)) none.push(s.name);
       if (!s.post || own.has(s.id)) return;
       const x = postFromText(s.post);
       if (!x) return;
       if (x.unknown) { unknown.push(s.name + ': ' + s.post); return; }
-      if (x.exclude) { add.push({ id: 'R' + s.id, type: 'exclude', v: true, who: { ids: [s.id] }, on: true, src: 'sheetR', note: 'עמודה R: ' + s.post }); return; }
+      if (x.exclude) { add.push({ id: 'R' + s.id, type: 'exclude', v: true, who: { ids: [s.id] }, on: true, src: 'sheetR', note: 'הנחיית המנהל (עמודה R): ' + s.post }); return; }
       x.flags.forEach(f => flags.push(s.name + ': ' + f));
-      add.push({ id: 'R' + s.id, type: 'post', stations: x.stations, layers: x.layers, byDay: x.byDay, soft: x.soft, shifts: ['b1', 'b2'], who: { ids: [s.id] }, on: true, src: 'sheetR', note: 'עמודה R: ' + s.post });
+      add.push({ id: 'R' + s.id, type: 'post', stations: x.stations, layers: x.layers, byDay: x.byDay, soft: x.soft, shifts: ['b1', 'b2'], who: { ids: [s.id] }, on: true, src: 'sheetR', note: 'הנחיית המנהל (עמודה R): ' + s.post });
     });
     // מיקום: אחרי כללי הגיליון והשאלון, לפני כללים שנוספו באתר וחריגים אישיים (שגוברים)
     let at = 0; keep.forEach((r, i) => { if (r.src === 'sheet' || r.src === 'form') at = i + 1; });
-    return { rules: keep.slice(0, at).concat(add, keep.slice(at)), added: add.length, unknown, flags };
+    return { rules: keep.slice(0, at).concat(add, keep.slice(at)), added: add.length, unknown, flags, none };
   }
   function describe(r, staff) { return r.type === 'note' ? r.text : whoText(r, staff) + ': ' + whatText(r); }
 
@@ -705,7 +707,7 @@
     const pp = opts && opts.ignoreExcluded ? Object.assign({}, p, { excluded: false, target: Math.max(1, p.target) }) : p;
     const f = formAllows(s, sh, day, pp); if (f) return f;
     const pr = presence(s, sh, day, tt); if (!pr.ok) return pr.why;
-    if (!stationOk(s, pp, st, stationLayer(cfg, st, sh, day), sh.id, day)) return (pp.post && pp.post[sh.id] && !pp.post[sh.id].soft) ? 'לא בעמדות שלו/ה בעמודה R' : 'לא מתאים/ה לעמדה';
+    if (!stationOk(s, pp, st, stationLayer(cfg, st, sh, day), sh.id, day)) return (pp.post && pp.post[sh.id] && !pp.post[sh.id].soft) ? 'לא בעמדה שהמנהל קבע לו/ה (עמודה R)' : 'לא מתאים/ה לעמדה';
     return null;
   }
   const slotOf = k => { const a = k.split('@'); return a[0] + '@' + a[1]; };
@@ -786,6 +788,8 @@
   function parseSheet(values) {
     const rows = [];
     const hi = values.findIndex(r => r && r.some(c => /שם משפחה/.test(c)));
+    // עמודת העמדות בהפסקות (שהמנהל הוסיף) — לפי הכותרת, כדי שלא תזוז אם יתווספו עמודות
+    let rc = hi >= 0 ? values[hi].findIndex(c => /עמדה.*מועדפת|שיבוץ בהפסקות/.test(c || '')) : -1; if (rc < 0) rc = 17;
     for (let r = hi + 1; r < values.length; r++) {
       const v = values[r]; if (!v || !v[1]) continue;
       const roleTxt = v[3] || '';
@@ -795,7 +799,7 @@
       const opt = /אפשרות א/.test(v[9]) ? 'A' : /אפשרות ב/.test(v[9]) ? 'B' : 'N';
       const pref = [v[10], v[11], v[12]].map(x => { const m = String(x || '').match(/יום (ראשון|שני|שלישי|רביעי|חמישי|שישי)/); return m ? DAYMAP[m[1]] : ''; }).join('');
       const cant = txt => /יכול\/ה בכל ימי העבודה שלי/.test(txt) && !/לא יכול/.test(txt) ? '' : daysOf(String(txt || '').replace(/יכול\/ה בכל ימי העבודה שלי,?/, ''));
-      rows.push([String(v[1]).trim(), String(v[2] || '').trim(), role, layerOf(v[4]), layerOf(v[5]), dc, daysOf(v[7]), obstacle.trim(), opt, pref, cant(v[13]), cant(v[14]), String(v[16] || '').trim(), String(v[17] || '').trim()]);
+      rows.push([String(v[1]).trim(), String(v[2] || '').trim(), role, layerOf(v[4]), layerOf(v[5]), dc, daysOf(v[7]), obstacle.trim(), opt, pref, cant(v[13]), cant(v[14]), String(v[16] || '').trim(), String(v[rc] || '').trim()]);
     }
     return rows;
   }
