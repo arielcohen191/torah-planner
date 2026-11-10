@@ -219,10 +219,10 @@ function payUndone(){
 /* ---------- תורנויות חצר ---------- */
 function torAbsent(date){
   const d=S.tor.data||{},out={};
-  (S.tor.absences||[]).forEach(a=>{const s=(d.staff||[]).find(x=>x.tt===a.name);if(s&&a.from<=date&&(!a.to||a.to>=date))out[s.id]={key:'m'+a.id,hours:null}});
-  (d.absLocal||[]).forEach(a=>{if(a.from<=date&&(!a.to||a.to>=date))out[a.staffId]={key:'l'+a.id,hours:null}});
+  (S.tor.absences||[]).forEach(a=>{const s=(d.staff||[]).find(x=>x.tt===a.name);if(s&&a.from<=date&&(!a.to||a.to>=date))out[s.id]={key:'m'+a.id,hours:null,daily:!!a.to&&a.to===a.from}});
+  (d.absLocal||[]).forEach(a=>{if(a.from<=date&&(!a.to||a.to>=date))out[a.staffId]={key:'l'+a.id,hours:null,daily:!!a.to&&a.to===a.from}});
   /* היעדרות יומית או חלקית שהוזנה במילוי מקום (בכלי התורנויות ההחלפה שלה באחריות המורה הנעדר) */
-  if(S.milui)absOn(date).forEach(a=>{const n=S.milui.T[a.teacher_id]&&S.milui.T[a.teacher_id].name;const s=(d.staff||[]).find(x=>x.tt===n);if(s&&!out[s.id])out[s.id]={key:'m'+a.id,hours:a.hours||null}});
+  if(S.milui)absOn(date).forEach(a=>{const n=S.milui.T[a.teacher_id]&&S.milui.T[a.teacher_id].name;const s=(d.staff||[]).find(x=>x.tt===n);if(s&&!out[s.id])out[s.id]={key:'m'+a.id,hours:a.hours||null,daily:!!a.hours||(!!a.date_to&&a.date_to===a.date_from)}});
   return out;
 }
 function torDay(date){
@@ -230,7 +230,7 @@ function torDay(date){
   const P={};(d.staff||[]).forEach(s=>P[s.id]=s);
   const abs=torAbsent(date),shifts=[],stIdx={};
   T.DEFAULT_CONFIG.stations.forEach((s,i)=>stIdx[s.id]=i);
-  let missing=0,total=0;
+  let missing=0,missingLong=0,total=0;
   T.DEFAULT_CONFIG.shifts.forEach(sh=>{
     const rows=Object.keys(A).filter(k=>{const p=k.split('@');return p[0]===sh.id&&+p[1]===day}).sort((a,b)=>(stIdx[a.split('@')[2]]||0)-(stIdx[b.split('@')[2]]||0)).map(k=>{
       const st=T.DEFAULT_CONFIG.stations.find(x=>x.id===k.split('@')[2]),sid=A[k],p=P[sid];
@@ -238,11 +238,11 @@ function torDay(date){
       total++;
       const ab=abs[sid],at=(day===5&&sh.fri)||sh.after;
       const need=sh.kind==='morning'?[1]:sh.kind==='break'?[at,at+1]:[at];
-      if(ab&&(!ab.hours||need.every(x=>ab.hours.includes(x)))){const v=subs[k];row.gone=true;if(v&&v.abs===ab.key&&P[v.id])row.sub=P[v.id].name;else missing++}
+      if(ab&&(!ab.hours||need.every(x=>ab.hours.includes(x)))){const v=subs[k];row.gone=true;row.daily=!!ab.daily;if(v&&v.abs===ab.key&&P[v.id])row.sub=P[v.id].name;else{missing++;if(!ab.daily)missingLong++}}
       return row});
     if(rows.length)shifts.push({label:sh.label,rows});
   });
-  return {shifts,missing,total,stale:!!plan.stale,open:(plan.stats||{}).open||0,ran:!!plan.at};
+  return {shifts,missing,missingLong,total,stale:!!plan.stale,open:(plan.stats||{}).open||0,ran:!!plan.at};
 }
 
 /* ---------- סיירות ---------- */
@@ -285,7 +285,7 @@ function tasks(){
   }
   if(S.tor&&window.Toranut){
     const td=torDay(d);
-    if(!hol)td.shifts.forEach(sh=>sh.rows.forEach(r=>{if(r.gone&&!r.sub)add(1,'toranut','תורנות בלי תורן: '+r.station,sh.label.split(' (')[0]+' · '+r.name+' נעדר/ת '+dayWord+', אין מחליף רשום')}));
+    if(!hol)td.shifts.forEach(sh=>sh.rows.forEach(r=>{if(r.gone&&!r.sub)add(r.daily?2:1,'toranut','תורנות בלי תורן: '+r.station,sh.label.split(' (')[0]+' · '+r.name+(r.daily?' נעדר/ת '+dayWord+' בלבד · ההחלפה באחריות המורה':' בהיעדרות ממושכת, אין מחליף רשום'))}));
     if(td.open)add(2,'toranut',plural(td.open,'עמדה אחת','עמדות')+' בלוח התורנויות השבועי בלי תורן','צריך לשבץ או להריץ שיבוץ מחדש');
     if(td.stale)add(3,'toranut','להריץ מחדש את שיבוץ התורנויות','הכללים או הצוות השתנו מאז ההרצה האחרונה');
     if(!td.ran&&!td.total)add(3,'toranut','עוד לא הורץ שיבוץ תורנויות','');
@@ -344,7 +344,7 @@ function viewMilui(){
 function viewToranut(){
   if(S.err.tor)return goTile('toranut')+failed;if(!S.tor)return goTile('toranut')+panel('תורנים',skel);
   const td=torDay(S.date),hol=holiday(S.date),miss=hol?0:td.missing,subs=td.shifts.reduce((n,sh)=>n+sh.rows.filter(r=>r.sub).length,0);
-  let h='<section class="kpis" aria-label="מצב התורנויות">'+kpiLink(miss?'k-red':'k-green','תורנים נעדרים','עמדות בלי מחליף רשום',miss,'/toranut/','לטיפול')+
+  let h='<section class="kpis" aria-label="מצב התורנויות">'+kpiLink(miss?(td.missingLong?'k-red':'k-orange'):'k-green','תורנים נעדרים','עמדות בלי מחליף רשום',miss,'/toranut/','לטיפול')+
     kpiLink('k-blue','עמדות','משובצות ביום הזה',hol?0:td.total,'/toranut/','ללוח')+kpiLink('k-green','מחליפים','שובצו במקום נעדרים',hol?0:subs,'/toranut/','ללוח')+
     kpiLink(td.open?'k-orange':'k-green','פתוחות בלוח','עמדות שבועיות בלי תורן',td.open,'/toranut/','לשיבוץ')+'</section>'+goTile('toranut');
   let b='';
