@@ -175,7 +175,7 @@ function migrate(){
   const old={};(d.staff||[]).forEach(s=>old[s.name]=s);
   const fresh=T.buildStaff(d.formRows||[],S.tt);
   fresh.forEach(s=>{const o=old[s.name];if(o)s.id=o.id});
-  d.staff=fresh;d.rules=T.defaultRules(fresh);d.version=2;d.rulesFrom='גיליון "כללים" · 6.11.2026';
+  d.staff=fresh;d.rules=T.postRules(T.defaultRules(fresh),fresh).rules;d.version=2;d.rulesFrom='גיליון "כללים" · 6.11.2026';
   return true;
 }
 async function load(){
@@ -202,7 +202,7 @@ const ruleOf=id=>(S.data.rules||[]).find(r=>r.id===id);
 const prof=id=>S.C.P[id];
 const roleName={teacher:'מורה',aide:'סייע/ת',admin:'מנהלה',other:'אחר'};
 const dayList=a=>a&&a.length?a.map(d=>D[d]).join(', '):'—';
-const SRC={sheet:['גיליון','#e8eef5'],form:['שאלון','#eef7e8'],personal:['חריג אישי','#fff4e0'],site:['נוסף באתר','#f1e9fb']};
+const SRC={sheet:['גיליון','#e8eef5'],sheetR:['עמודה R','#e6f4f4'],form:['שאלון','#eef7e8'],personal:['חריג אישי','#fff4e0'],site:['נוסף באתר','#f1e9fb']};
 const srcChip=r=>{const s=SRC[r.src]||SRC.site;return '<span class="chip" style="background:'+s[1]+'">'+s[0]+'</span>'};
 function kpi(cls,title,sub,n,act,go){
   const inner='<div><b>'+title+'</b><span>'+sub+'</span>'+(go?'<span class="go">'+go+' ←</span>':'')+'</div><div class="n">'+n+'</div>';
@@ -384,6 +384,8 @@ function placeFocus(k){
 }
 
 /* ---------- צוות ---------- */
+function rCell(s){if(!s.post)return '<span class="muted">—</span>';const r=(S.data.rules||[]).find(x=>x.src==='sheetR'&&x.who.ids&&x.who.ids[0]===s.id);
+  return esc(s.post)+'<div class="muted">'+esc(!r?'לא הוחל':r.type==='post'?T.postText(r):'לא לשבץ')+'</div>'}
 function viewStaff(){
   const R2=S.R.people.reduce((m,p)=>(m[p.id]=p,m),{});
   const f=S.staffFilter,q=S.q.trim();
@@ -391,7 +393,7 @@ function viewStaff(){
   let h='<div class="card topbar"><div><h1>צוות</h1><div class="muted small">'+S.data.staff.length+' אנשים · הערכים כאן מחושבים מהכללים. שינוי כאן יוצר "חריג אישי" (מופיע במסך "כללים").</div></div><div class="row noprint">'+runBtn(' sm')+'</div></div>';
   h+='<div class="row noprint"><div class="tabs">'+[['all','כולם'],['flag','לבדיקה'],['lo','מתחת למכסה'],['out','מוחרגים'],['teacher','מורים'],['aide','סייעות']].map(x=>'<button data-act="sf" data-f="'+x[0]+'" aria-pressed="'+(f===x[0])+'">'+x[1]+'</button>').join('')+'</div><input type="search" id="q" placeholder="חיפוש שם" value="'+esc(S.q)+'" style="max-width:240px"></div>';
   const mark=(s,type)=>S.data.rules.some(r=>r.src==='personal'&&r.type===type&&r.who.ids&&r.who.ids[0]===s.id)?' style="border-color:var(--orange);background:#fff8e6"':'';
-  h+='<div class="card tablewrap"><table class="staff"><thead><tr><th>שם</th><th>תפקיד</th><th>שכבות</th><th>ימים</th><th>משובץ/ת</th><th>אחמ"ש</th><th>מכסה</th><th>שובץ</th><th>מתכונת</th><th>מה כתב/ה</th></tr></thead><tbody>'+
+  h+='<div class="card tablewrap"><table class="staff"><thead><tr><th>שם</th><th>תפקיד</th><th>שכבות</th><th>ימים</th><th>משובץ/ת</th><th>אחמ"ש</th><th>מכסה</th><th>שובץ</th><th>מתכונת</th><th>עמדה בהפסקות (R)</th><th>מה כתב/ה</th></tr></thead><tbody>'+
    list.map(s=>{const p=R2[s.id],c=prof(s.id);
      return '<tr class="'+(c.excluded?'out':'')+'"><td><button type="button" class="link" data-act="focus" data-id="'+s.id+'" title="הצגה בלוח" style="background:none;border:0;padding:0;color:var(--brand-dark);font-weight:600;text-decoration:underline;font-size:inherit;text-align:right">'+esc(s.name)+'</button>'+(s.flag?'<div class="small" style="color:var(--orange)">'+esc(s.flag)+'</div>':'')+(s.tt?'':'<div class="small muted">לא במערכת השעות</div>')+'</td>'+
      '<td>'+roleName[s.role]+'</td><td>'+esc(s.layers)+'</td><td class="small">'+dayList(s.days)+'</td>'+
@@ -400,19 +402,20 @@ function viewStaff(){
      '<td><input class="n" type="number" min="0" max="8" data-ch="target" data-id="'+s.id+'" value="'+c.target+'"'+mark(s,'quota')+'></td>'+
      '<td><span class="load '+(p.got<p.target?'lo':'ok')+'">'+p.got+'/'+p.target+'</span>'+(p.slots.length?'<div class="small muted">'+p.slots.map(k=>{const a=k.split('@');return D[+a[1]]+' '+({m:'בוקר',b1:'10',b2:'12',e1:'סיום',e2:'13:35'}[a[0]]||a[0])}).join(' · ')+'</div>':'')+(p.broken.length?'<div class="small" style="color:var(--orange)">'+p.broken.map(esc).join(' · ')+'</div>':'')+'</td>'+
      '<td class="small">'+esc(({day:'יום מרוכז',spread:'פריסה',free:'חופשי'})[c.pattern])+'<div class="muted">שאלון: '+esc(({A:'א׳',B:'ב׳',N:'—'})[s.option]||'—')+'</div></td>'+
+     '<td class="small">'+rCell(s)+'</td>'+
      '<td class="small">'+esc([s.obstacle,s.note].filter(Boolean).join(' · '))+(s.pref&&s.pref.length?'<div class="muted">עדיפות: '+dayList(s.pref)+'</div>':'')+(s.noMorning.length?'<div class="muted">לא בוקר: '+dayList(s.noMorning)+'</div>':'')+(s.noEnd.length?'<div class="muted">לא סוף יום: '+dayList(s.noEnd)+'</div>':'')+'</td></tr>'}).join('')+
    '</tbody></table></div>';
   return h;
 }
 
 /* ---------- כללים ---------- */
-const GROUPS=[['quota','כמות ומתכונת',['quota','pattern','shift']],['who','מי משובץ ואיפה',['exclude','ahmash','stations','slots']],['soft','שיקולים',['soft']],['note','הנחיות (לא נאכפות)',['note']]];
+const GROUPS=[['quota','כמות ומתכונת',['quota','pattern','shift']],['who','מי משובץ ואיפה',['exclude','ahmash','stations','post','slots']],['soft','שיקולים',['soft']],['note','הנחיות (לא נאכפות)',['note']]];
 function viewRules(){
   const rules=S.data.rules||[],st=S.data.staff,f=S.ruleFilter;
   const shown=rules.filter(r=>f==='all'||r.src===f);
   let h='<div class="card topbar"><div><h1>כללי שיבוץ</h1><div class="muted small">'+rules.length+' כללים'+(S.data.rulesFrom?' · נטענו מ'+esc(S.data.rulesFrom):'')+'. כשכמה כללים חלים על אותו אדם — הכלל שמופיע מאוחר יותר ברשימה גובר.</div></div>'+
    '<div class="row noprint"><button class="btn" data-act="radd">+ כלל חדש</button>'+runBtn(' sec sm')+'</div></div>';
-  h+='<div class="row noprint"><div class="tabs">'+[['all','הכול'],['sheet','מהגיליון'],['form','מהשאלון'],['site','נוספו באתר'],['personal','חריגים אישיים']].map(x=>'<button data-act="rf" data-f="'+x[0]+'" aria-pressed="'+(f===x[0])+'">'+x[1]+' ('+(x[0]==='all'?rules.length:rules.filter(r=>r.src===x[0]).length)+')</button>').join('')+'</div></div>';
+  h+='<div class="row noprint"><div class="tabs">'+[['all','הכול'],['sheet','מהגיליון'],['sheetR','עמודה R'],['form','מהשאלון'],['site','נוספו באתר'],['personal','חריגים אישיים']].map(x=>'<button data-act="rf" data-f="'+x[0]+'" aria-pressed="'+(f===x[0])+'">'+x[1]+' ('+(x[0]==='all'?rules.length:rules.filter(r=>r.src===x[0]).length)+')</button>').join('')+'</div></div>';
   GROUPS.forEach(([gid,title,types])=>{
     const list=shown.filter(r=>types.includes(r.type));if(!list.length)return;
     h+='<div class="card" id="rg-'+gid+'"><h2>'+title+'</h2><div class="list">'+list.map(r=>{
@@ -427,8 +430,8 @@ function viewRules(){
 }
 function blankRule(){return {id:T.newId(),type:'quota',n:2,who:{roles:[],dcats:[],options:[],ids:[]},on:true,src:'site',note:''}}
 function defaultsFor(type,r){
-  const keep={id:r.id,type,who:r.who,on:true,src:r.src==='sheet'||r.src==='form'?r.src:'site',note:r.note||''};
-  return Object.assign(keep,{quota:{n:2},pattern:{v:'day'},shift:{shift:'b1',mode:'max',n:1,hard:false},stations:{v:'noPatrol'},ahmash:{v:'can'},exclude:{v:true},slots:{mode:'never',slots:[]},soft:{factor:'layer',w:3},note:{text:''}}[type]);
+  const keep={id:r.id,type,who:r.who,on:true,src:r.src==='sheet'||r.src==='form'||r.src==='sheetR'?r.src:'site',note:r.note||''};
+  return Object.assign(keep,{quota:{n:2},pattern:{v:'day'},shift:{shift:'b1',mode:'max',n:1,hard:false},stations:{v:'noPatrol'},ahmash:{v:'can'},exclude:{v:true},slots:{mode:'never',slots:[]},soft:{factor:'layer',w:3},note:{text:''},post:{stations:[],layers:'',byDay:{},soft:false,shifts:['b1','b2']}}[type]);
 }
 function renderRuleModal(){
   const M=S.modal,r=M.r,st=S.data.staff,w=r.who;
@@ -445,6 +448,10 @@ function renderRuleModal(){
     case 'slots':p='<select class="fsel" data-rf="mode">'+opt({never:'לא לשבץ במשבצות המסומנות',only:'לשבץ רק במשבצות המסומנות'},r.mode)+'</select><div class="tablewrap"><table class="grid" style="min-width:0"><thead><tr><th></th>'+D.map(d=>'<th>'+d+'</th>').join('')+'</tr></thead><tbody>'+
       T.DEFAULT_CONFIG.shifts.map(sh=>'<tr><th class="st" style="min-width:0">'+esc(sh.label.split(' (')[0])+'</th>'+[0,1,2,3,4,5].map(d=>'<td style="text-align:center">'+(sh.days.includes(d)?'<input type="checkbox" data-rf="slot" value="'+sh.id+'@'+d+'"'+((r.slots||[]).includes(sh.id+'@'+d)?' checked':'')+'>':'')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';break;
     case 'soft':p='<div class="row"><span>לשבץ</span><select class="fsel" data-rf="factor" style="width:auto">'+opt(T.SOFT,r.factor)+'</select></div><label>חשיבות <select class="fsel" data-rf="w" style="width:auto">'+opt(T.LEVEL,r.w)+'</select></label>';break;
+    case 'post':p='<div class="small muted">בהפסקות (10:00 ו-12:00) — לשבץ רק בעמדות המסומנות:</div><div class="chips">'+T.DEFAULT_CONFIG.stations.filter(x=>x.shifts.some(h=>h==='b1'||h==='b2')).map(x=>'<label class="chip"><input type="checkbox" data-rf="pst" value="'+x.id+'"'+((r.stations||[]).includes(x.id)?' checked':'')+'> '+esc(x.name.split(' (')[0])+'</label>').join('')+'</div>'+
+      '<div><b class="small">או בחצרות של שכבה</b><div class="chips">'+['א','ב','ג','ד','ה','ו','ז','ח'].map(l=>'<label class="chip"><input type="checkbox" data-rf="play" value="'+l+'"'+((r.layers||'').includes(l)?' checked':'')+'> '+l+'</label>').join('')+'</div></div>'+
+      (r.byDay&&Object.keys(r.byDay).length?'<div class="small muted">חריג לפי יום (מהשאלון): '+esc(Object.keys(r.byDay).map(d=>D[+d]+' — '+r.byDay[d].length+' עמדות').join(' · '))+'</div>':'')+
+      '<label class="small"><input type="checkbox" data-rf="psoft"'+(r.soft?' checked':'')+'> רק עדיפות (אם אין מקום שם — אפשר גם בעמדה אחרת)</label>';break;
     case 'note':p='<textarea class="fsel" rows="3" data-rf="text" placeholder="לדוגמה: אפוד זוהר לכל התורנים">'+esc(r.text||'')+'</textarea>';break;
   }
   const people=w.ids&&w.ids.length||M.whoMode==='ids';
@@ -465,7 +472,7 @@ function renderRuleModal(){
     '<div class="note small"><b>תצוגה מקדימה:</b> '+esc(T.describe(r,st))+(n!=null?' <span class="muted">· חל על '+n+' אנשים</span>':'')+'</div>'+
     (idsMode&&!n?'<div class="small err">סמנו לפחות אדם אחד ברשימה.</div>':'')+
     (everyone&&restrictive?'<div class="small" style="background:#fdecea;border:1px solid #f3b4ae;border-radius:8px;padding:8px 12px;color:var(--red)"><b>שימו לב: הכלל חל על כל הצוות ('+n+' אנשים).</b> אם התכוונתם לאנשים מסוימים — לחצו "אנשים מסוימים" למעלה וסמנו אותם.</div>':'')+
-    '</div><div class="mfoot"><button class="btn sec sm" data-act="close">ביטול</button><button class="btn sm" data-act="rsave"'+(n===0||(r.type==='slots'&&!(r.slots||[]).length)||(r.type==='note'&&!(r.text||'').trim())?' disabled':'')+'>שמירה</button></div></div></div>';
+    '</div><div class="mfoot"><button class="btn sec sm" data-act="close">ביטול</button><button class="btn sm" data-act="rsave"'+(n===0||(r.type==='slots'&&!(r.slots||[]).length)||(r.type==='note'&&!(r.text||'').trim())||(r.type==='post'&&!(r.stations||[]).length&&!r.layers)?' disabled':'')+'>שמירה</button></div></div></div>';
 }
 const REL={equal:'חל בדיוק על אותם אנשים',sub:'החדש חל על חלק מהאנשים של הכלל הקיים',sup:'החדש רחב יותר מהכלל הקיים',partial:'חלק מהאנשים משותפים'};
 function renderConflictModal(){
@@ -492,6 +499,7 @@ function commitRule(nr,choice){
 }
 function trySaveRule(){
   const M=S.modal,nr=JSON.parse(JSON.stringify(M.r));
+  if(nr.src==='sheetR')nr.src='site';
   if(nr.type==='soft'||nr.type==='note')nr.who={};
   if(M.whoMode==='group'||!(nr.who.ids&&nr.who.ids.length))nr.who.ids=[];
   else nr.who={ids:nr.who.ids};
@@ -986,10 +994,12 @@ function renderModal(){
 }
 
 /* ---------- פעולות ---------- */
+function seedOf(){const t=JSON.stringify([S.data.rules,S.data.staff.map(s=>s.id),S.data.stations||{},S.data.shifts||{},S.data.plan.locked||{}]);let h=7;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))%99991;return h%997}
+function applyR(){const r=T.postRules(S.data.rules||[],S.data.staff);S.data.rules=r.rules;return r}
 function run(){
   if(S.busy)return;S.busy=true;render();
   setTimeout(()=>{
-    const r=T.solve(config(),S.data.staff,S.tt,{iterations:40,locked:S.data.plan.locked||{},seed:Date.now()%997});
+    const r=T.solve(config(),S.data.staff,S.tt,{iterations:40,locked:S.data.plan.locked||{},seed:seedOf()});
     S.data.plan.assign=r.assign;S.data.plan.at=new Date().toISOString();S.data.plan.stats=r.stats;delete S.data.plan.stale;
     S.busy=false;recompute();save(true).then(()=>addVersion('הרצת שיבוץ'));render();toast('השיבוץ הסתיים: '+r.stats.filled+' מתוך '+r.stats.demand+' עמדות · נשמר כגרסה');
   },30);
@@ -1045,8 +1055,8 @@ async function applyImport(values){
   let added=0;
   fresh.forEach(s=>{const o=old[s.name];if(o)s.id=o.id;else{added++;s.id='s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}});
   const gone=S.data.staff.filter(s=>!fresh.some(f=>f.id===s.id)).length;
-  S.data.formRows=rows;S.data.staff=fresh;S.data.plan.stale=true;S.modal=null;recompute();await save(true);render();
-  toast('עודכן מהשאלון: '+rows.length+' תשובות'+(added?' · '+added+' חדשים':'')+(gone?' · '+gone+' ירדו':''));
+  S.data.formRows=rows;S.data.staff=fresh;const pr=applyR();S.data.plan.stale=true;S.modal=null;recompute();await save(true);render();
+  toast('עודכן מהשאלון: '+rows.length+' תשובות'+(added?' · '+added+' חדשים':'')+(gone?' · '+gone+' ירדו':'')+' · '+pr.added+' כללי עמדות מעמודה R'+(pr.unknown.length?' · '+pr.unknown.length+' לא זוהו':''));
   return true;
 }
 function importModal(){
@@ -1073,6 +1083,9 @@ function rf(el){
   if(f.startsWith('who.')){const k=f.slice(4),a=new Set(r.who[k]||[]);el.checked?a.add(el.value):a.delete(el.value);r.who[k]=[...a];return}
   if(f==='slot'){const a=new Set(r.slots||[]);el.checked?a.add(el.value):a.delete(el.value);r.slots=[...a];return}
   if(f==='hard'){r.hard=el.checked;return}
+  if(f==='pst'){const a=new Set(r.stations||[]);el.checked?a.add(el.value):a.delete(el.value);r.stations=[...a];return}
+  if(f==='play'){const a=new Set([...(r.layers||'')]);el.checked?a.add(el.value):a.delete(el.value);r.layers=[...a].join('')||null;return}
+  if(f==='psoft'){r.soft=el.checked;return}
   if(f==='n'||f==='w'){r[f]=+el.value;return}
   if(f==='v'&&r.type==='exclude'){r.v=el.value==='true';return}
   r[f]=el.value;
@@ -1149,7 +1162,7 @@ root.addEventListener('click',async e=>{
   else if(a==='rsave')trySaveRule();
   else if(a==='rconfirm')commitRule(S.modal.r,b.dataset.c);
   else if(a==='rdel'){const r=ruleOf(b.dataset.r);S.modal={kind:'confirm',title:'מחיקת כלל',text:T.describe(r,S.data.staff),yes:'למחוק',fn:()=>{S.data.rules=S.data.rules.filter(x=>x.id!==r.id)}};render()}
-  else if(a==='rreset'){S.modal={kind:'confirm',title:'איפוס לכללי הגיליון',text:'כל הכללים שנוספו באתר והחריגים האישיים יימחקו. להמשיך?',yes:'לאפס',fn:()=>{S.data.rules=T.defaultRules(S.data.staff);S.data.rulesFrom='גיליון "כללים" · 6.11.2026'}};render()}
+  else if(a==='rreset'){S.modal={kind:'confirm',title:'איפוס לכללי הגיליון',text:'כל הכללים שנוספו באתר והחריגים האישיים יימחקו. להמשיך?',yes:'לאפס',fn:()=>{S.data.rules=T.postRules(T.defaultRules(S.data.staff),S.data.staff).rules;S.data.rulesFrom='גיליון "כללים" · 6.11.2026'}};render()}
   else if(a==='cyes'&&S.modal.restore){restoreVersion(S.modal.restore)}
   else if(a==='cyes'&&S.modal.undo){const u=S.modal.undo;S.modal=null;ttUndo(u)}
   else if(a==='cyes'){S.modal.fn();S.modal=null;S.data.plan.stale=true;recompute();save(true);render();toast('בוצע')}

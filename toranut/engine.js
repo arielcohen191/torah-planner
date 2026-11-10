@@ -111,7 +111,7 @@
   function buildStaff(rows, tt) {
     const staff = [], usedTT = {};
     rows.forEach(r => {
-      const [last, first, role, l1, l2, dcat, days, obstacle, opt, pref, noM, noE, note] = r;
+      const [last, first, role, l1, l2, dcat, days, obstacle, opt, pref, noM, noE, note, post] = r;
       const ttName = matchTimetable(last, first, tt);
       if (ttName) usedTT[ttName] = 1;
       const layers = l1 === '*' ? '*' : uniq([l1, l2].filter(x => x && x !== '*')).join('') + (l2 === '*' ? '*' : '');
@@ -119,7 +119,7 @@
         id: 's' + (staff.length + 1), name: (first + ' ' + last).replace(/\s+/g, ' ').trim(), tt: ttName || null,
         role: { T: 'teacher', A: 'aide', M: 'admin', O: 'other' }[role] || 'teacher',
         layers, days: digits(days), dcat, option: opt, pref: digits(pref), noMorning: digits(noM), noEnd: digits(noE),
-        obstacle: obstacle || '', note: note || '', form: true,
+        obstacle: obstacle || '', note: note || '', post: post || '', form: true,
         flag: obstacle ? 'ציין/ה מניעה — להחלטת הנהלה' : ''
       });
     });
@@ -162,6 +162,7 @@
     ahmash:  { label: 'אחמ"ש' },
     exclude: { label: 'החרגה משיבוץ' },
     slots:   { label: 'הגבלת ימים/משמרות' },
+    post:    { label: 'עמדות מותרות בהפסקות' },
     soft:    { label: 'שיקול בשיבוץ' },
     note:    { label: 'הנחיה (לא נאכפת)' }
   };
@@ -171,6 +172,7 @@
     if (r.type === 'soft') return 'soft:' + r.factor;
     if (r.type === 'slots') return 'slots:' + r.mode + ':' + (r.slots || []).slice().sort().join(',');
     if (r.type === 'note') return 'note:' + r.id;
+    if (r.type === 'post') return 'post';
     return r.type;
   }
   function sig(r) {
@@ -179,6 +181,7 @@
       case 'pattern': case 'stations': case 'ahmash': return r.v;
       case 'exclude': return r.v === false ? 'in' : 'out';
       case 'shift': return r.n + (r.hard ? 'h' : 's');
+      case 'post': return JSON.stringify([r.stations, r.layers, r.byDay, !!r.soft]);
       case 'soft': return '' + r.w;
       default: return JSON.stringify(r);
     }
@@ -218,6 +221,7 @@
       case 'slots': return (r.mode === 'only' ? 'רק ב: ' : 'לא ב: ') + slotsText(r.slots);
       case 'soft': return 'לשבץ ' + SOFT[r.factor] + ' — חשיבות ' + LEVEL[r.w];
       case 'note': return r.text;
+      case 'post': return (r.soft ? 'בהפסקות — עדיפות ל: ' : 'בהפסקות — רק ב: ') + postText(r);
     }
     return '';
   }
@@ -226,13 +230,72 @@
     (slots || []).forEach(k => { const [sh, d] = k.split('@'); (g[sh] = g[sh] || []).push(+d); });
     return Object.keys(g).map(sh => (SHIFT_NAME[sh] || { e1: 'סיום 12:55', e2: 'סיום 13:35' }[sh] || sh) + ' ' + (g[sh].length === 6 ? 'בכל הימים' : 'ביום ' + g[sh].sort().map(d => DAYS[d]).join(', '))).join(' · ');
   }
+  const ST_NAME = id => { const st = DEFAULT_CONFIG.stations.find(x => x.id === id); return st ? st.name.split(' (')[0] : id; };
+  function postText(r) {
+    const parts = (r.stations || []).map(ST_NAME);
+    if (r.layers) parts.push('חצרות של שכבה ' + [...r.layers].join('/'));
+    let t = parts.join(', ') || '—';
+    Object.keys(r.byDay || {}).forEach(d => { t += ' · ביום ' + DAYS[+d] + ': ' + r.byDay[d].map(ST_NAME).join(', '); });
+    return t;
+  }
+  /** עמודה R בשאלון ("עמדה/שכבה מועדפת לשיבוץ בהפסקות") ← עמדות */
+  const FLOOR = { 'א': ['flA'], 'ב': ['flB'], 'ג': ['flC'], 'ד': ['flD1', 'flD2'], 'ה': ['flE'], 'ו': ['flF'] };
+  function postFromText(txt) {
+    let t = String(txt || '').replace(/[׳']/g, '').replace(/\s+/g, ' ').trim();
+    if (!t) return null;
+    if (/לא לשבץ/.test(t)) return { exclude: true };
+    const out = { stations: [], layers: '', byDay: {}, soft: /או אחר/.test(t), flags: [] };
+    const add = (...ids) => ids.forEach(x => { if (!out.stations.includes(x)) out.stations.push(x); });
+    // "ביום שני במגרש המשולב" — חריג ליום מסוים
+    t = t.replace(/,?\s*ביום (ראשון|שני|שלישי|רביעי|חמישי|שישי) (ב[^,/]+)/g, (m, d, place) => {
+      const sub = postFromText(place.replace(/^ב/, ''));
+      if (sub && sub.stations) out.byDay[DAYS.indexOf(d)] = sub.stations;
+      return '';
+    });
+    if (/אחמ"?ש/.test(t)) add('ahmash');
+    if (/(^|\/)\s*חצר\s*(\/|$)/.test(t)) add('office', 'synth', 'grass', 'backUp', 'backLo');
+    if (/קומת ד\s*\/\s*מרכז למידה/.test(t)) { add('flD2'); t = t.replace(/קומת ד\s*\/\s*מרכז למידה/, ''); }
+    if (/דשא גדול|מגרש דשא(?! סינטטי)/.test(t)) add('grass');
+    if (/סינטטי/.test(t)) add('synth');
+    if (/משולב|כניסה למנהלה/.test(t)) add('office');
+    if (/מדעים/.test(t)) add('flD1');
+    if (/מרכז למידה/.test(t)) add('flD2');
+    if (/ספסלי בטון/.test(t)) add('concr');
+    if (/מגרש עליון/.test(t)) add('backUp');
+    if (/תחתון|פינג/.test(t)) add('backLo');
+    if (/(^|\s)שער/.test(t)) { add('synth'); out.flags.push('"שער" — בהפסקות שובץ בספסל דשא סינטטי (צופה על רחבת השער)'); }
+    (t.match(/קומת (?:שכבה )?([אבגדהו])/g) || []).forEach(m => add(...FLOOR[m.slice(-1)]));
+    (t.match(/(?:^|[^ת] )שכבה ([אבגדהו])/g) || []).concat(t.match(/^שכבה ([אבגדהו])/) ? [t.match(/^שכבה ([אבגדהו])/)[0]] : []).forEach(m => { const l = m.slice(-1); add(...FLOOR[l]); if (!out.layers.includes(l)) out.layers += l; });
+    (t.match(/החצרות של ([אבגדהו])/g) || []).forEach(m => { const l = m.slice(-1); if (!out.layers.includes(l)) out.layers += l; });
+    if (!out.stations.length && !out.layers) return { unknown: true };
+    return out;
+  }
+  /** כללים מעמודה R לכל אנשי הצוות (מחליפים כללים קודמים מהעמודה) */
+  function postRules(rules, staff) {
+    const keep = (rules || []).filter(r => r.src !== 'sheetR');
+    const add = [], unknown = [], flags = [];
+    // מי שכבר יש לו כלל עמדות שנערך באתר — לא דורסים
+    const own = new Set(keep.filter(r => r.type === 'post' && r.who && r.who.ids && r.who.ids.length === 1).map(r => r.who.ids[0]));
+    staff.forEach(s => {
+      if (!s.post || own.has(s.id)) return;
+      const x = postFromText(s.post);
+      if (!x) return;
+      if (x.unknown) { unknown.push(s.name + ': ' + s.post); return; }
+      if (x.exclude) { add.push({ id: 'R' + s.id, type: 'exclude', v: true, who: { ids: [s.id] }, on: true, src: 'sheetR', note: 'עמודה R: ' + s.post }); return; }
+      x.flags.forEach(f => flags.push(s.name + ': ' + f));
+      add.push({ id: 'R' + s.id, type: 'post', stations: x.stations, layers: x.layers, byDay: x.byDay, soft: x.soft, shifts: ['b1', 'b2'], who: { ids: [s.id] }, on: true, src: 'sheetR', note: 'עמודה R: ' + s.post });
+    });
+    // מיקום: אחרי כללי הגיליון והשאלון, לפני כללים שנוספו באתר וחריגים אישיים (שגוברים)
+    let at = 0; keep.forEach((r, i) => { if (r.src === 'sheet' || r.src === 'form') at = i + 1; });
+    return { rules: keep.slice(0, at).concat(add, keep.slice(at)), added: add.length, unknown, flags };
+  }
   function describe(r, staff) { return r.type === 'note' ? r.text : whoText(r, staff) + ': ' + whatText(r); }
 
   /** פרופיל לכל אדם: מה הכללים קובעים לגביו, ואיזה כלל קבע */
   function compile(rules, staff) {
     const P = {};
     staff.forEach(s => {
-      const p = { excluded: false, target: 2, pattern: 'free', stations: 'any', ahmash: 'no', min: {}, max: {}, hardMax: {}, only: [], never: [], why: {}, src: {} };
+      const p = { excluded: false, target: 2, pattern: 'free', stations: 'any', ahmash: 'no', min: {}, max: {}, hardMax: {}, only: [], never: [], why: {}, post: {}, src: {} };
       (rules || []).forEach(r => {
         if (r.on === false || r.type === 'note' || !matches(r, s)) return;
         switch (r.type) {
@@ -245,6 +308,7 @@
             if (r.mode === 'min') { p.min[r.shift] = +r.n; if (p.max[r.shift] != null && p.max[r.shift] < r.n) p.max[r.shift] = +r.n; }
             else { p.max[r.shift] = +r.n; p.hardMax[r.shift] = !!r.hard; if (p.min[r.shift] > r.n) p.min[r.shift] = +r.n; }
             p.src['shift:' + r.shift] = r.id; break;
+          case 'post': (r.shifts || ['b1', 'b2']).forEach(sh => { p.post[sh] = r; }); p.src.post = r.id; break;
           case 'slots': {
             (r.mode === 'only' ? p.only : p.never).push(...(r.slots || []));
             const w = r.who || {}, all = !(w.ids && w.ids.length) && !(w.roles && w.roles.length) && !(w.dcats && w.dcats.length) && !(w.options && w.options.length);
@@ -411,7 +475,17 @@
     if (st.yard && cfg.yards[shift.id] && cfg.yards[shift.id][st.yard]) return layerLetters(cfg.yards[shift.id][st.yard][day]);
     return '';
   }
-  function stationOk(s, p, st, layer) {
+  /** האם העמדה ברשימת העמדות המותרות (עמודה R) */
+  function postMatch(P, st, layer, day) {
+    const list = P.byDay && P.byDay[day] ? P.byDay[day] : (P.stations || []);
+    if (list.includes(st.id)) return true;
+    if (P.byDay && P.byDay[day]) return false;
+    if (P.layers && !st.ahmash && st.yard && [...layer].some(x => P.layers.includes(x))) return true;
+    return false;
+  }
+  function stationOk(s, p, st, layer, shiftId, day) {
+    const P = shiftId && p.post && p.post[shiftId];
+    if (P && !P.soft) return postMatch(P, st, layer, day) && (!st.ahmash || p.ahmash !== 'no' || (P.stations || []).includes('ahmash'));
     if (p.ahmash === 'only') return !!st.ahmash;
     if (st.ahmash) return p.ahmash === 'can';
     if (p.stations === 'ownFloor') return !!st.floor && (s.layers.includes('*') || [...layer].some(x => s.layers.includes(x)));
@@ -435,7 +509,7 @@
         const p = C.P[s.id];
         if (formAllows(s, shift, day, p)) return;
         const pr = presence(s, shift, day, tt); if (!pr.ok) return;
-        if (!stationOk(s, p, st, layer)) return;
+        if (!stationOk(s, p, st, layer, shift.id, day)) return;
         elig.push(i); calm[i] = pr.calm !== false;
       });
       positions.push({ key: shift.id + '@' + day + '@' + st.id, shift, day, st, layer, elig, calm });
@@ -482,6 +556,7 @@
     if (shift.kind === 'break' && pos.calm[i]) sc += 0.5 * W.calm;
     if (shift.kind === 'end' && onDay) sc += 1.5 * W.endSame;
     if (p.stations === 'seat' && st.seat) sc += 2;
+    if (p.post && p.post[shift.id] && postMatch(p.post[shift.id], st, layer, day)) sc += p.post[shift.id].soft ? 6 : 2;
     return sc + rand() * 1.5;
   }
 
@@ -615,7 +690,7 @@
     const pp = opts && opts.ignoreExcluded ? Object.assign({}, p, { excluded: false, target: Math.max(1, p.target) }) : p;
     const f = formAllows(s, sh, day, pp); if (f) return f;
     const pr = presence(s, sh, day, tt); if (!pr.ok) return pr.why;
-    if (!stationOk(s, pp, st, stationLayer(cfg, st, sh, day))) return 'לא מתאים/ה לעמדה';
+    if (!stationOk(s, pp, st, stationLayer(cfg, st, sh, day), sh.id, day)) return (pp.post && pp.post[sh.id] && !pp.post[sh.id].soft) ? 'לא בעמדות שלו/ה בעמודה R' : 'לא מתאים/ה לעמדה';
     return null;
   }
   const slotOf = k => { const a = k.split('@'); return a[0] + '@' + a[1]; };
@@ -705,12 +780,12 @@
       const opt = /אפשרות א/.test(v[9]) ? 'A' : /אפשרות ב/.test(v[9]) ? 'B' : 'N';
       const pref = [v[10], v[11], v[12]].map(x => { const m = String(x || '').match(/יום (ראשון|שני|שלישי|רביעי|חמישי|שישי)/); return m ? DAYMAP[m[1]] : ''; }).join('');
       const cant = txt => /יכול\/ה בכל ימי העבודה שלי/.test(txt) && !/לא יכול/.test(txt) ? '' : daysOf(String(txt || '').replace(/יכול\/ה בכל ימי העבודה שלי,?/, ''));
-      rows.push([String(v[1]).trim(), String(v[2] || '').trim(), role, layerOf(v[4]), layerOf(v[5]), dc, daysOf(v[7]), obstacle.trim(), opt, pref, cant(v[13]), cant(v[14]), String(v[16] || '').trim()]);
+      rows.push([String(v[1]).trim(), String(v[2] || '').trim(), role, layerOf(v[4]), layerOf(v[5]), dc, daysOf(v[7]), obstacle.trim(), opt, pref, cant(v[13]), cant(v[14]), String(v[16] || '').trim(), String(v[17] || '').trim()]);
     }
     return rows;
   }
 
   return { DAYS, LAYERS, DEFAULT_CONFIG, ROLE, DCAT, OPT, SHIFT_NAME, PATTERN, STATIONS, AHMASH, SOFT, LEVEL, TYPES,
     buildStaff, defaultRules, compile, conflicts, addRule, setPersonal, newId, describe, whoText, whatText, slotsText, key, matches, setOf,
-    parseSheet, layerLetters, solve, report, canStand, repair, subCandidates, sameName, presence, formAllows, stationLayer, stationOk, matchTimetable };
+    parseSheet, postFromText, postRules, postText, layerLetters, solve, report, canStand, repair, subCandidates, sameName, presence, formAllows, stationLayer, stationOk, matchTimetable };
 });
