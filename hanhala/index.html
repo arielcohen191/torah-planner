@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<title>לוח הנהלה · כנפי רוח</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@200;400;500;600;700&display=swap">
+<style>
+:root{--ground:#eef1f5;--card:#fff;--card-muted:#f5f7fa;--line:#dfe4ea;--ink:#1f2a37;--ink-muted:#5b6878;--rail:#26323f;--rail-ink:#c9d3de;
+--brand:#2f7fd6;--brand-dark:#1f5fa6;--blue:#4a8ec9;--green:#4f9a2a;--green-ink:#3f7d21;--orange:#c77700;--orange-ink:#a56300;--red:#c62a20;--purple:#7a5cc0;--active:#2fbf71;
+--r-sm:6px;--r-md:10px;--r-lg:14px;--shadow:0 1px 3px rgba(31,42,55,.10)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ground);color:var(--ink);font-family:Heebo,Assistant,system-ui,sans-serif;font-size:17px;line-height:1.5}
+button,input{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit}
+[hidden]{display:none!important}
+.app{display:flex;min-height:100vh}
+nav.rail{flex:0 0 112px;background:var(--rail);display:flex;flex-direction:column;gap:6px;padding:24px 8px;padding-top:calc(24px + env(safe-area-inset-top,0px))}
+.rail .brand{color:#fff;font-weight:700;font-size:15px;text-align:center;padding-bottom:16px;border-bottom:1px solid #3a4756;margin-bottom:4px;line-height:1.3}
+.rail .brand small{display:block;font-weight:400;color:var(--rail-ink);font-size:13px}
+.rail a{display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 4px;border-radius:var(--r-md);color:var(--rail-ink);font-size:14px;text-decoration:none;text-align:center;line-height:1.25}
+.rail a:hover{background:#31404f;color:#fff}
+.rail a[aria-current="page"]{background:var(--active);color:#fff;font-weight:600}
+.rail .spacer{flex:1}
+.rail .who{color:var(--rail-ink);font-size:13px;text-align:center}
+main{flex:1;min-width:0;padding:24px 32px 48px;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--card);border-radius:var(--r-md);box-shadow:var(--shadow)}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px}
+h1{margin:0;font-size:26px;line-height:34px;font-weight:700}
+h2{margin:0;font-size:20px;font-weight:600}
+.muted{color:var(--ink-muted)}
+.small{font-size:15px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:var(--r-md);border:0;background:var(--brand);color:#fff;font-size:17px;font-weight:600;text-decoration:none}
+.btn:hover{background:var(--brand-dark)}
+.btn.sec{background:#fff;color:var(--ink);border:1.5px solid #c9d1db}
+.btn.sec:hover{background:var(--card-muted)}
+.btn.sec[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.wide{width:100%;min-height:56px;font-size:18px}
+.link{background:none;border:0;color:var(--brand);font-size:16px;padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.kpi{border-radius:var(--r-lg);padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:116px;text-decoration:none;transition:transform .12s,box-shadow .12s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(31,42,55,.18)}
+.kpi:focus-visible,.tool:focus-visible,.rail a:focus-visible,.btn:focus-visible{outline:3px solid #1f2a37;outline-offset:2px}
+.kpi b{display:block;font-size:20px;font-weight:600}.kpi span{display:block;font-size:15px}
+.kpi .go{font-size:13px;opacity:.9;margin-top:6px;text-decoration:underline;text-underline-offset:3px}
+.kpi .n{font-size:64px;line-height:64px;font-weight:200}
+.k-red{background:var(--red)}.k-orange{background:var(--orange)}.k-green{background:var(--green)}.k-blue{background:var(--blue)}.k-purple{background:var(--purple)}
+.banner{padding:14px 24px;border-right:6px solid var(--orange);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start}
+.tool{display:flex;flex-direction:column;overflow:hidden}
+.tool.span2{grid-column:1/-1}
+.thead{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--brand);color:#fff;padding:12px 20px;text-decoration:none}
+.thead:hover{background:var(--brand-dark)}
+.thead h2{font-size:19px}
+.thead .open{font-size:15px;white-space:nowrap;text-decoration:underline;text-underline-offset:3px}
+.tbody{padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px}
+.item{background:var(--card-muted);border-radius:var(--r-sm);border-right:6px solid var(--line);padding:12px 16px;display:flex;flex-direction:column;gap:4px}
+.item.s-open{border-right-color:var(--red)}.item.s-asking{border-right-color:var(--orange)}.item.s-ok{border-right-color:var(--green)}
+.item .t{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px}
+.item .t b{font-size:18px;font-weight:600}
+.tag{font-size:14px;font-weight:600;white-space:nowrap}
+.tag.red{color:var(--red)}.tag.orange{color:var(--orange-ink)}.tag.green{color:var(--green-ink)}.tag.grey{color:var(--ink-muted)}
+.empty{color:var(--ink-muted);font-size:16px;padding:4px 0}
+.note{background:#fdf3e1;border-radius:var(--r-sm);padding:10px 14px;font-size:15px;color:#7a4b00;text-decoration:none;display:block}
+a.note:hover{background:#fbe8c6}
+.note.bad{background:#fbe9e7;color:#8f1d15}
+.shifts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.shift h3{margin:0 0 6px;font-size:16px;font-weight:600;color:var(--brand-dark);border-bottom:2px solid var(--line);padding-bottom:4px}
+.duty{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:15px;border-bottom:1px dashed var(--line)}
+.duty:last-child{border-bottom:0}
+.duty .st{color:var(--ink-muted);min-width:0}
+.duty .nm{font-weight:500;text-align:left;white-space:nowrap}
+.duty .gone{text-decoration:line-through;opacity:.6;font-weight:400}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.stat{background:var(--card-muted);border-radius:var(--r-sm);padding:12px 14px}
+.stat .n{font-size:34px;line-height:38px;font-weight:200;display:block}
+.stat span{font-size:14px;color:var(--ink-muted)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:8px}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login .card{width:100%;max-width:440px;padding:32px;display:flex;flex-direction:column;gap:16px}
+input[type=tel]{min-height:56px;border:1.5px solid #c9d1db;border-radius:var(--r-md);padding:0 16px;font-size:18px;background:#fff;width:100%}
+.err{color:var(--red);font-weight:600}
+.loading{padding:48px;text-align:center;color:var(--ink-muted)}
+.skel{height:18px;border-radius:4px;background:linear-gradient(90deg,#edf0f4,#f7f9fb,#edf0f4);background-size:200% 100%;animation:sk 1.2s linear infinite}
+@keyframes sk{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}.kpi{transition:none}}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){
+ .app{flex-direction:column}
+ nav.rail{flex:none;flex-direction:row;align-items:center;overflow-x:auto;padding:8px;padding-top:calc(8px + env(safe-area-inset-top,0px));gap:4px}
+ .rail .brand{border:0;margin:0;padding:0 8px;white-space:nowrap}.rail .brand small{display:none}
+ .rail a{flex:none;flex-direction:row;padding:8px 12px;white-space:nowrap}.rail a svg{width:20px;height:20px}
+ .rail .spacer{display:none}.rail .who{white-space:nowrap;padding:0 8px}.rail .who br{display:none}
+ main{padding:16px 12px 40px;gap:16px}
+ .topbar{padding:14px 16px}h1{font-size:22px;line-height:28px}
+ .kpis{gap:10px}.kpi{min-height:96px;padding:14px 16px}.kpi .n{font-size:46px;line-height:46px}.kpi b{font-size:17px}
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+</head>
+<body>
+<div id="root"><div class="loading">טוען…</div></div>
+<script src="/toranut/engine.js"></script>
+<script>
+'use strict';
+const CFG={url:'https://onocjgbtensczpdbeanf.supabase.co',key:'sb_publishable_JpV-E-qPnV9ZdnRnY9Kv8Q_TaRzCnyc'};
+async function rpc(fn,args){
+  const r=await fetch(CFG.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:CFG.key,Authorization:'Bearer '+CFG.key,'Content-Type':'application/json'},body:JSON.stringify(args||{})});
+  const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok){const m=(j&&j.message)||t;throw new Error(/no_access/.test(m)?'no_access':m)}
+  return j;
+}
+const DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse=s=>{const p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2])};
+const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return iso(d)};
+const today=()=>iso(new Date());
+const dow=s=>parse(s).getDay();
+const monthStart=s=>s.slice(0,8)+'01';
+const monthEnd=s=>{const d=parse(s);return iso(new Date(d.getFullYear(),d.getMonth()+1,0))};
+const fmtFull=d=>'יום '+DAYS[dow(d)]+', '+parse(d).getDate()+'.'+(parse(d).getMonth()+1)+'.'+parse(d).getFullYear();
+const fmtWhen=t=>{if(!t)return '';const d=new Date(t);return d.getDate()+'.'+(d.getMonth()+1)+' '+pad(d.getHours())+':'+pad(d.getMinutes())};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cls=c=>String(c).replace(/' /g,'׳');
+const greet=n=>/^הרב\s/.test(n)?'שלום הרב '+String(n).replace(/^הרב\s+/,'').split(' ')[0]:'שלום '+String(n).split(' ')[0];
+const HOL=[['2026-12-06','2026-12-11','חופשת חנוכה'],['2027-03-23','2027-03-24','פורים'],['2027-04-13','2027-04-28','חופשת פסח'],['2027-05-12','2027-05-12','יום העצמאות'],['2027-05-25','2027-05-25','ל״ג בעומר'],['2027-06-10','2027-06-11','שבועות']];
+function holiday(s){
+  for(const h of HOL)if(s>=h[0]&&s<=h[1])return h[2];
+  for(const h of (S.hol||[]))if(h&&h.from&&h.off!==false&&String(h.off)!=='false'&&s>=h.from&&s<=(h.to||h.from))return h.name||h.title||'חופשה';
+  return dow(s)===6?'שבת':null;
+}
+const SUBJ={torah:'תורה',navi:'נביא',mishna:'משנה',gemara:'גמרא'};
+const hourNum=h=>{const m=String(h||'').match(/\d+/);return m?+m[0]:0};
+const plural=(n,one,many)=>n===1?one:n+' '+many;
+
+const S={phone:null,me:null,date:null,milui:null,miluiMonth:null,tor:null,say:null,mk:null,plans:null,hol:null,err:{},busy:false};
+try{S.phone=localStorage.getItem('milui_phone')}catch(e){}
+const root=document.getElementById('root');
+function schoolDay(s){let d=s;for(let i=0;i<7&&dow(d)===6;i++)d=addDays(d,1);return d}
+S.date=schoolDay(today());
+
+const ICON={
+ home:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+ milui:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M15 15c3 0 6 1.6 6 4.5"/></svg>',
+ toranut:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5L15.5 10"/></svg>',
+ sayarot:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>',
+ mapat:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
+ hespek:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>'
+};
+const TOOLS=[['home','לוח הנהלה','/hanhala/'],['milui','מילוי מקום','/milui/'],['toranut','תורנויות חצר','/toranut/'],['sayarot','סיירות','/sayarot/'],['mapat','מפת כיתה','/mapat-kita/'],['hespek','מתכנן הספק','/']];
+
+/* ---------- טעינה: כל כלי בנפרד, כדי שתקלה באחד לא תפיל את הלוח ---------- */
+async function part(key,fn){try{delete S.err[key];await fn()}catch(e){if(e.message==='no_access')throw e;console.error(key,e);S.err[key]=true}}
+async function loadMilui(){
+  const m=monthStart(S.date);
+  if(S.milui&&S.miluiMonth===m)return;
+  const d=await rpc('milui_state',{p_phone:S.phone,p_from:addDays(m,-7),p_to:addDays(monthEnd(S.date),7)});
+  d.T={};d.teachers.forEach(t=>d.T[t.id]=t);
+  d.TN={};d.teachers.forEach(t=>d.TN[t.name]=t.id);
+  d.slots=d.slots.map(a=>({id:a[0],tid:a[1],day:a[2],hour:a[3],kind:a[4],subject:a[5]||'',classes:a[6]||[]}));
+  d.SL={};d.byTD={};d.slots.forEach(s=>{d.SL[s.id]=s;(d.byTD[s.tid+'|'+s.day]=d.byTD[s.tid+'|'+s.day]||[]).push(s)});
+  S.milui=d;S.miluiMonth=m;S.me=d.me;
+}
+async function loadAll(force){
+  if(force){S.milui=null;S.tor=null;S.say=null;S.mk=null;S.plans=null}
+  await Promise.all([
+    part('milui',loadMilui),
+    S.tor?null:part('tor',async()=>{S.tor=await rpc('toranut_load',{p_phone:S.phone})}),
+    S.say?null:part('say',async()=>{const r=await rpc('get_sayarot');S.say=(r&&r.data)||{}}),
+    S.mk?null:part('mk',async()=>{const r=await rpc('hanhala_summary',{p_phone:S.phone});S.mk=r.mk;S.me=S.me||r.me}),
+    S.plans?null:part('plans',async()=>{S.plans=await rpc('list_plans',{code:'x'})||[]}),
+    S.hol?null:part('hol',async()=>{const r=await rpc('get_settings',{code:'x'});S.hol=(r&&r.holidays)||[]})
+  ]);
+  S.loadedAt=new Date();
+}
+
+/* ---------- מילוי מקום (אותו חישוב כמו בלוח היום של הכלי) ---------- */
+const isLesson=s=>s.kind==='שיעור'||s.kind==='שיעור משותף';
+function absOn(date){return S.milui.absences.filter(a=>a.date_from<=date&&(!a.date_to||a.date_to>=date))}
+function openItems(date){
+  if(holiday(date))return[];
+  const out=[],d=dow(date);
+  for(const a of absOn(date))for(const s of (S.milui.byTD[a.teacher_id+'|'+d]||[])){
+    if(!isLesson(s))continue;if(a.hours&&!a.hours.includes(s.hour))continue;
+    const x=S.milui.assignments.find(x=>x.date===date&&x.slot_id===s.id);
+    out.push({slot:s,abs:a,status:x?(x.status==='asking'?'asking':'done'):'open'});
+  }
+  return out.sort((p,q)=>p.slot.hour-q.slot.hour);
+}
+function payUndone(){
+  const m=monthStart(S.date),e=monthEnd(S.date),t=today();
+  return S.milui.assignments.filter(x=>x.status==='assigned'&&x.substitute_id&&x.date>=m&&x.date<=e&&x.date<=t&&!x.comp_done).length;
+}
+
+/* ---------- תורנויות חצר ---------- */
+function torAbsent(date){
+  const d=S.tor.data||{},out={};
+  (S.tor.absences||[]).forEach(a=>{const s=(d.staff||[]).find(x=>x.tt===a.name);if(s&&a.from<=date&&(!a.to||a.to>=date))out[s.id]={key:'m'+a.id,hours:null}});
+  (d.absLocal||[]).forEach(a=>{if(a.from<=date&&(!a.to||a.to>=date))out[a.staffId]={key:'l'+a.id,hours:null}});
+  /* היעדרות יומית או חלקית שהוזנה במילוי מקום (בכלי התורנויות ההחלפה שלה באחריות המורה הנעדר) */
+  if(S.milui)absOn(date).forEach(a=>{const n=S.milui.T[a.teacher_id]&&S.milui.T[a.teacher_id].name;const s=(d.staff||[]).find(x=>x.tt===n);if(s&&!out[s.id])out[s.id]={key:'m'+a.id,hours:a.hours||null}});
+  return out;
+}
+function torDay(date){
+  const T=window.Toranut,d=S.tor.data||{},plan=d.plan||{},A=plan.assign||{},subs=plan.subs||{},day=dow(date);
+  const P={};(d.staff||[]).forEach(s=>P[s.id]=s);
+  const abs=torAbsent(date),shifts=[],stIdx={};
+  T.DEFAULT_CONFIG.stations.forEach((s,i)=>stIdx[s.id]=i);
+  let missing=0,total=0;
+  T.DEFAULT_CONFIG.shifts.forEach(sh=>{
+    const rows=Object.keys(A).filter(k=>{const p=k.split('@');return p[0]===sh.id&&+p[1]===day}).sort((a,b)=>(stIdx[a.split('@')[2]]||0)-(stIdx[b.split('@')[2]]||0)).map(k=>{
+      const st=T.DEFAULT_CONFIG.stations.find(x=>x.id===k.split('@')[2]),sid=A[k],p=P[sid];
+      const row={station:st?st.name.split(' (')[0]:k.split('@')[2],name:p?p.name:'—',gone:false,sub:null};
+      total++;
+      const ab=abs[sid],at=(day===5&&sh.fri)||sh.after;
+      const need=sh.kind==='morning'?[1]:sh.kind==='break'?[at,at+1]:[at];
+      if(ab&&(!ab.hours||need.every(x=>ab.hours.includes(x)))){const v=subs[k];row.gone=true;if(v&&v.abs===ab.key&&P[v.id])row.sub=P[v.id].name;else missing++}
+      return row});
+    if(rows.length)shifts.push({label:sh.label,rows});
+  });
+  return {shifts,missing,total,stale:!!plan.stale,open:(plan.stats||{}).open||0,ran:!!plan.at};
+}
+
+/* ---------- סיירות ---------- */
+function sayDay(date){
+  const d=S.say||{},stu={};(d.students||[]).forEach(s=>stu[s.id]=s.name);
+  const pat=id=>(d.patrols||[]).find(p=>p.id===id)||{name:'סיירת',color:'#98a2b3'};
+  return (d.outings||[]).filter(o=>o.date===date).sort((a,b)=>hourNum(a.hour)-hourNum(b.hour)).map(o=>{
+    const p=pat(o.patrol),picks=o.picks||{};
+    return {hour:o.hour||'',name:p.name,color:p.color,act:p.kind==='activity',done:!!o.done,
+      groups:Object.keys(picks).map(c=>({cls:c,names:(picks[c]||[]).map(id=>stu[id]).filter(Boolean)}))};
+  });
+}
+
+/* ---------- תצוגה ---------- */
+function kpi(c,title,sub,n,href,go){return '<a class="kpi '+c+'" href="'+href+'"><div><b>'+title+'</b><span>'+sub+'</span><span class="go">'+go+' ←</span></div><div class="n">'+n+'</div></a>'}
+function tool(title,href,body,span){return '<section class="card tool'+(span?' span2':'')+'"><a class="thead" href="'+href+'"><h2>'+title+'</h2><span class="open">פתיחת הכלי ←</span></a><div class="tbody">'+body+'</div></section>'}
+const failed='<div class="note bad">הנתונים של הכלי הזה לא נטענו כרגע. אפשר לפתוח את הכלי עצמו או לרענן.</div>';
+const skel='<div class="skel" style="width:70%"></div><div class="skel" style="width:50%"></div><div class="skel" style="width:60%"></div>';
+
+function miluiBody(items){
+  if(S.err.milui)return failed;if(!S.milui)return skel;
+  const hol=holiday(S.date),abs=absOn(S.date);let h='';
+  if(hol)h+='<div class="empty">'+esc(hol)+' — אין שיעורים למלא.</div>';
+  else if(!abs.length)h+='<div class="empty">אין מורים נעדרים ביום הזה.</div>';
+  else abs.forEach(a=>{
+    const t=S.milui.T[a.teacher_id]||{name:'?'},mine=items.filter(i=>i.abs.id===a.id);
+    const o=mine.filter(i=>i.status==='open'),q=mine.filter(i=>i.status==='asking'),ok=mine.filter(i=>i.status==='done');
+    const st=o.length?'s-open':q.length?'s-asking':'s-ok';
+    const tags=[];
+    if(o.length)tags.push('<span class="tag red">'+plural(o.length,'שיעור אחד פתוח','שיעורים פתוחים')+'</span>');
+    if(q.length)tags.push('<span class="tag orange">בבירור: '+q.length+'</span>');
+    if(ok.length)tags.push('<span class="tag green">שובצו: '+ok.length+'</span>');
+    if(!mine.length)tags.push('<span class="tag grey">אין שיעורים מול כיתה</span>');
+    h+='<div class="item '+st+'"><div class="t"><b>'+esc(t.name)+'</b><span class="chips" style="gap:12px">'+tags.join('')+'</span></div>'+
+      '<div class="small muted">'+(a.hours?'שעות '+a.hours.join(', '):'כל היום')+(a.date_to&&a.date_to!==a.date_from?' · עד '+parse(a.date_to).getDate()+'.'+(parse(a.date_to).getMonth()+1):!a.date_to?' · עד הודעה חדשה':'')+
+      (o.length?' · פתוח: '+o.map(i=>'שעה '+i.slot.hour+' '+esc(i.slot.classes.map(cls).join(', '))).join(' | '):'')+'</div></div>';
+  });
+  const pu=payUndone();
+  if(pu)h+='<a class="note" href="/milui/">'+plural(pu,'מילוי מקום אחד','מילויי מקום')+' מהחודש מחכים לתגמול ←</a>';
+  return h;
+}
+function torBody(td){
+  if(S.err.tor)return failed;if(!S.tor)return skel;
+  if(!td.ran&&!td.total)return '<div class="empty">עוד לא הורץ שיבוץ תורנויות.</div>';
+  let h='';
+  if(td.missing&&!holiday(S.date))h+='<a class="note bad" href="/toranut/">'+plural(td.missing,'עמדה אחת שהתורן שלה נעדר','עמדות שהתורן שלהן נעדר')+' ביום הזה, בלי מחליף רשום ←</a>';
+  if(td.open)h+='<a class="note bad" href="/toranut/">'+plural(td.open,'עמדה אחת','עמדות')+' בלוח השבועי בלי תורן ←</a>';
+  if(td.stale)h+='<a class="note" href="/toranut/">הכללים או הצוות השתנו מאז הרצת השיבוץ האחרונה — כדאי להריץ מחדש ←</a>';
+  if(holiday(S.date))h+='<div class="empty">'+esc(holiday(S.date))+' — אין תורנויות.</div>';
+  else if(!td.shifts.length)h+='<div class="empty">אין תורנויות משובצות ליום הזה.</div>';
+  else h+='<div class="shifts">'+td.shifts.map(sh=>'<div class="shift"><h3>'+esc(sh.label)+'</h3>'+sh.rows.map(r=>
+    '<div class="duty"><span class="st">'+esc(r.station)+'</span><span class="nm">'+(r.gone?(r.sub?esc(r.sub)+' <span class="tag grey">מחליף/ה</span>':'<span class="gone">'+esc(r.name)+'</span> <span class="tag red">נעדר/ת</span>'):esc(r.name))+'</span></div>').join('')+'</div>').join('')+'</div>';
+  if(S.tor.updated_at)h+='<div class="small muted">עדכון אחרון: '+esc(S.tor.updated_by||'')+' · '+fmtWhen(S.tor.updated_at)+'</div>';
+  return h;
+}
+function sayBody(list){
+  if(S.err.say)return failed;if(!S.say)return skel;
+  if(!list.length)return '<div class="empty">אין יציאות משובצות ליום הזה.</div>';
+  return list.map(o=>'<div class="item" style="border-right-color:'+esc(o.color)+'"><div class="t"><b>'+esc(o.name)+'</b><span class="tag '+(o.done?'green':'grey')+'">'+esc(o.hour)+(o.done?' · בוצע':'')+'</span></div>'+
+    o.groups.map(g=>'<div class="small"><span class="muted">'+esc(g.cls)+':</span> '+(g.names.length?esc(g.names.join(', ')):'<span class="tag orange">עוד לא נבחרו תלמידים</span>')+'</div>').join('')+'</div>').join('');
+}
+function mkBody(){
+  if(S.err.mk)return failed;if(!S.mk)return skel;
+  const m=S.mk,cs=m.classes_synced||[];
+  let h='<div class="stats"><div class="stat"><b class="n">'+cs.length+'<span style="font-size:18px"> / '+m.classes_total+'</span></b><span>כיתות עם נתונים</span></div>'+
+    '<div class="stat"><b class="n">'+m.q_filled+'</b><span>שאלוני צוות שמולאו</span></div>'+
+    '<div class="stat"><b class="n">'+m.staff_entered+'<span style="font-size:18px"> / '+m.staff_access+'</span></b><span>אנשי צוות שנכנסו</span></div></div>';
+  if(cs.length)h+='<div class="small muted">'+cs.map(c=>esc(cls(c.name))+' · '+c.students+' תלמידים · סונכרן '+fmtWhen(c.synced_at)).join(' | ')+'</div>';
+  return h;
+}
+function plansBody(){
+  if(S.err.plans)return failed;if(!S.plans)return skel;
+  const P=S.plans,total=P.reduce((n,p)=>n+Object.keys((p.data&&p.data.plans)||{}).length,0);
+  const staff=S.milui?S.milui.teachers.filter(t=>t.active&&!t.is_external).length:null;
+  let h='<div class="stats"><div class="stat"><b class="n">'+P.length+(staff?'<span style="font-size:18px"> / '+staff+'</span>':'')+'</b><span>מורים ששמרו תוכנית</span></div>'+
+    '<div class="stat"><b class="n">'+total+'</b><span>תוכניות הספק</span></div>'+
+    '<div class="stat"><b class="n" style="font-size:24px">'+(P.length?fmtWhen(P[0].updated_at):'—')+'</b><span>שמירה אחרונה</span></div></div>';
+  h+=P.slice(0,6).map(p=>{const pl=Object.values((p.data&&p.data.plans)||{});
+    return '<div class="duty"><span class="nm" style="text-align:right">'+esc((p.data&&p.data.teacher)||'')+'</span><span class="st">'+esc(pl.map(x=>[SUBJ[x.subject]||x.subject,x.book,String(x.cls||'').length>1?cls(x.cls):x.grade?x.grade+'׳'+(x.cls||''):''].filter(Boolean).join(' ')).join(' · '))+'</span></div>'}).join('');
+  if(!P.length)h+='<div class="empty">עוד לא נשמרו תוכניות.</div>';
+  return h;
+}
+function shell(inner){
+  return '<div class="app"><nav class="rail" aria-label="כלי בית הספר"><div class="brand">כנפי רוח<small>הנהלה</small></div>'+
+   TOOLS.map(([k,l,u])=>'<a href="'+u+'"'+(k==='home'?' aria-current="page"':'')+'>'+ICON[k]+l+'</a>').join('')+
+   '<div class="spacer"></div><div class="who">'+esc(S.me||'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+'</main></div>';
+}
+function render(){
+  if(!S.phone)return renderLogin();
+  const t=today(),isToday=S.date===schoolDay(t),hol=holiday(S.date);
+  const items=S.milui?openItems(S.date):[],open=items.filter(i=>i.status==='open').length,asking=items.filter(i=>i.status==='asking').length;
+  const absN=S.milui&&!hol?new Set(absOn(S.date).map(a=>a.teacher_id)).size:0;
+  const td=S.tor&&window.Toranut?torDay(S.date):{shifts:[],missing:0,total:0};
+  const sl=S.say&&!hol?sayDay(S.date):[];
+  const dash=v=>v==null?'–':v,miss=hol?0:td.missing;
+  let h='<header class="card topbar"><div><h1>'+esc(S.me?greet(S.me):'לוח הנהלה')+'</h1><div class="muted">'+fmtFull(S.date)+(isToday?' · היום':'')+(S.loadedAt?' · עודכן '+pad(S.loadedAt.getHours())+':'+pad(S.loadedAt.getMinutes()):'')+'</div></div>'+
+    '<div class="chips"><button class="btn sec" data-act="day" data-n="-1">יום קודם</button><button class="btn sec" data-act="today" aria-pressed="'+isToday+'">היום</button><button class="btn sec" data-act="day" data-n="1">יום הבא</button><button class="btn" data-act="refresh">'+(S.busy?'מרענן…':'רענון')+'</button></div></header>';
+  if(hol)h+='<div class="card banner">'+esc(hol)+' — אין לימודים ביום הזה.</div>';
+  h+='<section class="kpis" aria-label="תמונת מצב ליום">'+
+    kpi(open?'k-red':'k-green','שיעורים פתוחים',open?(asking?asking+' נוספים בבירור':'בלי מורה מחליף'):(asking?asking+' בבירור':'הכול מכוסה'),dash(S.milui?open:null),'/milui/','למילוי מקום')+
+    kpi('k-blue','מורים נעדרים','ביום הזה',dash(S.milui?absN:null),'/milui/','להיעדרויות')+
+    kpi(miss?'k-orange':'k-green','תורנים נעדרים',miss?'עמדות בלי מחליף רשום':'מתוך '+(hol?0:td.total)+' עמדות ביום הזה',dash(S.tor?miss:null),'/toranut/','ללוח התורנויות')+
+    kpi('k-purple','יציאות סיירות','סיירות ופעילויות',dash(S.say?sl.length:null),'/sayarot/','לסיירות')+'</section>';
+  h+='<div class="grid">'+
+    tool('מילוי מקום · היעדרויות','/milui/',miluiBody(items))+
+    tool('סיירות ופעילויות','/sayarot/',hol?'<div class="empty">'+esc(hol)+'</div>':sayBody(sl))+
+    tool('תורנויות חצר','/toranut/',torBody(td),true)+
+    tool('מפת כיתה · ישיבות פדגוגיות','/mapat-kita/',mkBody())+
+    tool('מתכנן הספק','/',plansBody())+'</div>';
+  root.innerHTML=shell(h);
+}
+function renderLogin(err){
+  root.innerHTML='<div class="login"><form class="card" id="loginForm"><h1>לוח הנהלה</h1><div class="muted">כנפי רוח · כניסה לצוות הניהול</div>'+
+   '<label for="ph" style="font-weight:600">מספר טלפון</label><input id="ph" name="tel" type="tel" inputmode="tel" autocomplete="tel" required autofocus>'+
+   (err?'<div class="err" role="alert">'+esc(err)+'</div>':'')+'<button class="btn wide" type="submit">כניסה</button></form></div>';
+  root.querySelector('#ph').focus();
+}
+function logout(msg){S.phone=null;S.me=null;S.milui=null;S.tor=null;S.mk=null;try{localStorage.removeItem('milui_phone')}catch(e){};renderLogin(msg)}
+async function refresh(force){
+  S.busy=true;render();
+  try{await loadAll(force)}catch(e){S.busy=false;if(e.message==='no_access')return logout('המספר הזה לא מורשה להיכנס.');console.error(e)}
+  S.busy=false;if(S.phone)render();
+}
+root.addEventListener('submit',async e=>{
+  e.preventDefault();if(e.target.id!=='loginForm')return;
+  const ph=e.target.querySelector('#ph').value;
+  try{const n=await rpc('milui_login',{p_phone:ph});if(!n){renderLogin('המספר הזה לא מורשה להיכנס.');return}
+    S.phone=ph;S.me=n;try{localStorage.setItem('milui_phone',ph)}catch(x){}refresh(true)}catch(x){renderLogin('אין חיבור לשרת. נסו שוב.')}
+});
+root.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='logout')return logout();
+  if(a==='refresh')return refresh(true);
+  if(a==='today'){S.date=schoolDay(today());return refresh(false)}
+  if(a==='day'){let d=addDays(S.date,+b.dataset.n);while(dow(d)===6)d=addDays(d,+b.dataset.n);S.date=d;return refresh(false)}
+});
+/* רענון אוטומטי כשחוזרים ללשונית אחרי יותר מ־5 דקות */
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.phone&&S.loadedAt&&Date.now()-S.loadedAt>3e5)refresh(true)});
+if(S.phone)refresh(true);else renderLogin();
+</script>
+</body>
+</html>
