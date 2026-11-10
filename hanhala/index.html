@@ -162,7 +162,7 @@ const houseOf=n=>{const k=nameKey(n),h=HOUSES.find(h=>h.heads.some(x=>nameKey(x)
 const H=()=>HOUSES.find(h=>h.id===S.house)||null;
 const clsIn=c=>{const h=H();return !h||h.layers.includes(String(c).trim()[0])};
 const layerLetters=t=>{t=String(t||'');const m=t.match(/\(([^)]+)\)/);return ((m?m[1]:t).match(/[א-ו]/g))||[]};
-const SUBJ={torah:'תורה',navi:'נביא',mishna:'משנה',gemara:'גמרא'};
+const SUBJ={torah:'חומש',navi:'נביא',mishna:'משנה',gemara:'גמרא',halacha:'הלכה',math:'מתמטיקה',hebrew:'עברית',science:'מדעים',other:'אחר'};
 const hourNum=h=>{const m=String(h||'').match(/\d+/);return m?+m[0]:0};
 const plural=(n,one,many)=>n===1?one:n+' '+many;
 
