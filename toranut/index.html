@@ -297,7 +297,7 @@ function canPlace(s,shId,d,stId){
   const p=prof(s.id),sh=shiftOf(shId),st=S.cfg.stations.find(x=>x.id===stId);
   if(!sh||!st||!sh.days.includes(d))return 'אין משמרת';
   const f=T.formAllows(s,sh,d,p);if(f)return f;
-  const pr=T.presence(s,sh,d,S.tt);if(!pr.ok)return pr.why;
+  const pr=T.presence(s,sh,d,S.tt,prof(s.id));if(!pr.ok)return pr.why;
   if(!T.stationOk(s,p,st,T.stationLayer(S.cfg,st,sh,d)))return p.ahmash==='only'?'אחמ"ש בלבד':st.ahmash?'לא אחמ"ש':p.stations==='ownFloor'?'רק בקומת השכבה':p.stations==='seat'?'רק עמדה עם ישיבה':'לא מתאים לעמדה';
   return null;
 }
@@ -456,7 +456,7 @@ function viewStaff(){
 }
 
 /* ---------- כללים ---------- */
-const GROUPS=[['quota','כמות ומתכונת',['quota','pattern','shift']],['who','מי משובץ ואיפה',['exclude','ahmash','stations','post','slots']],['soft','שיקולים',['soft']],['note','הנחיות (לא נאכפות)',['note']]];
+const GROUPS=[['quota','כמות ומתכונת',['quota','pattern','shift']],['who','מי משובץ ואיפה',['exclude','ahmash','stations','post','slots','endFree']],['soft','שיקולים',['soft']],['note','הנחיות (לא נאכפות)',['note']]];
 function viewRules(){
   const rules=S.data.rules||[],st=S.data.staff,f=S.ruleFilter;
   const shown=rules.filter(r=>f==='all'||r.src===f);
@@ -478,7 +478,7 @@ function viewRules(){
 function blankRule(){return {id:T.newId(),type:'quota',n:2,who:{roles:[],dcats:[],options:[],ids:[]},on:true,src:'site',note:''}}
 function defaultsFor(type,r){
   const keep={id:r.id,type,who:r.who,on:true,src:r.src==='sheet'||r.src==='form'||r.src==='sheetR'?r.src:'site',note:r.note||''};
-  return Object.assign(keep,{quota:{n:2},pattern:{v:'day'},shift:{shift:'b1',mode:'max',n:1,hard:false},stations:{v:'noPatrol'},ahmash:{v:'can'},exclude:{v:true},slots:{mode:'never',slots:[]},soft:{factor:'layer',w:3},note:{text:''},post:{stations:[],layers:'',byDay:{},soft:false,shifts:['b1','b2']}}[type]);
+  return Object.assign(keep,{quota:{n:2},pattern:{v:'day'},shift:{shift:'b1',mode:'max',n:1,hard:false},stations:{v:'noPatrol'},ahmash:{v:'can'},exclude:{v:true},slots:{mode:'never',slots:[]},soft:{factor:'layer',w:3},note:{text:''},endFree:{v:true,shifts:['e1']},post:{stations:[],layers:'',byDay:{},soft:false,shifts:['b1','b2']}}[type]);
 }
 function renderRuleModal(){
   const M=S.modal,r=M.r,st=S.data.staff,w=r.who;
@@ -499,6 +499,7 @@ function renderRuleModal(){
       '<div><b class="small">או בחצרות של שכבה</b><div class="chips">'+['א','ב','ג','ד','ה','ו','ז','ח'].map(l=>'<label class="chip"><input type="checkbox" data-rf="play" value="'+l+'"'+((r.layers||'').includes(l)?' checked':'')+'> '+l+'</label>').join('')+'</div></div>'+
       (r.byDay&&Object.keys(r.byDay).length?'<div class="small muted">חריג לפי יום (מהשאלון): '+esc(Object.keys(r.byDay).map(d=>D[+d]+' — '+r.byDay[d].length+' עמדות').join(' · '))+'</div>':'')+
       '<label class="small"><input type="checkbox" data-rf="psoft"'+(r.soft?' checked':'')+'> רק עדיפות (אם אין מקום שם — אפשר גם בעמדה אחרת)</label>';break;
+    case 'endFree':p='<select class="fsel" data-rf="v">'+opt({true:'לשבץ רק מי שאין לו/ה שיעור פרונטלי בשעה שלפני',false:'ביטול (מותר גם למי שמלמד/ת)'},String(r.v!==false))+'</select><div class="chips">'+[['e1','סיום 12:55 — שעה 6 (בשישי 11:55 — שעה 4)'],['e2','סיום 13:35 — שעה 7']].map(x=>'<label class="chip"><input type="checkbox" data-rf="efs" value="'+x[0]+'"'+((r.shifts||[]).includes(x[0])?' checked':'')+'> '+x[1]+'</label>').join('')+'</div><div class="small muted">שיעור פרונטלי = שיעור או שיעור משותף. פרטני, שהייה ותפקיד לא נחשבים. לפי מערכת השעות.</div>';break;
     case 'note':p='<textarea class="fsel" rows="3" data-rf="text" placeholder="לדוגמה: אפוד זוהר לכל התורנים">'+esc(r.text||'')+'</textarea>';break;
   }
   const people=w.ids&&w.ids.length||M.whoMode==='ids';
@@ -1031,7 +1032,7 @@ function renderModal(){
   const R2=S.R.people.reduce((m,p)=>(m[p.id]=p,m),{});
   const busy={};Object.keys(A).forEach(k=>{if(k.startsWith(sid+'@'+d+'@')&&k!==M.k)busy[A[k]]=1});
   const cands=S.data.staff.filter(s=>!prof(s.id).excluded).map(s=>{
-    const f=T.formAllows(s,sh,d,prof(s.id)),pr=T.presence(s,sh,d,S.tt);
+    const f=T.formAllows(s,sh,d,prof(s.id)),pr=T.presence(s,sh,d,S.tt,prof(s.id));
     const ok=!f&&pr.ok&&!busy[s.id];const p=R2[s.id];
     return {s,ok,why:f||(!pr.ok&&pr.why)||(busy[s.id]&&'כבר משובץ/ת בעמדה אחרת באותו זמן')||'',p,free:p.got<p.target};
   }).filter(c=>c.ok||M.all||c.s.id===S.focus).sort((a,b)=>((b.s.id===S.focus)-(a.s.id===S.focus))||(b.ok-a.ok)||(b.free-a.free)||(a.p.got-b.p.got));
@@ -1136,8 +1137,9 @@ function rf(el){
   if(f==='pst'){const a=new Set(r.stations||[]);el.checked?a.add(el.value):a.delete(el.value);r.stations=[...a];return}
   if(f==='play'){const a=new Set([...(r.layers||'')]);el.checked?a.add(el.value):a.delete(el.value);r.layers=[...a].join('')||null;return}
   if(f==='psoft'){r.soft=el.checked;return}
+  if(f==='efs'){const a=new Set(r.shifts||[]);el.checked?a.add(el.value):a.delete(el.value);r.shifts=[...a];return}
   if(f==='n'||f==='w'){r[f]=+el.value;return}
-  if(f==='v'&&r.type==='exclude'){r.v=el.value==='true';return}
+  if(f==='v'&&(r.type==='exclude'||r.type==='endFree')){r.v=el.value==='true';return}
   r[f]=el.value;
 }
 

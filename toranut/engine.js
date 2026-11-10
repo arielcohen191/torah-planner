@@ -168,6 +168,7 @@
     exclude: { label: 'החרגה משיבוץ' },
     slots:   { label: 'הגבלת ימים/משמרות' },
     post:    { label: 'עמדות מותרות בהפסקות' },
+    endFree: { label: 'סוף יום — בלי שיעור פרונטלי בשעה שלפני' },
     soft:    { label: 'שיקול בשיבוץ' },
     note:    { label: 'הנחיה (לא נאכפת)' }
   };
@@ -178,6 +179,7 @@
     if (r.type === 'slots') return 'slots:' + r.mode + ':' + (r.slots || []).slice().sort().join(',');
     if (r.type === 'note') return 'note:' + r.id;
     if (r.type === 'post') return 'post';
+    if (r.type === 'endFree') return 'endFree';
     return r.type;
   }
   function sig(r) {
@@ -185,6 +187,7 @@
       case 'quota': return '' + r.n;
       case 'pattern': case 'stations': case 'ahmash': return r.v;
       case 'exclude': return r.v === false ? 'in' : 'out';
+      case 'endFree': return (r.v === false ? 'off:' : 'on:') + (r.shifts || []).slice().sort().join(',');
       case 'shift': return r.n + (r.hard ? 'h' : 's');
       case 'post': return JSON.stringify([r.stations, r.layers, r.byDay, !!r.soft]);
       case 'soft': return '' + r.w;
@@ -226,6 +229,7 @@
       case 'slots': return (r.mode === 'only' ? 'רק ב: ' : 'לא ב: ') + slotsText(r.slots);
       case 'soft': return 'לשבץ ' + SOFT[r.factor] + ' — חשיבות ' + LEVEL[r.w];
       case 'note': return r.text;
+      case 'endFree': return (r.v === false ? 'בסוף יום — גם מי שמלמד/ת בשעה שלפני' : 'בסוף יום — רק מי שאין לו/ה שיעור פרונטלי בשעה שלפני') + ' (' + (r.shifts || ['e1']).map(x => ({ e1: '12:55 — שעה 6', e2: '13:35 — שעה 7' }[x] || x)).join(', ') + ')';
       case 'post': return (r.soft ? 'בהפסקות — עדיפות ל: ' : 'בהפסקות — רק ב: ') + postText(r);
     }
     return '';
@@ -302,7 +306,7 @@
   function compile(rules, staff) {
     const P = {};
     staff.forEach(s => {
-      const p = { excluded: false, target: 2, pattern: 'free', stations: 'any', ahmash: 'no', min: {}, max: {}, hardMax: {}, only: [], never: [], why: {}, post: {}, src: {} };
+      const p = { excluded: false, target: 2, pattern: 'free', stations: 'any', ahmash: 'no', min: {}, max: {}, hardMax: {}, only: [], never: [], why: {}, post: {}, endFree: {}, src: {} };
       (rules || []).forEach(r => {
         if (r.on === false || r.type === 'note' || !matches(r, s)) return;
         switch (r.type) {
@@ -311,6 +315,7 @@
           case 'stations': p.stations = r.v; p.src.stations = r.id; break;
           case 'ahmash': p.ahmash = r.v; p.src.ahmash = r.id; break;
           case 'exclude': p.excluded = r.v !== false; p.src.exclude = r.id; break;
+          case 'endFree': (r.shifts || ['e1']).forEach(sh => { p.endFree[sh] = r.v !== false; }); p.src.endFree = r.id; break;
           case 'shift':
             if (r.mode === 'min') { p.min[r.shift] = +r.n; if (p.max[r.shift] != null && p.max[r.shift] < r.n) p.max[r.shift] = +r.n; }
             else { p.max[r.shift] = +r.n; p.hardMax[r.shift] = !!r.hard; if (p.min[r.shift] > r.n) p.min[r.shift] = +r.n; }
@@ -442,7 +447,7 @@
 
   /* ---------- נוכחות לפי מערכת השעות ---------- */
   function afterHour(shift, day) { return day === 5 && shift.fri != null ? shift.fri : shift.after; }
-  function presence(s, shift, day, tt) {
+  function presence(s, shift, day, tt, P) {
     if (!s.days.includes(day)) return { ok: false, why: 'לא עובד/ת ביום הזה' };
     const t = s.tt && tt[s.tt];
     if (!t) return { ok: true };
@@ -461,6 +466,7 @@
     if (shift.kind === 'end') {
       if (!has(a)) return { ok: false, why: 'מסיים/ת לפני הסיום' };
       if (lesson(a + 1)) return { ok: false, why: 'מלמד/ת בשעה שאחרי' };
+      if (P && P.endFree && P.endFree[shift.id] && lesson(a)) return { ok: false, why: 'מלמד/ת שיעור פרונטלי בשעה ' + a + ' (כלל סוף יום)' };
       return { ok: true };
     }
     return { ok: true };
@@ -526,7 +532,7 @@
       staff.forEach((s, i) => {
         const p = C.P[s.id];
         if (formAllows(s, shift, day, p)) return;
-        const pr = presence(s, shift, day, tt); if (!pr.ok) return;
+        const pr = presence(s, shift, day, tt, C.P[s.id]); if (!pr.ok) return;
         if (!stationOk(s, p, st, layer, shift.id, day)) return;
         elig.push(i); calm[i] = pr.calm !== false;
         near[i] = nearClass(s, shift, day, layer, tt);
@@ -669,7 +675,7 @@
         const p = C.P[s.id]; if (p.excluded) return;
         const f = formAllows(s, c.shift, c.day, p);
         if (f) { why[f] = (why[f] || 0) + 1; return; }
-        const pr = presence(s, c.shift, c.day, tt);
+        const pr = presence(s, c.shift, c.day, tt, C.P[s.id]);
         if (!pr.ok) { why[pr.why] = (why[pr.why] || 0) + 1; return; }
         possible++;
         if (load[s.id].some(x => x.startsWith(c.shift.id + '@' + c.day + '@'))) return;
@@ -709,7 +715,7 @@
     if (!sh || !st || !sh.days.includes(day)) return 'אין משמרת';
     const pp = opts && opts.ignoreExcluded ? Object.assign({}, p, { excluded: false, target: Math.max(1, p.target) }) : p;
     const f = formAllows(s, sh, day, pp); if (f) return f;
-    const pr = presence(s, sh, day, tt); if (!pr.ok) return pr.why;
+    const pr = presence(s, sh, day, tt, pp); if (!pr.ok) return pr.why;
     if (!stationOk(s, pp, st, stationLayer(cfg, st, sh, day), sh.id, day)) return (pp.post && pp.post[sh.id] && !pp.post[sh.id].soft) ? 'לא בעמדה שהמנהל קבע לו/ה (עמודה R)' : 'לא מתאים/ה לעמדה';
     return null;
   }
