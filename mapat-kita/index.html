@@ -1010,11 +1010,20 @@ IND[66]=["קריאה — הבנת הנקרא",{1:"85–100",2:"60–84",3:"מת�
 DOMAINS.find(d=>d.id==="ach").cols.push(66);DOMAINS.find(d=>d.id==="ach").txt=70;
 SUBJ.push({n:"מיפוי קריאה (שפה)",c:66});
 const PROF_SHORT=["שטף + כישורי שפה","כישורי שפה","שטף קריאה","ניטור הבנה והבעה","קוראים מיומנים"];
-const rtoks=t=>String(t||"").replace(/["'״׳]/g,"").split(/\s+/).filter(Boolean);
+const rtoks=t=>String(t||"").replace(/\([^)]*\)?/g," ").replace(/[^א-תa-zA-Z\s]/g," ").split(/\s+/).filter(Boolean);
+const hnorm=w=>w.length<2?w:w[0]+w.slice(1).replace(/[אוי]/g,"");
+function lev(a,b){const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
+function tokSc(x,y){if(x===y)return 3;if(x.length===1||y.length===1)return x[0]===y[0]?1:0;const a=hnorm(x),b=hnorm(y);return a===b?2:(Math.min(a.length,b.length)>=3&&lev(a,b)<=1)?1:0}
+// שני שמות "זהים" אם כל מילה בשם הקצר תואמת מילה אחרת בשם הארוך (כתיב מלא/חסר, טעות הקלדה אחת, ראשי תיבות)
+function nameScore(A,B){A=rtoks(A);B=rtoks(B);if(!A.length||!B.length)return 0;if(A.length>B.length)[A,B]=[B,A];
+  const used=new Set();let s=0;for(const x of A){let bi=-1,bs=0;B.forEach((y,i)=>{if(used.has(i))return;const v=tokSc(x,y);if(v>bs){bs=v;bi=i}});if(bi<0)return 0;used.add(bi);s+=bs}return s}
+const nameSim=(A,B)=>nameScore(A,B)>0;
+// בוחרים את המועמד עם הציון הגבוה ביותר — רק אם הוא יחיד בראש
+function bestMatch(name,list,key=x=>x.n){let best=null,bs=0,tie=false;list.forEach(x=>{const v=nameScore(key(x),name);if(v>bs){bs=v;best=x;tie=false}else if(v&&v===bs)tie=true});return tie?null:best}
 function readingFor(name,list){
-  const T=rtoks(name),ex=list.find(x=>rtoks(x.n).join(" ")===T.join(" "));if(ex)return ex;
-  const c=list.filter(x=>{const R=rtoks(x.n);return R.length&&(R.every(w=>T.includes(w))||T.every(w=>R.includes(w)))});
-  return c.length===1?c[0]:null;
+  const T=rtoks(name).join(" ");const ex=list.find(x=>rtoks(x.n).join(" ")===T);if(ex)return ex;
+  return bestMatch(name,list);
 }
 function mergeReading(rows,rd){
   window._reading=rd||null;if(!rd||!rd.students)return rows;
@@ -1077,20 +1086,33 @@ function parseReadingBook(wb){
     const hdr=g.findIndex(r=>r.some(c=>c.includes("מיומנים"))),sc=g.findIndex(r=>r[0]==="שם התלמיד");
     const teacher=((g.flat().find(c=>c.includes("שם המורה"))||"").replace(/^.*שם המורה\s*:?\s*/,""));
     const period=g.flat().find(c=>c.includes("תשפ"))||"";
-    const recs=[];const find=n=>recs.find(x=>{const A=rtoks(x.n),B=rtoks(n);return A.join(" ")===B.join(" ")||(A.length&&B.length&&(A.every(w=>B.includes(w))||B.every(w=>A.includes(w))))});
-    if(hdr>=0)for(const r of g.slice(hdr+1)){if(r.some(c=>c.includes("מספר תלמידים")))break;r.slice(0,5).forEach((c,j)=>{if(c&&!find(c))recs.push({n:c,p:j,s:"",c:""})})}
-    if(sc>=0)for(const r of g.slice(sc+1)){if(!r[0])continue;let e=find(r[0]);if(!e){e={n:r[0],p:null,s:"",c:""};recs.push(e)}else if(rtoks(r[0]).length>rtoks(e.n).length)e.n=r[0];
-      const v=r[1];e.s=(v===""||v==="-")?"":String(v);e.c=r[2]||""}
-    if(recs.length)out.push({title:nm,teacher,period,profiles:hdr>=0?g[hdr].slice(0,5):[],students:recs});
+    const recs=[],rep={merged:[],dups:[],onlyP:[],onlyS:[]};const exact=n=>recs.find(x=>rtoks(x.n).join(" ")===rtoks(n).join(" "));
+    if(hdr>=0)for(const r of g.slice(hdr+1)){if(r.some(c=>c.includes("מספר תלמידים")))break;r.slice(0,5).forEach((c,j)=>{if(!c)return;const e=exact(c);if(e){rep.dups.push(c+" (מופיע בשני פרופילים — נקלט: "+PROF_SHORT[e.p]+")");return}recs.push({n:c,p:j,s:"",c:"",sc:false})})}
+    if(sc>=0)for(const r of g.slice(sc+1)){if(!r[0])continue;let e=exact(r[0]);
+      if(!e){const c=bestMatch(r[0],recs.filter(x=>!x.sc));if(c){e=c;rep.merged.push([e.n,r[0]])}}
+      if(!e){e={n:r[0],p:null,s:"",c:""};recs.push(e)}else if(rtoks(r[0]).length>=rtoks(e.n).length)e.n=r[0];
+      e.sc=true;const v=r[1];e.s=(v===""||v==="-")?"":String(v);e.c=r[2]||""}
+    if(hdr>=0&&sc>=0&&recs.some(x=>x.p!=null)&&recs.some(x=>x.sc)){rep.onlyP=recs.filter(x=>x.p!=null&&!x.sc).map(x=>x.n);rep.onlyS=recs.filter(x=>x.p==null&&x.sc&&x.s!=="").map(x=>x.n)}
+    recs.forEach(x=>delete x.sc);
+    if(recs.length)out.push({title:nm,teacher,period,profiles:hdr>=0?g[hdr].slice(0,5):[],students:recs,report:rep});
   });
   return out;
+}
+function readingReport(cls){
+  const rows=cls.map(c=>{const r=c.report||{};const it=[
+    ...(r.dups||[]).map(x=>`⚠ כפול בקובץ: ${esc(x)}`),
+    ...(r.merged||[]).map(([a,b])=>`🔗 אוחדו: "${esc(a)}" (פרופילים) = "${esc(b)}" (ציונים)`),
+    ...(r.onlyS||[]).length?[`❓ יש ציון אבל לא נמצא בפרופילים: ${r.onlyS.map(esc).join(", ")}`]:[],
+    ...(r.onlyP||[]).length&&(r.onlyS||[]).length?[`❓ בפרופילים אבל בלי שורת ציון: ${r.onlyP.map(esc).join(", ")}`]:[]];
+    return it.length?`<details><summary><b>${esc(c.title)}</b> · ${it.length} לבדיקה</summary><ul style="margin:4px 0">${it.map(x=>`<li>${x}</li>`).join("")}</ul></details>`:""}).join("");
+  return rows?`<div class="box" style="margin-top:10px;box-shadow:none;border:1px solid var(--line)"><b>דוח בדיקה — מומלץ לעבור לפני הישיבה:</b><p class="hint" style="margin:4px 0">🔗 שמות שכתובים קצת אחרת בשני חלקי הקובץ אוחדו לתלמיד אחד. ⚠/❓ כדאי לתקן בקובץ המקור ולהעלות שוב.</p>${rows}</div>`:"";
 }
 async function uploadReading(f){
   const m=document.getElementById("readMsg");if(!f)return;m.textContent="קורא את הקובץ…";
   try{await loadXLSX();const wb=XLSX.read(await f.arrayBuffer(),{type:"array"});const cls=parseReadingBook(wb);
     if(!cls.length){m.textContent="⚠ לא נמצאו בקובץ לשוניות מיפוי עם תלמידים";return}
     const r=await rpc("mk_set_reading",{p_phone:SES.phone,p_pin:SES.pin,p_classes:cls});
-    m.innerHTML=window._readMsg=r.error?"⚠ "+(ERR[r.error]||r.error):`✓ נקלטו ${r.classes} כיתות: ${cls.map(c=>esc(c.title)+" ("+c.students.length+")").join(" · ")}`;
+    m.innerHTML=window._readMsg=r.error?"⚠ "+(ERR[r.error]||r.error):`✓ נקלטו ${r.classes} כיתות: ${cls.map(c=>esc(c.title)+" ("+c.students.length+")").join(" · ")}`+readingReport(cls);
     if(!r.error){setTimeout(renderSources,800);if(CUR_CLASS)openClass(CUR_CLASS)}
   }catch(e){m.textContent="⚠ לא הצלחתי לקרוא את הקובץ: "+e.message}
 }
