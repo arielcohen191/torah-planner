@@ -62,6 +62,16 @@ h2{margin:0;font-size:20px;font-weight:600}
 .btn.sm{min-height:40px;padding:0 14px;font-size:15px}
 .btn.danger{background:var(--red)}.btn.danger:hover{background:#a3221a}
 .prow{gap:8px}
+.rchips{display:flex;flex-wrap:wrap;gap:6px}
+.rchip{background:#e7f1fb;color:var(--brand-dark);border-radius:999px;padding:3px 12px;font-size:14px;font-weight:500}
+.ritem{padding:0}
+.ritem>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;min-height:56px}
+.ritem>summary::-webkit-details-marker{display:none}
+.ritem>summary .tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ritem>summary:hover{background:#eaf0f6}
+.ritem>summary:focus-visible{outline:3px solid #1f2a37;outline-offset:-3px}
+.ritem[open]{border-right-color:var(--brand)}
+.ritem .rform{padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .kpi{border:0;font:inherit;text-align:right;cursor:pointer;border-radius:var(--r-lg);padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:116px;text-decoration:none;transition:transform .12s,box-shadow .12s}
@@ -215,7 +225,8 @@ async function loadData(){
     S.milui=d}else S.milui=null;
   S.tor=r.tor?{data:{staff:r.tor.staff,plan:r.tor.plan,yards:r.tor.yards,absLocal:r.tor.absLocal},abs:r.tor.abs||[],updated_at:r.tor.updated_at,updated_by:r.tor.updated_by}:null;
   S.mk=r.mk||null;S.dataMonth=m;
-  if(!S.house||(S.house==='mine'&&!S.user.layers.length))S.house=myHouse();
+  if(!S.house){const ph=pref().house;S.house=(ph==='all'||HOUSES.some(h=>h.id===ph)||(ph==='mine'&&S.user.layers.length))?ph:myHouse()}
+  if(S.house==='mine'&&!S.user.layers.length)S.house='all';
   if(S.view!=='home'&&S.view!=='prefs'&&!(S.view==='perms'?S.user.can_manage:allowed(S.view)))S.view='home';
 }
 async function loadAll(force){
@@ -428,7 +439,7 @@ function viewHespek(){
   return h+panel('תוכניות לפי מורה',b);
 }
 /* ---------- התאמה אישית של מסך הבית ---------- */
-const pref=()=>Object.assign({hideTools:[],hideUrg:[]},S.user&&S.user.prefs||{});
+const pref=()=>Object.assign({hideTools:[],hideUrg:[],house:null},S.user&&S.user.prefs||{});
 const toolViews=()=>VIEWS.filter(v=>v[0]!=='home'&&allowed(v[0]));
 async function savePrefs(p){
   S.user.prefs=p;S.saved='saving';render();
@@ -443,62 +454,78 @@ function viewPrefs(){
   b+='<h3 class="sub">אילו רמות דחיפות</h3><div class="opts">'+[1,2,3].map(u=>chk('urg',u,URG[u][0],!p.hideUrg.includes(u))).join('')+'</div>';
   b+='<div class="small '+(S.saved==='err'?'err':'muted')+'" role="status">'+(S.saved==='saving'?'שומר…':S.saved==='ok'?'נשמר. ההעדפה תופיע בכל מכשיר שתיכנס ממנו.':S.saved==='err'?'השמירה נכשלה. נסו שוב.':'')+'</div>';
   return panel('מה מוצג לי במסך הבית',b)+
-    panel('התפקיד שלי','<div class="duty"><span class="st">תפקיד</span><span class="nm">'+esc(S.user.role_label)+'</span></div>'+
+    panel('התפקידים שלי','<div class="rchips">'+(S.user.roles.length?S.user.roles.map(r=>'<span class="rchip">'+esc(r.label)+'</span>').join(''):'<span class="muted">לא הוגדר תפקיד</span>')+'</div>'+
       '<div class="duty"><span class="st">כלים פתוחים</span><span class="nm" style="white-space:normal">'+(tv.length?tv.map(v=>v[1]).join(' · '):'—')+'</span></div>'+
       (S.user.layers.length?'<div class="duty"><span class="st">שכבות</span><span class="nm">'+S.user.layers.map(l=>l+'׳').join(' ')+'</span></div>':'')+
-      '<div class="small muted">שינוי תפקיד או הרשאות נעשה על ידי מנהל בית הספר.</div>');
+      '<div class="small muted">הבחירה בין הבתים במסכי הלוח נשמרת גם היא. שינוי תפקיד או הרשאות נעשה על ידי מנהל בית הספר.</div>');
 }
 
 /* ---------- ניהול הרשאות (למורשים בלבד) ---------- */
+/* תפקיד = משרה (כמו "מנהלת בית א׳–ב׳"): יש לו כלים ושכבות. לאדם יכולים להיות כמה תפקידים. */
 const LAYERS=['א','ב','ג','ד','ה','ו'];
-const ERR={phone_exists:'מספר הטלפון הזה כבר רשום.',bad_phone:'מספר הטלפון לא תקין.',bad_name:'חסר שם.',bad_role:'צריך לבחור תפקיד.',role_in_use:'אי אפשר למחוק תפקיד שמשויכים אליו אנשים.',
+const TOOLS=['milui','toranut','sayarot','mapat','hespek'];
+const ERR={phone_exists:'מספר הטלפון הזה כבר רשום.',bad_phone:'מספר הטלפון לא תקין.',bad_name:'חסר שם.',no_roles:'צריך לסמן לפחות תפקיד אחד.',bad_role:'אחד התפקידים לא קיים. רעננו ונסו שוב.',role_in_use:'אי אפשר למחוק תפקיד שמשויכים אליו אנשים.',
   cannot_delete_self:'אי אפשר להסיר את עצמך.',forbidden:'אין לך הרשאה לנהל הרשאות.',bad_label:'חסר שם לתפקיד.',not_found:'הרשומה לא נמצאה. רעננו ונסו שוב.'};
 const errText=e=>{const k=Object.keys(ERR).find(k=>String(e&&e.message).includes(k));return k?ERR[k]:'הפעולה נכשלה. נסו שוב.'};
+const layersTxt=L=>L&&L.length?L.map(l=>l+'׳').join(' '):'כל בית הספר';
 async function loadAdmin(){try{S.admin=await rpc('hanhala_admin_list',{p_phone:S.phone});S.adminErr=null}catch(e){S.admin=null;S.adminErr=errText(e)}}
-async function adminDo(fn,args){
-  S.adminErr=null;
-  try{await rpc(fn,Object.assign({p_phone:S.phone},args));S.edit=null;S.confirmDel=null;await loadAdmin();S.dataMonth=null;await loadAll(false)}
-  catch(e){S.adminErr=errText(e)}
-  render();
+async function adminDo(fn,args,keep){
+  S.adminErr=null;S.adminBusy=true;render();
+  try{await rpc(fn,Object.assign({p_phone:S.phone},args));if(!keep){S.edit=null;S.openRole=null}S.confirmDel=null;await loadAdmin();S.dataMonth=null;await loadAll(false);S.adminOk=true}
+  catch(e){S.adminErr=errText(e);S.adminOk=false}
+  S.adminBusy=false;render();
 }
 function staffForm(x){
-  const roles=S.admin.roles,isNew=!x.old,role=roles.find(r=>r.id===x.role_id)||roles[0];
+  const roles=S.admin.roles,isNew=!x.old,sel=x.roles||[];
   return '<form class="card eform" data-form="staff"><h3 class="sub" style="margin-top:0">'+(isNew?'הוספת איש צוות':'עריכה: '+esc(x.name))+'</h3>'+
     '<input type="hidden" name="old_phone" value="'+esc(x.old||'')+'">'+
     '<div class="frow"><label>שם מלא<input name="name" required maxlength="60" value="'+esc(x.name||'')+'"></label>'+
-    '<label>טלפון<input name="phone" type="tel" inputmode="tel" required value="'+esc(x.phone||'')+'"></label>'+
-    '<label>תפקיד<select name="role_id" data-rolesel>'+roles.map(r=>'<option value="'+esc(r.id)+'"'+(r.id===role.id?' selected':'')+'>'+esc(r.label)+'</option>').join('')+'</select></label></div>'+
-    '<div data-layers'+(role.scope==='layers'?'':' hidden')+'><div class="small" style="font-weight:600;margin-bottom:6px">שכבות</div><div class="opts">'+
-      LAYERS.map(l=>'<label class="opt"><input type="checkbox" name="layers" value="'+l+'"'+((x.layers||[]).includes(l)?' checked':'')+'><span>'+l+'׳</span></label>').join('')+'</div></div>'+
-    '<label class="opt"><input type="checkbox" name="can_manage"'+(x.can_manage?' checked':'')+(x.self?' disabled':'')+'><span>רשאי/ת לנהל הרשאות</span></label>'+
+    '<label>טלפון<input name="phone" type="tel" inputmode="tel" required value="'+esc(x.phone||'')+'"></label></div>'+
+    '<div><div class="small" style="font-weight:600;margin-bottom:6px">תפקידים (אפשר כמה)</div><div class="opts">'+
+      roles.map(r=>'<label class="opt"><input type="checkbox" name="roles" value="'+esc(r.id)+'"'+(sel.includes(r.id)?' checked':'')+'><span>'+esc(r.label)+'</span></label>').join('')+'</div></div>'+
+    '<label class="opt" style="align-self:flex-start"><input type="checkbox" name="can_manage"'+(x.can_manage?' checked':'')+(x.self?' disabled':'')+'><span>רשאי/ת לנהל הרשאות</span></label>'+
     (S.adminErr?'<div class="err" role="alert">'+esc(S.adminErr)+'</div>':'')+
-    '<div class="chips"><button class="btn" type="submit">שמירה</button><button class="btn sec" type="button" data-act="edit-cancel">ביטול</button></div></form>';
+    '<div class="chips"><button class="btn" type="submit"'+(S.adminBusy?' disabled':'')+'>'+(S.adminBusy?'שומר…':'שמירה')+'</button><button class="btn sec" type="button" data-act="edit-cancel">ביטול</button></div></form>';
+}
+function roleForm(x){
+  const isNew=!x.id;
+  return '<form class="rform" data-form="role"><input type="hidden" name="id" value="'+esc(x.id||'')+'">'+
+    '<div class="frow"><label>'+(isNew?'שם התפקיד החדש':'שם התפקיד')+'<input name="label" required maxlength="40" value="'+esc(x.label||'')+'"'+(isNew?' placeholder="למשל: רכז חברתי"':'')+'></label></div>'+
+    '<div><div class="small" style="font-weight:600;margin-bottom:6px">כלים פתוחים</div><div class="opts">'+TOOLS.map(k=>'<label class="opt"><input type="checkbox" name="tools" value="'+k+'"'+((x.tools||[]).includes(k)?' checked':'')+'><span>'+viewOf(k)[1]+'</span></label>').join('')+'</div></div>'+
+    '<div><div class="small" style="font-weight:600;margin-bottom:6px">שכבות <span class="muted" style="font-weight:400">(בלי סימון = כל בית הספר)</span></div><div class="opts">'+LAYERS.map(l=>'<label class="opt"><input type="checkbox" name="layers" value="'+l+'"'+((x.layers||[]).includes(l)?' checked':'')+'><span>'+l+'׳</span></label>').join('')+'</div></div>'+
+    (S.adminErr&&S.openRole===(x.id||'new')?'<div class="err" role="alert">'+esc(S.adminErr)+'</div>':'')+
+    '<div class="chips"><button class="btn sm" type="submit"'+(S.adminBusy?' disabled':'')+'>'+(isNew?'הוספת התפקיד':'שמירת התפקיד')+'</button>'+
+    (isNew?'':(x.holders.length?'<span class="small muted">אפשר למחוק רק תפקיד שאין בו אנשים</span>':'<button class="link" type="button" data-act="role-del" data-v="'+esc(x.id)+'">מחיקת התפקיד</button>'))+'</div></form>';
 }
 function viewPerms(){
   if(!S.user.can_manage)return '<div class="note bad">המסך הזה פתוח רק למי שמנהל הרשאות.</div>';
   if(!S.admin)return S.adminErr?'<div class="note bad">'+esc(S.adminErr)+'</div>':panel('אנשי צוות',skel);
-  const A=S.admin,rl=id=>(A.roles.find(r=>r.id===id)||{label:'?'}).label,tname=k=>viewOf(k)[1];
-  let h='';
-  if(S.edit&&S.edit.kind==='staff')h+=staffForm(S.edit.x);
-  else if(S.adminErr)h+='<div class="note bad" role="alert">'+esc(S.adminErr)+'</div>';
-  let b='<div class="chips" style="justify-content:space-between"><span class="muted small">מי נכנס ללוח ההנהלה ומה התפקיד שלו. הכניסה לפי מספר הטלפון.</span><button class="btn" data-act="staff-new">הוספת איש צוות</button></div>';
-  b+=A.staff.map(x=>'<div class="item prow"><div class="t"><b>'+esc(x.name)+(x.self?' <span class="tag grey">(אני)</span>':'')+'</b><span class="tag '+(x.can_manage?'green':'grey')+'">'+esc(rl(x.role_id))+(x.can_manage?' · מנהל/ת הרשאות':'')+'</span></div>'+
-    '<div class="t"><span class="small muted" dir="ltr">'+esc(x.phone)+'</span><span class="small muted">'+(x.layers.length?'שכבות: '+x.layers.map(l=>l+'׳').join(' '):'')+'</span></div>'+
-    '<div class="chips"><button class="btn sec sm" data-act="staff-edit" data-v="'+esc(x.phone)+'">עריכה</button>'+
-    (x.self?'':S.confirmDel===x.phone?'<button class="btn danger sm" data-act="staff-del" data-v="'+esc(x.phone)+'">בטוח? להסיר</button><button class="btn sec sm" data-act="del-cancel">ביטול</button>':'<button class="btn sec sm" data-act="del-ask" data-v="'+esc(x.phone)+'">הסרה</button>')+'</div></div>').join('');
-  h+=panel('אנשי צוות',b);
-  let r='<p class="muted small" style="margin:0">ההרשאות מוגדרות לתפקיד, וכל מי שמשויך אליו מקבל אותן. "לפי שכבות" פירושו שהלוח נפתח על השכבות של אותו אדם.</p>';
-  r+=A.roles.map(x=>'<form class="item rform" data-form="role"><input type="hidden" name="id" value="'+esc(x.id)+'">'+
-    '<div class="frow"><label>שם התפקיד<input name="label" required maxlength="40" value="'+esc(x.label)+'"></label>'+
-    '<label>היקף<select name="scope"><option value="all"'+(x.scope==='all'?' selected':'')+'>כל בית הספר</option><option value="layers"'+(x.scope==='layers'?' selected':'')+'>לפי שכבות</option></select></label></div>'+
-    '<div class="opts">'+['milui','toranut','sayarot','mapat','hespek'].map(k=>'<label class="opt"><input type="checkbox" name="tools" value="'+k+'"'+(x.tools.includes(k)?' checked':'')+'><span>'+tname(k)+'</span></label>').join('')+'</div>'+
-    '<div class="chips"><button class="btn sec sm" type="submit">שמירת התפקיד</button><span class="small muted">'+(x.n?plural(x.n,'איש צוות אחד','אנשי צוות')+' בתפקיד':'אין אנשים בתפקיד')+'</span>'+
-    (x.n?'':'<button class="link" type="button" data-act="role-del" data-v="'+esc(x.id)+'">מחיקת התפקיד</button>')+'</div></form>').join('');
-  r+='<form class="item rform" data-form="role"><input type="hidden" name="id" value=""><div class="frow"><label>תפקיד חדש<input name="label" required maxlength="40" placeholder="למשל: רכז חברתי"></label>'+
-    '<label>היקף<select name="scope"><option value="all">כל בית הספר</option><option value="layers">לפי שכבות</option></select></label></div>'+
-    '<div class="opts">'+['milui','toranut','sayarot','mapat','hespek'].map(k=>'<label class="opt"><input type="checkbox" name="tools" value="'+k+'"><span>'+tname(k)+'</span></label>').join('')+'</div>'+
-    '<div class="chips"><button class="btn sm" type="submit">הוספת תפקיד</button></div></form>';
-  return h+panel('תפקידים ומה כל תפקיד רואה',r);
+  const A=S.admin,RL={};A.roles.forEach(r=>RL[r.id]=r);
+  const tab=S.permTab||'staff';
+  let h='<div class="pills" role="tablist" style="margin-top:0"><button type="button" role="tab" data-act="perm-tab" data-v="staff" aria-pressed="'+(tab==='staff')+'">אנשי צוות ('+A.staff.length+')</button>'+
+    '<button type="button" role="tab" data-act="perm-tab" data-v="roles" aria-pressed="'+(tab==='roles')+'">תפקידים ('+A.roles.length+')</button></div>';
+  if(tab==='staff'){
+    if(S.edit&&S.edit.kind==='staff')h+=staffForm(S.edit.x);
+    else if(S.adminErr)h+='<div class="note bad" role="alert">'+esc(S.adminErr)+'</div>';
+    let b='<div class="chips" style="justify-content:space-between"><span class="muted small">מי נכנס ללוח ההנהלה. הכניסה לפי מספר הטלפון, והכלים והשכבות נקבעים לפי התפקידים.</span><button class="btn" data-act="staff-new">הוספת איש צוות</button></div>';
+    b+=A.staff.map(x=>{
+      const rs=x.roles.map(id=>RL[id]).filter(Boolean),tools=[...new Set(rs.flatMap(r=>r.tools))],noTools=!tools.length;
+      return '<div class="item prow'+(noTools?' s-asking':'')+'"><div class="t"><b>'+esc(x.name)+(x.self?' <span class="tag grey">(אני)</span>':'')+(x.can_manage?' <span class="tag green">מנהל/ת הרשאות</span>':'')+'</b><span class="small muted" dir="ltr">'+esc(x.phone)+'</span></div>'+
+        '<div class="rchips">'+rs.map(r=>'<span class="rchip">'+esc(r.label)+'</span>').join('')+'</div>'+
+        '<div class="small muted">'+(noTools?'<span class="tag orange">אין עדיין כלים פתוחים בתפקידים האלה</span>':'רואה: '+tools.map(k=>viewOf(k)[1]).join(' · '))+'</div>'+
+        '<div class="chips"><button class="btn sec sm" data-act="staff-edit" data-v="'+esc(x.phone)+'">עריכה</button>'+
+        (x.self?'':S.confirmDel===x.phone?'<button class="btn danger sm" data-act="staff-del" data-v="'+esc(x.phone)+'">בטוח? להסיר</button><button class="btn sec sm" data-act="del-cancel">ביטול</button>':'<button class="btn sec sm" data-act="del-ask" data-v="'+esc(x.phone)+'">הסרה</button>')+'</div></div>'}).join('');
+    return h+panel('אנשי צוות',b);
+  }
+  let r='<p class="muted small" style="margin:0">ההרשאות מוגדרות לתפקיד, וכל מי שמשויך אליו מקבל אותן. מי שיש לו כמה תפקידים מקבל את כל הכלים שלהם, והלוח נפתח אצלו על השכבות שלו.</p>';
+  if(S.adminOk&&!S.openRole&&!S.adminErr)r+='<div class="small" style="color:var(--green-ink)" role="status">נשמר.</div>';
+  r+=A.roles.map(x=>{
+    const open=S.openRole===x.id;
+    return '<details class="item ritem"'+(open?' open':'')+' data-role="'+esc(x.id)+'"><summary><span class="tx"><b>'+esc(x.label)+'</b><span class="small muted">'+
+      (x.tools.length?x.tools.map(k=>viewOf(k)[1]).join(' · '):'אין כלים פתוחים')+' · '+layersTxt(x.layers)+'</span></span>'+
+      '<span class="small '+(x.holders.length?'':'muted')+'">'+(x.holders.length?esc(x.holders.join(', ')):'לא משובץ')+'</span></summary>'+(open?roleForm(x):'')+'</details>'}).join('');
+  r+='<details class="item ritem"'+(S.openRole==='new'?' open':'')+' data-role="new"><summary><span class="tx"><b>+ תפקיד חדש</b></span></summary>'+(S.openRole==='new'?roleForm({tools:[],layers:[]}):'')+'</details>';
+  return h+panel('תפקידים: מה כל תפקיד רואה ומי ממלא אותו',r);
 }
 function shell(inner){
   return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand">כנפי רוח<small>הנהלה</small></div>'+
@@ -547,28 +574,34 @@ root.addEventListener('submit',async e=>{
     return}
   const fd=new FormData(f);
   if(f.dataset.form==='staff'){
-    const x={name:fd.get('name'),phone:fd.get('phone'),old_phone:fd.get('old_phone')||null,role_id:fd.get('role_id'),layers:fd.getAll('layers'),can_manage:fd.get('can_manage')==='on'};
+    const x={name:fd.get('name'),phone:fd.get('phone'),old_phone:fd.get('old_phone')||null,roles:fd.getAll('roles'),can_manage:fd.get('can_manage')==='on'};
     S.edit={kind:'staff',x:Object.assign({},x,{old:x.old_phone||'',self:!!(S.edit&&S.edit.x&&S.edit.x.self)})};
+    if(S.edit.x.self)x.can_manage=true;
     return adminDo('hanhala_admin_save_staff',{p:x})}
-  if(f.dataset.form==='role')return adminDo('hanhala_admin_save_role',{p:{id:fd.get('id')||null,label:fd.get('label'),scope:fd.get('scope'),tools:fd.getAll('tools')}});
+  if(f.dataset.form==='role')return adminDo('hanhala_admin_save_role',{p:{id:fd.get('id')||null,label:fd.get('label'),tools:fd.getAll('tools'),layers:fd.getAll('layers')}});
 });
+root.addEventListener('click',e=>{
+  const sm=e.target.closest('details.ritem > summary');if(!sm)return;e.preventDefault();
+  const id=sm.parentElement.dataset.role;S.openRole=S.openRole===id?null:id;S.adminErr=null;S.adminOk=false;render();
+  const el=root.querySelector('details.ritem[data-role="'+id+'"]');if(el&&S.openRole)el.scrollIntoView({block:'nearest'});
+},true);
 root.addEventListener('change',e=>{
   const t=e.target;
   if(t.dataset.pref){const p=pref(),k=t.dataset.pref==='tool'?'hideTools':'hideUrg',v=t.dataset.pref==='tool'?t.value:+t.value;
-    p[k]=t.checked?p[k].filter(x=>x!==v):p[k].concat([v]);return savePrefs({hideTools:p.hideTools,hideUrg:p.hideUrg})}
-  if(t.hasAttribute('data-rolesel')){const r=S.admin.roles.find(r=>r.id===t.value),box=t.form.querySelector('[data-layers]');if(box)box.hidden=!(r&&r.scope==='layers')}
+    p[k]=t.checked?p[k].filter(x=>x!==v):p[k].concat([v]);return savePrefs(p)}
 });
 root.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');if(g){S.view=g.dataset.go;S.filter=0;S.saved=null;S.edit=null;S.confirmDel=null;S.adminErr=null;if(S.view==='perms'&&S.user.can_manage){loadAdmin().then(render)}history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
-  if(a==='staff-new'){S.adminErr=null;S.edit={kind:'staff',x:{name:'',phone:'',role_id:S.admin.roles[0].id,layers:[],can_manage:false}};render();window.scrollTo(0,0);return}
+  if(a==='staff-new'){S.adminErr=null;S.edit={kind:'staff',x:{name:'',phone:'',roles:[],can_manage:false}};render();window.scrollTo(0,0);return}
   if(a==='staff-edit'){S.adminErr=null;const x=S.admin.staff.find(x=>x.phone===b.dataset.v);S.edit={kind:'staff',x:Object.assign({},x,{old:x.phone})};render();window.scrollTo(0,0);return}
   if(a==='edit-cancel'){S.edit=null;S.adminErr=null;return render()}
   if(a==='del-ask'){S.confirmDel=b.dataset.v;return render()}
   if(a==='del-cancel'){S.confirmDel=null;return render()}
   if(a==='staff-del')return adminDo('hanhala_admin_delete_staff',{p_target:b.dataset.v});
   if(a==='role-del')return adminDo('hanhala_admin_delete_role',{p_id:b.dataset.v});
-  if(a==='house'){S.house=b.dataset.v;return render()}
+  if(a==='house'){S.house=b.dataset.v;render();const p=Object.assign(pref(),{house:S.house});S.user.prefs=p;rpc('hanhala_save_prefs',{p_phone:S.phone,p_prefs:p}).catch(e=>console.error(e));return}
+  if(a==='perm-tab'){S.permTab=b.dataset.v;S.edit=null;S.openRole=null;S.adminErr=null;S.adminOk=false;return render()}
   if(a==='filter'){const v=+b.dataset.v;S.filter=S.filter===v?0:v;return render()}
   if(a==='logout')return logout();
   if(a==='refresh')return refresh(true);
