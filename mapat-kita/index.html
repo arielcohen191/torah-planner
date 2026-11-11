@@ -1087,7 +1087,7 @@ function parseReadingBook(wb){
     const teacher=((g.flat().find(c=>c.includes("שם המורה"))||"").replace(/^.*שם המורה\s*:?\s*/,""));
     const period=g.flat().find(c=>c.includes("תשפ"))||"";
     const recs=[],rep={merged:[],dups:[],onlyP:[],onlyS:[]};const exact=n=>recs.find(x=>rtoks(x.n).join(" ")===rtoks(n).join(" "));
-    if(hdr>=0)for(const r of g.slice(hdr+1)){if(r.some(c=>c.includes("מספר תלמידים")))break;r.slice(0,5).forEach((c,j)=>{if(!c)return;const e=exact(c);if(e){rep.dups.push(c+" (מופיע בשני פרופילים — נקלט: "+PROF_SHORT[e.p]+")");return}recs.push({n:c,p:j,s:"",c:"",sc:false})})}
+    if(hdr>=0)for(const r of g.slice(hdr+1)){if(r.some(c=>c.includes("מספר תלמידים")))break;r.slice(0,5).forEach((c,j)=>{if(!c)return;const e=exact(c);if(e){rep.dups.push(e.p===j?c+" — רשום פעמיים באותו פרופיל ("+PROF_SHORT[j]+")":c+" — רשום בשני פרופילים שונים: "+PROF_SHORT[e.p]+" וגם "+PROF_SHORT[j]+" (נקלט: "+PROF_SHORT[e.p]+")");return}recs.push({n:c,p:j,s:"",c:"",sc:false})})}
     if(sc>=0)for(const r of g.slice(sc+1)){if(!r[0])continue;let e=exact(r[0]);
       if(!e){const c=bestMatch(r[0],recs.filter(x=>!x.sc));if(c){e=c;rep.merged.push([e.n,r[0]])}}
       if(!e){e={n:r[0],p:null,s:"",c:""};recs.push(e)}else if(rtoks(r[0]).length>=rtoks(e.n).length)e.n=r[0];
