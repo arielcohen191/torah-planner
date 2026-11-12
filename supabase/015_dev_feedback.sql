@@ -72,3 +72,5 @@ alter table public.hanhala_staff add column if not exists org_email text;
 -- (מיגרציה "hanhala_data_other_note") hanhala_data מחזירה גם other_note בשיבוצי מילוי מקום, לזיהוי "איחוד עם כיתה אחרת" באריחי מסך הבית.
 
 -- (מיגרציה "mk_sync_first_tab_wins") mk_sync: כשיש שתי לשוניות לאותה כיתה נקלטת הראשונה, והשאר מוחזרות ב-skipped.
+
+-- (מיגרציה "mk_sync_skip_old_tabs") mk_sync מדלגת גם על לשוניות שיש בשמן "ישן" (לשוניות משנה שעברה).
