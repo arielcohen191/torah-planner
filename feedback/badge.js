@@ -38,6 +38,7 @@
     document.body.appendChild(b);
     /* אם בתחתית המסך יש סרגל קבוע (למשל ניווט תחתון בנייד), הכפתור עולה מעליו */
     function place(){
+      if(d&&d.open)return;
       var off=0,y=innerHeight-4;
       document.elementsFromPoint(24,y).forEach(function(el){
         if(el===b||b.contains(el)||el===document.body||el===document.documentElement)return;
