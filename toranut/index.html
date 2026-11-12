@@ -1276,5 +1276,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.modal){S.modal=nu
 
 (async()=>{render();if(!S.phone)return;try{await load();render()}catch(e){if(e.message==='no_access'){S.phone=null;renderLogin('המספר הזה לא מורשה להיכנס.')}else root.innerHTML='<div class="loading">שגיאה בטעינה: '+esc(e.message)+'</div>'}})();
 </script>
+<script src="/feedback/badge.js" defer></script>
 </body>
 </html>

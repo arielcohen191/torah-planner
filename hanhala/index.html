@@ -62,6 +62,8 @@ h2{margin:0;font-size:20px;font-weight:600}
 .btn.sm{min-height:40px;padding:0 14px;font-size:15px}
 .btn.danger{background:var(--red)}.btn.danger:hover{background:#a3221a}
 .prow{gap:8px}
+.fbbody{white-space:pre-wrap;font-size:17px}
+.rail .cnt{display:inline-block;min-width:20px;padding:0 6px;border-radius:999px;background:var(--red);color:#fff;font-size:12px;font-weight:700;line-height:20px;text-align:center}
 .rchips{display:flex;flex-wrap:wrap;gap:6px}
 .rchip{background:#e7f1fb;color:var(--brand-dark);border-radius:999px;padding:3px 12px;font-size:14px;font-weight:500}
 .ritem{padding:0}
@@ -185,6 +187,8 @@ const sameSet=(a,b)=>a.length===b.length&&a.every(x=>b.includes(x));
 const myHouse=()=>{const L=(S.user&&S.user.layers)||[];if(!L.length)return 'all';const h=HOUSES.find(h=>sameSet(h.layers,L));return h?h.id:'mine'};
 const H=()=>S.house==='mine'?{id:'mine',label:'השכבות שלי',layers:S.user.layers}:HOUSES.find(h=>h.id===S.house)||null;
 const allowed=k=>!!(S.user&&S.user.tools.includes(k));
+const isDev=()=>!!(S.user&&(S.user.roles||[]).some(r=>r.id==='sysadmin'));
+const canSee=v=>v==='home'||v==='prefs'||(v==='perms'?!!(S.user&&S.user.can_manage):v==='feedback'?isDev():allowed(v));
 const clsIn=c=>{const h=H();return !h||h.layers.includes(String(c).trim()[0])};
 const layerLetters=t=>{t=String(t||'');const m=t.match(/\(([^)]+)\)/);return ((m?m[1]:t).match(/[א-ו]/g))||[]};
 const SUBJ={torah:'חומש',navi:'נביא',mishna:'משנה',gemara:'גמרא',halacha:'הלכה',math:'מתמטיקה',hebrew:'עברית',science:'מדעים',other:'אחר'};
@@ -196,11 +200,12 @@ try{S.phone=localStorage.getItem('hanhala_phone')||localStorage.getItem('milui_p
 const root=document.getElementById('root');
 function schoolDay(s){let d=s;for(let i=0;i<7&&dow(d)===6;i++)d=addDays(d,1);return d}
 S.date=schoolDay(today());
-const hashView=()=>{const k=location.hash.slice(1);return ['milui','toranut','sayarot','mapat','hespek','prefs','perms'].includes(k)?k:'home'};
+const hashView=()=>{const k=location.hash.slice(1);return ['milui','toranut','sayarot','mapat','hespek','prefs','perms','feedback'].includes(k)?k:'home'};
 S.view=hashView();
 
 const ICON={
  ok:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M7 12.5l3.2 3.2L17 9"/></svg>',
+ fb:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
  prefs:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>',
  perms:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
  home:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
@@ -227,7 +232,7 @@ async function loadData(){
   S.mk=r.mk||null;S.dataMonth=m;
   if(!S.house){const ph=pref().house;S.house=(ph==='all'||HOUSES.some(h=>h.id===ph)||(ph==='mine'&&S.user.layers.length))?ph:myHouse()}
   if(S.house==='mine'&&!S.user.layers.length)S.house='all';
-  if(S.view!=='home'&&S.view!=='prefs'&&!(S.view==='perms'?S.user.can_manage:allowed(S.view)))S.view='home';
+  if(!canSee(S.view))S.view='home';
 }
 async function loadAll(force){
   if(force){S.dataMonth=null;S.say=null;S.plans=null}
@@ -240,6 +245,7 @@ async function loadAll(force){
   ]);
   if(!allowed('sayarot'))S.say=null;if(!allowed('hespek'))S.plans=null;
   if(S.view==='perms'&&S.user&&S.user.can_manage&&!S.admin)await loadAdmin();
+  if(isDev()){await part('fb',async()=>{S.fbOpen=await rpc('hanhala_feedback_open',{p_phone:S.phone})});if(S.view==='feedback')await loadFb()}
   S.loadedAt=new Date();
 }
 
@@ -346,6 +352,7 @@ function tasks(){
     if(e.length&&!o.done)add(2,'sayarot',o.name+' · '+o.hour+': עוד לא נבחרו תלמידים',e.map(g=>g.cls).join(', '))});
   if(S.mk){const m=S.mk,n=(m.classes_synced||[]).filter(c=>clsIn(c.name)).length,tot=mkTotal();
     if(n<tot)add(3,'mapat','מפת כיתה: יש נתונים רק ל־'+n+' מתוך '+tot+' כיתות','לקראת הישיבות הפדגוגיות · '+plural(m.q_filled,'שאלון צוות אחד מולא','שאלוני צוות מולאו'))}
+  if(isDev()&&S.fbOpen)add(2,'feedback',plural(S.fbOpen,'משוב חדש אחד','משובים חדשים')+' מהצוות','תקלות, רעיונות ושאלות שנשלחו מכפתור המשוב');
   if(S.plans&&S.staffN&&!H()){const st=S.staffN;
     if(S.plans.length<st)add(3,'hespek','תוכניות הספק: '+S.plans.length+' מתוך '+st+' מורים שמרו תוכנית','')}
   return out.sort((a,b)=>a.u-b.u);
@@ -363,7 +370,7 @@ function viewHome(){
   else if(!show.length)body='<div class="okline">'+ICON.ok+(f?'אין משימות בקבוצה הזאת.':'אין משימות פתוחות. הכול מטופל.')+'</div>';
   else [1,2,3].forEach(u=>{const g=show.filter(t=>t.u===u);if(!g.length)return;
     body+='<div class="ghead '+URG[u][1]+'">'+URG[u][0]+'<span>'+g.length+'</span></div>'+g.map(t=>
-     '<button type="button" class="item task '+URG[u][2]+'" data-go="'+t.tool+'"><span class="tx"><b>'+esc(t.title)+'</b>'+(t.sub?'<span class="small muted">'+esc(t.sub)+'</span>':'')+'</span><span class="tag '+URG[u][3]+'">'+viewOf(t.tool)[1]+' ←</span></button>').join('')});
+     '<button type="button" class="item task '+URG[u][2]+'" data-go="'+t.tool+'"><span class="tx"><b>'+esc(t.title)+'</b>'+(t.sub?'<span class="small muted">'+esc(t.sub)+'</span>':'')+'</span><span class="tag '+URG[u][3]+'">'+(t.tool==='feedback'?'משובים':viewOf(t.tool)[1])+' ←</span></button>').join('')});
   h+='<section class="card tool"><div class="thead"><h2>משימות לפי דחיפות</h2>'+(f?'<button class="link" style="color:#fff" data-act="filter" data-v="0">הצג הכול</button>':'')+'</div><div class="tbody">'+body+'</div></section>';
   return h;
 }
@@ -527,19 +534,41 @@ function viewPerms(){
   r+='<details class="item ritem"'+(S.openRole==='new'?' open':'')+' data-role="new"><summary><span class="tx"><b>+ תפקיד חדש</b></span></summary>'+(S.openRole==='new'?roleForm({tools:[],layers:[]}):'')+'</details>';
   return h+panel('תפקידים: מה כל תפקיד רואה ומי ממלא אותו',r);
 }
+/* ---------- משובים מהצוות (מנהל מערכת בלבד) ---------- */
+const FBK={bug:['תקלה','red'],idea:['רעיון','green'],question:['שאלה','orange']};
+const FBS={new:'חדש',doing:'בטיפול',done:'טופל'};
+async function loadFb(){try{S.fb=await rpc('hanhala_feedback_list',{p_phone:S.phone});S.fbErr=null;S.fbOpen=S.fb.filter(x=>x.status==='new').length}catch(e){S.fbErr='המשובים לא נטענו. נסו לרענן.'}}
+function viewFeedback(){
+  if(!isDev())return '<div class="note bad">המסך הזה פתוח רק למנהל המערכת.</div>';
+  if(!S.fb)return S.fbErr?'<div class="note bad">'+esc(S.fbErr)+'</div>':panel('משובים',skel);
+  const c=k=>S.fb.filter(x=>x.status===k).length,f=S.fbFilter;
+  let h='<section class="kpis k3" aria-label="משובים לפי מצב">'+kpiBtn('k-red','חדשים','עוד לא טופלו',c('new'),'fb-filter','new','הצג',f==='new')+
+    kpiBtn('k-orange','בטיפול','בעבודה',c('doing'),'fb-filter','doing','הצג',f==='doing')+kpiBtn('k-green','טופלו','סגורים',c('done'),'fb-filter','done','הצג',f==='done')+'</section>';
+  if(S.fbErr)h+='<div class="note bad" role="alert">'+esc(S.fbErr)+'</div>';
+  const list=S.fb.filter(x=>f?x.status===f:x.status!=='done');
+  const wa=ph=>'https://wa.me/972'+String(ph).replace(/^0/,'');
+  const b=list.length?list.map(x=>{const k=FBK[x.kind]||FBK.bug,dt=new Date(x.created_at);
+    return '<div class="item '+(x.status==='new'?'s-open':x.status==='doing'?'s-asking':'s-ok')+'"><div class="t"><b><span class="tag '+k[1]+'">'+k[0]+'</span> '+esc(x.tool)+'</b><span class="small muted">'+esc(x.name)+' · '+dt.getDate()+'.'+(dt.getMonth()+1)+' '+pad(dt.getHours())+':'+pad(dt.getMinutes())+'</span></div>'+
+      '<div class="fbbody">'+esc(x.body)+'</div>'+(x.page?'<div class="small muted" dir="ltr" style="text-align:right">'+esc(x.page)+'</div>':'')+
+      '<div class="chips">'+['new','doing','done'].filter(s=>s!==x.status).map(s=>'<button class="btn sec sm" data-act="fb-set" data-id="'+x.id+'" data-v="'+s+'">'+(s==='new'?'החזרה לחדש':s==='doing'?'סימון בטיפול':'סימון טופל')+'</button>').join('')+
+      (x.phone?'<a class="btn sec sm" href="'+wa(x.phone)+'" target="_blank" rel="noopener">מענה בוואטסאפ</a>':'')+'</div></div>'}).join('')
+    :'<div class="empty">'+(f?'אין משובים במצב הזה.':'אין משובים פתוחים.')+'</div>';
+  return h+panel(f?'משובים: '+FBS[f]:'משובים פתוחים (חדשים ובטיפול)',b);
+}
 function shell(inner){
   return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand">כנפי רוח<small>הנהלה</small></div>'+
    navViews().map(([k,l])=>'<button type="button" data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>').join('')+
    '<div class="spacer"></div>'+
    '<button type="button" data-go="prefs"'+(S.view==='prefs'?' aria-current="page"':'')+'>'+ICON.prefs+'התאמה אישית</button>'+
    (S.user&&S.user.can_manage?'<button type="button" data-go="perms"'+(S.view==='perms'?' aria-current="page"':'')+'>'+ICON.perms+'הרשאות</button>':'')+
+   (isDev()?'<button type="button" data-go="feedback"'+(S.view==='feedback'?' aria-current="page"':'')+'>'+ICON.fb+'משובים'+(S.fbOpen?'<span class="cnt" aria-label="'+S.fbOpen+' חדשים">'+S.fbOpen+'</span>':'')+'</button>':'')+
    '<div class="who">'+esc(S.user?S.user.name:'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+'</main></div>';
 }
 function render(){
   if(!S.phone)return renderLogin();
   if(!S.user){root.innerHTML=S.err.data?'<div class="login"><div class="card"><h1>לוח הנהלה</h1><div class="err">אין חיבור לשרת כרגע.</div><button class="btn wide" data-act="refresh">ניסיון נוסף</button></div></div>':'<div class="loading">טוען…</div>';return}
-  const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view),setv=S.view==='prefs'||S.view==='perms';
-  const title=S.view==='home'?greet(S.user.name):S.view==='prefs'?'התאמה אישית':S.view==='perms'?'ניהול הרשאות':v[1];
+  const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view),setv=S.view==='prefs'||S.view==='perms'||S.view==='feedback';
+  const title=S.view==='home'?greet(S.user.name):S.view==='prefs'?'התאמה אישית':S.view==='perms'?'ניהול הרשאות':S.view==='feedback'?'משובים מהצוות':v[1];
   let h='<header class="card topbar"><div><h1>'+esc(title)+'</h1><div class="muted">'+(setv?esc(S.user.role_label):(S.view==='home'?esc(S.user.role_label)+' · ':'תמונת מצב · ')+fmtFull(S.date)+(isToday?' · היום':'')+(S.loadedAt?' · עודכן '+pad(S.loadedAt.getHours())+':'+pad(S.loadedAt.getMinutes()):''))+'</div></div>'+
     (setv?'':'<div class="chips"><button class="btn sec" data-act="day" data-n="-1">יום קודם</button><button class="btn sec" data-act="today" aria-pressed="'+isToday+'">היום</button><button class="btn sec" data-act="day" data-n="1">יום הבא</button><button class="btn" data-act="refresh">'+(S.busy?'מרענן…':'רענון')+'</button></div>')+'</header>';
   if(!setv){
@@ -550,7 +579,7 @@ function render(){
     if(hol)h+='<div class="card banner">'+esc(hol)+' — אין לימודים ביום הזה.</div>';
     if(S.view==='home'&&!S.user.tools.length)h+='<div class="note">לתפקיד שלך עדיין לא נפתחו כלים בלוח. פנו למנהל בית הספר.</div>';
   }
-  h+=({home:viewHome,milui:viewMilui,toranut:viewToranut,sayarot:viewSayarot,mapat:viewMapat,hespek:viewHespek,prefs:viewPrefs,perms:viewPerms}[S.view]||viewHome)();
+  h+=({home:viewHome,milui:viewMilui,toranut:viewToranut,sayarot:viewSayarot,mapat:viewMapat,hespek:viewHespek,prefs:viewPrefs,perms:viewPerms,feedback:viewFeedback}[S.view]||viewHome)();
   root.innerHTML=shell(h);
 }
 function renderLogin(err){
@@ -591,7 +620,7 @@ root.addEventListener('change',e=>{
     p[k]=t.checked?p[k].filter(x=>x!==v):p[k].concat([v]);return savePrefs(p)}
 });
 root.addEventListener('click',e=>{
-  const g=e.target.closest('[data-go]');if(g){S.view=g.dataset.go;S.filter=0;S.saved=null;S.edit=null;S.confirmDel=null;S.adminErr=null;if(S.view==='perms'&&S.user.can_manage){loadAdmin().then(render)}history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
+  const g=e.target.closest('[data-go]');if(g){S.view=g.dataset.go;S.filter=0;S.saved=null;S.edit=null;S.confirmDel=null;S.adminErr=null;if(S.view==='perms'&&S.user.can_manage){loadAdmin().then(render)}if(S.view==='feedback'&&isDev()){loadFb().then(render)}history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   if(a==='staff-new'){S.adminErr=null;S.edit={kind:'staff',x:{name:'',phone:'',roles:[],can_manage:false}};render();window.scrollTo(0,0);return}
   if(a==='staff-edit'){S.adminErr=null;const x=S.admin.staff.find(x=>x.phone===b.dataset.v);S.edit={kind:'staff',x:Object.assign({},x,{old:x.phone})};render();window.scrollTo(0,0);return}
@@ -601,6 +630,9 @@ root.addEventListener('click',e=>{
   if(a==='staff-del')return adminDo('hanhala_admin_delete_staff',{p_target:b.dataset.v});
   if(a==='role-del')return adminDo('hanhala_admin_delete_role',{p_id:b.dataset.v});
   if(a==='house'){S.house=b.dataset.v;render();const p=Object.assign(pref(),{house:S.house});S.user.prefs=p;rpc('hanhala_save_prefs',{p_phone:S.phone,p_prefs:p}).catch(e=>console.error(e));return}
+  if(a==='fb-filter'){S.fbFilter=S.fbFilter===b.dataset.v?null:b.dataset.v;return render()}
+  if(a==='fb-set'){const id=+b.dataset.id,st=b.dataset.v,f=(S.fb||[]).find(x=>x.id===id);if(f){const was=f.status;f.status=st;S.fbErr=null;S.fbOpen=(S.fb||[]).filter(x=>x.status==='new').length;render();
+    rpc('hanhala_feedback_set',{p_phone:S.phone,p_id:id,p_status:st}).catch(e=>{console.error(e);f.status=was;S.fbOpen=(S.fb||[]).filter(x=>x.status==='new').length;S.fbErr='העדכון לא נשמר. נסו שוב.';render()})}return}
   if(a==='perm-tab'){S.permTab=b.dataset.v;S.edit=null;S.openRole=null;S.adminErr=null;S.adminOk=false;return render()}
   if(a==='filter'){const v=+b.dataset.v;S.filter=S.filter===v?0:v;return render()}
   if(a==='logout')return logout();
@@ -610,8 +642,9 @@ root.addEventListener('click',e=>{
 });
 /* רענון אוטומטי כשחוזרים ללשונית אחרי יותר מ־5 דקות */
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.phone&&S.loadedAt&&Date.now()-S.loadedAt>3e5)refresh(true)});
-window.addEventListener('popstate',()=>{S.view=hashView();if(S.user&&S.view!=='home'&&S.view!=='prefs'&&!(S.view==='perms'?S.user.can_manage:allowed(S.view)))S.view='home';if(S.phone){if(S.view==='perms'&&S.user&&S.user.can_manage&&!S.admin)loadAdmin().then(render);render()}});
+window.addEventListener('popstate',()=>{S.view=hashView();if(S.user&&!canSee(S.view))S.view='home';if(S.view==='feedback'&&S.user&&isDev())loadFb().then(render);if(S.phone){if(S.view==='perms'&&S.user&&S.user.can_manage&&!S.admin)loadAdmin().then(render);render()}});
 if(S.phone)refresh(true);else renderLogin();
 </script>
+<script src="/feedback/badge.js" defer></script>
 </body>
 </html>
