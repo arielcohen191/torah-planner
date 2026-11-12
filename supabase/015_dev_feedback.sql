@@ -64,3 +64,9 @@ begin return (select count(*) from public.dev_feedback where status = 'new'); en
 revoke all on function public._hanhala_dev(text) from public, anon, authenticated;
 revoke all on function public.feedback_send(jsonb), public.hanhala_feedback_list(text), public.hanhala_feedback_set(text,bigint,text), public.hanhala_feedback_open(text) from public;
 grant execute on function public.feedback_send(jsonb), public.hanhala_feedback_list(text), public.hanhala_feedback_set(text,bigint,text), public.hanhala_feedback_open(text) to anon, authenticated;
+
+-- (מיגרציה "staff_org_email") מייל ארגוני לאנשי צוות, להתחברות עתידית עם גוגל. נקלט מדף קשר הצוות (רק המייל הארגוני, בלי פרטים אישיים אחרים).
+alter table public.milui_teachers add column if not exists org_email text;
+alter table public.hanhala_staff add column if not exists org_email text;
+
+-- (מיגרציה "hanhala_data_other_note") hanhala_data מחזירה גם other_note בשיבוצי מילוי מקום, לזיהוי "איחוד עם כיתה אחרת" באריחי מסך הבית.

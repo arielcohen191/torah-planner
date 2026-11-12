@@ -62,6 +62,15 @@ h2{margin:0;font-size:20px;font-weight:600}
 .btn.sm{min-height:40px;padding:0 14px;font-size:15px}
 .btn.danger{background:var(--red)}.btn.danger:hover{background:#a3221a}
 .prow{gap:8px}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
+.wcard{display:flex;flex-direction:column;overflow:hidden}
+.whead{border:0;font:inherit;color:#fff;text-align:right;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;min-height:76px}
+.whead>span:first-child{display:flex;flex-direction:column;gap:2px}.whead b{font-size:19px;font-weight:600}.whead .small{opacity:.9;text-decoration:underline;text-underline-offset:3px}
+.whead .wn{font-size:46px;line-height:46px;font-weight:200}
+.whead:hover{filter:brightness(1.06)}.whead:focus-visible{outline:3px solid #1f2a37;outline-offset:-3px}
+.wbody{padding:6px 16px 12px;display:flex;flex-direction:column}
+.wrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.wrow:last-of-type{border-bottom:0}.wrow b{font-weight:600;font-size:16px}
 .fbbody{white-space:pre-wrap;font-size:17px}
 .rail .cnt{display:inline-block;min-width:20px;padding:0 6px;border-radius:999px;background:var(--red);color:#fff;font-size:12px;font-weight:700;line-height:20px;text-align:center}
 .rchips{display:flex;flex-wrap:wrap;gap:6px}
@@ -226,7 +235,7 @@ async function loadData(){
   if(r.milui){const d=r.milui;
     d.T={};d.teachers.forEach(t=>d.T[t.id]=t);
     d.slots=d.slots.map(a=>({id:a[0],tid:a[1],day:a[2],hour:a[3],kind:a[4],subject:a[5]||'',classes:a[6]||[]}));
-    d.byTD={};d.slots.forEach(s=>{(d.byTD[s.tid+'|'+s.day]=d.byTD[s.tid+'|'+s.day]||[]).push(s)});
+    d.byTD={};d.SL={};d.slots.forEach(s=>{d.SL[s.id]=s;(d.byTD[s.tid+'|'+s.day]=d.byTD[s.tid+'|'+s.day]||[]).push(s)});
     S.milui=d}else S.milui=null;
   S.tor=r.tor?{data:{staff:r.tor.staff,plan:r.tor.plan,yards:r.tor.yards,absLocal:r.tor.absLocal},abs:r.tor.abs||[],updated_at:r.tor.updated_at,updated_by:r.tor.updated_by}:null;
   S.mk=r.mk||null;S.dataMonth=m;
@@ -358,7 +367,65 @@ function tasks(){
   return out.sort((a,b)=>a.u-b.u);
 }
 const URG={1:['דחוף','k-red','s-open','red'],2:['להיום','k-orange','s-asking','orange'],3:['למעקב','k-blue','s-info','grey']};
+/* ---------- אריחי מסך הבית: כל משתמש בוחר מה מוצג לו ---------- */
+const WIDGETS=[['absent','מי נעדר היום','milui'],['open','שיעורים בלי מורה','milui'],['merged','שיעורים עם איחוד כיתות','milui'],['covered','מי מחליף את מי','milui'],
+  ['duty','תורנים נעדרים','toranut'],['patrols','יציאות סיירות','sayarot'],['tasks','משימות לפי דחיפות',null]];
+const myWidgets=()=>{const p=pref().widgets,ok=w=>!w[2]||allowed(w[2]);
+  if(Array.isArray(p))return WIDGETS.filter(w=>p.includes(w[0])&&ok(w));
+  return WIDGETS.filter(w=>ok(w)&&(w[0]==='tasks'||(['absent','open','merged'].includes(w[0]))))};
+const slotTxt=s=>'שעה '+s.hour+' · '+s.classes.map(cls).join(', ')+(s.subject?' · '+s.subject:'');
+const tName=id=>(S.milui&&S.milui.T[id]||{}).name||'';
+function mergedItems(date){
+  if(!S.milui||holiday(date))return[];const d=dow(date),out=[];
+  S.milui.assignments.filter(x=>x.date===date).forEach(x=>{const s=S.milui.SL[x.slot_id];if(!s||!s.classes.some(clsIn))return;
+    if(x.status==='other'&&/איחוד/.test(x.other_note||''))out.push({slot:s,with:'',who:'',note:x.other_note});
+    else if(x.status==='assigned'&&x.substitute_id){const own=(S.milui.byTD[x.substitute_id+'|'+d]||[]).find(o=>o.hour===s.hour&&isLesson(o));
+      if(own)out.push({slot:s,with:own.classes.map(cls).join(', '),who:tName(x.substitute_id)})}});
+  return out.sort((a,b)=>a.slot.hour-b.slot.hour);
+}
+function wCard(id,title,tool,n,tone,rows,empty){
+  const max=6,more=rows.length-max;
+  return '<section class="card wcard"><button type="button" class="whead '+tone+'" data-go="'+tool+'"><span><b>'+title+'</b><span class="small">'+viewOf(tool)[1]+' ←</span></span><span class="wn">'+n+'</span></button><div class="wbody">'+
+    (rows.length?rows.slice(0,max).join('')+(more>0?'<button type="button" class="link" data-go="'+tool+'">ועוד '+more+' ←</button>':''):'<div class="empty">'+empty+'</div>')+'</div></section>';
+}
+const wrow=(main,sub,tag)=>'<div class="wrow"><div><b>'+main+'</b>'+(sub?'<div class="small muted">'+sub+'</div>':'')+'</div>'+(tag||'')+'</div>';
+function widget(id){
+  const date=S.date,hol=holiday(date);
+  if(['absent','open','merged','covered'].includes(id)&&!S.milui)return wCard(id,viewOfW(id),'milui','–','k-blue',[],S.err.milui?'הנתונים לא נטענו.':'טוען…');
+  if(id==='absent'){const L=hol?[]:absHouse(date);
+    return wCard(id,'מי נעדר היום','milui',new Set(L.map(a=>a.teacher_id)).size,L.length?'k-blue':'k-green',
+      L.map(a=>wrow(esc(tName(a.teacher_id)),(a.hours?'שעות '+a.hours.join(', '):'כל היום')+(a.date_to&&a.date_to!==a.date_from?' · עד '+shortDate(a.date_to):!a.date_to?' · עד הודעה חדשה':''))),hol?esc(hol):'אין נעדרים.')}
+  if(id==='open'){const L=openItems(date).filter(i=>i.status!=='done'),o=L.filter(i=>i.status==='open').length;
+    return wCard(id,'שיעורים בלי מורה','milui',o,o?'k-red':L.length?'k-orange':'k-green',
+      L.map(i=>wrow(esc(slotTxt(i.slot)),'במקום '+esc(tName(i.abs.teacher_id)),i.status==='open'?'<span class="tag red">פתוח</span>':'<span class="tag orange">בבירור</span>')),hol?esc(hol):'כל השיעורים מכוסים.')}
+  if(id==='merged'){const L=mergedItems(date);
+    return wCard(id,'שיעורים עם איחוד כיתות','milui',L.length,L.length?'k-orange':'k-green',
+      L.map(m=>wrow(esc(slotTxt(m.slot)),m.with?'יחד עם '+esc(m.with)+' · '+esc(m.who):esc(m.note))),hol?esc(hol):'אין איחודי כיתות.')}
+  if(id==='covered'){const L=hol?[]:openItems(date).filter(i=>i.status==='done').map(i=>({i,x:S.milui.assignments.find(x=>x.date===date&&x.slot_id===i.slot.id)}));
+    return wCard(id,'מי מחליף את מי','milui',L.length,'k-green',
+      L.map(({i,x})=>wrow(esc(slotTxt(i.slot)),(x&&x.substitute_id?esc(tName(x.substitute_id)):esc((x&&x.other_note)||'אחר'))+' במקום '+esc(tName(i.abs.teacher_id)))),hol?esc(hol):'אין עדיין שיבוצים.')}
+  if(id==='duty'){if(!S.tor)return wCard(id,'תורנים נעדרים','toranut','–','k-blue',[],S.err.tor?'הנתונים לא נטענו.':'טוען…');
+    const td=torDay(date),L=[];if(!hol)td.shifts.forEach(sh=>sh.rows.forEach(r=>{if(r.gone)L.push({sh:sh.label.split(' (')[0],r})}));
+    const miss=L.filter(x=>!x.r.sub).length;
+    return wCard(id,'תורנים נעדרים','toranut',miss,miss?'k-orange':'k-green',
+      L.map(({sh,r})=>wrow(esc(r.station)+' · '+esc(sh),esc(r.name)+(r.sub?' · מחליף/ה: '+esc(r.sub):''),r.sub?'<span class="tag green">יש מחליף</span>':'<span class="tag orange">אין מחליף</span>')),hol?esc(hol):'כל התורנים במקום.')}
+  if(id==='patrols'){if(!S.say)return wCard(id,'יציאות סיירות','sayarot','–','k-purple',[],S.err.say?'הנתונים לא נטענו.':'טוען…');
+    const L=hol?[]:sayDay(date);
+    return wCard(id,'יציאות סיירות','sayarot',L.length,'k-purple',
+      L.map(o=>wrow(esc(o.name)+' · '+esc(o.hour),o.groups.map(g=>esc(g.cls)+': '+(g.names.length?esc(g.names.join(', ')):'עוד לא נבחרו')).join(' | '),o.done?'<span class="tag green">בוצע</span>':'')),hol?esc(hol):'אין יציאות.')}
+  return '';
+}
+const viewOfW=id=>(WIDGETS.find(w=>w[0]===id)||['',''])[1];
 function viewHome(){
+  const ws=myWidgets(),grid=ws.filter(w=>w[0]!=='tasks');
+  let h='';
+  if(grid.length)h+='<div class="wgrid">'+grid.map(w=>widget(w[0])).join('')+'</div>';
+  if(ws.some(w=>w[0]==='tasks'))h+=viewTasks();
+  if(!ws.length)h+='<div class="note">בחרת להסתיר את כל האריחים. אפשר להחזיר אותם בהתאמה אישית.</div>';
+  h+='<button type="button" class="link" data-go="prefs" style="align-self:flex-start">מה מוצג כאן? התאמה אישית ←</button>';
+  return h;
+}
+function viewTasks(){
   const pf=pref(),all=tasks().filter(t=>!pf.hideTools.includes(t.tool)&&!pf.hideUrg.includes(t.u)),cnt=u=>all.filter(t=>t.u===u).length,f=S.filter;
   const loading=!S.user&&!S.err.data,tile=(u,c,t,sub)=>pf.hideUrg.includes(u)?'':kpiBtn(c,t,sub,loading?'–':cnt(u),'filter',u,'הצג',f===u);
   let h='<section class="kpis k3" aria-label="משימות לפי דחיפות">'+tile(1,'k-red','דחוף','לטיפול מיידי')+tile(2,'k-orange','להיום','לסגור עד סוף היום')+tile(3,'k-blue','למעקב','לא בוער')+'</section>';
@@ -446,7 +513,7 @@ function viewHespek(){
   return h+panel('תוכניות לפי מורה',b);
 }
 /* ---------- התאמה אישית של מסך הבית ---------- */
-const pref=()=>Object.assign({hideTools:[],hideUrg:[],house:null},S.user&&S.user.prefs||{});
+const pref=()=>Object.assign({hideTools:[],hideUrg:[],house:null,widgets:null},S.user&&S.user.prefs||{});
 const toolViews=()=>VIEWS.filter(v=>v[0]!=='home'&&allowed(v[0]));
 async function savePrefs(p){
   S.user.prefs=p;S.saved='saving';render();
@@ -456,9 +523,12 @@ async function savePrefs(p){
 function viewPrefs(){
   const p=pref(),tv=toolViews();
   const chk=(kind,val,label,on)=>'<label class="opt"><input type="checkbox" data-pref="'+kind+'" value="'+val+'"'+(on?' checked':'')+'><span>'+label+'</span></label>';
-  let b='<p class="muted" style="margin:0">הסימון קובע רק מה מופיע ברשימת המשימות במסך הבית. כל הכלים שפתוחים לך נשארים זמינים בסרגל הצד.</p>';
-  b+='<h3 class="sub">משימות מאילו כלים</h3>'+(tv.length?'<div class="opts">'+tv.map(v=>chk('tool',v[0],v[1],!p.hideTools.includes(v[0]))).join('')+'</div>':'<div class="empty">אין כלים פתוחים לתפקיד שלך כרגע.</div>');
-  b+='<h3 class="sub">אילו רמות דחיפות</h3><div class="opts">'+[1,2,3].map(u=>chk('urg',u,URG[u][0],!p.hideUrg.includes(u))).join('')+'</div>';
+  let b='';
+  const wsel=myWidgets().map(w=>w[0]),wav=WIDGETS.filter(w=>!w[2]||allowed(w[2]));
+  b='<h3 class="sub" style="margin-top:0">אריחים במסך הבית</h3><div class="opts">'+wav.map(w=>chk('widget',w[0],w[1],wsel.includes(w[0]))).join('')+'</div>'+
+    '<p class="muted small" style="margin:6px 0 0">כל הכלים שפתוחים לך נשארים זמינים בסרגל הצד, גם אם הסתרת את האריחים שלהם.</p>'+
+    '<h3 class="sub">ברשימת המשימות: משימות מאילו כלים</h3>'+(tv.length?'<div class="opts">'+tv.map(v=>chk('tool',v[0],v[1],!p.hideTools.includes(v[0]))).join('')+'</div>':'<div class="empty">אין כלים פתוחים לתפקיד שלך כרגע.</div>');
+  b+='<h3 class="sub">ברשימת המשימות: אילו רמות דחיפות</h3><div class="opts">'+[1,2,3].map(u=>chk('urg',u,URG[u][0],!p.hideUrg.includes(u))).join('')+'</div>';
   b+='<div class="small '+(S.saved==='err'?'err':'muted')+'" role="status">'+(S.saved==='saving'?'שומר…':S.saved==='ok'?'נשמר. ההעדפה תופיע בכל מכשיר שתיכנס ממנו.':S.saved==='err'?'השמירה נכשלה. נסו שוב.':'')+'</div>';
   return panel('מה מוצג לי במסך הבית',b)+
     panel('התפקידים שלי','<div class="rchips">'+(S.user.roles.length?S.user.roles.map(r=>'<span class="rchip">'+esc(r.label)+'</span>').join(''):'<span class="muted">לא הוגדר תפקיד</span>')+'</div>'+
@@ -616,6 +686,8 @@ root.addEventListener('click',e=>{
 },true);
 root.addEventListener('change',e=>{
   const t=e.target;
+  if(t.dataset.pref==='widget'){const p=pref(),cur=myWidgets().map(w=>w[0]),nx=t.checked?cur.concat([t.value]):cur.filter(x=>x!==t.value);
+    p.widgets=WIDGETS.map(w=>w[0]).filter(x=>nx.includes(x));return savePrefs(p)}
   if(t.dataset.pref){const p=pref(),k=t.dataset.pref==='tool'?'hideTools':'hideUrg',v=t.dataset.pref==='tool'?t.value:+t.value;
     p[k]=t.checked?p[k].filter(x=>x!==v):p[k].concat([v]);return savePrefs(p)}
 });
