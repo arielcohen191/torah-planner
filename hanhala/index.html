@@ -767,7 +767,7 @@ function fbReport(){
     [...new Set(g.map(x=>x.tool))].sort((a,b)=>a.localeCompare(b,'he')).forEach(tool=>{
       L.push('','### '+tool);
       g.filter(x=>x.tool===tool).sort((a,b)=>(a.size||9)-(b.size||9)||a.id-b.id).forEach(x=>{
-        L.push('','**#'+x.id+' · '+(FBK[x.kind]||FBK.bug)[0]+'** · '+x.name+' · '+fbDate(x)+' · '+FBS[x.status]+' · גודל: '+(FBZ[x.size]||'לא הוגדר')+(x.page?' · `'+x.page+'`':''),'',
+        L.push('','**#'+x.id+' · '+(FBK[x.kind]||FBK.bug)[0]+'** · '+x.name+' · '+fbDate(x)+' · '+FBS[x.status]+' · גודל: '+(FBZ[x.size]||'לא הוגדר')+(x.sender_urgency&&FBU[x.sender_urgency]?' · לפי השולח: '+FBU[x.sender_urgency][0]:'')+(x.page?' · `'+x.page+'`':''),'',
           String(x.body).split('\n').map(l=>'> '+l).join('\n'));
         if(x.dev_note)L.push('','הערת מפתח: '+x.dev_note)})})});
   return L.join('\n')+'\n';
@@ -793,7 +793,7 @@ function viewFeedback(){
   let last=-1;
   const b=list.length?list.map(x=>{const k=FBK[x.kind]||FBK.bug,u=x.urgency||0;
     const head=u!==last?'<h3 style="margin:14px 0 6px">'+(u?FBU[u][0]:'ממתינים לדירוג')+' ('+list.filter(y=>(y.urgency||0)===u).length+')</h3>':'';last=u;
-    return head+'<div class="item '+(u===1?'s-open':u===2?'s-asking':u===3?'s-info':'')+'"><div class="t"><b><span class="tag '+k[1]+'">'+k[0]+'</span> '+esc(x.tool)+' <span class="small muted">#'+x.id+'</span></b><span class="small muted">'+esc(x.name)+' · '+fbDate(x)+' · '+FBS[x.status]+'</span></div>'+
+    return head+'<div class="item '+(u===1?'s-open':u===2?'s-asking':u===3?'s-info':'')+'"><div class="t"><b><span class="tag '+k[1]+'">'+k[0]+'</span> '+esc(x.tool)+' <span class="small muted">#'+x.id+'</span>'+(x.sender_urgency&&FBU[x.sender_urgency]?' <span class="tag '+FBU[x.sender_urgency][1]+'">לפי השולח: '+FBU[x.sender_urgency][0]+'</span>':'')+'</b><span class="small muted">'+esc(x.name)+' · '+fbDate(x)+' · '+FBS[x.status]+'</span></div>'+
       '<div class="fbbody">'+esc(x.body)+'</div>'+(x.page?'<div class="small muted" dir="ltr" style="text-align:right">'+esc(x.page)+'</div>':'')+
       '<div class="chips" role="group" aria-label="דחיפות"><span class="small muted">דחיפות:</span>'+[1,2,3].map(n=>'<button class="btn sec sm" data-act="fb-urg" data-id="'+x.id+'" data-v="'+n+'" aria-pressed="'+(u===n)+'">'+FBU[n][0]+'</button>').join('')+'</div>'+
       '<div class="chips" role="group" aria-label="גודל העבודה" style="margin-top:8px"><span class="small muted">גודל:</span>'+[1,2,3].map(n=>'<button class="btn sec sm" data-act="fb-size" data-id="'+x.id+'" data-v="'+n+'" aria-pressed="'+(x.size===n)+'">'+FBZ[n]+'</button>').join('')+'</div>'+

@@ -67,6 +67,8 @@
       d.innerHTML='<form method="dialog" novalidate><h2 id="kfb-t">משוב למפתח</h2><p>תקלה, רעיון או שאלה על הכלי. ההודעה מגיעה ישירות לאריאל.</p>'+
         '<fieldset class="kfb-kinds"><legend>על מה מדובר</legend>'+
         '<label><input type="radio" name="kind" value="bug" checked>תקלה</label><label><input type="radio" name="kind" value="idea">רעיון לשיפור</label><label><input type="radio" name="kind" value="question">שאלה</label></fieldset>'+
+        '<fieldset class="kfb-kinds"><legend>כמה זה דחוף (לא חובה)</legend>'+
+        '<label><input type="radio" name="urg" value="1">דחוף</label><label><input type="radio" name="urg" value="2">חשוב</label><label><input type="radio" name="urg" value="3">יכול לחכות</label></fieldset>'+
         '<label>מה קרה או מה כדאי לשנות<textarea name="body" maxlength="2000" required placeholder="למשל: במסך מילוי מקום, כשלוחצים על שמירה לא קורה כלום"></textarea></label>'+
         '<div class="kfb-row"><label>שם<input name="name" maxlength="60" required autocomplete="name"></label>'+
         '<label>טלפון לחזרה (לא חובה)<input name="phone" type="tel" inputmode="tel" autocomplete="tel"></label></div>'+
@@ -97,7 +99,7 @@
       if(!body){show('צריך לכתוב מה קרה.');f.body.focus();return}
       if(!name){show('צריך למלא שם.');f.name.focus();return}
       btn.disabled=true;btn.textContent='שולח…';err.hidden=true;
-      call('feedback_send',{name:name,phone:phone,tool:TOOL,kind:(f.querySelector('[name=kind]:checked')||{}).value||'bug',body:body,page:location.pathname+location.hash,ua:navigator.userAgent,token:token()})
+      call('feedback_send',{name:name,phone:phone,tool:TOOL,kind:(f.querySelector('[name=kind]:checked')||{}).value||'bug',body:body,page:location.pathname+location.hash,ua:navigator.userAgent,token:token(),urgency:(f.querySelector('[name=urg]:checked')||{}).value||null})
       .then(function(){
         lsSet('fb_name',name);if(phone)lsSet('fb_phone',phone);
         f.innerHTML='<h2 id="kfb-t">תודה!</h2><p class="kfb-ok">המשוב נשלח לאריאל.</p><div class="kfb-act"><button type="button" data-close>סגירה</button><button type="button" class="sec" data-mine>הפניות שלי</button></div>';
