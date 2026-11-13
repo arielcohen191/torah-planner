@@ -504,6 +504,7 @@ function viewToranut(){
   else b+='<div class="shifts">'+td.shifts.map(sh=>'<div class="shift"><h3>'+esc(sh.label)+'</h3>'+sh.rows.map(r=>
     '<div class="duty"><span class="st">'+esc(r.station)+'</span><span class="nm">'+(r.gone?(r.sub?esc(r.sub)+' <span class="tag grey">מחליף/ה</span>':'<span class="gone">'+esc(r.name)+'</span> <span class="tag red">נעדר/ת</span>'):esc(r.name))+'</span></div>').join('')+'</div>').join('')+'</div>';
   if(H())b+='<div class="small muted">מוצגות רק עמדות של '+H().label+' (קומות השכבה והמגרש של היום). שער, אחמ״ש ושאר העמדות הכלליות — בתצוגת "כל בית הספר".</div>';
+  b+='<a class="note" href="/toranut/">כאן מוצג מצב היום, כולל נעדרים ומחליפים. להדפסת הלוח הקבוע לפרסום: בכלי התורנויות, הכפתור "הדפסה לפרסום" ←</a>';
   if(S.tor.updated_at)b+='<div class="small muted">עדכון אחרון: '+esc(S.tor.updated_by||'')+' · '+fmtWhen(S.tor.updated_at)+'</div>';
   return h+panel('תורני היום לפי משמרת',b);
 }

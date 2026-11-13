@@ -342,7 +342,7 @@ function viewBoard(){
   const EK=new Set(emptyKeys());if(S.onlyEmpty)show=show.filter(sh=>[...EK].some(k=>k.startsWith(sh.id+'@')));
   const R2=S.R.people.reduce((m,p)=>(m[p.id]=p,m),{});
   const people=S.data.staff.filter(s=>!prof(s.id).excluded).slice().sort((a,b)=>a.name.localeCompare(b.name,'he'));
-  let h='<div class="card topbar noprint"><div><h1>לוח תורנויות</h1><div class="muted small">לחיצה על משבצת: החלפת תורן. שיבוץ ידני ננעל ונשמר בהרצה הבאה.</div></div><div class="row"><button class="btn sec sm" data-act="print">הדפסה</button><button class="btn sec sm" data-act="csv">הורדה לאקסל</button></div></div>'+
+  let h='<div class="card topbar noprint"><div><h1>לוח תורנויות</h1><div class="muted small">לחיצה על משבצת: החלפת תורן. שיבוץ ידני ננעל ונשמר בהרצה הבאה.</div></div><div class="row"><button class="btn sm" data-act="print" title="הלוח הקבוע, בלי נעדרים ומחליפים של היום">הדפסה לפרסום</button><button class="btn sec sm" data-act="printNow" title="כולל הנעדרים והמחליפים של היום">הדפסת מצב היום</button><button class="btn sec sm" data-act="csv">הורדה לאקסל</button></div></div>'+
     '<div class="card noprint focusbar"><label for="focusSel"><b>תצוגה לפי איש צוות</b></label><select id="focusSel" data-ch="focus"><option value="">— כל הצוות —</option>'+
       people.map(s=>'<option value="'+s.id+'"'+(F&&F.id===s.id?' selected':'')+'>'+esc(s.name)+' ('+R2[s.id].got+'/'+R2[s.id].target+')</option>').join('')+'</select>'+
       (F?'<button class="btn sec sm" data-act="focusPrev">‹ הקודם</button><button class="btn sec sm" data-act="focusNext">הבא ›</button><button class="btn sec sm" data-act="unfocus">ניקוי</button>':'')+'</div>'+
@@ -615,8 +615,8 @@ async function yardsImport(){
 }
 function printYards(){
   const st=document.createElement('style');st.id='pgYards';st.textContent='@page{size:A4 landscape;margin:7mm}';document.head.appendChild(st);
-  document.documentElement.classList.add('print-yards');
-  const done=()=>{document.documentElement.classList.remove('print-yards');const x=document.getElementById('pgYards');if(x)x.remove();window.removeEventListener('afterprint',done)};
+  document.documentElement.classList.add('print-yards');S.printClean=true;render();   // גם דף המגרשים מודפס בלי נעדרי היום
+  const done=()=>{if(!S.printClean)return;S.printClean=false;render();document.documentElement.classList.remove('print-yards');const x=document.getElementById('pgYards');if(x)x.remove();window.removeEventListener('afterprint',done)};
   window.addEventListener('afterprint',done);setTimeout(()=>{window.print();setTimeout(done,1500)},50);
 }
 
@@ -694,7 +694,7 @@ function needSubs(){
 /** איך להציג מחזיק משבצת בלוח/בחצרות (כולל מחליף ונעדר) */
 function holderHtml(k,sid,P,short){
   if(!sid||!P[sid])return '';
-  const now=S.preview?{}:absentNow();
+  const now=S.preview||S.printClean?{}:absentNow();   // בהדפסה לפרסום: הלוח הקבוע, בלי נעדרי היום ומחליפים
   if(now[sid]){const v=validSubs()[k];
     if(v&&P[v.id])return esc(P[v.id].name)+'<span class="ly" style="color:var(--brand-dark)">מחליף/ה'+(short?'':' · במקום '+esc(P[sid].name))+'</span>';
     return '<span style="text-decoration:line-through;opacity:.6">'+esc(P[sid].name)+'</span><span class="ly" style="color:var(--red);font-weight:700">נעדר/ת · חסר מחליף</span>'}
@@ -1188,7 +1188,7 @@ root.addEventListener('click',async e=>{
   else if(a==='import'){S.modal=null;render();importSheet()}
   else if(a==='impPaste'){const t=(document.getElementById('pasteBox')||{}).value||'';if(t.trim())applyImport(parseCSV(t))}
   else if(a==='tab'){S.shiftTab=b.dataset.t;render()}
-  else if(a==='print'){const t=S.shiftTab;S.shiftTab='all';render();setTimeout(()=>{window.print();S.shiftTab=t;render()},50)}
+  else if(a==='print'||a==='printNow'){const t=S.shiftTab;S.shiftTab='all';S.printClean=a==='print';render();setTimeout(()=>{window.print();S.shiftTab=t;S.printClean=false;render()},50)}
   else if(a==='csv')csv();
   else if(a==='sf'){S.staffFilter=b.dataset.f;render()}
   else if(a==='rf'){S.ruleFilter=b.dataset.f;render()}
