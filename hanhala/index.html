@@ -751,6 +751,7 @@ const FBK={bug:['תקלה','red'],idea:['רעיון','green'],question:['שאל�
 const FBS={new:'חדש',doing:'בטיפול',done:'טופל'};
 async function loadFb(){try{S.fb=await rpc('hanhala_feedback_list',{p_phone:S.phone});S.fbErr=null;S.fbOpen=S.fb.filter(x=>x.status==='new').length}catch(e){S.fbErr='המשובים לא נטענו. נסו לרענן.'}}
 const FBU={1:['דחוף','red'],2:['חשוב','orange'],3:['יכול לחכות','grey']};
+const FBZ={1:'קטן',2:'בינוני',3:'פרויקט'};
 const fbOpenList=()=>(S.fb||[]).filter(x=>x.status!=='done');
 const fbDate=x=>{const dt=new Date(x.created_at);return dt.getDate()+'.'+(dt.getMonth()+1)+' '+pad(dt.getHours())+':'+pad(dt.getMinutes())};
 /* דוח משובים פתוחים, מסודר לפי דחיפות ובתוכה לפי כלי. Markdown, להעלאה לקלוד. */
@@ -759,18 +760,19 @@ function fbReport(){
   L.push('# דוח משובים · כנפי רוח','','הופק: '+d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes())+' · '+list.length+' משובים פתוחים','');
   L.push('| דחיפות | כמות |','|---|---|');
   [1,2,3,0].forEach(u=>L.push('| '+(u?FBU[u][0]:'לא דורג')+' | '+list.filter(x=>(x.urgency||0)===u).length+' |'));
+  L.push('','| גודל | כמות |','|---|---|');[1,2,3,0].forEach(z=>L.push('| '+(z?FBZ[z]:'לא הוגדר')+' | '+list.filter(x=>(x.size||0)===z).length+' |'));
   [1,2,3,0].forEach(u=>{const g=list.filter(x=>(x.urgency||0)===u);if(!g.length)return;
     L.push('','## '+(u?u+'. '+FBU[u][0]:'לא דורג')+' ('+g.length+')');
     [...new Set(g.map(x=>x.tool))].sort((a,b)=>a.localeCompare(b,'he')).forEach(tool=>{
       L.push('','### '+tool);
-      g.filter(x=>x.tool===tool).sort((a,b)=>a.id-b.id).forEach(x=>{
-        L.push('','**#'+x.id+' · '+(FBK[x.kind]||FBK.bug)[0]+'** · '+x.name+' · '+fbDate(x)+' · '+FBS[x.status]+(x.page?' · `'+x.page+'`':''),'',
+      g.filter(x=>x.tool===tool).sort((a,b)=>(a.size||9)-(b.size||9)||a.id-b.id).forEach(x=>{
+        L.push('','**#'+x.id+' · '+(FBK[x.kind]||FBK.bug)[0]+'** · '+x.name+' · '+fbDate(x)+' · '+FBS[x.status]+' · גודל: '+(FBZ[x.size]||'לא הוגדר')+(x.page?' · `'+x.page+'`':''),'',
           String(x.body).split('\n').map(l=>'> '+l).join('\n'));
         if(x.dev_note)L.push('','הערת מפתח: '+x.dev_note)})})});
   return L.join('\n')+'\n';
 }
 function fbSave(f,was){
-  return rpc('hanhala_feedback_rank',{p_phone:S.phone,p_id:f.id,p_urgency:f.urgency||null,p_note:f.dev_note||''})
+  return rpc('hanhala_feedback_rank',{p_phone:S.phone,p_id:f.id,p_urgency:f.urgency||null,p_note:f.dev_note||'',p_size:f.size||null})
     .catch(e=>{console.error(e);Object.assign(f,was);S.fbErr='הדירוג לא נשמר. נסו שוב.';render()});
 }
 function viewFeedback(){
@@ -781,7 +783,7 @@ function viewFeedback(){
     kpiBtn('k-orange','בטיפול','בעבודה',c('doing'),'fb-filter','doing','הצג',f==='doing')+kpiBtn('k-green','טופלו','סגורים',c('done'),'fb-filter','done','הצג',f==='done')+'</section>';
   if(S.fbErr)h+='<div class="note bad" role="alert">'+esc(S.fbErr)+'</div>';
   h+='<section class="card tool"><div class="thead"><h2>דוח משובים</h2></div><div class="tbody"><div class="small muted">'+
-    (open.length?open.length+' משובים פתוחים'+(unr?', מתוכם '+unr+' עוד לא דורגו':', כולם דורגו')+'. הדוח מסודר לפי דחיפות ואז לפי כלי.':'אין משובים פתוחים, אין מה להפיק.')+'</div>'+
+    (open.length?open.length+' משובים פתוחים'+(unr?', מתוכם '+unr+' עוד לא דורגו':', כולם דורגו')+'. הדוח מסודר לפי דחיפות ואז לפי כלי, ובכל כלי הקטנים קודם.':'אין משובים פתוחים, אין מה להפיק.')+'</div>'+
     '<div class="chips" style="margin-top:10px"><button class="btn sm" data-act="fb-report" data-v="file"'+(open.length?'':' disabled')+'>הורדת דוח</button>'+
     '<button class="btn sec sm" data-act="fb-report" data-v="copy"'+(open.length?'':' disabled')+'>העתקת הדוח</button>'+
     (S.fbMsg?'<span class="small" role="status">'+esc(S.fbMsg)+'</span>':'')+'</div></div></section>';
@@ -793,6 +795,7 @@ function viewFeedback(){
     return head+'<div class="item '+(u===1?'s-open':u===2?'s-asking':u===3?'s-info':'')+'"><div class="t"><b><span class="tag '+k[1]+'">'+k[0]+'</span> '+esc(x.tool)+' <span class="small muted">#'+x.id+'</span></b><span class="small muted">'+esc(x.name)+' · '+fbDate(x)+' · '+FBS[x.status]+'</span></div>'+
       '<div class="fbbody">'+esc(x.body)+'</div>'+(x.page?'<div class="small muted" dir="ltr" style="text-align:right">'+esc(x.page)+'</div>':'')+
       '<div class="chips" role="group" aria-label="דחיפות"><span class="small muted">דחיפות:</span>'+[1,2,3].map(n=>'<button class="btn sec sm" data-act="fb-urg" data-id="'+x.id+'" data-v="'+n+'" aria-pressed="'+(u===n)+'">'+FBU[n][0]+'</button>').join('')+'</div>'+
+      '<div class="chips" role="group" aria-label="גודל העבודה" style="margin-top:8px"><span class="small muted">גודל:</span>'+[1,2,3].map(n=>'<button class="btn sec sm" data-act="fb-size" data-id="'+x.id+'" data-v="'+n+'" aria-pressed="'+(x.size===n)+'">'+FBZ[n]+'</button>').join('')+'</div>'+
       '<label class="small muted" style="display:block;margin-top:8px">הערת מפתח (נכנסת לדוח)<textarea data-fbnote="'+x.id+'" maxlength="1000" rows="2" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;font:inherit;font-size:16px;color:var(--ink);border:1.5px solid #c9d1db;border-radius:10px;padding:8px 10px">'+esc(x.dev_note||'')+'</textarea></label>'+
       '<div class="chips" style="margin-top:8px">'+['new','doing','done'].filter(s=>s!==x.status).map(s=>'<button class="btn sec sm" data-act="fb-set" data-id="'+x.id+'" data-v="'+s+'">'+(s==='new'?'החזרה לחדש':s==='doing'?'סימון בטיפול':'סימון טופל')+'</button>').join('')+
       (x.phone?'<a class="btn sec sm" href="'+wa(x.phone)+'" target="_blank" rel="noopener">מענה בוואטסאפ</a>':'')+'</div></div>'}).join('')
@@ -867,7 +870,7 @@ root.addEventListener('input',e=>{if(e.target.id==='asQ'){S.asQ=e.target.value;c
 root.addEventListener('change',e=>{
   const t=e.target;
   if(t.dataset.fbnote&&S.realPhone){S.fbErr=VIEWONLY;return render()}
-  if(t.dataset.fbnote){const f=(S.fb||[]).find(x=>x.id===+t.dataset.fbnote);if(f){const was={urgency:f.urgency,dev_note:f.dev_note};f.dev_note=t.value.trim();S.fbErr=null;fbSave(f,was)}return}
+  if(t.dataset.fbnote){const f=(S.fb||[]).find(x=>x.id===+t.dataset.fbnote);if(f){const was={urgency:f.urgency,dev_note:f.dev_note,size:f.size};f.dev_note=t.value.trim();S.fbErr=null;fbSave(f,was)}return}
   if(t.dataset.homeroom!=null)return adminDo('hanhala_admin_set_homeroom',{p_class:t.dataset.homeroom,p_teacher:t.value?+t.value:null},true);
   if(t.dataset.pref==='widget'){const p=pref(),cur=myWidgets().map(w=>w[0]),nx=t.checked?cur.concat([t.value]):cur.filter(x=>x!==t.value);
     p.widgets=WIDGETS.map(w=>w[0]).filter(x=>nx.includes(x));return savePrefs(p)}
@@ -886,8 +889,9 @@ root.addEventListener('click',e=>{
   if(a==='role-del')return adminDo('hanhala_admin_delete_role',{p_id:b.dataset.v});
   if(a==='house'){S.house=b.dataset.v;render();const p=Object.assign(pref(),{house:S.house});S.user.prefs=p;if(!S.realPhone)rpc('hanhala_save_prefs',{p_phone:S.phone,p_prefs:p}).catch(e=>console.error(e));return}
   if(a==='fb-filter'){S.fbFilter=S.fbFilter===b.dataset.v?null:b.dataset.v;return render()}
-  if((a==='fb-set'||a==='fb-urg')&&S.realPhone){S.fbErr=VIEWONLY;return render()}
-  if(a==='fb-urg'){const f=(S.fb||[]).find(x=>x.id===+b.dataset.id),v=+b.dataset.v;if(f){const was={urgency:f.urgency,dev_note:f.dev_note};f.urgency=f.urgency===v?null:v;S.fbErr=null;S.fbMsg=null;render();fbSave(f,was)}return}
+  if((a==='fb-set'||a==='fb-urg'||a==='fb-size')&&S.realPhone){S.fbErr=VIEWONLY;return render()}
+  if(a==='fb-urg'){const f=(S.fb||[]).find(x=>x.id===+b.dataset.id),v=+b.dataset.v;if(f){const was={urgency:f.urgency,dev_note:f.dev_note,size:f.size};f.urgency=f.urgency===v?null:v;S.fbErr=null;S.fbMsg=null;render();fbSave(f,was)}return}
+  if(a==='fb-size'){const f=(S.fb||[]).find(x=>x.id===+b.dataset.id),v=+b.dataset.v;if(f){const was={urgency:f.urgency,dev_note:f.dev_note,size:f.size};f.size=f.size===v?null:v;S.fbErr=null;S.fbMsg=null;render();fbSave(f,was)}return}
   if(a==='fb-report'){const txt=fbReport();
     if(b.dataset.v==='copy'){navigator.clipboard.writeText(txt).then(()=>{S.fbMsg='הדוח הועתק.';render()},()=>{S.fbMsg='ההעתקה נכשלה. אפשר להוריד את הדוח כקובץ.';render()});return}
     const u=URL.createObjectURL(new Blob([txt],{type:'text/markdown;charset=utf-8'})),l=document.createElement('a');l.href=u;l.download='mashov-kanfei-ruach-'+today()+'.md';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);

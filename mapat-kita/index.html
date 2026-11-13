@@ -158,6 +158,13 @@ fieldset h3{font-size:15.5px;margin:18px 0 6px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .ch{border:1px solid var(--line);background:#fff;border-radius:20px;padding:4px 12px;font:inherit;font-size:13.5px;cursor:pointer}
 .ch.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.rolecard{border:1.5px solid #e2d3b3;border-radius:12px;padding:10px 14px;margin:12px 0;background:#fff}
+.rolecard h4{margin:2px 0 8px;font-size:17px}.rolecard h5{margin:14px 0 6px;font-size:14.5px}
+.sclab{font-size:14px;min-width:110px}
+.sc{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}.sc small{color:var(--muted);font-size:13px}
+.sc button{width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font:inherit;font-size:14px}
+.sc button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.sc b{font-size:13.5px;margin-inline-start:8px}
 .cb{display:block;margin-top:14px;font-size:14px}
 .wt{width:100%;border-collapse:collapse}.wt td{padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
 .wt td:first-child{white-space:nowrap;width:70px}
@@ -849,11 +856,10 @@ function drawStaff(){
    <td><select id="r${id}"><option value="none" ${!s.role?"selected":""}>— אין גישה</option>${["teacher","admin","principal"].map(r=>`<option value="${r}" ${s.role==r?"selected":""}>${ROLE_HE[r]}</option>`).join("")}</select></td>
    <td><select id="c${id}"><option value="">—</option>${STAFF_CLASSES.map(c=>`<option ${s.class_name==c?"selected":""}>${esc(c)}</option>`).join("")}</select></td>
    <td>${st(s)} ${s.role?`<button class="btn sm" onclick="pinAction(${id},'reset')" title="מוחק את הסיסמה. בכניסה הבאה המשתמש יבחר סיסמה חדשה">איפוס</button> <button class="btn sm" onclick="pinAction(${id},'set')" title="קביעת סיסמה חדשה ידנית">קביעה</button>`:""}</td>
-   <td><button class="btn primary sm" onclick="saveStaff(${id})">שמירה</button>${s.role?` <a class="btn sm" style="text-decoration:none" href="${waLink(s.phone,inviteTxt(s))}" target="_blank" rel="noopener" title="פותח וואטסאפ עם הודעת הקישור מוכנה לשליחה">וואטסאפ</a>`:""} <span id="m${id}" class="hint" style="margin:0"></span></td></tr>`}).join("")}</table>
+   <td><button class="btn primary sm" onclick="saveStaff(${id})">שמירה</button> <span id="m${id}" class="hint" style="margin:0"></span></td></tr>`}).join("")}</table>
   <p class="hint" style="margin-top:10px">כדי לתת גישה: בוחרים תפקיד, ולמחנך גם כיתה, ושומרים. אחר כך שולחים לאיש הצוות את הקישור. בכניסה הראשונה הוא מקליד את מספר הטלפון שלו ובוחר סיסמה בעצמו. שכח סיסמה? לוחצים "איפוס", ובכניסה הבאה הוא יבחר סיסמה חדשה.</p>`;
 }
 const inviteTxt=s=>`שלום ${s.name.split(" ")[0]}, זה הקישור למפת הכיתה לקראת הישיבות הפדגוגיות: ${location.origin}/mapat-kita/ · נכנסים עם מספר הטלפון שלך, ובכניסה הראשונה בוחרים סיסמה.`;
-const waLink=(ph,txt)=>"https://wa.me/972"+String(ph).replace(/\D/g,"").replace(/^0/,"")+"?text="+encodeURIComponent(txt);
 async function staffCall(id,action,newPin){
   const s=STAFF[id],m=document.getElementById("m"+id),role=document.getElementById("r"+id).value;
   if(action&&role==="none"){m.textContent="קודם צריך לשייך תפקיד";return}
@@ -864,7 +870,7 @@ async function staffCall(id,action,newPin){
   if(action==="reset"){s.has_pin=false;s.locked=false}if(action==="set"){s.has_pin=true;s.locked=false}if(!s.role)s.has_pin=false;
   drawStaff();const m2=document.getElementById("m"+id);
   const txt=action==="set"?`שלום ${s.name.split(" ")[0]}, הסיסמה שלך למפת הכיתה עודכנה: ${newPin} · ${location.origin}/mapat-kita/`:inviteTxt(s);
-  if(m2)m2.innerHTML=(action==="reset"?"✓ אופס":action==="set"?"✓ הסיסמה עודכנה":"✓ נשמר")+(s.role&&(action||!was||!s.has_pin)?` · <a href="${waLink(s.phone,txt)}" target="_blank" rel="noopener">שליחה בוואטסאפ</a> · <a href="#" onclick='navigator.clipboard.writeText(${JSON.stringify(txt).replace(/'/g,"&#39;")});this.textContent="הועתק ✓";return false'>העתקת הודעה</a>`:"");
+  if(m2)m2.innerHTML=(action==="reset"?"✓ אופס":action==="set"?"✓ הסיסמה עודכנה":"✓ נשמר")+(s.role&&(action||!was||!s.has_pin)?` · <a href="#" onclick='navigator.clipboard.writeText(${JSON.stringify(txt).replace(/'/g,"&#39;")});this.textContent="הועתק ✓";return false'>העתקת הודעה</a>`:"");
 }
 function saveStaff(id){staffCall(id,null)}
 function pinAction(id,a){
@@ -907,8 +913,35 @@ function stuField(list,cls,path){
   if(curIs(cls))return stuPick(list,path);
   return `<input class="grow" value="${esc(list.join(", "))}" placeholder="שמות תלמידים (לא חובה, מופרדים בפסיק)" onchange="qSet('${path}',this.value.split(',').map(x=>x.trim()).filter(Boolean))">`;
 }
+// ----- חלק ב': כל תפקיד בפני עצמו (תיאור, שני סולמות, כוחות וזוללים), דירוג כיתות למורה מקצועי, שיתוף עומס אישי -----
+const SHARE=["היועצת","מנהל/ת הבית","הרכז/ת האישי/ת"];
+const SC_LOAD=["","מעמיס מאוד","מעמיס","באמצע","מטעין","מטעין מאוד"],SC_POW=["","זולל כוח מאוד","זולל כוח","באמצע","נותן כוח","נותן כוח מאוד"];
+const SC_LOAD_F=["","מעמיסה מאוד","מעמיסה","באמצע","מטעינה","מטעינה מאוד"],SC_POW_F=["","זוללת כוח מאוד","זוללת כוח","באמצע","נותנת כוח","נותנת כוח מאוד"];
+const scale=(v,path,L)=>`<span class="sc"><small>${L[1]}</small>${[1,2,3,4,5].map(n=>`<button type="button" class="${v===n?'on':''}" aria-pressed="${v===n}" title="${L[n]}" onclick="qSet('${path}',${v===n?0:n});renderQForm()">${n}</button>`).join("")}<small>${L[5]}</small>${v?`<b>${L[v]}</b>`:""}</span>`;
+const scTxt=(v,L)=>v?`${v}/5 ${L[v]}`:"לא דורג";
+const newRole=role=>({role,desc:"",load:0,power:0,fuel:[],fuelTxt:"",classes:[]});
+// תשובות ישנות (לפני הפירוט לפי תפקיד) נשמרות: מקורות הכוח הכלליים עוברים לתפקיד הראשון
+function meNorm(){const m=Q.me;m.drains=m.drains||[];m.share=m.share||[];
+  if(!Array.isArray(m.rd)){m.rd=(m.roles||[]).map(newRole);
+    if((m.fuel||[]).length||m.fuelTxt){if(!m.rd.length)m.rd.push(newRole("אחר"));m.rd[0].fuel=[...(m.fuel||[])];m.rd[0].fuelTxt=m.fuelTxt||""}}
+  m.rd.forEach(r=>{r.fuel=r.fuel||[];r.classes=r.classes||[];r.desc=r.desc||"";r.fuelTxt=r.fuelTxt||""});
+  // השדות הישנים נשארים מעודכנים, בשביל מפת הצוות של המנהל
+  m.roles=m.rd.map(r=>r.role);m.fuel=[...new Set(m.rd.flatMap(r=>r.fuel))];m.fuelTxt=m.rd.map(r=>r.fuelTxt).filter(Boolean).join(" · ");}
+function meRole(name){name=String(name||"").trim().slice(0,40);if(!name)return;meNorm();const m=Q.me,i=m.rd.findIndex(r=>r.role===name);
+  if(i<0)m.rd.push(newRole(name));
+  else{const r=m.rd[i],full=r.desc||r.load||r.power||r.fuel.length||r.fuelTxt||r.classes.length||m.drains.some(d=>d.role===name&&d.t);
+    if(full&&!confirm("להסיר את התפקיד \""+name+"\"? מה שמילאתם בו יימחק."))return;
+    m.rd.splice(i,1);m.drains=m.drains.filter(d=>d.role!==name)}
+  qSave();renderQForm();scheduleQ()}
+function meDrain(i){Q.me.drains.push({t:"",src:D_SRCS[0],role:Q.me.rd[i].role,lvl:3,relief:""});qSave();renderQForm()}
+const drainRow=(d,i)=>`<div class="qitem">
+     <div class="qrow"><input value="${esc(d.t)}" placeholder="מה שואב ממני / מוציא אותי מאיזון?" oninput="qSet('me.drains.${i}.t',this.value)" class="grow">
+     <select onchange="qSet('me.drains.${i}.src',this.value)" title="מקור">${opt(D_SRCS,d.src)}</select>
+     <button class="x" onclick="qDelIn('me.drains',${i})" title="מחיקה">🗑</button></div>
+     <div class="qrow">${lvlSel(d.lvl,'me.drains.'+i+'.lvl')}<input value="${esc(d.relief||"")}" placeholder="מה היה משחרר אותי? מה אפשר לקחת ממני או לתת לי?" oninput="qSet('me.drains.${i}.relief',this.value)" class="grow"></div></div>`;
+{const _qs=qSave;qSave=function(){if(Q&&Q.me)meNorm();return _qs.apply(this,arguments)}}
 renderQForm=function(){
-  if(!Q||!USER)return;const c=Q.cls,m=Q.me;
+  if(!Q||!USER)return;meNorm();const c=Q.cls,m=Q.me;
   const worries=c.worries.map((w,i)=>`<div class="qitem">
      <div class="qrow"><input value="${esc(w.t)}" placeholder="מה מטריד? במשפט אחד" oninput="qSet('cls.worries.${i}.t',this.value)" class="grow">
      ${clsSel(w.cls,'cls.worries.'+i+'.cls')}<select onchange="qSet('cls.worries.${i}.cat',this.value)">${opt(W_CATS,w.cat)}</select>
@@ -951,17 +984,32 @@ renderQForm=function(){
   <fieldset class="me"><legend>חלק ב' · אני בתפקיד <span class="tagm s">🔒 גלוי רק לך ולמנהל</span></legend>
    ${!window._meOpen?`<p>החלק הזה נועד לשיחה אישית עם המנהל, ולא לישיבה עצמה. <button class="chip" onclick="window._meOpen=1;renderQForm()">פתיחת החלק האישי</button></p>`:`
    <h3>5. באילו תפקידים אני משמש השנה?</h3>
-   <div class="chips">${ROLES.map(r=>`<button class="ch ${m.roles.includes(r)?'on':''}" onclick="qToggle('me.roles','${r}')">${r}</button>`).join("")}</div>
-   <h3>6. מאיפה אני מקבל כוח?</h3>
-   <div class="chips">${FUEL.map(r=>`<button class="ch ${m.fuel.includes(r)?'on':''}" onclick="qToggle('me.fuel','${r}')">${r}</button>`).join("")}</div>
-   ${ta('me.fuelTxt',m.fuelTxt,'מקורות כוח נוספים, במילים שלי')}
-   <h3>7. מה שואב ממני אנרגיה או מוציא אותי מאיזון?</h3>
-   <p class="hint">כל דבר בשורה נפרדת. אפשר לציין מה המקור, באיזה תפקיד ומה העוצמה, ובמה ההנהלה יכולה לעזור.</p>
-   ${drains||'<p class="empty">עוד לא נרשם דבר.</p>'}
-   <button class="add" onclick="Q.me.drains.push({t:'',src:D_SRCS[0],role:(Q.me.roles[0]||ROLES[0]),lvl:3,relief:''});qSave();renderQForm()">+ פריט נוסף</button>
-   <h3>8. דבר אחד שאם יילקח ממני, אהיה פנוי יותר לעבודה החינוכית</h3>
+   <div class="chips">${ROLES.map(r=>`<button class="ch ${m.rd.some(x=>x.role===r)?'on':''}" onclick="meRole(this.textContent)">${r}</button>`).join("")}${m.rd.filter(x=>!ROLES.includes(x.role)).map(x=>`<button class="ch on" onclick="meRole(this.textContent)" title="לחיצה מסירה את התפקיד">${esc(x.role)}</button>`).join("")}</div>
+   <div class="qrow"><input id="meNewRole" maxlength="40" placeholder="תפקיד נוסף, במילים שלי" class="grow" onkeydown="if(event.key==='Enter'){event.preventDefault();meRole(this.value)}"><button class="add" style="margin:0" onclick="meRole(document.getElementById('meNewRole').value)">+ הוספה</button></div>
+   <h3>6. כל תפקיד בפני עצמו: מה נותן לי בו כוח ומה זולל</h3>
+   ${m.rd.length?"":'<p class="empty">בחרו תפקיד אחד לפחות בשאלה 5, והוא ייפתח כאן.</p>'}
+   ${m.rd.map((r,i)=>`<div class="rolecard"><h4>${esc(r.role)}</h4>
+     ${ta('me.rd.'+i+'.desc',r.desc,'איך אני רואה את התפקיד הזה? מה הוא בעיניי?')}
+     <div class="qrow"><b class="sclab">התפקיד בשבילי:</b>${scale(r.load,'me.rd.'+i+'.load',SC_LOAD)}</div>
+     <div class="qrow"><b class="sclab">ומבחינת כוח:</b>${scale(r.power,'me.rd.'+i+'.power',SC_POW)}</div>
+     <h5>מה נותן לי כוח בתפקיד הזה</h5>
+     <div class="chips">${FUEL.map(f=>`<button class="ch ${r.fuel.includes(f)?'on':''}" onclick="qToggle('me.rd.${i}.fuel',this.textContent)">${f}</button>`).join("")}</div>
+     ${ta('me.rd.'+i+'.fuelTxt',r.fuelTxt,'מקורות כוח נוספים, במילים שלי')}
+     <h5>מה זולל ממני כוח בתפקיד הזה</h5>
+     ${m.drains.map((d,j)=>d.role===r.role?drainRow(d,j):"").join("")||'<p class="empty">עוד לא נרשם דבר.</p>'}
+     <button class="add" onclick="meDrain(${i})">+ פריט נוסף</button>
+     ${r.role==="מורה מקצועי"?`<h5>הכיתות שאני מלמד: איך כל כיתה בשבילי</h5>
+       ${r.classes.map((c,j)=>`<div class="qitem"><div class="qrow"><b>${esc(c.cls)}</b><button class="x" onclick="qDelIn('me.rd.${i}.classes',${j})" title="מחיקה">🗑</button></div>
+         <div class="qrow">${scale(c.load,'me.rd.'+i+'.classes.'+j+'.load',SC_LOAD_F)}</div><div class="qrow">${scale(c.power,'me.rd.'+i+'.classes.'+j+'.power',SC_POW_F)}</div></div>`).join("")}
+       <select onchange="if(this.value){qPush('me.rd.${i}.classes',{cls:this.value,load:0,power:0});renderQForm()}"><option value="">+ הוספת כיתה…</option>${(USER.all_classes||[]).filter(c=>!r.classes.some(x=>x.cls===c)).map(c=>`<option>${esc(c)}</option>`).join("")}</select>`:""}
+   </div>`).join("")}
+   ${m.drains.some(d=>!m.rd.some(r=>r.role===d.role))?`<div class="rolecard"><h4>לא משויך לתפקיד</h4>${m.drains.map((d,j)=>m.rd.some(r=>r.role===d.role)?"":drainRow(d,j)).join("")}</div>`:""}
+   <h3>7. דבר אחד שאם יילקח ממני, אהיה פנוי יותר לעבודה החינוכית</h3>
    ${ta('me.oneThing',m.oneThing,'למשל: לוגיסטיקה של טיולים, תורנויות, מילוי טפסים…')}
-   <label class="cb"><input type="checkbox" ${m.personal?"checked":""} onchange="qSet('me.personal',this.checked)"> יש כרגע עומס אישי מחוץ לבית הספר שכדאי שהמנהל ידע עליו, בלי פירוט</label>`}
+   <h3>8. עומס אישי</h3>
+   <label class="cb"><input type="checkbox" ${m.personal?"checked":""} onchange="qSet('me.personal',this.checked);renderQForm()"> יש כרגע עומס אישי מחוץ לבית הספר שכדאי שהמנהל ידע עליו, בלי פירוט</label>
+   ${m.personal?`<p class="hint" style="margin:8px 0 4px">המנהל רואה את הסימון הזה. אם תרצו, אפשר לאשר לו לשתף גם את:</p>
+   <div class="chips">${SHARE.map(x=>`<button class="ch ${m.share.includes(x)?'on':''}" onclick="qToggle('me.share',this.textContent)">${x}</button>`).join("")}</div>`:""}`}
   </fieldset>`;
 };
 
@@ -996,7 +1044,7 @@ renderMeView=async function(){
   el.innerHTML='<p class="hint">טוען…</p>';
   const r=await rpc("mk_staff_map",{p_phone:SES.phone,p_pin:SES.pin});
   if(r.error){el.innerHTML=`<p class="hint">${ERR[r.error]||r.error}</p>`;return}
-  const S=r.staff.filter(s=>s.part_b&&((s.part_b.drains||[]).some(d=>d.t)||(s.part_b.fuel||[]).length||s.part_b.oneThing));
+  const S=r.staff.filter(s=>s.part_b&&((s.part_b.drains||[]).some(d=>d.t)||(s.part_b.fuel||[]).length||s.part_b.oneThing||(s.part_b.rd||[]).some(x=>x.desc||x.load||x.power)||s.part_b.personal));
   const all=S.flatMap(s=>(s.part_b.drains||[]).filter(d=>d.t).map(d=>({...d,by:s.name})));
   const bySrc={};all.forEach(d=>(bySrc[d.src]=bySrc[d.src]||[]).push(d));
   const fuel={};S.forEach(s=>(s.part_b.fuel||[]).forEach(f=>fuel[f]=(fuel[f]||0)+1));
@@ -1013,8 +1061,9 @@ renderMeView=async function(){
     </div>
     <div class="box"><h2>לפי איש צוות</h2>
      ${S.map(s=>{const D=(s.part_b.drains||[]).filter(d=>d.t).sort((a,b)=>b.lvl-a.lvl);return `<div style="border-bottom:1px solid var(--line);padding:10px 0">
-       <b>${esc(s.name)}</b> <span class="cat">${ROLE_HE[s.role]||""}${s.class_name?" · "+esc(s.class_name):""}</span>${s.part_b.personal?' <span class="cat" style="background:var(--mid-bg)">ℹ️ עומס אישי</span>':""}
-       <table class="wt">${D.map(d=>`<tr><td>${lvlDots(d.lvl)}</td><td>${esc(d.t)} <span class="cat">${esc(d.src)}</span>${d.relief?`<div class="hint" style="margin:2px 0 0">↳ מה ישחרר: ${esc(d.relief)}</div>`:""}</td></tr>`).join("")}</table>
+       <b>${esc(s.name)}</b> <span class="cat">${ROLE_HE[s.role]||""}${s.class_name?" · "+esc(s.class_name):""}</span>${s.part_b.personal?' <span class="cat" style="background:var(--mid-bg)">ℹ️ עומס אישי'+((s.part_b.share||[]).length?' · מאשר לשתף: '+s.part_b.share.map(esc).join(", "):' · לא לשתף')+'</span>':""}
+       ${(s.part_b.rd||[]).filter(x=>x.desc||x.load||x.power||(x.classes||[]).length).map(x=>`<div class="hint" style="margin:6px 0 0"><b>${esc(x.role)}</b> · ${scTxt(x.load,SC_LOAD)} · ${scTxt(x.power,SC_POW)}${x.desc?`<div>״${esc(x.desc)}״</div>`:""}${(x.classes||[]).filter(c=>c.load||c.power).map(c=>`<div>${esc(c.cls)}: ${scTxt(c.load,SC_LOAD_F)} · ${scTxt(c.power,SC_POW_F)}</div>`).join("")}</div>`).join("")}
+       <table class="wt">${D.map(d=>`<tr><td>${lvlDots(d.lvl)}</td><td>${esc(d.t)} <span class="cat">${esc(d.src)}</span>${d.role?` <span class="cat">${esc(d.role)}</span>`:""}${d.relief?`<div class="hint" style="margin:2px 0 0">↳ מה ישחרר: ${esc(d.relief)}</div>`:""}</td></tr>`).join("")}</table>
        ${s.part_b.oneThing?`<div class="note y">דבר אחד שישחרר: ${esc(s.part_b.oneThing)}</div>`:""}</div>`}).join("")}
     </div></div>`}`;
 };
