@@ -772,7 +772,7 @@ function fbReport(){
   return L.join('\n')+'\n';
 }
 function fbSave(f,was){
-  return rpc('hanhala_feedback_rank',{p_phone:S.phone,p_id:f.id,p_urgency:f.urgency||null,p_note:f.dev_note||'',p_size:f.size||null})
+  return rpc('hanhala_feedback_rank',Object.assign({p_phone:S.phone,p_id:f.id,p_urgency:f.urgency||null,p_note:f.dev_note||''},f.size||was.size?{p_size:f.size||null}:{}))
     .catch(e=>{console.error(e);Object.assign(f,was);S.fbErr='הדירוג לא נשמר. נסו שוב.';render()});
 }
 function viewFeedback(){
