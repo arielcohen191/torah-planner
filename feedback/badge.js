@@ -8,6 +8,14 @@
   var TOOL=/^\/milui/.test(p)?'מילוי מקום':/^\/toranut/.test(p)?'תורנויות חצר':/^\/sayarot/.test(p)?'סיירות':/^\/mapat-kita/.test(p)?'מפת כיתה':/^\/hanhala/.test(p)?'לוח הנהלה':'מתכנן הספק';
   function ls(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}
   function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  /* מזהה מכשיר אקראי: לפיו (או לפי הטלפון) המשתמש רואה את הפניות הקודמות שלו */
+  function token(){var t=ls('fb_token');if(!/^[A-Za-z0-9_-]{16,64}$/.test(t)){var a=new Uint8Array(18);try{crypto.getRandomValues(a)}catch(e){for(var i=0;i<a.length;i++)a[i]=Math.random()*256}
+    t=Array.prototype.map.call(a,function(n){return ('0'+n.toString(16)).slice(-2)}).join('');lsSet('fb_token',t)}return t}
+  function myPhone(){return ls('fb_phone')||ls('hanhala_phone')||ls('milui_phone')}
+  function call(fn,p){return fetch(CFG.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:CFG.key,Authorization:'Bearer '+CFG.key,'Content-Type':'application/json'},body:JSON.stringify({p:p})})
+    .then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t)});return r.json()})}
+  var KIND={bug:'תקלה',idea:'רעיון',question:'שאלה'},STAT={new:['התקבל','#5b6878'],doing:['בטיפול','#a85a00'],done:['טופל','#3f7d21']};
   var css=''+
   '.kfb-btn{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:40;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border:0;border-radius:999px;background:#26323f;color:#fff;font:600 14px/1 Heebo,Assistant,system-ui,sans-serif;box-shadow:0 3px 10px rgba(31,42,55,.25);cursor:pointer;opacity:.9}'+
   '.kfb-btn:hover{opacity:1}.kfb-btn:focus-visible{outline:3px solid #2f7fd6;outline-offset:2px}'+
@@ -30,7 +38,12 @@
   '.kfb-act button.sec{background:#fff;color:#1f2a37;border:1.5px solid #c9d1db}'+
   '.kfb-act button:disabled{opacity:.6;cursor:default}'+
   '.kfb-err{color:#c62a20;font-weight:600;font-size:15px}.kfb-ok{color:#3f7d21;font-weight:600;font-size:17px}'+
-  '.kfb-meta{font-size:13px;color:#5b6878}';
+  '.kfb-meta{font-size:13px;color:#5b6878}'+
+  '.kfb-link{align-self:flex-start;background:none;border:0;padding:6px 0;min-height:44px;color:#2f7fd6;font:600 15px Heebo,Assistant,system-ui,sans-serif;text-decoration:underline;cursor:pointer}'+
+  '.kfb-list{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none;overflow:auto;max-height:55vh}'+
+  '.kfb-list li{border:1.5px solid #c9d1db;border-radius:10px;padding:10px 12px}'+
+  '.kfb-list .h{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 10px;font-size:13px;color:#5b6878}'+
+  '.kfb-list .st{font-weight:700}.kfb-list .b{white-space:pre-wrap;font-size:15px;margin-top:4px;overflow-wrap:anywhere}';
   function init(){
     var st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
     var b=document.createElement('button');b.type='button';b.className='kfb-btn';b.setAttribute('aria-label','שליחת משוב למפתח');
@@ -50,7 +63,7 @@
     place();setTimeout(place,300);setTimeout(place,1000);addEventListener('resize',place);addEventListener('click',function(){setTimeout(place,200)});setInterval(place,2000);
     var d=document.createElement('dialog');d.className='kfb-dlg';d.setAttribute('aria-labelledby','kfb-t');document.body.appendChild(d);
     function form(){
-      var nm=ls('fb_name'),ph=ls('fb_phone')||ls('hanhala_phone')||ls('milui_phone');
+      var nm=ls('fb_name'),ph=myPhone();
       d.innerHTML='<form method="dialog" novalidate><h2 id="kfb-t">משוב למפתח</h2><p>תקלה, רעיון או שאלה על הכלי. ההודעה מגיעה ישירות לאריאל.</p>'+
         '<fieldset class="kfb-kinds"><legend>על מה מדובר</legend>'+
         '<label><input type="radio" name="kind" value="bug" checked>תקלה</label><label><input type="radio" name="kind" value="idea">רעיון לשיפור</label><label><input type="radio" name="kind" value="question">שאלה</label></fieldset>'+
@@ -59,11 +72,24 @@
         '<label>טלפון לחזרה (לא חובה)<input name="phone" type="tel" inputmode="tel" autocomplete="tel"></label></div>'+
         '<div class="kfb-meta">יצורף אוטומטית: '+TOOL+' · '+location.pathname+'</div>'+
         '<div class="kfb-err" role="alert" hidden></div>'+
-        '<div class="kfb-act"><button type="submit">שליחה</button><button type="button" class="sec" data-close>ביטול</button></div></form>';
+        '<div class="kfb-act"><button type="submit">שליחה</button><button type="button" class="sec" data-close>ביטול</button></div>'+
+        '<button type="button" class="kfb-link" data-mine>הפניות הקודמות שלי</button></form>';
       d.querySelector('[name=name]').value=nm;d.querySelector('[name=phone]').value=ph;
     }
+    function mine(){
+      d.innerHTML='<form method="dialog"><h2 id="kfb-t">הפניות הקודמות שלי</h2><p role="status">טוען…</p><div class="kfb-act"><button type="button" class="sec" data-new>פנייה חדשה</button><button type="button" class="sec" data-close>סגירה</button></div></form>';
+      var st=d.querySelector('p');
+      call('feedback_mine',{phone:myPhone(),token:token()}).then(function(list){
+        if(!list||!list.length){st.textContent='עוד לא נשלחו פניות מהמכשיר הזה.';return}
+        st.textContent=list.length===1?'פנייה אחת':list.length+' פניות';
+        var ul=document.createElement('ul');ul.className='kfb-list';
+        ul.innerHTML=list.map(function(x){var s=STAT[x.status]||STAT.new,dt=new Date(x.created_at);
+          return '<li><div class="h"><span>'+esc(KIND[x.kind]||'')+' · '+esc(x.tool)+' · '+dt.getDate()+'.'+(dt.getMonth()+1)+'</span><span class="st" style="color:'+s[1]+'">'+s[0]+'</span></div><div class="b">'+esc(x.body)+'</div></li>'}).join('');
+        st.after(ul);
+      }).catch(function(){st.textContent='הפניות לא נטענו. בדקו את החיבור ונסו שוב.'});
+    }
     b.addEventListener('click',function(){form();d.showModal();d.querySelector('textarea').focus()});
-    d.addEventListener('click',function(e){if(e.target.closest('[data-close]')||e.target===d)d.close()});
+    d.addEventListener('click',function(e){if(e.target.closest('[data-mine]'))return mine();if(e.target.closest('[data-new]')){form();d.querySelector('textarea').focus();return}if(e.target.closest('[data-close]')||e.target===d)d.close()});
     d.addEventListener('submit',function(e){
       e.preventDefault();var f=e.target,err=f.querySelector('.kfb-err'),btn=f.querySelector('button[type=submit]');
       var body=f.body.value.trim(),name=f.name.value.trim(),phone=f.phone.value.trim();
@@ -71,11 +97,10 @@
       if(!body){show('צריך לכתוב מה קרה.');f.body.focus();return}
       if(!name){show('צריך למלא שם.');f.name.focus();return}
       btn.disabled=true;btn.textContent='שולח…';err.hidden=true;
-      fetch(CFG.url+'/rest/v1/rpc/feedback_send',{method:'POST',headers:{apikey:CFG.key,Authorization:'Bearer '+CFG.key,'Content-Type':'application/json'},
-        body:JSON.stringify({p:{name:name,phone:phone,tool:TOOL,kind:(f.querySelector('[name=kind]:checked')||{}).value||'bug',body:body,page:location.pathname+location.hash,ua:navigator.userAgent}})})
-      .then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t)});
+      call('feedback_send',{name:name,phone:phone,tool:TOOL,kind:(f.querySelector('[name=kind]:checked')||{}).value||'bug',body:body,page:location.pathname+location.hash,ua:navigator.userAgent,token:token()})
+      .then(function(){
         lsSet('fb_name',name);if(phone)lsSet('fb_phone',phone);
-        f.innerHTML='<h2 id="kfb-t">תודה!</h2><p class="kfb-ok">המשוב נשלח לאריאל.</p><div class="kfb-act"><button type="button" data-close>סגירה</button></div>';
+        f.innerHTML='<h2 id="kfb-t">תודה!</h2><p class="kfb-ok">המשוב נשלח לאריאל.</p><div class="kfb-act"><button type="button" data-close>סגירה</button><button type="button" class="sec" data-mine>הפניות שלי</button></div>';
         f.querySelector('[data-close]').focus()})
       .catch(function(x){btn.disabled=false;btn.textContent='שליחה';show(/rate/.test(String(x&&x.message))?'נשלחו הרבה משובים בדקות האחרונות. נסו שוב בעוד כמה דקות.':'השליחה נכשלה. בדקו את החיבור ונסו שוב.')});
     });

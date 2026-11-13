@@ -849,9 +849,11 @@ function drawStaff(){
    <td><select id="r${id}"><option value="none" ${!s.role?"selected":""}>— אין גישה</option>${["teacher","admin","principal"].map(r=>`<option value="${r}" ${s.role==r?"selected":""}>${ROLE_HE[r]}</option>`).join("")}</select></td>
    <td><select id="c${id}"><option value="">—</option>${STAFF_CLASSES.map(c=>`<option ${s.class_name==c?"selected":""}>${esc(c)}</option>`).join("")}</select></td>
    <td>${st(s)} ${s.role?`<button class="btn sm" onclick="pinAction(${id},'reset')" title="מוחק את הסיסמה. בכניסה הבאה המשתמש יבחר סיסמה חדשה">איפוס</button> <button class="btn sm" onclick="pinAction(${id},'set')" title="קביעת סיסמה חדשה ידנית">קביעה</button>`:""}</td>
-   <td><button class="btn primary sm" onclick="saveStaff(${id})">שמירה</button> <span id="m${id}" class="hint" style="margin:0"></span></td></tr>`}).join("")}</table>
+   <td><button class="btn primary sm" onclick="saveStaff(${id})">שמירה</button>${s.role?` <a class="btn sm" style="text-decoration:none" href="${waLink(s.phone,inviteTxt(s))}" target="_blank" rel="noopener" title="פותח וואטסאפ עם הודעת הקישור מוכנה לשליחה">וואטסאפ</a>`:""} <span id="m${id}" class="hint" style="margin:0"></span></td></tr>`}).join("")}</table>
   <p class="hint" style="margin-top:10px">כדי לתת גישה: בוחרים תפקיד, ולמחנך גם כיתה, ושומרים. אחר כך שולחים לאיש הצוות את הקישור. בכניסה הראשונה הוא מקליד את מספר הטלפון שלו ובוחר סיסמה בעצמו. שכח סיסמה? לוחצים "איפוס", ובכניסה הבאה הוא יבחר סיסמה חדשה.</p>`;
 }
+const inviteTxt=s=>`שלום ${s.name.split(" ")[0]}, זה הקישור למפת הכיתה לקראת הישיבות הפדגוגיות: ${location.origin}/mapat-kita/ · נכנסים עם מספר הטלפון שלך, ובכניסה הראשונה בוחרים סיסמה.`;
+const waLink=(ph,txt)=>"https://wa.me/972"+String(ph).replace(/\D/g,"").replace(/^0/,"")+"?text="+encodeURIComponent(txt);
 async function staffCall(id,action,newPin){
   const s=STAFF[id],m=document.getElementById("m"+id),role=document.getElementById("r"+id).value;
   if(action&&role==="none"){m.textContent="קודם צריך לשייך תפקיד";return}
@@ -861,9 +863,8 @@ async function staffCall(id,action,newPin){
   const was=!!s.role;s.role=role==="none"?null:role;s.class_name=document.getElementById("c"+id).value;
   if(action==="reset"){s.has_pin=false;s.locked=false}if(action==="set"){s.has_pin=true;s.locked=false}if(!s.role)s.has_pin=false;
   drawStaff();const m2=document.getElementById("m"+id);
-  const link=`${location.origin}/mapat-kita/`;
-  const txt=action==="set"?`שלום ${s.name.split(" ")[0]}, הסיסמה שלך למפת הכיתה עודכנה: ${newPin} · ${link}`:`שלום ${s.name.split(" ")[0]}, זה הקישור למפת הכיתה לקראת הישיבות הפדגוגיות: ${link} · נכנסים עם מספר הטלפון שלך, ובכניסה הראשונה בוחרים סיסמה.`;
-  if(m2)m2.innerHTML=(action==="reset"?"✓ אופס":action==="set"?"✓ הסיסמה עודכנה":"✓ נשמר")+(s.role&&(action||!was||!s.has_pin)?` · <a href="#" onclick='navigator.clipboard.writeText(${JSON.stringify(txt).replace(/'/g,"&#39;")});this.textContent="הועתק ✓";return false'>העתקת הודעה</a>`:"");
+  const txt=action==="set"?`שלום ${s.name.split(" ")[0]}, הסיסמה שלך למפת הכיתה עודכנה: ${newPin} · ${location.origin}/mapat-kita/`:inviteTxt(s);
+  if(m2)m2.innerHTML=(action==="reset"?"✓ אופס":action==="set"?"✓ הסיסמה עודכנה":"✓ נשמר")+(s.role&&(action||!was||!s.has_pin)?` · <a href="${waLink(s.phone,txt)}" target="_blank" rel="noopener">שליחה בוואטסאפ</a> · <a href="#" onclick='navigator.clipboard.writeText(${JSON.stringify(txt).replace(/'/g,"&#39;")});this.textContent="הועתק ✓";return false'>העתקת הודעה</a>`:"");
 }
 function saveStaff(id){staffCall(id,null)}
 function pinAction(id,a){
