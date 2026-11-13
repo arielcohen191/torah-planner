@@ -152,6 +152,8 @@ input[type=tel]{min-height:56px;border:1.5px solid #c9d1db;border-radius:var(--r
 .tli{display:grid;grid-template-columns:92px 1fr;gap:12px;align-items:start;background:var(--card-muted);border-radius:var(--r-sm);border-right:6px solid var(--line);padding:10px 14px}
 .tli .when{font-weight:600;color:var(--ink-muted);font-size:15px}.tli .what b{font-size:17px;font-weight:600}
 .tli.lesson{border-right-color:var(--blue)}.tli.duty{border-right-color:var(--purple)}.tli.cover{border-right-color:var(--orange)}.tli.off{opacity:.75}.tli.gone{border-right-color:var(--red)}
+.asbar{border-right-color:var(--purple);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;background:#f1ecfa}
+.plist{display:flex;flex-direction:column;gap:6px}
 .mygrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start}
 @media (max-width:900px){.mygrid{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){.skel{animation:none}.kpi{transition:none}}
@@ -212,7 +214,7 @@ const H=()=>S.house==='mine'?{id:'mine',label:'השכבות שלי',layers:S.use
 const allowed=k=>!!(S.user&&S.user.tools.includes(k));
 const isDev=()=>!!(S.user&&(S.user.roles||[]).some(r=>r.id==='sysadmin'));
 const isStaff=()=>!!(S.user&&(S.user.staff||S.user.tools.length));
-const canSee=v=>v==='my'||(v==='home'||v==='prefs'?isStaff():false)||(v==='perms'?!!(S.user&&S.user.can_manage):v==='feedback'?isDev():allowed(v));
+const canSee=v=>v==='my'||(v==='viewas'&&isDev())||(v==='home'||v==='prefs'?isStaff():false)||(v==='perms'?!!(S.user&&S.user.can_manage):v==='feedback'?isDev():allowed(v));
 const clsIn=c=>{const h=H();return !h||h.layers.includes(String(c).trim()[0])};
 const layerLetters=t=>{t=String(t||'');const m=t.match(/\(([^)]+)\)/);return ((m?m[1]:t).match(/[א-ו]/g))||[]};
 const SUBJ={torah:'חומש',navi:'נביא',mishna:'משנה',gemara:'גמרא',halacha:'הלכה',math:'מתמטיקה',hebrew:'עברית',science:'מדעים',other:'אחר'};
@@ -221,10 +223,13 @@ const plural=(n,one,many)=>n===1?one:n+' '+many;
 
 const S={view:'home',filter:0,house:null,phone:null,user:null,date:null,milui:null,dataMonth:null,tor:null,say:null,mk:null,plans:null,hol:null,classes:[],staffN:null,admin:null,edit:null,err:{},busy:false};
 try{S.phone=localStorage.getItem('hanhala_phone')||localStorage.getItem('milui_phone')}catch(e){}
+/* "בנעליים של": מנהל המערכת צופה בלוח כמו איש צוות אחר. נשמר רק בלשונית הנוכחית, וצפייה בלבד. */
+try{const a=JSON.parse(sessionStorage.getItem('hanhala_as')||'null');if(a&&a.real===S.phone){S.realPhone=a.real;S.phone=a.phone;S.asName=a.name}}catch(e){}
+const VIEWONLY='במצב "בנעליים של" אי אפשר לשמור שינויים. חזרו לעצמכם כדי לשנות.';
 const root=document.getElementById('root');
 function schoolDay(s){let d=s;for(let i=0;i<7&&dow(d)===6;i++)d=addDays(d,1);return d}
 S.date=schoolDay(today());
-const hashView=()=>{const k=location.hash.slice(1);return ['my','milui','toranut','sayarot','mapat','hespek','prefs','perms','feedback'].includes(k)?k:'home'};
+const hashView=()=>{const k=location.hash.slice(1);return ['my','milui','toranut','sayarot','mapat','hespek','prefs','perms','feedback','viewas'].includes(k)?k:'home'};
 S.view=hashView();
 
 const ICON={
@@ -271,6 +276,7 @@ async function loadAll(force){
   ]);
   if(!allowed('sayarot'))S.say=null;if(!allowed('hespek'))S.plans=null;
   if(S.view==='perms'&&S.user&&S.user.can_manage&&!S.admin)await loadAdmin();
+  if(S.view==='viewas'&&isDev()&&!S.people)await loadPeople();
   if(isDev()){await part('fb',async()=>{S.fbOpen=await rpc('hanhala_feedback_open',{p_phone:S.phone})});if(S.view==='feedback')await loadFb()}
   S.loadedAt=new Date();
 }
@@ -617,6 +623,7 @@ function viewMy(){
 const pref=()=>Object.assign({hideTools:[],hideUrg:[],house:null,widgets:null},S.user&&S.user.prefs||{});
 const toolViews=()=>VIEWS.filter(v=>v[0]!=='home'&&allowed(v[0]));
 async function savePrefs(p){
+  if(S.realPhone){S.saved='view';return render()}
   S.user.prefs=p;S.saved='saving';render();
   try{await rpc('hanhala_save_prefs',{p_phone:S.phone,p_prefs:p});S.saved='ok'}catch(e){console.error(e);S.saved='err'}
   render();
@@ -630,7 +637,7 @@ function viewPrefs(){
     '<p class="muted small" style="margin:6px 0 0">כל הכלים שפתוחים לך נשארים זמינים בסרגל הצד, גם אם הסתרת את האריחים שלהם.</p>'+
     '<h3 class="sub">ברשימת המשימות: משימות מאילו כלים</h3>'+(tv.length?'<div class="opts">'+tv.map(v=>chk('tool',v[0],v[1],!p.hideTools.includes(v[0]))).join('')+'</div>':'<div class="empty">אין כלים פתוחים לתפקיד שלך כרגע.</div>');
   b+='<h3 class="sub">ברשימת המשימות: אילו רמות דחיפות</h3><div class="opts">'+[1,2,3].map(u=>chk('urg',u,URG[u][0],!p.hideUrg.includes(u))).join('')+'</div>';
-  b+='<div class="small '+(S.saved==='err'?'err':'muted')+'" role="status">'+(S.saved==='saving'?'שומר…':S.saved==='ok'?'נשמר. ההעדפה תופיע בכל מכשיר שתיכנס ממנו.':S.saved==='err'?'השמירה נכשלה. נסו שוב.':'')+'</div>';
+  b+='<div class="small '+(S.saved==='err'?'err':'muted')+'" role="status">'+(S.saved==='saving'?'שומר…':S.saved==='ok'?'נשמר. ההעדפה תופיע בכל מכשיר שתיכנס ממנו.':S.saved==='err'?'השמירה נכשלה. נסו שוב.':S.saved==='view'?VIEWONLY:'')+'</div>';
   return panel('מה מוצג לי במסך הבית',b)+
     panel('התפקידים שלי','<div class="rchips">'+(S.user.roles.length?S.user.roles.map(r=>'<span class="rchip">'+esc(r.label)+'</span>').join(''):'<span class="muted">לא הוגדר תפקיד</span>')+'</div>'+
       '<div class="duty"><span class="st">כלים פתוחים</span><span class="nm" style="white-space:normal">'+(tv.length?tv.map(v=>v[1]+' ('+LV[(S.user.levels||{})[v[0]]||'view']+')').join(' · '):'—')+'</span></div>'+
@@ -651,6 +658,7 @@ const toolsTxt=x=>(x.tools||[]).length?x.tools.map(k=>viewOf(k)[1]+' ('+LV[lvOf(
 const layersTxt=L=>L&&L.length?L.map(l=>l+'׳').join(' '):'כל בית הספר';
 async function loadAdmin(){try{S.admin=await rpc('hanhala_admin_list',{p_phone:S.phone});S.adminErr=null}catch(e){S.admin=null;S.adminErr=errText(e)}}
 async function adminDo(fn,args,keep){
+  if(S.realPhone){S.adminErr=VIEWONLY;S.adminOk=false;return render()}
   S.adminErr=null;S.adminBusy=true;render();
   try{await rpc(fn,Object.assign({p_phone:S.phone},args));S.myMonth=null;if(!keep){S.edit=null;S.openRole=null}S.confirmDel=null;await loadAdmin();S.dataMonth=null;await loadAll(false);S.adminOk=true}
   catch(e){S.adminErr=errText(e);S.adminOk=false}
@@ -719,6 +727,23 @@ function viewPerms(){
   r+='<details class="item ritem"'+(S.openRole==='new'?' open':'')+' data-role="new"><summary><span class="tx"><b>+ תפקיד חדש</b></span></summary>'+(S.openRole==='new'?roleForm({tools:[],layers:[]}):'')+'</details>';
   return h+panel('תפקידים: מה כל תפקיד רואה ומי ממלא אותו',r);
 }
+/* ---------- בנעליים של (מנהל מערכת בלבד) ---------- */
+async function loadPeople(){try{S.people=await rpc('hanhala_dev_people',{p_phone:S.phone});S.peopleErr=null}catch(e){S.people=null;S.peopleErr='הרשימה לא נטענה. נסו לרענן.'}}
+function peopleList(){const q=(S.asQ||'').trim(),L=(S.people||[]).filter(p=>!q||p.name.includes(q)||(p.label||'').includes(q));
+  const row=p=>'<button type="button" class="item task" data-act="as" data-v="'+esc(p.phone)+'"><span class="tx"><b>'+esc(p.name)+'</b><span class="small muted">'+esc(p.label||(p.staff?'בלי תפקיד':'מורה · הדף שלי בלבד'))+'</span></span><span class="tag grey">כניסה ←</span></button>';
+  const st=L.filter(p=>p.staff),te=L.filter(p=>!p.staff);
+  return (L.length?'':'<div class="empty">לא נמצא.</div>')+(st.length?'<div class="ghead k-purple">הנהלה ובעלי תפקידים<span>'+st.length+'</span></div>'+st.map(row).join(''):'')+(te.length?'<div class="ghead k-blue">מורים<span>'+te.length+'</span></div>'+te.map(row).join(''):'')}
+function viewAs(){
+  if(!isDev())return '<div class="note bad">המסך הזה פתוח רק למנהל המערכת.</div>';
+  if(!S.people)return S.peopleErr?'<div class="note bad">'+esc(S.peopleErr)+'</div>':panel('אנשי צוות',skel);
+  return panel('במי לצפות?','<p class="muted small" style="margin:0">הלוח ייפתח בדיוק כמו אצל איש הצוות: אותם מסכים, אותם נתונים ואותן הרשאות. במצב הזה לא נשמר שום שינוי, והוא נשאר רק בלשונית הזאת.</p>'+
+    '<div class="frow"><label>חיפוש לפי שם או תפקיד<input type="search" id="asQ" value="'+esc(S.asQ||'')+'" placeholder="למשל: גילה, מחנכת, רכזת" autocomplete="off"></label></div><div class="plist" id="asList">'+peopleList()+'</div>');
+}
+function resetData(){Object.assign(S,{user:null,house:null,milui:null,tor:null,mk:null,say:null,plans:null,admin:null,dataMonth:null,my:null,myMonth:null,fb:null,fbOpen:0,edit:null,filter:0,saved:null})}
+function startAs(p){S.realPhone=S.phone;S.phone=p.phone;S.asName=p.name;try{sessionStorage.setItem('hanhala_as',JSON.stringify({real:S.realPhone,phone:p.phone,name:p.name}))}catch(e){}
+  resetData();S.view='home';history.pushState(null,'',location.pathname);render();refresh(true);window.scrollTo(0,0)}
+function stopAs(){S.phone=S.realPhone;S.realPhone=null;S.asName=null;try{sessionStorage.removeItem('hanhala_as')}catch(e){}
+  resetData();S.view='viewas';history.pushState(null,'','#viewas');render();refresh(true).then(()=>loadPeople().then(render))}
 /* ---------- משובים מהצוות (מנהל מערכת בלבד) ---------- */
 const FBK={bug:['תקלה','red'],idea:['רעיון','green'],question:['שאלה','orange']};
 const FBS={new:'חדש',doing:'בטיפול',done:'טופל'};
@@ -746,15 +771,17 @@ function shell(inner){
    '<div class="spacer"></div>'+
    (isStaff()?'<button type="button" data-go="prefs"'+(S.view==='prefs'?' aria-current="page"':'')+'>'+ICON.prefs+'התאמה אישית</button>':'')+
    (S.user&&S.user.can_manage?'<button type="button" data-go="perms"'+(S.view==='perms'?' aria-current="page"':'')+'>'+ICON.perms+'הרשאות</button>':'')+
+   (isDev()?'<button type="button" data-go="viewas"'+(S.view==='viewas'?' aria-current="page"':'')+'>'+ICON.my+'בנעליים של</button>':'')+
    (isDev()?'<button type="button" data-go="feedback"'+(S.view==='feedback'?' aria-current="page"':'')+'>'+ICON.fb+'משובים'+(S.fbOpen?'<span class="cnt" aria-label="'+S.fbOpen+' חדשים">'+S.fbOpen+'</span>':'')+'</button>':'')+
    '<div class="who">'+esc(S.user?S.user.name:'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+'</main></div>';
 }
 function render(){
   if(!S.phone)return renderLogin();
   if(!S.user){root.innerHTML=S.err.data?'<div class="login"><div class="card"><h1>לוח הנהלה</h1><div class="err">אין חיבור לשרת כרגע.</div><button class="btn wide" data-act="refresh">ניסיון נוסף</button></div></div>':'<div class="loading">טוען…</div>';return}
-  const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view),setv=S.view==='prefs'||S.view==='perms'||S.view==='feedback';
-  const title=S.view==='home'||S.view==='my'?(S.user.staff?greet(S.user.name):greetT(S.user.name)):S.view==='prefs'?'התאמה אישית':S.view==='perms'?'ניהול הרשאות':S.view==='feedback'?'משובים מהצוות':v[1];
-  let h='<header class="card topbar"><div><h1>'+esc(title)+'</h1><div class="muted">'+(setv?esc(S.user.role_label):(S.view==='home'?esc(S.user.role_label)+' · ':S.view==='my'?'הדף שלי · ':'תמונת מצב · ')+fmtFull(S.date)+(isToday?' · היום':'')+(S.loadedAt?' · עודכן '+pad(S.loadedAt.getHours())+':'+pad(S.loadedAt.getMinutes()):''))+'</div></div>'+
+  const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view),setv=S.view==='prefs'||S.view==='perms'||S.view==='feedback'||S.view==='viewas';
+  const title=S.view==='home'||S.view==='my'?(S.user.staff?greet(S.user.name):greetT(S.user.name)):S.view==='prefs'?'התאמה אישית':S.view==='perms'?'ניהול הרשאות':S.view==='feedback'?'משובים מהצוות':S.view==='viewas'?'כניסה בנעליים של איש צוות':v[1];
+  let h=S.realPhone?'<div class="card banner asbar" role="status"><span>את/ה רואה את הלוח בדיוק כמו <b>'+esc(S.asName||S.user.name)+'</b> · צפייה בלבד</span><button class="btn sm" data-act="as-stop">חזרה אליי</button></div>':'';
+  h+='<header class="card topbar"><div><h1>'+esc(title)+'</h1><div class="muted">'+(setv?esc(S.user.role_label):(S.view==='home'?esc(S.user.role_label)+' · ':S.view==='my'?'הדף שלי · ':'תמונת מצב · ')+fmtFull(S.date)+(isToday?' · היום':'')+(S.loadedAt?' · עודכן '+pad(S.loadedAt.getHours())+':'+pad(S.loadedAt.getMinutes()):''))+'</div></div>'+
     (setv?'':'<div class="chips"><button class="btn sec" data-act="day" data-n="-1">יום קודם</button><button class="btn sec" data-act="today" aria-pressed="'+isToday+'">היום</button><button class="btn sec" data-act="day" data-n="1">יום הבא</button><button class="btn" data-act="refresh">'+(S.busy?'מרענן…':'רענון')+'</button></div>')+'</header>';
   if(!setv&&S.view==='my'){if(hol)h+='<div class="card banner">'+esc(hol)+' — אין לימודים ביום הזה.</div>'}
   else if(!setv){
@@ -765,7 +792,7 @@ function render(){
     if(hol)h+='<div class="card banner">'+esc(hol)+' — אין לימודים ביום הזה.</div>';
     if(S.view==='home'&&!S.user.tools.length)h+='<div class="note">לתפקיד שלך עדיין לא נפתחו כלים בלוח. פנו למנהל בית הספר.</div>';
   }
-  h+=({my:viewMy,home:viewHome,milui:viewMilui,toranut:viewToranut,sayarot:viewSayarot,mapat:viewMapat,hespek:viewHespek,prefs:viewPrefs,perms:viewPerms,feedback:viewFeedback}[S.view]||viewHome)();
+  h+=({viewas:viewAs,my:viewMy,home:viewHome,milui:viewMilui,toranut:viewToranut,sayarot:viewSayarot,mapat:viewMapat,hespek:viewHespek,prefs:viewPrefs,perms:viewPerms,feedback:viewFeedback}[S.view]||viewHome)();
   root.innerHTML=shell(h);
 }
 function renderLogin(err){
@@ -777,7 +804,7 @@ function renderLogin(err){
 function logout(msg){S.phone=null;S.user=null;S.house=null;S.milui=null;S.tor=null;S.mk=null;S.say=null;S.plans=null;S.admin=null;S.dataMonth=null;S.my=null;S.myMonth=null;try{localStorage.removeItem('hanhala_phone')}catch(e){};renderLogin(msg)}
 async function refresh(force){
   S.busy=true;render();
-  try{await loadAll(force)}catch(e){S.busy=false;if(e.message==='no_access')return logout('המספר הזה לא מורשה להיכנס.');console.error(e)}
+  try{await loadAll(force)}catch(e){S.busy=false;if(e.message==='no_access'){if(S.realPhone)return stopAs();return logout('המספר הזה לא מורשה להיכנס.')}console.error(e)}
   S.busy=false;if(S.phone)render();
 }
 root.addEventListener('submit',async e=>{
@@ -801,6 +828,7 @@ root.addEventListener('click',e=>{
   const id=sm.parentElement.dataset.role;S.openRole=S.openRole===id?null:id;S.adminErr=null;S.adminOk=false;render();
   const el=root.querySelector('details.ritem[data-role="'+id+'"]');if(el&&S.openRole)el.scrollIntoView({block:'nearest'});
 },true);
+root.addEventListener('input',e=>{if(e.target.id==='asQ'){S.asQ=e.target.value;const l=document.getElementById('asList');if(l)l.innerHTML=peopleList()}});
 root.addEventListener('change',e=>{
   const t=e.target;
   if(t.dataset.homeroom!=null)return adminDo('hanhala_admin_set_homeroom',{p_class:t.dataset.homeroom,p_teacher:t.value?+t.value:null},true);
@@ -810,7 +838,7 @@ root.addEventListener('change',e=>{
     p[k]=t.checked?p[k].filter(x=>x!==v):p[k].concat([v]);return savePrefs(p)}
 });
 root.addEventListener('click',e=>{
-  const g=e.target.closest('[data-go]');if(g){S.view=g.dataset.go;S.filter=0;S.saved=null;S.edit=null;S.confirmDel=null;S.adminErr=null;if(S.view==='perms'&&S.user.can_manage){loadAdmin().then(render)}if(S.view==='feedback'&&isDev()){loadFb().then(render)}history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
+  const g=e.target.closest('[data-go]');if(g){S.view=g.dataset.go;S.filter=0;S.saved=null;S.edit=null;S.confirmDel=null;S.adminErr=null;if(S.view==='perms'&&S.user.can_manage){loadAdmin().then(render)}if(S.view==='feedback'&&isDev()){loadFb().then(render)}if(S.view==='viewas'&&isDev()&&!S.people){loadPeople().then(render)}history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   if(a==='staff-new'){S.adminErr=null;S.edit={kind:'staff',x:{name:'',phone:'',roles:[],can_manage:false}};render();window.scrollTo(0,0);return}
   if(a==='staff-edit'){S.adminErr=null;const x=S.admin.staff.find(x=>x.phone===b.dataset.v);S.edit={kind:'staff',x:Object.assign({},x,{old:x.phone})};render();window.scrollTo(0,0);return}
@@ -819,14 +847,17 @@ root.addEventListener('click',e=>{
   if(a==='del-cancel'){S.confirmDel=null;return render()}
   if(a==='staff-del')return adminDo('hanhala_admin_delete_staff',{p_target:b.dataset.v});
   if(a==='role-del')return adminDo('hanhala_admin_delete_role',{p_id:b.dataset.v});
-  if(a==='house'){S.house=b.dataset.v;render();const p=Object.assign(pref(),{house:S.house});S.user.prefs=p;rpc('hanhala_save_prefs',{p_phone:S.phone,p_prefs:p}).catch(e=>console.error(e));return}
+  if(a==='house'){S.house=b.dataset.v;render();const p=Object.assign(pref(),{house:S.house});S.user.prefs=p;if(!S.realPhone)rpc('hanhala_save_prefs',{p_phone:S.phone,p_prefs:p}).catch(e=>console.error(e));return}
   if(a==='fb-filter'){S.fbFilter=S.fbFilter===b.dataset.v?null:b.dataset.v;return render()}
+  if(a==='fb-set'&&S.realPhone){S.fbErr=VIEWONLY;return render()}
   if(a==='fb-set'){const id=+b.dataset.id,st=b.dataset.v,f=(S.fb||[]).find(x=>x.id===id);if(f){const was=f.status;f.status=st;S.fbErr=null;S.fbOpen=(S.fb||[]).filter(x=>x.status==='new').length;render();
     rpc('hanhala_feedback_set',{p_phone:S.phone,p_id:id,p_status:st}).catch(e=>{console.error(e);f.status=was;S.fbOpen=(S.fb||[]).filter(x=>x.status==='new').length;S.fbErr='העדכון לא נשמר. נסו שוב.';render()})}return}
   if(a==='perm-tab'){S.permTab=b.dataset.v;S.edit=null;S.openRole=null;S.adminErr=null;S.adminOk=false;return render()}
   if(a==='jump'){const el=document.getElementById(b.dataset.v);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return}
   if(a==='filter'){const v=+b.dataset.v;S.filter=S.filter===v?0:v;return render()}
-  if(a==='logout')return logout();
+  if(a==='as'){const p=(S.people||[]).find(x=>x.phone===b.dataset.v);if(p)startAs(p);return}
+  if(a==='as-stop')return stopAs();
+  if(a==='logout')return S.realPhone?stopAs():logout();
   if(a==='refresh')return refresh(true);
   if(a==='today'){S.date=schoolDay(today());return refresh(false)}
   if(a==='day'){let d=addDays(S.date,+b.dataset.n);while(dow(d)===6)d=addDays(d,+b.dataset.n);S.date=d;return refresh(false)}
