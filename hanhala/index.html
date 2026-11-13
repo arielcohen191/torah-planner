@@ -175,10 +175,12 @@ input[type=tel]{min-height:56px;border:1.5px solid #c9d1db;border-radius:var(--r
 <body>
 <div id="root"><div class="loading">טוען…</div></div>
 <script src="/toranut/engine.js"></script>
+<script src="/demo/demo.js"></script>
 <script>
 'use strict';
 const CFG={url:'https://onocjgbtensczpdbeanf.supabase.co',key:'sb_publishable_JpV-E-qPnV9ZdnRnY9Kv8Q_TaRzCnyc'};
 async function rpc(fn,args){
+  if(window.KR_DEMO&&args&&KR_DEMO.isDemo(args.p_phone))return JSON.parse(JSON.stringify(KR_DEMO.rpc(fn,args)));
   const r=await fetch(CFG.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:CFG.key,Authorization:'Bearer '+CFG.key,'Content-Type':'application/json'},body:JSON.stringify(args||{})});
   const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
   if(!r.ok){const m=(j&&j.message)||t;throw new Error(/no_access/.test(m)?'no_access':m)}
@@ -781,6 +783,7 @@ function render(){
   const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view),setv=S.view==='prefs'||S.view==='perms'||S.view==='feedback'||S.view==='viewas';
   const title=S.view==='home'||S.view==='my'?(S.user.staff?greet(S.user.name):greetT(S.user.name)):S.view==='prefs'?'התאמה אישית':S.view==='perms'?'ניהול הרשאות':S.view==='feedback'?'משובים מהצוות':S.view==='viewas'?'כניסה בנעליים של איש צוות':v[1];
   let h=S.realPhone?'<div class="card banner asbar" role="status"><span>את/ה רואה את הלוח בדיוק כמו <b>'+esc(S.asName||S.user.name)+'</b> · צפייה בלבד</span><button class="btn sm" data-act="as-stop">חזרה אליי</button></div>':'';
+  if(window.KR_DEMO&&KR_DEMO.isDemo(S.phone))h+='<div class="card banner" role="status">'+esc(KR_DEMO.note)+'</div>';
   h+='<header class="card topbar"><div><h1>'+esc(title)+'</h1><div class="muted">'+(setv?esc(S.user.role_label):(S.view==='home'?esc(S.user.role_label)+' · ':S.view==='my'?'הדף שלי · ':'תמונת מצב · ')+fmtFull(S.date)+(isToday?' · היום':'')+(S.loadedAt?' · עודכן '+pad(S.loadedAt.getHours())+':'+pad(S.loadedAt.getMinutes()):''))+'</div></div>'+
     (setv?'':'<div class="chips"><button class="btn sec" data-act="day" data-n="-1">יום קודם</button><button class="btn sec" data-act="today" aria-pressed="'+isToday+'">היום</button><button class="btn sec" data-act="day" data-n="1">יום הבא</button><button class="btn" data-act="refresh">'+(S.busy?'מרענן…':'רענון')+'</button></div>')+'</header>';
   if(!setv&&S.view==='my'){if(hol)h+='<div class="card banner">'+esc(hol)+' — אין לימודים ביום הזה.</div>'}

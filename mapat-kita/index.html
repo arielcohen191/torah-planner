@@ -315,6 +315,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
   <a href="#" id="gateBack" hidden onclick="gateStep('phone');return false" class="hint" style="text-align:center">← מספר אחר</a></form></div>
 <div class="ov" id="ov"><div class="modal" id="modal"></div></div>
 
+<script src="/demo/demo.js"></script>
 <script id="saved" type="application/json"></script>
 <script>
 window.PILOT={className:"",teacher:"",students:[]};
@@ -729,6 +730,7 @@ function readFile(f){window.SAVED=null;window._isDemo=false;if(!f)return;const r
 // ================= חיבור לשרת (Supabase) · כניסה, כיתות, שמירת שאלון, ניהול צוות =================
 const CFG={url:"https://onocjgbtensczpdbeanf.supabase.co",key:"sb_publishable_JpV-E-qPnV9ZdnRnY9Kv8Q_TaRzCnyc"};
 async function rpc(fn,args){
+  if(window.KR_DEMO&&args&&KR_DEMO.isDemo(args.p_phone))return JSON.parse(JSON.stringify(KR_DEMO.rpc(fn,args)));
   const r=await fetch(CFG.url+"/rest/v1/rpc/"+fn,{method:"POST",headers:{apikey:CFG.key,Authorization:"Bearer "+CFG.key,"Content-Type":"application/json"},body:JSON.stringify(args||{})});
   if(!r.ok)throw new Error("server "+r.status);return r.json();
 }
@@ -803,7 +805,7 @@ async function openClass(c){
   load(rows,d.class_name,d.teacher||"");
   const sync=d.synced_at?new Date(d.synced_at).toLocaleString("he-IL",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}):null;
   document.getElementById("subttl").textContent=(d.teacher?"מחנך: "+d.teacher+" · ":"")+(rows.length?rows.length+" תלמידים · ":"")+(sync?"עודכן מהטבלה "+sync:"");
-  document.getElementById("demoTag").innerHTML=rows.length?"":`<span class="demo">הטבלה של ${esc(d.class_name)} עוד לא סונכרנה מגוגל שיטס.${" בינתיים אפשר כבר למלא את השאלון."}</span>`;
+  document.getElementById("demoTag").innerHTML=rows.length?(window.KR_DEMO&&KR_DEMO.isDemo(SES.phone)?`<span class="demo">${esc(KR_DEMO.note)}</span>`:""):`<span class="demo">הטבלה של ${esc(d.class_name)} עוד לא סונכרנה מגוגל שיטס.${" בינתיים אפשר כבר למלא את השאלון."}</span>`;
   go(document.querySelector("#nav button.on:not([hidden])")?.dataset.v||"overview");
 }
 function showNoClass(t){document.getElementById("ttl").textContent=t;document.getElementById("subttl").textContent=""}
