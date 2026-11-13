@@ -107,6 +107,10 @@
   function reading(){seed=11;return {students:NAMES.map((n,i)=>{const p=PROFILE[i],s=p===2?45+Math.round(rnd()*15):p===1?62+Math.round(rnd()*18):78+Math.round(rnd()*20);
     return {n,s:String(s),p:s>=90?4:s>=80?3:s>=70?2:s>=60?1:0,c:s<60?'זקוק לתרגול שטף יומי':''}})}}
   let Q=null;
+  /* תצוגת מורה מקצועי (כמו בשרת): רק העמודות המותרות, והציונים רק במקצועות שהוא מלמד בכיתה */
+  const SUBJ_COLS=[0,1,2,4,5,7,8,9,10,11,15,16,17,18,20,22,23,24,25,31,32,33,34,35];
+  function subjRows(rs,grades){const ok=new Set(SUBJ_COLS);grades.forEach(g=>[0,1,2,3].forEach(k=>ok.add(g+k)));
+    return rs.map(r=>r.map((x,i)=>ok.has(i)?x:''))}
 
   function rpc(fn,a){
     a=a||{};
@@ -116,8 +120,9 @@
       case 'hanhala_my':return my();
       case 'hanhala_save_prefs':return null;
       case 'mk_check_phone':return {status:'pin'};
-      case 'mk_login':case 'mk_create_pin':return a.p_pin===PIN||a.p_new_pin?{name:'נועם ישראלי',role:'teacher',class_name:CLS,classes:[],can_manage:false}:{error:'bad'};
-      case 'mk_get':return {class_name:CLS,teacher:'נועם ישראלי',rows:rows(),reading:reading(),voices:[],synced_at:new Date(Date.now()-36e5).toISOString(),sync_url:null};
+      case 'mk_login':case 'mk_create_pin':return a.p_pin===PIN||a.p_new_pin?{name:'נועם ישראלי',role:'teacher',class_name:CLS,classes:[{class_name:CLS,has_data:true,teacher:'נועם ישראלי'},{class_name:CLS2,has_data:true,teacher:'מחנך ה׳8',view:'subject'}],can_manage:false}:{error:'bad'};
+      case 'mk_get':if(a.p_class===CLS2)return {class_name:CLS2,teacher:'מחנך ה׳8',view:'subject',grades:[40],rows:subjRows(rows(),[40]),reading:null,voices:[],synced_at:new Date(Date.now()-36e5).toISOString(),sync_url:null};
+        return {class_name:CLS,teacher:'נועם ישראלי',rows:rows(),reading:reading(),voices:[],synced_at:new Date(Date.now()-36e5).toISOString(),sync_url:null};
       case 'mk_my_q':return Q||{};
       case 'mk_save_q':Q={part_a:a.p_part_a,part_b:a.p_part_b};return {ok:true};
       case 'mk_change_pin':return {error:'forbidden'};
