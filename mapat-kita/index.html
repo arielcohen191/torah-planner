@@ -802,9 +802,13 @@ function afterLogin(){
 // ----- תצוגת מורה מקצועי: השרת שולח רק את העמודות המותרות (view:"subject", grades: עמודות הציון של המקצועות שהוא מלמד בכיתה).
 // כאן רק מתאימים את התצוגה: בלי התחום הערכי, בלי מלל חופשי ברגשי ובחברתי, והישגים רק במקצוע שלו.
 let ALL_DOMAINS=null,ALL_SUBJ=null;
+const SUBJ_COL={"עברית":36,"לשון":36,"מתמטיקה":40,"גיאומטריה":40,"אנגלית":44,"מדעים":48,"חנג":60};
 function applyView(d){
   if(!ALL_DOMAINS){ALL_DOMAINS=DOMAINS.map(x=>({...x,cols:[...x.cols]}));ALL_SUBJ=[...SUBJ]}
-  const sub=d.view==="subject",ok=new Set(d.grades||[]);if(ok.has(36))ok.add(66);
+  // השרת מסמן limited:true ושולח subjects (שמות המקצועות ממערכת השעות); מכאן נגזרות עמודות הציון שמותר להציג
+  const sub=d.limited===true||d.view==="subject",ok=new Set(d.grades||[]);
+  (d.subjects||[]).forEach(n=>{const k=String(n||"").replace(/[^א-ת]/g,""),c=SUBJ_COL[k];if(c)ok.add(c)});
+  if(ok.has(36))ok.add(66);
   STATE.view=sub?"subject":"full";
   DOMAINS.length=0;ALL_DOMAINS.forEach(x=>{
     if(!sub){DOMAINS.push({...x,cols:[...x.cols]});return}
@@ -819,7 +823,7 @@ function applyView(d){
 }
 function renderClassList(){
   document.getElementById("classList").innerHTML=USER.classes.map(c=>`<button data-c="${esc(c.class_name)}" class="${c.class_name==CUR_CLASS?'on':''}" onclick="openClass(this.dataset.c)" title="${c.teacher?esc(c.teacher):'לא שויך מחנך'}">
-    <span>${esc(c.class_name)}${c.view==="subject"?' <small style="opacity:.75">· מקצועי</small>':""}</span><i class="dot ${c.has_data?'ok':''}" title="${c.has_data?'יש נתונים':'אין עדיין נתונים'}"></i>${c.has_q?'<i class="qd" title="השאלון מולא">📝</i>':''}</button>`).join("");
+    <span>${esc(c.class_name)}${c.view==="subject"||c.limited?' <small style="opacity:.75">· מקצועי</small>':""}</span><i class="dot ${c.has_data?'ok':''}" title="${c.has_data?'יש נתונים':'אין עדיין נתונים'}"></i>${c.has_q?'<i class="qd" title="השאלון מולא">📝</i>':''}</button>`).join("");
 }
 async function openClass(c){
   CUR_CLASS=c;if(USER.classes.length)renderClassList();
