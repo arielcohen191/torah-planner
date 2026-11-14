@@ -525,7 +525,8 @@ table.wk input[type=checkbox]{width:20px;height:20px}
 
       <!-- MINE -->
       <section class="view" id="v-mine" hidden>
-        <div class="w"><div class="w-h"><h2>התוכניות שלי</h2></div><div class="w-b"><p class="hint">כל מקצוע וכיתה נשמרים כתוכנית נפרדת. לחיצה פותחת לעריכה.</p><div id="mineOut"></div></div></div>
+        <div class="w"><div class="w-h"><h2>התוכניות שלי</h2></div><div class="w-b"><p class="hint">כל מקצוע וכיתה נשמרים כתוכנית נפרדת. לחיצה פותחת לעריכה.</p><div id="mineOut"></div><div id="parOut"></div></div></div>
+        <div class="w" id="parPlan" hidden></div>
       </section>
 
       <!-- TEAM -->
@@ -1063,8 +1064,15 @@ let meName='',STAFF=[];
 const myCoord=()=>ROLES.coords?.[uid]||null;
 const coordSubs=()=>isAdmin?Object.keys(SUBJECTS):(myCoord()?.subjects||[]);
 const canSeeSubj=k=>isAdmin||coordSubs().includes(k);
-const canTeam=()=>isAdmin||coordSubs().length>0;
-const roleLabel=()=>isAdmin?'הנהלה':myCoord()?'רכז/ת '+coordSubs().map(k=>SUBJECTS[k]?.label.replace(' (רשימה חופשית)','')).join(', '):'מורה';
+/* רכז/ת שכבה או מנהל/ת בית: רואה את כל התוכניות בשכבות שלו, בכל המקצועות */
+const myGrades=()=>isAdmin?[]:(myCoord()?.grades||[]);
+const canSeePlan=p=>!!p&&(isAdmin||coordSubs().includes(p.subject)||myGrades().includes(p.grade));
+const canSeeCol=k=>isAdmin||coordSubs().includes(k)||myGrades().length>0;
+const canTeam=()=>isAdmin||coordSubs().length>0||myGrades().length>0;
+const gradesLbl=g=>'שכבות '+g.map(x=>x+'׳').join(', ');
+const roleLabel=()=>{if(isAdmin)return 'הנהלה';const c=myCoord();if(!c)return 'מורה';const a=[];
+  if((c.subjects||[]).length)a.push('רכז/ת '+c.subjects.map(k=>SUBJECTS[k]?.label.replace(' (רשימה חופשית)','')).join(', '));
+  if((c.grades||[]).length)a.push('רכז/ת '+gradesLbl(c.grades));return a.join(' · ')||'מורה'};
 function normPhone(p){let d=String(p||'').replace(/\D/g,'');if(d.indexOf('972')===0)d='0'+d.slice(3);return d}
 async function phoneId(p){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('tel:'+normPhone(p)));return 'p'+Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,40)}
 /* a role given by name only waits until that person first logs in, then locks to his phone */
@@ -1073,15 +1081,15 @@ function claimPending(){
   const me=nameWords(meName||S.teacher);if(!uid||!me.length||ROLES.admins?.[uid]||ROLES.coords?.[uid])return false;
   const i=(ROLES.pending||[]).findIndex(r=>{const w=nameWords(r.name);return w.length&&w.every(x=>me.includes(x))});if(i<0)return false;
   const r=ROLES.pending[i],next={admins:{...ROLES.admins},coords:{...ROLES.coords},pending:ROLES.pending.filter((_,j)=>j!==i)};
-  if(r.role==='admin')next.admins[uid]={name:r.name,tail:''};else next.coords[uid]={name:r.name,tail:'',subjects:r.subjects||[]};
+  if(r.role==='admin')next.admins[uid]={name:r.name,tail:''};else next.coords[uid]={name:r.name,tail:'',subjects:r.subjects||[],grades:r.grades||[]};
   ROLES=next;db&&db.doc('settings/roles').set(next).catch(()=>{});return true;
 }
 function applyRoles(){
   claimPending();
   isAdmin=platformAdmin||!!ROLES.admins?.[uid];
   const t=$('[data-v="team"]');t.hidden=!canTeam();
-  const lbl=isAdmin?'לוח בקרה – צוות':'לוח בקרה – '+coordSubs().map(k=>SUBJECTS[k].label).join(', ');t.lastChild.textContent=lbl;TITLES.team=lbl;
-  $('#tSubj').innerHTML='<option value="">'+(isAdmin?'כל המקצועות':'כל המקצועות שלי')+'</option>'+Object.entries(SUBJECTS).filter(([k])=>canSeeSubj(k)).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+  const lbl=isAdmin?'לוח בקרה – צוות':'לוח בקרה – '+[coordSubs().map(k=>SUBJECTS[k].label).join(', '),myGrades().length?gradesLbl(myGrades()):''].filter(Boolean).join(' · ');t.lastChild.textContent=lbl;TITLES.team=lbl;
+  $('#tSubj').innerHTML='<option value="">'+(isAdmin?'כל המקצועות':'כל המקצועות שלי')+'</option>'+Object.entries(SUBJECTS).filter(([k])=>canSeeCol(k)).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
   $('#meRole').textContent=roleLabel();
   const rt=$('[data-v="roles"]');if(rt)rt.hidden=!isAdmin||!window.claude?.standalone;
   const cur=$('#tabs [aria-selected="true"]');if(cur&&cur.hidden)showView('new');
@@ -1095,28 +1103,31 @@ function renderRoles(){
     <p class="hint">מזהים כל איש צוות לפי מספר הטלפון שאיתו הוא נכנס לאתר. אפשר גם בלי טלפון: ההרשאה תחכה, ותינתן אוטומטית כשמישהו בשם הזה ייכנס בפעם הראשונה. מורה בלי הרשאה רואה רק את התוכניות שלו.</p>
     ${STAFF.length?`<label class="f" style="margin-bottom:12px">בחירה מרשימת הצוות<select id="rStaff"><option value="">— בחרו איש צוות —</option>${STAFF.map(t=>`<option value="${esc(t.pid)}" data-name="${esc(t.name)}" data-tail="${esc(t.tail)}">${esc(t.name)} · …${esc(t.tail)}</option>`).join('')}</select><small style="color:var(--muted);font-weight:400">הרשימה מגיעה ממערכת מילוי המקום, לפי מספרי הטלפון בסמארטסקול</small></label>`:''}
     <div class="fields"><label class="f">טלפון (לא חובה)<input id="rPhone" type="tel" dir="ltr" style="text-align:right" placeholder="050-1234567"></label><label class="f">שם<input id="rName" placeholder="לדוגמה: הרב יוסי"></label>
-    <label class="f">תפקיד<select id="rRole"><option value="coord">רכז/ת מקצוע</option><option value="admin">הנהלה – רואה הכול</option></select></label></div>
+    <label class="f">תפקיד<select id="rRole"><option value="coord">רכז/ת מקצוע</option><option value="grade">רכז/ת שכבה או מנהל/ת בית</option><option value="admin">הנהלה – רואה הכול (גם רכזת פדגוגית)</option></select></label></div>
     <div id="rSubs" class="role-subs">${chips}</div>
+    <div id="rGrades" class="role-subs" hidden><div class="role-dom"><b>השכבות שלו/ה</b>${GRADES.map(g=>`<label class="pg-apply"><input type="checkbox" data-rgr="${g}"> שכבה ${g}׳</label>`).join('')}</div></div>
     <div class="actions"><button class="btn primary" type="button" id="rAdd">הוספה</button><span class="note-line" id="rMsg" style="margin:0"></span></div></div></div>
    <div class="w"><div class="w-h"><h2>בעלי הרשאות</h2></div><div class="tbl"><table class="list"><thead><tr><th>שם</th><th>טלפון</th><th>תפקיד</th><th>רואה</th><th></th></tr></thead><tbody>
     ${A.map(([id,r])=>`<tr><td><b>${esc(r.name||'')}</b></td><td dir="ltr" style="text-align:right">…${esc(r.tail||'')}</td><td><span class="chip ok">הנהלה</span></td><td>כל המקצועות והמורים</td><td>${id===uid?'<small style="color:var(--muted)">זה את/ה</small>':`<button class="btn ghost danger" data-rdel="admins|${esc(id)}">הסרה</button>`}</td></tr>`).join('')}
-    ${C.map(([id,r])=>`<tr><td><b>${esc(r.name||'')}</b></td><td dir="ltr" style="text-align:right">…${esc(r.tail||'')}</td><td><span class="chip">רכז/ת</span></td><td>${(r.subjects||[]).map(k=>esc(SUBJECTS[k]?.label||k)).join(', ')}</td><td><button class="btn ghost danger" data-rdel="coords|${esc(id)}">הסרה</button></td></tr>`).join('')}
-    ${PN.map((r,i)=>`<tr><td><b>${esc(r.name)}</b></td><td><small style="color:var(--muted)">ממתין לכניסה ראשונה</small></td><td><span class="chip">${r.role==='admin'?'הנהלה':'רכז/ת'}</span></td><td>${r.role==='admin'?'הכול':(r.subjects||[]).map(k=>esc(SUBJECTS[k]?.label||k)).join(', ')}</td><td><button class="btn ghost danger" data-rpdel="${i}">הסרה</button></td></tr>`).join('')}
+    ${C.map(([id,r])=>`<tr><td><b>${esc(r.name||'')}</b></td><td dir="ltr" style="text-align:right">…${esc(r.tail||'')}</td><td><span class="chip">רכז/ת</span></td><td>${[(r.subjects||[]).map(k=>esc(SUBJECTS[k]?.label||k)).join(', '),(r.grades||[]).length?gradesLbl(r.grades):''].filter(Boolean).join(' · ')}</td><td><button class="btn ghost danger" data-rdel="coords|${esc(id)}">הסרה</button></td></tr>`).join('')}
+    ${PN.map((r,i)=>`<tr><td><b>${esc(r.name)}</b></td><td><small style="color:var(--muted)">ממתין לכניסה ראשונה</small></td><td><span class="chip">${r.role==='admin'?'הנהלה':'רכז/ת'}</span></td><td>${r.role==='admin'?'הכול':r.role==='grade'?gradesLbl(r.grades||[]):(r.subjects||[]).map(k=>esc(SUBJECTS[k]?.label||k)).join(', ')}</td><td><button class="btn ghost danger" data-rpdel="${i}">הסרה</button></td></tr>`).join('')}
     ${!A.length&&!C.length&&!PN.length?'<tr><td colspan="5" class="empty">אין עדיין הרשאות.</td></tr>':''}</tbody></table></div></div>`;
-  const rr=$('#rRole');rr.onchange=()=>{$('#rSubs').hidden=rr.value!=='coord'};
+  const rr=$('#rRole');rr.onchange=()=>{$('#rSubs').hidden=rr.value!=='coord';$('#rGrades').hidden=rr.value!=='grade'};
   const rs=$('#rStaff');if(rs)rs.onchange=()=>{const o=rs.selectedOptions[0];$('#rName').value=o?.dataset.name?o.dataset.name.replace(/^הרב\s+/,''):'';$('#rPhone').value='';$('#rPhone').disabled=!!rs.value};
 }
 async function saveRoles(next){try{await db.doc('settings/roles').set(next);ROLES=next;applyRoles();toast('ההרשאות נשמרו')}catch(e){toast('השמירה נכשלה')}}
 document.addEventListener('click',async e=>{
   if(e.target.closest('#rAdd')){const ph=normPhone($('#rPhone').value),name=$('#rName').value.trim(),role=$('#rRole').value,so=$('#rStaff')?.selectedOptions[0];
+    const grs=$$('[data-rgr]').filter(x=>x.checked).map(x=>x.dataset.rgr);if(role==='grade'&&!grs.length){$('#rMsg').textContent='נא לבחור לפחות שכבה אחת';return}
+    const coordOf=(prev,tail,subs)=>({...(prev||{}),name,tail,subjects:role==='coord'?subs:(prev?.subjects||[]),grades:role==='grade'?grs:(prev?.grades||[])});
     if(so&&so.value){if(!name){$('#rMsg').textContent='נא לכתוב שם';return}const subs0=$$('[data-rsub]').filter(x=>x.checked).map(x=>x.dataset.rsub);if(role==='coord'&&!subs0.length){$('#rMsg').textContent='נא לבחור לפחות מקצוע אחד';return}
-      const id=so.value,next={admins:{...(ROLES.admins||{})},coords:{...(ROLES.coords||{})},pending:(ROLES.pending||[]).filter(r=>r.name!==name)};delete next.admins[id];delete next.coords[id];
-      if(role==='admin')next.admins[id]={name,tail:so.dataset.tail};else next.coords[id]={name,tail:so.dataset.tail,subjects:subs0};saveRoles(next);return}
+      const id=so.value,next={admins:{...(ROLES.admins||{})},coords:{...(ROLES.coords||{})},pending:(ROLES.pending||[]).filter(r=>r.name!==name)};const prev=next.coords[id];delete next.admins[id];delete next.coords[id];
+      if(role==='admin')next.admins[id]={name,tail:so.dataset.tail};else next.coords[id]=coordOf(prev,so.dataset.tail,subs0);saveRoles(next);return}
     if(ph&&!/^0[2-9][0-9]{7,8}$/.test(ph)){$('#rMsg').textContent='מספר טלפון לא תקין';return}if(!name){$('#rMsg').textContent='נא לכתוב שם';return}
     const subs=$$('[data-rsub]').filter(x=>x.checked).map(x=>x.dataset.rsub);if(role==='coord'&&!subs.length){$('#rMsg').textContent='נא לבחור לפחות מקצוע אחד';return}
-    if(!ph){saveRoles({...ROLES,pending:[...(ROLES.pending||[]).filter(r=>r.name!==name),{name,role,subjects:role==='coord'?subs:[]}]});return}
-    const id=await phoneId(ph),next={admins:{...(ROLES.admins||{})},coords:{...(ROLES.coords||{})},pending:(ROLES.pending||[]).filter(r=>r.name!==name)};delete next.admins[id];delete next.coords[id];
-    if(role==='admin')next.admins[id]={name,tail:ph.slice(-3)};else next.coords[id]={name,tail:ph.slice(-3),subjects:subs};saveRoles(next);return}
+    if(!ph){saveRoles({...ROLES,pending:[...(ROLES.pending||[]).filter(r=>r.name!==name),{name,role,subjects:role==='coord'?subs:[],grades:role==='grade'?grs:[]}]});return}
+    const id=await phoneId(ph),next={admins:{...(ROLES.admins||{})},coords:{...(ROLES.coords||{})},pending:(ROLES.pending||[]).filter(r=>r.name!==name)};const prev=next.coords[id];delete next.admins[id];delete next.coords[id];
+    if(role==='admin')next.admins[id]={name,tail:ph.slice(-3)};else next.coords[id]=coordOf(prev,ph.slice(-3),subs);saveRoles(next);return}
   const pd=e.target.closest('[data-rpdel]');if(pd){saveRoles({...ROLES,pending:(ROLES.pending||[]).filter((_,j)=>j!==+pd.dataset.rpdel)});return}
   const d=e.target.closest('[data-rdel]');if(d){const [k,id]=d.dataset.rdel.split('|');const next={admins:{...(ROLES.admins||{})},coords:{...(ROLES.coords||{})},pending:ROLES.pending||[]};delete next[k][id];saveRoles(next)}
 });
@@ -1464,7 +1475,14 @@ function prow(p,attr){
   const pc=cover(p.summary);
   return `<div class="prow" ${attr} role="button" tabindex="0"><span class="av" style="--c:${SC(p.subject)}">${esc(p.grade)}${esc(String(p.cls||'').slice(0,2))}</span><div style="min-width:0"><div class="pname"><span>${subjLbl(p)}</span><small>${esc(p.teacher||'')}${p.summary?.finish?' · מסיים '+heb(p.summary.finish).split(' ').slice(0,2).join(' '):''}${p.summary?.past?` · בוצע ${p.summary.done}/${p.summary.past}`:''}</small></div><div class="bar"><i style="width:${pc}%;--c:${SC(p.subject)}"></i></div></div><span class="pct" style="background:${p.summary?.ok?'var(--ok)':'var(--bad)'}">${Math.round(pc)}%</span></div>`;
 }
+function renderPar(){
+  const el=$('#parOut');if(!el)return;
+  const mine=Object.values(myDoc.plans||{}).filter(p=>p.grade&&p.subject),keys=new Set(mine.map(p=>p.grade+'|'+p.subject));
+  const rows=[];team.forEach(t=>{if(t.uid===uid)return;Object.entries(t.plans||{}).forEach(([id,p])=>{if(keys.has(p.grade+'|'+p.subject))rows.push({u:t.uid,id,p})})});
+  el.innerHTML=rows.length?`<h3 style="margin:18px 0 4px">תוכניות מקבילות בשכבה</h3><p class="hint">תוכניות של מורים אחרים באותה שכבה ובאותו מקצוע שאתם מלמדים. לצפייה, כדי לתאם.</p>${rows.map(r=>prow(r.p,`data-par="${esc(r.u+'|'+r.id)}"`)).join('')}`:'';
+}
 function renderMine(){
+  setTimeout(renderPar,0);
   const el=$('#mineOut');
   if(!db||!uid){el.innerHTML='<div class="empty">כדי לשמור ולראות תוכניות, היכנסו עם החשבון שלכם בעמוד הזה.</div>';return}
   if(!mineLoaded){el.innerHTML='<div class="empty">טוען את התוכניות שלך…</div>';return}
@@ -1483,7 +1501,9 @@ document.addEventListener('click',async e=>{
   const op=e.target.closest('[data-open]');
   if(op){const p=myDoc.plans[op.dataset.open];if(p){S={...blank(),...p,id:op.dataset.open};delete S.summary;delete S.updatedAt;initForm();persistDraft();showView('new');goStep(3)}return}
   const ot=e.target.closest('[data-team]');
-  if(ot){const [u,id]=ot.dataset.team.split('|');const t=team.find(x=>x.uid===u);const p=t?.plans?.[id];if(p&&canSeeSubj(p.subject))showTeamPlan(p,u,id);return}
+  if(ot){const [u,id]=ot.dataset.team.split('|');const t=team.find(x=>x.uid===u);const p=t?.plans?.[id];if(p&&canSeePlan(p))showTeamPlan(p,u,id);return}
+  const op2=e.target.closest('[data-par]');
+  if(op2){const [u,id]=op2.dataset.par.split('|');const t=team.find(x=>x.uid===u);const p=t?.plans?.[id];if(p)showTeamPlan(p,u,id,'#parPlan');return}
 });
 const ICON={doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/></svg>',ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l5 5 9-10"/></svg>',bad:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7v6M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>'};
 function donut(parts,size){
@@ -1497,11 +1517,11 @@ function renderTeam(){
   if(!teamLoaded){el.innerHTML='<div class="w"><div class="w-b"><div class="empty">טוען את תוכניות הצוות…</div></div></div>';return}
   const fg=$('#tGrade').value,fs=$('#tSubj').value;
   if(!canTeam()){el.innerHTML='<div class="w"><div class="w-b"><div class="empty">לוח הבקרה פתוח להנהלה ולרכזי המקצועות.</div></div></div>';return}
-  const allRows=[];team.forEach(t=>Object.entries(t.plans||{}).forEach(([id,p])=>{if(canSeeSubj(p.subject))allRows.push({u:t.uid,id,p})}));
+  const allRows=[];team.forEach(t=>Object.entries(t.plans||{}).forEach(([id,p])=>{if(canSeePlan(p))allRows.push({u:t.uid,id,p})}));
   const rows=allRows.filter(({p})=>(!fg||p.grade===fg)&&(!fs||p.subject===fs));
   rows.sort((a,b)=>GRADES.indexOf(a.p.grade)-GRADES.indexOf(b.p.grade)||String(a.p.cls).localeCompare(String(b.p.cls)));
   if(false){
-    el.innerHTML=`<div class="w"><div class="w-h"><h2>חלוקת העבודה – שכבה × מקצוע</h2></div><div class="w-b" style="padding-bottom:4px"><p class="hint">מי בונה תוכנית לאיזו שכבה ובאיזה מקצוע, כדי לא לעבוד פעמיים. לוח הבקרה המלא פתוח לרכז.</p></div><div class="tbl"><table class="list"><thead><tr><th>שכבה</th>${MATRIX_SUBJ.filter(canSeeSubj).map(k=>`<th><span class="subj-tag"><span class="dot" style="background:${SC(k)}"></span>${SUBJECTS[k].label}</span></th>`).join('')}</tr></thead><tbody>${GRADES.filter(gr=>!fg||gr===fg).map(gr=>`<tr><td><b>${gr}׳</b></td>${MATRIX_SUBJ.filter(canSeeSubj).map(k=>{const ps=allRows.filter(r=>r.p.grade===gr&&r.p.subject===k);return `<td>${ps.length?[...new Set(ps.map(r=>r.p.teacher||'מורה'))].map(t=>`<span class="chip" style="margin:2px">${esc(t)}</span>`).join(''):'<span class="chip" style="opacity:.6">פנוי</span>'}</td>`}).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+    el.innerHTML=`<div class="w"><div class="w-h"><h2>חלוקת העבודה – שכבה × מקצוע</h2></div><div class="w-b" style="padding-bottom:4px"><p class="hint">מי בונה תוכנית לאיזו שכבה ובאיזה מקצוע, כדי לא לעבוד פעמיים. לוח הבקרה המלא פתוח לרכז.</p></div><div class="tbl"><table class="list"><thead><tr><th>שכבה</th>${MATRIX_SUBJ.filter(canSeeCol).map(k=>`<th><span class="subj-tag"><span class="dot" style="background:${SC(k)}"></span>${SUBJECTS[k].label}</span></th>`).join('')}</tr></thead><tbody>${GRADES.filter(gr=>!fg||gr===fg).map(gr=>`<tr><td><b>${gr}׳</b></td>${MATRIX_SUBJ.filter(canSeeCol).map(k=>{const ps=allRows.filter(r=>r.p.grade===gr&&r.p.subject===k);return `<td>${ps.length?[...new Set(ps.map(r=>r.p.teacher||'מורה'))].map(t=>`<span class="chip" style="margin:2px">${esc(t)}</span>`).join(''):'<span class="chip" style="opacity:.6">פנוי</span>'}</td>`}).join('')}</tr>`).join('')}</tbody></table></div></div>`;
     return;
   }
   const n=rows.length,okN=rows.filter(r=>r.p.summary?.ok).length,avg=n?rows.reduce((a,r)=>a+cover(r.p.summary),0)/n:0;
@@ -1517,15 +1537,15 @@ function renderTeam(){
       <div class="w"><div class="w-h"><h2>תוכניות לפי מקצוע</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="w-b"><div class="donut-wrap">${donut(bySubj,150)}<div class="legend">${bySubj.filter(s=>s.n).map(s=>`<div><span class="dot" style="background:${s.c}"></span>${s.l}<b>${s.n}</b></div>`).join('')}</div></div></div></div>
       <div class="w"><div class="w-h"><h2>עדכונים אחרונים</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="w-b"><ul class="tl">${recent.map(r=>`<li><span class="bul" style="--c:${SC(r.p.subject)}">${esc(r.p.grade)}</span><div><b>${esc(r.p.teacher||'מורה')} עדכן/ה ${subjLbl(r.p)}</b><small>${r.p.updatedAt?gregFull(r.p.updatedAt.slice(0,10))+' · '+r.p.updatedAt.slice(11,16):''}</small></div></li>`).join('')}</ul></div></div>
     </div></div>
-  <div class="w"><div class="w-h"><h2>חלוקת העבודה – שכבה × מקצוע</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="tbl"><table class="list"><thead><tr><th>שכבה</th>${MATRIX_SUBJ.filter(canSeeSubj).map(k=>`<th><span class="subj-tag"><span class="dot" style="background:${SC(k)}"></span>${SUBJECTS[k].label}</span></th>`).join('')}</tr></thead><tbody>${GRADES.filter(gr=>!fg||gr===fg).map(gr=>`<tr><td><b>${gr}׳</b></td>${MATRIX_SUBJ.filter(canSeeSubj).map(k=>{const ps=allRows.filter(r=>r.p.grade===gr&&r.p.subject===k);return `<td>${ps.length?ps.map(r=>`<div data-team="${esc(r.u+'|'+r.id)}" style="cursor:pointer;margin:2px 0">${statusChip(r.p.summary).replace(/>[^<]*</,'>'+esc(r.p.teacher||'מורה')+'<')}</div>`).join(''):'<span class="chip">פנוי</span>'}</td>`}).join('')}</tr>`).join('')}</tbody></table></div></div>
+  <div class="w"><div class="w-h"><h2>חלוקת העבודה – שכבה × מקצוע</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="tbl"><table class="list"><thead><tr><th>שכבה</th>${MATRIX_SUBJ.filter(canSeeCol).map(k=>`<th><span class="subj-tag"><span class="dot" style="background:${SC(k)}"></span>${SUBJECTS[k].label}</span></th>`).join('')}</tr></thead><tbody>${GRADES.filter(gr=>!fg||gr===fg).map(gr=>`<tr><td><b>${gr}׳</b></td>${MATRIX_SUBJ.filter(canSeeCol).map(k=>{const ps=allRows.filter(r=>r.p.grade===gr&&r.p.subject===k);return `<td>${ps.length?ps.map(r=>`<div data-team="${esc(r.u+'|'+r.id)}" style="cursor:pointer;margin:2px 0">${statusChip(r.p.summary).replace(/>[^<]*</,'>'+esc(r.p.teacher||'מורה')+'<')}</div>`).join(''):'<span class="chip">פנוי</span>'}</td>`}).join('')}</tr>`).join('')}</tbody></table></div></div>
   <div class="w"><div class="w-h"><h2>כל התוכניות</h2><div class="tools"><button data-min aria-label="מזעור">−</button></div></div><div class="tbl"><table class="list"><thead><tr><th>מורה</th><th>כיתה</th><th>מקצוע</th><th>טווח</th><th>זמינות / נדרשות</th><th>סיום משוער</th><th>מצב</th><th>מעקב ביצוע</th><th>עודכן</th></tr></thead><tbody>${rows.map(({u,id,p})=>`<tr class="click" data-team="${esc(u+'|'+id)}"><td>${esc(p.teacher)}</td><td>${esc(p.grade)}׳${esc(p.cls||'')}</td><td><span class="subj-tag"><span class="dot" style="background:${SC(p.subject)}"></span>${subjLbl(p)}</span></td><td>${esc(p.summary?.from)} – ${esc(p.summary?.to)}</td><td>${p.summary?.available} / ${p.summary?.needed}</td><td>${p.summary?.finish?heb(p.summary.finish):'—'}</td><td>${statusChip(p.summary)}</td><td>${progCell(p.summary)}</td><td>${p.updatedAt?greg(p.updatedAt.slice(0,10)):''}</td></tr>`).join('')}</tbody></table></div></div>`;
   el.innerHTML=html;
 }
 $('#tGrade').onchange=renderTeam;$('#tSubj').onchange=renderTeam;
-function showTeamPlan(p,u,id){
-  const el=$('#teamPlan');const R=compute(p,allHol());const v=verdict(R);
+function showTeamPlan(p,u,id,target){
+  const el=$(target||'#teamPlan');const R=compute(p,allHol());const v=verdict(R);
   el.hidden=false;
-  el.innerHTML=`<div class="banner"><div><h2>תוכנית ${esc(SUBJECTS[p.subject].label)}${!isTpl(p.subject)?' – '+esc(booksLabel(p)):''}</h2><div class="meta">${metaLine(p)}</div></div><div class="chips">${canSeeSubj(p.subject)?'<button class="btn" id="editTeam">עריכה (רכז)</button>':''}<button class="btn" id="closeTeam">סגירה</button></div></div><div class="sched"><div class="status ${v.ok?'ok':'warn'}" style="margin:12px 0 4px"><b>${v.title}</b>${v.text||`זמינות ${r2(R.available)} שעות מתוך ${r2(R.needed)} נדרשות.`}</div>${planHTML(p,R,'list')}</div>`;
+  el.innerHTML=`<div class="banner"><div><h2>תוכנית ${esc(SUBJECTS[p.subject].label)}${!isTpl(p.subject)?' – '+esc(booksLabel(p)):''}</h2><div class="meta">${metaLine(p)}</div></div><div class="chips">${canSeePlan(p)?'<button class="btn" id="editTeam">עריכה (רכז)</button>':''}<button class="btn" id="closeTeam">סגירה</button></div></div><div class="sched"><div class="status ${v.ok?'ok':'warn'}" style="margin:12px 0 4px"><b>${v.title}</b>${v.text||`זמינות ${r2(R.available)} שעות מתוך ${r2(R.needed)} נדרשות.`}</div>${planHTML(p,R,'list')}</div>`;
   $('#closeTeam').onclick=()=>{el.hidden=true};el.scrollIntoView({behavior:'smooth',block:'start'});
   const eb=$('#editTeam');if(eb)eb.onclick=()=>{S={...blank(),...p,id,_owner:u===uid?undefined:u};delete S.summary;delete S.updatedAt;initForm();el.hidden=true;showView('new');goStep(3)};
 }
@@ -1566,7 +1586,7 @@ initForm();renderSubjPick();renderLedger();renderHero();
   if(uid){const t=setTimeout(()=>{if(!mineLoaded){mineLoaded=true;renderMine()}},10000);
     db.doc('plans/'+uid).onSnapshot(s=>{clearTimeout(t);mineLoaded=true;myDoc=s.exists?s.data():{plans:{}};renderMine();renderHero()},()=>{clearTimeout(t);mineLoaded=true;renderMine()})}
   const t2=setTimeout(()=>{if(!teamLoaded){teamLoaded=true;renderTeam()}},10000);
-  db.collection('plans').onSnapshot(q=>{clearTimeout(t2);teamLoaded=true;team=q.docs.map(d=>({uid:d.id,...d.data()}));renderTeam();renderTaken()},()=>{clearTimeout(t2);teamLoaded=true;renderTeam()});
+  db.collection('plans').onSnapshot(q=>{clearTimeout(t2);teamLoaded=true;team=q.docs.map(d=>({uid:d.id,...d.data()}));renderTeam();renderTaken();renderPar()},()=>{clearTimeout(t2);teamLoaded=true;renderTeam()});
   renderHol();
 })();
 </script>

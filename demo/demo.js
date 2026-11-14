@@ -68,8 +68,8 @@
         tabs:ABS.map(a=>({name:a.name,from:a.from,to:a.to,hours:a.hours}))}],
       duty:{keys:DUTY,yards:null,subs:[]},
       plans:[
-        {subject:'torah',book:'ויקרא',grade:'ה',cls:'7',summary:{ok:true,from:'פרק א פסוק א',to:'פרק כז פסוק לד',count:859,unit:'פסוקים',finish:add(TODAY,170)},end:'2027-06-20'},
-        {subject:'navi',book:'שמואל א',grade:'ה',cls:'7',summary:{ok:false,from:'פרק א פסוק א',to:'פרק לא פסוק יג',count:811,unit:'פסוקים',finish:null},end:'2027-06-20'},
+        {subject:'torah',book:'שמות',grade:'ה',cls:'7',summary:{ok:true,from:'פרק א פסוק א',to:'פרק כד פסוק יח',count:660,unit:'פסוקים',finish:add(TODAY,170)},end:'2027-06-20'},
+        {subject:'navi',book:'שמואל א',grade:'ה',cls:'7',summary:{ok:true,from:'פרק א פסוק א',to:'פרק טז פסוק כג',count:406,unit:'פסוקים',finish:add(TODAY,160)},end:'2027-06-20'},
         {subject:'mishna',book:'ברכות',grade:'ה',cls:'7',summary:{ok:true,from:'פרק א משנה א',to:'פרק ט משנה ה',count:57,unit:'משניות',finish:add(TODAY,150)},end:'2027-06-20'}]};
   }
   const meObj={name:ME,roles:[],role_label:'',tools:[],levels:{},layers:[],staff:false,can_manage:false,prefs:{}};
