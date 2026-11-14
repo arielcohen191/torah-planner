@@ -95,7 +95,7 @@
   var ready=new Promise(function(resolve){
     function ask(){
       var box=document.createElement('div');box.id='gate';
-      box.innerHTML='<div class="gate-card"><div class="mark">כ״ר</div><h1>מתכנן הספק · תשפ״ז</h1><p>כנפי רוח · תכנון שנתי בלימודי הקודש</p><form id="gateForm">'+
+      box.innerHTML='<div class="gate-card"><div class="mark"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח"></div><h1>מתכנן הספק · תשפ״ז</h1><p>כנפי רוח · תכנון שנתי בלימודי הקודש</p><form id="gateForm">'+
         '<label class="f">מספר הטלפון שלך<input id="gatePhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="050-1234567" dir="ltr" style="text-align:right" required></label>'+
         '<label class="f">השם שלך<input id="gateName" autocomplete="name" placeholder="לדוגמה: הרב יוסף לוי" required></label>'+
         '<p class="note-line" style="margin:0">עם אותו מספר נכנסים מכל מחשב או טלפון ורואים את אותן תוכניות.</p>'+

@@ -197,12 +197,14 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
   body{background:#fff}
   .c1{background:#fff!important;color:#000}.c2{background:#ddd!important;color:#000}.c3{background:#555!important;color:#fff}
 }
+/* לוגו כנפי רוח במקום כ״ר */
+.mark{background:#fff!important;padding:2px;box-sizing:border-box;overflow:hidden}.mark img{width:100%;height:100%;object-fit:contain;display:block}.gate-card .mark,.gate .mark,#gate .mark{width:76px;height:76px;padding:6px;border-radius:18px}
 </style>
 </head>
 <body class="proj">
 <div class="app">
   <aside class="rail">
-    <div class="brand"><div class="mark">כ״ר</div><div><b>מפת כיתה</b><small>כנפי רוח · ישיבות פדגוגיות</small></div></div>
+    <div class="brand"><div class="mark"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח"></div><div><b>מפת כיתה</b><small>כנפי רוח · ישיבות פדגוגיות</small></div></div>
     <h6>ניווט</h6>
     <nav class="nav" id="nav">
       <button data-v="overview" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>תמונת כיתה</button>
@@ -314,7 +316,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 </div>
 
 <div id="gate" hidden><form class="gate-card" id="gateForm" onsubmit="event.preventDefault();gateSubmit()">
-  <div class="mark" style="margin:0 auto 12px">כ״ר</div><h1>מפת כיתה</h1><p id="gateSub">כנפי רוח · ישיבות פדגוגיות</p>
+  <div class="mark" style="margin:0 auto 12px"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח"></div><h1>מפת כיתה</h1><p id="gateSub">כנפי רוח · ישיבות פדגוגיות</p>
   <label class="f">מספר טלפון<input name="ph" inputmode="tel" autocomplete="tel" placeholder="05X-XXXXXXX" required></label>
   <label class="f" id="fPin" hidden>סיסמה<input name="pin" type="password" autocomplete="current-password"></label>
   <label class="f" id="fNew1" hidden>יצירת סיסמה (4 תווים לפחות)<input name="n1" type="password" autocomplete="new-password"></label>
