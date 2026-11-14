@@ -107,9 +107,9 @@
   function reading(){seed=11;return {students:NAMES.map((n,i)=>{const p=PROFILE[i],s=p===2?45+Math.round(rnd()*15):p===1?62+Math.round(rnd()*18):78+Math.round(rnd()*20);
     return {n,s:String(s),p:s>=90?4:s>=80?3:s>=70?2:s>=60?1:0,c:s<60?'זקוק לתרגול שטף יומי':''}})}}
   let Q=null;
-  /* תצוגת מורה מקצועי (כמו בשרת): רק העמודות המותרות, והציונים רק במקצועות שהוא מלמד בכיתה */
-  const SUBJ_COLS=[0,1,2,4,5,7,8,9,10,11,15,16,17,18,20,22,23,24,25,31,32,33,34,35];
-  function subjRows(rs,grades){const ok=new Set(SUBJ_COLS);grades.forEach(g=>[0,1,2,3].forEach(k=>ok.add(g+k)));
+  /* תצוגת מורה מקצועי (כמו _mk_limited_rows בשרת): רק העמודות המותרות, והציונים רק במקצועות שהוא מלמד בכיתה */
+  const SUBJ_COLS=[0,1,2,4,5,7,8,9,10,11,15,16,17,18,20,22,23,24,25,31,32,33,34];
+  function subjRows(rs,grades){const ok=new Set(SUBJ_COLS);grades.forEach(g=>[0,1].forEach(k=>ok.add(g+k)));
     return rs.map(r=>r.map((x,i)=>ok.has(i)?x:''))}
 
   function rpc(fn,a){
