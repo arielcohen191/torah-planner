@@ -4,7 +4,7 @@
    התאריכים מחושבים מהיום, כך שההדגמה נראית "חיה" בכל יום שפותחים אותה. */
 (function(){
   'use strict';
-  const PHONE='0500000000',PIN='1234',CLS="ה' 7",CLS2="ה' 8";
+  const PHONE='0500000000',PIN='1234',CLS="ה' 7",CLS2="ה' 8",CLS3="ה' 9";
   const digits=p=>String(p||'').replace(/\D/g,'').replace(/^972/,'0');
   const isDemo=p=>digits(p)===PHONE;
 
@@ -129,8 +129,14 @@
       case 'ped_save_decision':{const p=a.p||{};PDEC.push({id:++PID,created_at:new Date().toISOString(),by:'נועם ישראלי',class:p.class,nature:p.nature,scope:p.scope,students:p.scope==='student'?p.students:[],answer:p.answer,owner:p.owner,due:p.due,status:'open',notes:null,edit:true,nature_other:p.nature==='אחר'?p.nature_other:null,owner_name:p.owner==='מורה מקצועי'?p.owner_name:null});PDEC.sort((x,y)=>x.due<y.due?-1:1);return PID}
       case 'ped_update_decision':{const d=PDEC.find(x=>x.id===a.p_id),p=a.p||{};if(d){if(p.status)d.status=p.status;if('notes' in p)d.notes=p.notes||null;if(p.due)d.due=p.due;if(p.owner){d.owner=p.owner;d.owner_name=p.owner==='מורה מקצועי'?p.owner_name:null}}return null}
       case 'mk_check_phone':return {status:'pin'};
-      case 'mk_login':case 'mk_create_pin':return a.p_pin===PIN||a.p_new_pin?{name:'נועם ישראלי',role:'teacher',class_name:CLS,classes:[{class_name:CLS,has_data:true,teacher:'נועם ישראלי'},{class_name:CLS2,has_data:true,teacher:'מחנך ה׳8',limited:true}],can_manage:false}:{error:'bad'};
-      case 'mk_get':if(a.p_class===CLS2)return {class_name:CLS2,teacher:'מחנך ה׳8',limited:true,subjects:['מתמטיקה'],rows:subjRows(rows(),[40]),reading:null,voices:[],synced_at:new Date(Date.now()-36e5).toISOString(),sync_url:null};
+      case 'mk_login':case 'mk_create_pin':return a.p_pin===PIN||a.p_new_pin?{name:'נועם ישראלי',role:'teacher',class_name:CLS,classes:[{class_name:CLS,has_data:true,teacher:'נועם ישראלי'},{class_name:CLS2,has_data:true,teacher:'מחנך ה׳8',limited:true},{class_name:CLS3,has_data:true,teacher:'מחנך ה׳9',limited:true}],can_manage:false}:{error:'bad'};
+      case 'mk_shiluv_pick':try{sessionStorage.setItem('kr_demo_pick',JSON.stringify(a.p_students||[]))}catch(e){}return {ok:true,n:(a.p_students||[]).length};
+      case 'mk_get':if(a.p_class===CLS3){ /* כיתת הדגמה למורה שילוב: בוחרים תלמידים בכניסה הראשונה */
+          let pick=null;try{pick=JSON.parse(sessionStorage.getItem('kr_demo_pick'))}catch(e){}
+          const all=rows(),ok=new Set([0,1,2,4,5,6,7,8,9,10,11,15,16,17,18,20,22,23,24,25,26,31,32,33,34,36,37,40,41,44,45,48,49]);
+          const pr=pick?all.filter(r=>pick.includes(r[2])).map(r=>r.map((x,i)=>ok.has(i)?x:'')):null;
+          return {class_name:CLS3,teacher:'מחנך ה׳9',limited:true,shiluv:true,picked:pick||[],roster:all.map(r=>[r[1],r[2]]),rows:pr,reading:null,voices:[],synced_at:new Date(Date.now()-36e5).toISOString()}}
+        if(a.p_class===CLS2)return {class_name:CLS2,teacher:'מחנך ה׳8',limited:true,subjects:['מתמטיקה'],rows:subjRows(rows(),[40]),reading:null,voices:[],synced_at:new Date(Date.now()-36e5).toISOString(),sync_url:null};
         return {class_name:CLS,teacher:'נועם ישראלי',rows:rows(),reading:reading(),voices:[],synced_at:new Date(Date.now()-36e5).toISOString(),sync_url:null};
       case 'mk_my_q':return Q||{};
       case 'mk_save_q':Q={part_a:a.p_part_a,part_b:a.p_part_b};return {ok:true};

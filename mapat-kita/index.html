@@ -192,6 +192,7 @@ body.nodata #v-overview>:not(#qview):not(.keep){display:none}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 @media (max-width:820px){.mb,.sgrid{grid-template-columns:1fr}main{padding:14px}header{padding:14px 14px 0}}
 #printCards{display:none}
+.pick-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px 14px;max-height:52vh;overflow:auto}
 body.pc-measure #printCards{display:block;position:absolute;left:-9999px;top:0;width:130mm}
 .pcard{font:11pt/1.4 Heebo,Assistant,Rubik,sans-serif;color:#000;direction:rtl;background:#fff}
 .pc-h{display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #000;padding-bottom:5px;margin-bottom:7px}
@@ -573,7 +574,7 @@ function cardBody(s){
     return `<div><div class="dhead"><span>${d.name}</span><span class="p c${sc}" style="border-radius:20px;padding:0 10px;font-size:12.5px">${["לא מולא","תקין","לשים לב","דורש התערבות"][sc]}</span></div>${x.txt?`<div class="note ${sc<3?'y':''}">✎ ${esc(x.txt)}</div>`:""}${inds}</div>`}).join("");
   const subjNotes=SUBJ.map(x=>{const t=(s.r[x.c+(x.c==60?4:3)]||"").trim();return t?`<div class="note y"><b>${x.n}:</b> ${esc(t)}</div>`:""}).join("");
   return `   <div class="mb">
-    ${STATE.view==="subject"?"":`<div class="good">${esc(s.good)||'<span class="empty">טרם נכתב</span>'}</div>`}
+    ${STATE.view!=="full"?"":`<div class="good">${esc(s.good)||'<span class="empty">טרם נכתב</span>'}</div>`}
     <div class="sec"><h4>חוזקות</h4><div class="tags">${s.strengths.map(x=>`<span>${esc(x)}</span>`).join("")||'<span class="empty">—</span>'}</div>
      <h4 style="margin-top:14px">תחביבים ותחומי עניין</h4><div>${esc(s.hob)||'<span class="empty">לא ידוע — לפקוח עין</span>'}</div>
      ${STATE.view==="subject"?"":`<h4 style="margin-top:14px">מענים</h4><div>${s.maane.map(esc).join(" · ")||'<span class="empty">אין מענה רשום</span>'}</div>`}
@@ -596,7 +597,7 @@ function openS(i){CUR=i;const s=STATE.rows[i];const L=list();const pos=L.findInd
 /* כרטיס מודפס (A5): קודם השורה התחתונה לכל תחום, ורק מה שדורש תשומת לב מפורט. סימן + מילה, כדי שיעבוד בשחור־לבן. */
 const P_ST=[["—","לא מולא","n"],["✓","תקין","ok"],["!","לשים לב","mid"],["✗","דורש התערבות","bad"]];
 function printCard(s){
-  const sub=STATE.view==="subject",li=(t,v)=>v?`<div class="pc-li"><b>${t}</b> ${v}</div>`:"";
+  const sub=STATE.view!=="full",noMaane=STATE.view==="subject",li=(t,v)=>v?`<div class="pc-li"><b>${t}</b> ${v}</div>`:"";
   const rows=DOMAINS.map(d=>{const x=s.dom[d.id],st=P_ST[x.score]||P_ST[0];
     const det=d.cols.map((c,j)=>{const val=x.vals[j],lab=IND[c]?IND[c][0]:"";if(!val)return "";
       const txt=IND[c]?(IND[c][1][val]||P_ST[val][1]):"";const ach=d.id==="ach"||d.id==="ach2";
@@ -610,8 +611,8 @@ function printCard(s){
     ${li("חוזקות:",s.strengths.map(esc).join(" · "))}
     ${li("תחביבים:",esc(s.hob))}
     ${flags?`<div class="pc-li"><b>רקע:</b> ${flags}</div>`:""}
-    ${!sub?li("מענים:",s.maane.map(esc).join(" · ")):""}
-    ${!sub?li("צרכים משנים קודמות:",esc(s.prev)):""}
+    ${!noMaane?li("מענים:",s.maane.map(esc).join(" · ")):""}
+    ${!noMaane?li("צרכים משנים קודמות:",esc(s.prev)):""}
    </div>
    <table class="pc-t"><thead><tr><th>תחום</th><th>מצב</th><th>מה כדאי לדעת</th></tr></thead><tbody>${rows}</tbody></table>
    ${!sub&&s.extra?`<p class="pc-note"><b>תוספות מחנך:</b> ${esc(s.extra)}</p>`:""}
@@ -876,10 +877,11 @@ const SUBJ_COL={"עברית":36,"לשון":36,"מתמטיקה":40,"גיאומט�
 function applyView(d){
   if(!ALL_DOMAINS){ALL_DOMAINS=DOMAINS.map(x=>({...x,cols:[...x.cols]}));ALL_SUBJ=[...SUBJ]}
   // השרת מסמן limited:true ושולח subjects (שמות המקצועות ממערכת השעות); מכאן נגזרות עמודות הציון שמותר להציג
-  const sub=d.limited===true||d.view==="subject",ok=new Set(d.grades||[]);
+  const sub=d.limited===true||d.view==="subject",shiluv=d.shiluv===true,ok=new Set(d.grades||[]);
+  if(shiluv)ALL_SUBJ.forEach(x=>ok.add(x.c)); // מורה שילוב: כל ההישגים
   (d.subjects||[]).forEach(n=>{const k=String(n||"").replace(/[^א-ת]/g,""),c=SUBJ_COL[k];if(c)ok.add(c)});
   if(ok.has(36))ok.add(66);
-  STATE.view=sub?"subject":"full";
+  STATE.view=shiluv?"shiluv":sub?"subject":"full";
   DOMAINS.length=0;ALL_DOMAINS.forEach(x=>{
     if(!sub){DOMAINS.push({...x,cols:[...x.cols]});return}
     if(x.id==="val")return;
@@ -889,7 +891,7 @@ function applyView(d){
     DOMAINS.push(y)});
   SUBJ.length=0;ALL_SUBJ.forEach(x=>{if(!sub||ok.has(x.c))SUBJ.push(x)});
   document.body.classList.toggle("subj",sub);
-  document.getElementById("viewTag").innerHTML=sub?'<span class="demo" style="background:#e6f0fb;color:#1c4f8a">תצוגת מורה מקצועי: מוצג המידע שנוגע להוראה בכיתה. מידע משפחתי ורגשי מפורט נמצא אצל המחנך.</span>':"";
+  document.getElementById("viewTag").innerHTML=shiluv?`<span class="demo" style="background:#e6f0fb;color:#1c4f8a">תצוגת מורה שילוב: רק התלמידים שבחרת (${(d.picked||[]).length}), עם ההישגים, מיפוי הקריאה והמענים. <a href="#" onclick="openPick();return false">שינוי התלמידים שלי</a></span>`:sub?'<span class="demo" style="background:#e6f0fb;color:#1c4f8a">תצוגת מורה מקצועי: מוצג המידע שנוגע להוראה בכיתה. מידע משפחתי ורגשי מפורט נמצא אצל המחנך.</span>':"";
 }
 function renderClassList(){
   document.getElementById("classList").innerHTML=USER.classes.map(c=>`<button data-c="${esc(c.class_name)}" class="${c.class_name==CUR_CLASS?'on':''}" onclick="openClass(this.dataset.c)" title="${c.teacher?esc(c.teacher):'לא שויך מחנך'}">
@@ -900,7 +902,8 @@ async function openClass(c){
   document.getElementById("ttl").textContent="טוען את "+c+"…";
   let d;try{d=await rpc("mk_get",{p_phone:SES.phone,p_pin:SES.pin,p_class:c})}catch(e){showNoClass("אין חיבור לשרת כרגע.");return}
   if(d.error){if(d.error==="bad"||d.error==="locked"){logout();return}showNoClass(ERR[d.error]||d.error);return}
-  VOICES=d.voices||[];applyView(d);
+  VOICES=d.voices||[];applyView(d);window._pick=d.shiluv?{cls:d.class_name,roster:d.roster||[],picked:d.picked||[]}:null;
+  if(d.shiluv&&!(d.picked||[]).length){load([],d.class_name,d.teacher||"");document.getElementById("subttl").textContent="בחירת התלמידים שלך";openPick();return}
   const rows=mergeReading(d.rows?rowsFromSheet(d.rows):[],d.reading);window._syncUrl=d.sync_url||null;updateSyncBtn();
   document.body.classList.toggle("nodata",!rows.length);
   load(rows,d.class_name,d.teacher||"");
@@ -908,6 +911,20 @@ async function openClass(c){
   document.getElementById("subttl").textContent=(d.teacher?"מחנך: "+d.teacher+" · ":"")+(rows.length?rows.length+" תלמידים · ":"")+(sync?"עודכן מהטבלה "+sync:"");
   document.getElementById("demoTag").innerHTML=rows.length?(window.KR_DEMO&&KR_DEMO.isDemo(SES.phone)?`<span class="demo">${esc(KR_DEMO.note)}</span>`:""):`<span class="demo">הטבלה של ${esc(d.class_name)} עוד לא סונכרנה מגוגל שיטס.${" בינתיים אפשר כבר למלא את השאלון."}</span>`;
   go(document.querySelector("#nav button.on:not([hidden])")?.dataset.v||"overview");
+}
+/* מורה שילוב: בוחר את התלמידים שהוא מלמד בכיתה, ורואה רק אותם */
+function openPick(){const P=window._pick;if(!P)return;
+  document.getElementById("modal").innerHTML=`<div class="mh"><div><div style="opacity:.8;font-size:13px">${esc(P.cls)} · מורה שילוב</div><h3>אילו תלמידים אתה מלמד בכיתה?</h3></div><div class="nav2"><button onclick="closeS()">✕</button></div></div>
+   <div style="padding:16px 20px"><p class="hint" style="margin:0 0 10px">תראה במפה רק את התלמידים שתסמן. אפשר לשנות את הבחירה בכל זמן.</p>
+   ${P.roster.length?`<div class="pick-list">${P.roster.map(([n,nm])=>`<label class="cb"><input type="checkbox" value="${esc(nm)}" ${P.picked.includes(nm)?"checked":""}> ${esc(n)}. ${esc(nm)}</label>`).join("")}</div>`:'<p class="empty">הטבלה של הכיתה עוד לא סונכרנה, אין רשימת תלמידים.</p>'}
+   <div style="margin-top:14px;display:flex;gap:8px;align-items:center"><button class="btn primary" onclick="savePick(this)">שמירה</button><span id="pickMsg" class="hint" role="status"></span></div></div>`;
+  document.getElementById("ov").classList.add("on");
+}
+async function savePick(b){const st=[...document.querySelectorAll('.pick-list input:checked')].map(x=>x.value),m=document.getElementById("pickMsg");
+  if(!st.length){m.textContent="נא לסמן לפחות תלמיד אחד.";return}
+  b.disabled=true;m.textContent="שומר…";
+  try{const r=await rpc("mk_shiluv_pick",{p_phone:SES.phone,p_pin:SES.pin,p_class:CUR_CLASS,p_students:st});if(r.error)throw new Error(r.error);closeS();openClass(CUR_CLASS)}
+  catch(e){b.disabled=false;m.textContent="השמירה לא הצליחה. נסו שוב."}
 }
 function showNoClass(t){document.getElementById("ttl").textContent=t;document.getElementById("subttl").textContent=""}
 
