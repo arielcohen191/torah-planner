@@ -744,7 +744,7 @@ async function rpc(fn,args){
   const r=await fetch(CFG.url+"/rest/v1/rpc/"+fn,{method:"POST",headers:{apikey:CFG.key,Authorization:"Bearer "+CFG.key,"Content-Type":"application/json"},body:JSON.stringify(args||{})});
   if(!r.ok)throw new Error("server "+r.status);return r.json();
 }
-const ERR={bad:"מספר הטלפון או הסיסמה שגויים",self:"אי אפשר להסיר את הגישה של עצמך",locked:"יותר מדי ניסיונות שגויים. נסו שוב בעוד 15 דקות",forbidden:"אין לך הרשאה לכיתה הזו",pin_format:"הסיסמה צריכה להיות באורך 4–30 תווים",role:"תפקיד לא תקין"};
+const ERR={no_access:"קודם צריך לשמור תפקיד",bad:"מספר הטלפון או הסיסמה שגויים",self:"אי אפשר להסיר את הגישה של עצמך",locked:"יותר מדי ניסיונות שגויים. נסו שוב בעוד 15 דקות",forbidden:"אין לך הרשאה לכיתה הזו",pin_format:"הסיסמה צריכה להיות באורך 4–30 תווים",role:"תפקיד לא תקין"};
 const SES_KEY="mapat-kita-session";
 let SES=null,USER=null,CUR_CLASS=null,CAN_EDIT_Q=false,_saveT=null;
 const ses=(v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(SES_KEY)||"null");if(v===null)localStorage.removeItem(SES_KEY);else localStorage.setItem(SES_KEY,JSON.stringify(v))}catch(e){return null}};
@@ -876,11 +876,14 @@ function drawStaff(){
   el.innerHTML=`<div class="filters"><input id="staffQ" placeholder="חיפוש שם או טלפון…" value="${esc(q)}" oninput="drawStaff();const e=document.getElementById('staffQ');e.focus();e.setSelectionRange(e.value.length,e.value.length)">
    <label class="hint" style="margin:0"><input type="checkbox" id="staffAcc" ${onlyAcc?"checked":""} onchange="drawStaff()"> רק עם גישה</label>
    <span class="hint" style="margin:0">${STAFF.filter(s=>s.role).length} עם גישה · ${STAFF.filter(s=>s.has_pin).length} כבר נכנסו</span></div>
-  <table class="map staff"><tr><th style="text-align:right">שם</th><th>טלפון</th><th>תפקיד</th><th>כיתה (מחנך)</th><th>סיסמה</th><th></th></tr>
+  <details style="margin:0 0 10px"><summary class="hint" style="cursor:pointer;margin:0">+ הוספת איש צוות שלא מופיע ברשימה</summary>
+   <div class="filters" style="margin-top:8px"><input id="newName" placeholder="שם מלא"><input id="newPhone" placeholder="טלפון" inputmode="tel" dir="ltr"><button class="btn primary sm" onclick="addStaff()">הוספה</button><span id="newMsg" class="hint" style="margin:0"></span></div></details>
+  <table class="map staff"><tr><th style="text-align:right">שם</th><th>טלפון</th><th>תפקיד</th><th>כיתה (מחנך)</th><th title="מורי שילוב ובעלי תפקיד: שכבות שהם רואים בנוסף לכיתות שלהם במערכת השעות">שכבות נוספות</th><th>סיסמה</th><th></th></tr>
   ${L.map(s=>{const id=STAFF.indexOf(s);return `<tr>
    <td class="nm" style="cursor:default">${esc(s.name)}</td><td dir="ltr" style="font-size:13px">${esc(s.phone)}</td>
    <td><select id="r${id}"><option value="none" ${!s.role?"selected":""}>— אין גישה</option>${["teacher","admin","principal"].map(r=>`<option value="${r}" ${s.role==r?"selected":""}>${ROLE_HE[r]}</option>`).join("")}</select></td>
    <td><select id="c${id}"><option value="">—</option>${STAFF_CLASSES.map(c=>`<option ${s.class_name==c?"selected":""}>${esc(c)}</option>`).join("")}</select></td>
+   <td><select id="g${id}" title="שכבות נוספות (תצוגת מורה מקצועי)"><option value="">—</option>${["א","ב","ג","ד","ה","ו"].map(g=>`<option value="${g}" ${s.extra_grades==g?"selected":""}>${g}'</option>`).join("")}${s.extra_grades&&s.extra_grades.length>1&&s.extra_grades!=="*"?`<option value="${esc(s.extra_grades)}" selected>${esc(s.extra_grades.split("").join("'+"))}'</option>`:""}<option value="*" ${s.extra_grades==="*"?"selected":""}>כל ביה"ס</option><option value="?">כמה שכבות…</option></select></td>
    <td>${st(s)} ${s.role?`<button class="btn sm" onclick="pinAction(${id},'reset')" title="מוחק את הסיסמה. בכניסה הבאה המשתמש יבחר סיסמה חדשה">איפוס</button> <button class="btn sm" onclick="pinAction(${id},'set')" title="קביעת סיסמה חדשה ידנית">קביעה</button>`:""}</td>
    <td><button class="btn primary sm" onclick="saveStaff(${id})">שמירה</button> <span id="m${id}" class="hint" style="margin:0"></span></td></tr>`}).join("")}</table>
   <p class="hint" style="margin-top:10px">כדי לתת גישה: בוחרים תפקיד, ולמחנך גם כיתה, ושומרים. אחר כך שולחים לאיש הצוות את הקישור. בכניסה הראשונה הוא מקליד את מספר הטלפון שלו ובוחר סיסמה בעצמו. שכח סיסמה? לוחצים "איפוס", ובכניסה הבאה הוא יבחר סיסמה חדשה.</p>`;
@@ -892,6 +895,9 @@ async function staffCall(id,action,newPin){
   m.textContent="שומר…";
   const r=await rpc("mk_staff_set",{p_phone:SES.phone,p_pin:SES.pin,p_target:s.phone,p_name:s.name,p_role:role,p_class:document.getElementById("c"+id).value,p_pin_action:action||null,p_new_pin:newPin||null});
   if(r.error){m.textContent="⚠ "+(ERR[r.error]||r.error);return false}
+  if(!action&&role!=="none"){let g=document.getElementById("g"+id).value;
+    if(g==="?"){g=prompt("אילו שכבות? (למשל: הו לשכבות ה' ו־ו')",s.extra_grades||"")||"";}
+    if(g!==(s.extra_grades||"")){const r2=await rpc("mk_staff_set_grades",{p_phone:SES.phone,p_pin:SES.pin,p_target:s.phone,p_grades:g});if(r2.error){m.textContent="⚠ "+(ERR[r2.error]||r2.error);return false}s.extra_grades=r2.extra_grades}}
   const was=!!s.role;s.role=role==="none"?null:role;s.class_name=document.getElementById("c"+id).value;
   if(action==="reset"){s.has_pin=false;s.locked=false}if(action==="set"){s.has_pin=true;s.locked=false}if(!s.role)s.has_pin=false;
   drawStaff();const m2=document.getElementById("m"+id);
@@ -899,6 +905,14 @@ async function staffCall(id,action,newPin){
   if(m2)m2.innerHTML=(action==="reset"?"✓ אופס":action==="set"?"✓ הסיסמה עודכנה":"✓ נשמר")+(s.role&&(action||!was||!s.has_pin)?` · <a href="#" onclick='navigator.clipboard.writeText(${JSON.stringify(txt).replace(/'/g,"&#39;")});this.textContent="הועתק ✓";return false'>העתקת הודעה</a>`:"");
 }
 function saveStaff(id){staffCall(id,null)}
+async function addStaff(){
+  const n=document.getElementById("newName").value.trim(),ph=document.getElementById("newPhone").value.replace(/\D/g,"").replace(/^972/,"0"),m=document.getElementById("newMsg");
+  if(n.length<2||!/^05\d{8}$/.test(ph)){m.textContent="צריך שם וטלפון נייד תקין";return}
+  if(STAFF.some(s=>s.phone===ph)){m.textContent="המספר כבר ברשימה";return}
+  const r=await rpc("mk_staff_set",{p_phone:SES.phone,p_pin:SES.pin,p_target:ph,p_name:n,p_role:"teacher",p_class:"",p_pin_action:null,p_new_pin:null});
+  if(r.error){m.textContent="⚠ "+(ERR[r.error]||r.error);return}
+  STAFF.push({phone:ph,name:n,role:"teacher",class_name:null,extra_grades:null,has_pin:false,locked:false});document.getElementById("staffQ").value=n;drawStaff();
+}
 function pinAction(id,a){
   if(a==="reset"){if(confirm("לאפס את הסיסמה של "+STAFF[id].name+"? בכניסה הבאה הוא יבחר סיסמה חדשה."))staffCall(id,"reset");return}
   const n=prompt("סיסמה חדשה עבור "+STAFF[id].name+" (4 תווים לפחות):");if(n==null)return;
