@@ -191,7 +191,22 @@ table.staff td{height:auto;padding:4px 6px;background:transparent}
 body.nodata #v-overview>:not(#qview):not(.keep){display:none}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 @media (max-width:820px){.mb,.sgrid{grid-template-columns:1fr}main{padding:14px}header{padding:14px 14px 0}}
+#printCards{display:none}
 @media print{
+  body.print-cards>*:not(#printCards){display:none!important}
+  body.print-cards #printCards{display:block}
+  body.print-cards .pcard{page-break-after:always;break-after:page}
+  body.print-cards .pcard:last-child{page-break-after:auto;break-after:auto}
+  body.print-cards .pcard .mh{background:#fff!important;color:#000!important;border-bottom:2px solid #000;padding:0 0 6px}
+  body.print-cards .pcard .mb{max-height:none!important;overflow:visible!important}
+  body.print-cards .pcard{font-size:11px}
+  body.print-cards .pcard .mb{display:grid!important;grid-template-columns:1fr 1.35fr;gap:10px;padding:8px 0 0}
+  body.print-cards .pcard .sec{padding:0;margin:0}
+  body.print-cards .pcard h4{margin:6px 0 2px!important;font-size:11.5px}
+  body.print-cards .pcard .ind{padding:1px 6px;min-height:0;margin:1px 0}
+  body.print-cards .pcard .dhead{margin:5px 0 1px}
+  body.print-cards .pcard .good,body.print-cards .pcard .note{padding:4px 8px;margin:3px 0}
+  body.print-cards .pcard .p{padding:0 6px}
   .rail,.topbar,.hero .acts,.filters,.btn{display:none!important}.app{display:block}
   .view{display:block!important;page-break-after:always}
   body{background:#fff}
@@ -225,6 +240,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
         <button class="btn" id="sensBtn" title="נתוני רקע משפחתי, רווחה וכו' — מוסתרים כברירת מחדל להקרנה">🔒 נתוני רקע רגישים: מוסתרים</button>
         <button class="btn" id="syncNowBtn" hidden onclick="syncNowFromTool(this)" title="מושך עכשיו את הנתונים העדכניים מגוגל שיטס">🔄 עדכון מהגיליון</button>
         <button class="btn" onclick="window.print()">🖨️ הדפסה</button>
+        <button class="btn" onclick="printCards()" title="כרטיס לכל תלמיד, עמוד אחרי עמוד">🖨️ כרטיסי כל התלמידים</button>
       </div>
     </header>
     <div class="content">
@@ -324,6 +340,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
   <button class="btn primary" id="gateBtn" style="justify-content:center">המשך</button><div id="gateMsg" class="hint" style="text-align:center;min-height:20px"></div>
   <a href="#" id="gateBack" hidden onclick="gateStep('phone');return false" class="hint" style="text-align:center">← מספר אחר</a></form></div>
 <div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+<div id="printCards"></div>
 
 <script src="/demo/demo.js"></script>
 <script id="saved" type="application/json"></script>
@@ -540,15 +557,14 @@ function renderQuality(){
 
 // ---------- student card ----------
 let CUR=-1;
-function openS(i){CUR=i;const s=STATE.rows[i];const L=list();const pos=L.findIndex(x=>x.i==i);
+/* גוף כרטיס התלמיד: משותף לחלון הכרטיס ולהדפסת כל הכרטיסים */
+function cardBody(s){
   const dom=DOMAINS.map(d=>{const x=s.dom[d.id];const sc=x.score;
     const inds=d.cols.map((c,j)=>{const val=x.vals[j];const lab=IND[c]?IND[c][0]:"";const txt=val&&IND[c]?(IND[c][1][val]||["","תקין","בינוני","דורש התערבות"][val]):"לא מולא";
       return `<div class="ind"><span>${lab}</span><span class="p c${val||0}">${txt}</span></div>`}).join("");
     return `<div><div class="dhead"><span>${d.name}</span><span class="p c${sc}" style="border-radius:20px;padding:0 10px;font-size:12.5px">${["לא מולא","תקין","לשים לב","דורש התערבות"][sc]}</span></div>${x.txt?`<div class="note ${sc<3?'y':''}">✎ ${esc(x.txt)}</div>`:""}${inds}</div>`}).join("");
   const subjNotes=SUBJ.map(x=>{const t=(s.r[x.c+(x.c==60?4:3)]||"").trim();return t?`<div class="note y"><b>${x.n}:</b> ${esc(t)}</div>`:""}).join("");
-  document.getElementById("modal").innerHTML=`<div class="mh"><div><div style="opacity:.8;font-size:13px">${STATE.cls} · תלמיד ${s.num}</div><h3>${esc(s.name)}</h3></div>
-   <div class="nav2"><button onclick="step(-1)" ${pos<=0?'disabled':''}>→ הקודם</button><button onclick="step(1)" ${pos>=L.length-1?'disabled':''}>הבא ←</button><button onclick="closeS()">✕</button></div></div>
-   <div class="mb">
+  return `   <div class="mb">
     ${STATE.view==="subject"?"":`<div class="good">${esc(s.good)||'<span class="empty">טרם נכתב</span>'}</div>`}
     <div class="sec"><h4>חוזקות</h4><div class="tags">${s.strengths.map(x=>`<span>${esc(x)}</span>`).join("")||'<span class="empty">—</span>'}</div>
      <h4 style="margin-top:14px">תחביבים ותחומי עניין</h4><div>${esc(s.hob)||'<span class="empty">לא ידוע — לפקוח עין</span>'}</div>
@@ -562,7 +578,21 @@ function openS(i){CUR=i;const s=STATE.rows[i];const L=list();const pos=L.findInd
     </div>
     <div class="sec">${dom}</div>
    </div>`;
+}
+function openS(i){CUR=i;const s=STATE.rows[i];const L=list();const pos=L.findIndex(x=>x.i==i);
+  document.getElementById("modal").innerHTML=`<div class="mh"><div><div style="opacity:.8;font-size:13px">${STATE.cls} · תלמיד ${s.num}</div><h3>${esc(s.name)}</h3></div>
+   <div class="nav2"><button onclick="step(-1)" ${pos<=0?'disabled':''}>→ הקודם</button><button onclick="step(1)" ${pos>=L.length-1?'disabled':''}>הבא ←</button><button onclick="closeS()">✕</button></div></div>
+   ${cardBody(s)}`;
   document.getElementById("ov").classList.add("on");
+}
+/* הדפסת כרטיסי כל התלמידים בכיתה, לפי מספר התלמיד. בשחור־לבן המצב כתוב במילים, לא רק בצבע. */
+function printCards(){
+  const box=document.getElementById("printCards");
+  const L=[...STATE.rows].sort((a,b)=>(+a.num||0)-(+b.num||0));
+  box.innerHTML=L.map(s=>`<section class="pcard"><div class="mh"><div><div style="font-size:13px">${esc(STATE.cls)} · תלמיד ${esc(s.num)}</div><h3>${esc(s.name)}</h3></div></div>${cardBody(s)}</section>`).join("");
+  document.body.classList.add("print-cards");
+  const done=()=>{document.body.classList.remove("print-cards");box.innerHTML="";window.removeEventListener("afterprint",done)};
+  window.addEventListener("afterprint",done);setTimeout(()=>window.print(),60);
 }
 function step(d){const L=list();const pos=L.findIndex(x=>x.i==CUR);const n=L[pos+d];if(n)openS(n.i)}
 function closeS(){document.getElementById("ov").classList.remove("on");CUR=-1}
