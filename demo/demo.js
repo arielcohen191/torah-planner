@@ -107,6 +107,12 @@
   function reading(){seed=11;return {students:NAMES.map((n,i)=>{const p=PROFILE[i],s=p===2?45+Math.round(rnd()*15):p===1?62+Math.round(rnd()*18):78+Math.round(rnd()*20);
     return {n,s:String(s),p:s>=90?4:s>=80?3:s>=70?2:s>=60?1:0,c:s<60?'זקוק לתרגול שטף יומי':''}})}}
   let Q=null;
+  /* ישיבות פדגוגיות: החלטות לכיתה ה׳7 (נשמרות רק בזיכרון של הדף) */
+  let PID=10;const PDEC=[
+    {id:1,created_at:add(TODAY,-20)+'T10:00:00Z',by:'רכזת שכבה ה׳',class:CLS,nature:'לימודי',scope:'student',students:[NAMES[4],NAMES[10]],answer:'תגבור קריאה פעמיים בשבוע עם המורה לשילוב',owner:'רכזת',due:add(TODAY,-3),status:'doing',notes:'התחיל בשבוע שעבר, חסרה שעה ביום חמישי',edit:true},
+    {id:2,created_at:add(TODAY,-20)+'T10:05:00Z',by:'רכזת שכבה ה׳',class:CLS,nature:'רגשי',scope:'student',students:[NAMES[18]],answer:'שיחה עם ההורים ותיאום מפגש עם היועצת',owner:'מחנך',due:add(TODAY,4),status:'open',notes:null,edit:true},
+    {id:3,created_at:add(TODAY,-20)+'T10:09:00Z',by:'רכזת שכבה ה׳',class:CLS,nature:'חברתי',scope:'class',students:[],answer:'פעילות גיבוש כיתתית לפני חנוכה',owner:'מחנך',due:add(TODAY,10),status:'open',notes:null,edit:true},
+    {id:4,created_at:add(TODAY,-40)+'T10:00:00Z',by:'נועם ישראלי',class:CLS,nature:'התנהגותי',scope:'student',students:[NAMES[12]],answer:'כרטיס מעקב יומי עם חיזוק בסוף השבוע',owner:'מחנך',due:add(TODAY,-12),status:'done',notes:'עובד יפה, ממשיכים',edit:true}];
   /* תצוגת מורה מקצועי (כמו _mk_limited_rows בשרת): רק העמודות המותרות, והציונים רק במקצועות שהוא מלמד בכיתה */
   const SUBJ_COLS=[0,1,2,4,5,7,8,9,10,11,15,16,17,18,20,22,23,24,25,31,32,33,34];
   function subjRows(rs,grades){const ok=new Set(SUBJ_COLS);grades.forEach(g=>[0,1].forEach(k=>ok.add(g+k)));
@@ -119,6 +125,9 @@
       case 'hanhala_data':return {me:meObj,classes:[CLS,CLS2],staff_n:7};
       case 'hanhala_my':return my();
       case 'hanhala_save_prefs':return null;
+      case 'ped_data':return {me:{name:ME,lvl:0,tid:-1,layers:[],can_meet:false,homeroom:[CLS],principal:false},classes:[CLS],students:{[CLS]:NAMES},decisions:PDEC,meetings:[],homerooms:[]};
+      case 'ped_save_decision':{const p=a.p||{};PDEC.push({id:++PID,created_at:new Date().toISOString(),by:'נועם ישראלי',class:p.class,nature:p.nature,scope:p.scope,students:p.scope==='student'?p.students:[],answer:p.answer,owner:p.owner,due:p.due,status:'open',notes:null,edit:true});PDEC.sort((x,y)=>x.due<y.due?-1:1);return PID}
+      case 'ped_update_decision':{const d=PDEC.find(x=>x.id===a.p_id),p=a.p||{};if(d){if(p.status)d.status=p.status;if('notes' in p)d.notes=p.notes||null;if(p.due)d.due=p.due;if(p.owner)d.owner=p.owner}return null}
       case 'mk_check_phone':return {status:'pin'};
       case 'mk_login':case 'mk_create_pin':return a.p_pin===PIN||a.p_new_pin?{name:'נועם ישראלי',role:'teacher',class_name:CLS,classes:[{class_name:CLS,has_data:true,teacher:'נועם ישראלי'},{class_name:CLS2,has_data:true,teacher:'מחנך ה׳8',limited:true}],can_manage:false}:{error:'bad'};
       case 'mk_get':if(a.p_class===CLS2)return {class_name:CLS2,teacher:'מחנך ה׳8',limited:true,subjects:['מתמטיקה'],rows:subjRows(rows(),[40]),reading:null,voices:[],synced_at:new Date(Date.now()-36e5).toISOString(),sync_url:null};
