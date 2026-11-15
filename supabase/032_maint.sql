@@ -1,5 +1,5 @@
 -- 032: לוח תחזוקה / אב הבית (כלי המשימות · שלב 3, משוב #11)
--- כל איש צוות מדווח על תקלה מהלוח ורואה את הסטטוס של הדיווחים שלו; יכול לסמן שטופל ולשלוח "תודה לאבים".
+-- כל איש צוות מדווח על תקלה מהלוח ורואה את הסטטוס של הדיווחים שלו; יכול לסמן שטופל ולשלוח "תודה לאביים".
 -- בעלי הרשאה לכלי 'maint' (מסך ההרשאות): צפייה = רואים את כל התקלות; עריכה/מנהל = מטפלים (סטטוס, הערה, דחיפות).
 create table if not exists public.maint_tickets(
   id bigserial primary key,
@@ -84,7 +84,7 @@ begin
   end if;
 end $function$;
 
--- "תודה לאבים": המדווח, אחרי שהתקלה טופלה
+-- "תודה לאביים": המדווח, אחרי שהתקלה טופלה
 create or replace function public.maint_thanks(p_phone text, p_id bigint) returns void
 language plpgsql security definer set search_path to '' as $function$
 declare s public.hanhala_staff := public._hanhala_me(p_phone);
