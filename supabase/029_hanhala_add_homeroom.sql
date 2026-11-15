@@ -1,0 +1,1 @@
+-- 029 (הוחל דרך MCP): hanhala_admin_add_homeroom(p_phone,p_class,p_name) — מוסיף מחנך שלא במערכת השעות (kind='support') ומשייך לכיתה

@@ -1139,7 +1139,9 @@ function viewPerms(){
     if(S.adminErr)b+='<div class="note bad" role="alert">'+esc(S.adminErr)+'</div>';
     if(S.adminOk)b+='<div class="small" style="color:var(--green-ink)" role="status">נשמר.</div>';
     b+='<div class="frow">'+A.classes.map(c=>'<label>'+esc(cls(c.name))+'<select data-homeroom="'+esc(c.name)+'"'+(S.adminBusy?' disabled':'')+'><option value="">— בלי מחנך —</option>'+
-      A.teachers.map(t=>'<option value="'+t.id+'"'+(c.homeroom_id===t.id?' selected':'')+'>'+esc(t.name)+'</option>').join('')+'</select></label>').join('')+'</div>';
+      A.teachers.map(t=>'<option value="'+t.id+'"'+(c.homeroom_id===t.id?' selected':'')+'>'+esc(t.name)+'</option>').join('')+'<option value="__new">＋ מחנך/ת שלא ברשימה…</option></select>'+
+      (S.hrNew===c.name?'<span style="display:flex;gap:6px;margin-top:6px"><input id="hrNewName" placeholder="שם המחנך/ת" maxlength="60" aria-label="שם המחנך/ת של '+esc(cls(c.name))+'"><button type="button" class="btn sm" data-act="hr-new-save" data-c="'+esc(c.name)+'">שמירה</button><button type="button" class="btn sec sm" data-act="hr-new-cancel">ביטול</button></span>':'')+'</label>').join('')+'</div>'+
+      '<p class="muted small">מחנך/ת שלא מופיע במערכת השעות נוסף/ה כאיש צוות. במילוי מקום הוא יופיע בקבוצת "מסייעים" עם הערה לבדוק זמינות.</p>';
     return h+panel('מחנכי הכיתות',b);
   }
   if(tab==='staff'){
@@ -1334,6 +1336,7 @@ root.addEventListener('change',e=>{
   if(t.dataset.pedf){S.pedF=Object.assign({},S.pedF,{[t.dataset.pedf]:t.value});return render()}
   if(t.dataset.fbnote&&S.realPhone){S.fbErr=VIEWONLY;return render()}
   if(t.dataset.fbnote){const f=(S.fb||[]).find(x=>x.id===+t.dataset.fbnote);if(f){const was={urgency:f.urgency,dev_note:f.dev_note,size:f.size};f.dev_note=t.value.trim();S.fbErr=null;fbSave(f,was)}return}
+  if(t.dataset.homeroom!=null&&t.value==='__new'){S.hrNew=t.dataset.homeroom;render();const i=document.getElementById('hrNewName');if(i)i.focus();return}
   if(t.dataset.homeroom!=null)return adminDo('hanhala_admin_set_homeroom',{p_class:t.dataset.homeroom,p_teacher:t.value?+t.value:null},true);
   if(t.dataset.pref==='widget'){const p=pref(),cur=myWidgets().map(w=>w[0]),nx=t.checked?cur.concat([t.value]):cur.filter(x=>x!==t.value);
     p.widgets=WIDGETS.map(w=>w[0]).filter(x=>nx.includes(x));return savePrefs(p)}
@@ -1352,6 +1355,8 @@ root.addEventListener('click',e=>{
   if(a==='role-del')return adminDo('hanhala_admin_delete_role',{p_id:b.dataset.v});
   if(a==='house'){S.house=b.dataset.v;render();const p=Object.assign(pref(),{house:S.house});S.user.prefs=p;if(!S.realPhone)rpc('hanhala_save_prefs',{p_phone:S.phone,p_prefs:p}).catch(e=>console.error(e));return}
   if(a==='mk-list'){S.mkList=S.mkList===b.dataset.v?null:b.dataset.v;return render()}
+  if(a==='hr-new-cancel'){S.hrNew=null;return render()}
+  if(a==='hr-new-save'){const n=(document.getElementById('hrNewName')||{}).value||'';if(!n.trim()){S.adminErr='נא לכתוב את שם המחנך/ת.';return render()}S.hrNew=null;return adminDo('hanhala_admin_add_homeroom',{p_class:b.dataset.c,p_name:n.trim()},true)}
   if(a==='fb-shot'){const id=+b.dataset.id;S.fbShots=S.fbShots||{};if(S.fbShots[id]){delete S.fbShots[id];return render()}b.disabled=true;b.textContent='טוען…';rpc('hanhala_feedback_shot',{p_phone:S.phone,p_id:id}).then(d=>{if(d&&/^data:image\//.test(d))S.fbShots[id]=d;else S.fbErr='הצילום לא נמצא.';render()}).catch(()=>{S.fbErr='הצילום לא נטען. נסו שוב.';render()});return}
   if(a==='fb-filter'){S.fbFilter=S.fbFilter===b.dataset.v?null:b.dataset.v;return render()}
   if((a==='fb-set'||a==='fb-urg'||a==='fb-size')&&S.realPhone){S.fbErr=VIEWONLY;return render()}
