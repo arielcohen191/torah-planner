@@ -1,0 +1,4 @@
+-- 027: צילום מסך במשוב (הוחל דרך MCP)
+-- dev_feedback_shot: טבלה סגורה (RLS ללא מדיניות); נקראת רק דרך hanhala_feedback_shot (מפתח בלבד)
+-- feedback_send מקבל p.shot (data:image/jpeg|png|webp;base64, עד 900K תווים)
+-- hanhala_feedback_list מחזיר has_shot

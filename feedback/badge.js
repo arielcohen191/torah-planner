@@ -27,7 +27,7 @@
   '.kfb-dlg h2{margin:0;font-size:20px}.kfb-dlg p{margin:0;color:#5b6878;font-size:15px}'+
   '.kfb-dlg label{display:flex;flex-direction:column;gap:5px;font-weight:600;font-size:15px}'+
   '.kfb-dlg input,.kfb-dlg textarea{font:400 16px Heebo,Assistant,system-ui,sans-serif;border:1.5px solid #c9d1db;border-radius:10px;padding:10px 12px;background:#fff;color:inherit;width:100%;box-sizing:border-box}'+
-  '.kfb-dlg textarea{min-height:110px;resize:vertical}'+
+  '.kfb-dlg textarea{min-height:110px;resize:vertical}'+'.kfb-file{display:inline-flex!important;align-items:center;gap:6px;cursor:pointer;border:1.5px dashed #9aa7b6;border-radius:10px;padding:10px 12px;font-weight:500}.kfb-file input{position:absolute;opacity:0;width:1px;height:1px}.kfb-file:focus-within{outline:3px solid #2f7fd6}.kfb-prev{display:flex;align-items:center;gap:10px;margin-top:8px}.kfb-prev button{font:500 15px Heebo,Assistant,system-ui,sans-serif;border:1.5px solid #c9d1db;background:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;color:inherit}.kfb-prev img{max-height:90px;max-width:140px;border:1px solid #c9d1db;border-radius:8px}'+
   '.kfb-dlg input:focus,.kfb-dlg textarea:focus{outline:3px solid #2f7fd6;outline-offset:1px;border-color:#2f7fd6}'+
   '.kfb-kinds{display:flex;flex-wrap:wrap;gap:8px;border:0;margin:0;padding:0}.kfb-kinds legend{font-weight:600;font-size:15px;margin-bottom:6px;padding:0}'+
   '.kfb-kinds label{flex-direction:row;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1.5px solid #c9d1db;border-radius:10px;font-weight:500;cursor:pointer}'+
@@ -62,7 +62,7 @@
     }
     place();setTimeout(place,300);setTimeout(place,1000);addEventListener('resize',place);addEventListener('click',function(){setTimeout(place,200)});setInterval(place,2000);
     var d=document.createElement('dialog');d.className='kfb-dlg';d.setAttribute('aria-labelledby','kfb-t');document.body.appendChild(d);
-    function form(){
+    function form(){SHOT=null;
       var nm=ls('fb_name'),ph=myPhone();
       d.innerHTML='<form method="dialog" novalidate><h2 id="kfb-t">משוב למפתח</h2><p>תקלה, רעיון או שאלה על הכלי. ההודעה מגיעה ישירות לאריאל.</p>'+
         '<fieldset class="kfb-kinds"><legend>על מה מדובר</legend>'+
@@ -70,7 +70,7 @@
         '<fieldset class="kfb-kinds"><legend>כמה זה דחוף (לא חובה)</legend>'+
         '<label><input type="radio" name="urg" value="1">דחוף</label><label><input type="radio" name="urg" value="2">חשוב</label><label><input type="radio" name="urg" value="3">יכול לחכות</label></fieldset>'+
         '<label>מה קרה או מה כדאי לשנות<textarea name="body" maxlength="2000" required placeholder="למשל: במסך מילוי מקום, כשלוחצים על שמירה לא קורה כלום"></textarea></label>'+
-        '<div class="kfb-row"><label>שם<input name="name" maxlength="60" required autocomplete="name"></label>'+
+        '<div class="kfb-shot"><label class="kfb-file">📷 צירוף צילום מסך (לא חובה)<input type="file" name="shot" accept="image/*"></label><div class="kfb-prev" hidden></div></div>'+'<div class="kfb-row"><label>שם<input name="name" maxlength="60" required autocomplete="name"></label>'+
         '<label>טלפון לחזרה (לא חובה)<input name="phone" type="tel" inputmode="tel" autocomplete="tel"></label></div>'+
         '<div class="kfb-meta">יצורף אוטומטית: '+TOOL+' · '+location.pathname+'</div>'+
         '<div class="kfb-err" role="alert" hidden></div>'+
@@ -78,6 +78,10 @@
         '<button type="button" class="kfb-link" data-mine>הפניות הקודמות שלי</button></form>';
       d.querySelector('[name=name]').value=nm;d.querySelector('[name=phone]').value=ph;
     }
+    var SHOT=null;
+    function shrink(file){return new Promise(function(ok,no){var u=URL.createObjectURL(file),im=new Image();im.onload=function(){var m=1600,w=im.naturalWidth,h=im.naturalHeight,r=Math.min(1,m/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.round(w*r);c.height=Math.round(h*r);var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);var q=.8,d=c.toDataURL('image/jpeg',q);while(d.length>850000&&q>.3){q-=.15;d=c.toDataURL('image/jpeg',q)}d.length>850000?no():ok(d)};im.onerror=function(){URL.revokeObjectURL(u);no()};im.src=u})}
+    d.addEventListener('change',function(e){if(e.target.name!=='shot')return;var f=e.target.files&&e.target.files[0],pv=d.querySelector('.kfb-prev'),err=d.querySelector('.kfb-err');SHOT=null;pv.hidden=true;pv.innerHTML='';if(!f)return;
+      shrink(f).then(function(x){SHOT=x;pv.innerHTML='<img src="'+x+'" alt="הצילום שיצורף"><button type="button" class="sec" data-unshot>הסרת הצילום</button>';pv.hidden=false}).catch(function(){e.target.value='';err.textContent='לא הצלחנו לקרוא את התמונה. נסו צילום אחר.';err.hidden=false})});
     function mine(){
       d.innerHTML='<form method="dialog"><h2 id="kfb-t">הפניות הקודמות שלי</h2><p role="status">טוען…</p><div class="kfb-act"><button type="button" class="sec" data-new>פנייה חדשה</button><button type="button" class="sec" data-close>סגירה</button></div></form>';
       var st=d.querySelector('p');
@@ -91,7 +95,7 @@
       }).catch(function(){st.textContent='הפניות לא נטענו. בדקו את החיבור ונסו שוב.'});
     }
     b.addEventListener('click',function(){form();d.showModal();d.querySelector('textarea').focus()});
-    d.addEventListener('click',function(e){if(e.target.closest('[data-mine]'))return mine();if(e.target.closest('[data-new]')){form();d.querySelector('textarea').focus();return}if(e.target.closest('[data-close]')||e.target===d)d.close()});
+    d.addEventListener('click',function(e){if(e.target.closest('[data-unshot]')){SHOT=null;var i=d.querySelector('[name=shot]');if(i)i.value='';var pv=d.querySelector('.kfb-prev');pv.hidden=true;pv.innerHTML='';return}if(e.target.closest('[data-mine]'))return mine();if(e.target.closest('[data-new]')){form();d.querySelector('textarea').focus();return}if(e.target.closest('[data-close]')||e.target===d)d.close()});
     d.addEventListener('submit',function(e){
       e.preventDefault();var f=e.target,err=f.querySelector('.kfb-err'),btn=f.querySelector('button[type=submit]');
       var body=f.body.value.trim(),name=f.name.value.trim(),phone=f.phone.value.trim();
@@ -99,12 +103,12 @@
       if(!body){show('צריך לכתוב מה קרה.');f.body.focus();return}
       if(!name){show('צריך למלא שם.');f.name.focus();return}
       btn.disabled=true;btn.textContent='שולח…';err.hidden=true;
-      call('feedback_send',{name:name,phone:phone,tool:TOOL,kind:(f.querySelector('[name=kind]:checked')||{}).value||'bug',body:body,page:location.pathname+location.hash,ua:navigator.userAgent,token:token(),urgency:(f.querySelector('[name=urg]:checked')||{}).value||null})
-      .then(function(){
+      call('feedback_send',{name:name,phone:phone,tool:TOOL,kind:(f.querySelector('[name=kind]:checked')||{}).value||'bug',body:body,page:location.pathname+location.hash,ua:navigator.userAgent,token:token(),urgency:(f.querySelector('[name=urg]:checked')||{}).value||null,shot:SHOT})
+      .then(function(){SHOT=null;
         lsSet('fb_name',name);if(phone)lsSet('fb_phone',phone);
         f.innerHTML='<h2 id="kfb-t">תודה!</h2><p class="kfb-ok">המשוב נשלח לאריאל.</p><div class="kfb-act"><button type="button" data-close>סגירה</button><button type="button" class="sec" data-mine>הפניות שלי</button></div>';
         f.querySelector('[data-close]').focus()})
-      .catch(function(x){btn.disabled=false;btn.textContent='שליחה';show(/rate/.test(String(x&&x.message))?'נשלחו הרבה משובים בדקות האחרונות. נסו שוב בעוד כמה דקות.':'השליחה נכשלה. בדקו את החיבור ונסו שוב.')});
+      .catch(function(x){btn.disabled=false;btn.textContent='שליחה';show(/bad_shot/.test(String(x&&x.message))?'הצילום גדול מדי. נסו צילום אחר.':/rate/.test(String(x&&x.message))?'נשלחו הרבה משובים בדקות האחרונות. נסו שוב בעוד כמה דקות.':'השליחה נכשלה. בדקו את החיבור ונסו שוב.')});
     });
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
