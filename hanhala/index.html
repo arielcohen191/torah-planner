@@ -688,7 +688,7 @@ function viewMy(){
 const TODO_ERR={bad_partner:'אחד השותפים לא נמצא ברשימת הצוות. רעננו ונסו שוב.',too_many_partners:'אפשר לצרף עד 80 שותפים.',forbidden:'אין לך הרשאה לפעולה הזו.',bad_title:'כתבו מה המשימה (עד 200 תווים).',bad_note:'ההערה ארוכה מדי.',bad_due:'תאריך היעד לא תקין.',too_many:'יש יותר מדי משימות פתוחות. סמנו או מחקו משימות ישנות.',not_found:'המשימה לא נמצאה. רעננו את הדף.'};
 /* במצב "בנעליים של" לא טוענים משימות אישיות של אדם אחר. דוח הצוות נטען למי שיש לו הרשאה לכלי 'tasks'. */
 async function loadTodo(){
-  if(S.realPhone){S.todo=null}else{const r=await rpc('tasks_list',{p_phone:S.phone});S.todo=(r&&r.tasks)||[];S.todoPeople=(r&&r.people)||[]}
+  if(S.realPhone){S.todo=[];try{const r=await rpc('tasks_list',{p_phone:S.realPhone});S.todoPeople=(r&&r.people)||[]}catch(e){S.todoPeople=[]}}else{const r=await rpc('tasks_list',{p_phone:S.phone});S.todo=(r&&r.tasks)||[];S.todoPeople=(r&&r.people)||[]}
   if(allowed('tasks')){const r=await rpc('tasks_report',{p_phone:S.phone});S.team=(r&&r.tasks)||[]}else S.team=null}
 async function todoDo(fn,args,msg){
   if(S.realPhone){S.todoErr=VIEWONLY;render();return false}
@@ -704,7 +704,7 @@ function todoDue(t){const k=todoKind(t);if(!t.due)return '<span class="tag grey"
   const n=Math.round((parse(t.due)-parse(today()))/864e5),d='יום '+DAYS[dow(t.due)]+' '+shortDate(t.due);
   return k==='late'?'<span class="tag red">באיחור של '+plural(-n,'יום','ימים')+' · '+d+'</span>':k==='now'?'<span class="tag orange">להיום</span>':'<span class="tag grey">'+(n===1?'מחר · ':'')+d+'</span>'}
 function todoTile(){
-  if(S.realPhone||S.err.todo||!S.todo)return '';
+  if(S.err.todo||!S.todo)return '';
   const O=todoOpen(),L=O.filter(t=>todoKind(t)==='late').length,N=O.filter(t=>todoKind(t)==='now').length;
   return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-act="todo-go">'+ICON.todo+'<span><b>המשימות שלי · '+(O.length?plural(O.length,'אחת פתוחה','פתוחות'):'אין פתוחות')+(L?' · '+L+' באיחור':'')+(N?' · '+N+' להיום':'')+'</b><span>רק משימות שפתחת או שצירפו אותך אליהן</span></span><span class="arr" aria-hidden="true">←</span></button>'}
 const pChip=p=>'<span class="pchip" data-k="'+esc(p.k)+'">'+esc(p.name)+'<button type="button" data-act="todo-unp" aria-label="הסרת '+esc(p.name)+'">✕</button></span>';
@@ -739,12 +739,11 @@ function todoRow(t){const k=todoKind(t),P=t.partners||[],sh=P.length>0,auto=t.mi
     (t.mine&&!t.done_at?'<div class="acts"><button type="button" class="btn sec sm" data-act="todo-edit" data-id="'+t.id+'">עריכה</button></div>':'')+'</div>'}
 const CREDIT='<div class="credit"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח"><span>כלי המשימות · כנפי רוח · נבנה על ידי אריאל כהן</span></div>';
 function viewTodo(){
-  if(S.realPhone)return '<div class="note">משימות אישיות לא מוצגות במצב "בנעליים של". כל איש צוות רואה רק את המשימות של עצמו.</div>'+CREDIT;
   if(S.err.todo)return '<div class="note bad">המשימות לא נטענו כרגע. נסו לרענן.</div><div class="chips"><button class="btn" data-act="refresh">רענון</button></div>';
   if(!S.todo)return panel('המשימות שלי',skel);
   const O=todoOpen().sort(todoSort),D=S.todo.filter(t=>t.done_at).sort((a,b)=>String(b.done_at).localeCompare(String(a.done_at))),f=S.todoF;
   const n=k=>O.filter(t=>todoKind(t)===k).length;
-  let h='<section class="kpis k3" aria-label="המשימות שלי לפי מצב">'+kpiBtn(n('late')?'k-red':'k-green','באיחור','עבר תאריך היעד',n('late'),'todo-f','late','לסינון',f==='late')+
+  let h=(S.realPhone?'<div class="note">כך נראה המסך אצל '+esc(S.asName||'')+': טופס הוספה ורשימה. המשימות האישיות שלו/ה עצמן לא מוצגות במצב "בנעליים של", ואי אפשר לשמור.</div>':'')+'<section class="kpis k3" aria-label="המשימות שלי לפי מצב">'+kpiBtn(n('late')?'k-red':'k-green','באיחור','עבר תאריך היעד',n('late'),'todo-f','late','לסינון',f==='late')+
     kpiBtn('k-orange','להיום','תאריך היעד היום',n('now'),'todo-f','now','לסינון',f==='now')+
     kpiBtn('k-blue','כל הפתוחות','כולל בלי תאריך',O.length,'todo-f','all','הצג הכול',f==='all'||!f?(!f?null:true):false)+'</section>';
   if(S.todoErr)h+='<div class="note bad" role="alert">'+esc(S.todoErr)+'</div>';
@@ -771,6 +770,7 @@ function viewTeam(){
   let h='<div class="pills" role="group" aria-label="תצוגה לפי שכבות" style="margin-top:0"><button type="button" data-act="house" data-v="all" aria-pressed="'+(!H())+'">כל בית הספר</button>'+
     (mine==='mine'?'<button type="button" data-act="house" data-v="mine" aria-pressed="'+(S.house==='mine')+'">השכבות שלי</button>':'')+
     HOUSES.map(x=>'<button type="button" data-act="house" data-v="'+x.id+'" aria-pressed="'+(S.house===x.id)+'">'+x.label+'</button>').join('')+'</div>';
+  h+='<div class="chips"><button type="button" class="btn" data-act="todo-go" data-v="new">＋ משימה חדשה לצוות</button><span class="small muted">נפתח הטופס ב"המשימות שלי". מצרפים שותפים, והמשימה תופיע כאן.</span></div>';
   h+='<section class="kpis k3" aria-label="משימות הצוות לפי מצב">'+kpiBtn('k-blue','פתוחות','משימות משותפות שעוד לא הושלמו',O.length,'team-f','open','הצג',f==='open')+
     kpiBtn(O.some(teamLate)?'k-red':'k-green','באיחור','עבר תאריך היעד',O.filter(teamLate).length,'team-f','late','הצג',f==='late')+
     kpiBtn('k-green','בוצעו השבוע','הושלמו ב־7 הימים האחרונים',T.filter(teamWeek).length,'team-f','done','הצג',f==='done')+'</section>';
@@ -1266,7 +1266,7 @@ root.addEventListener('click',e=>{
   if(a==='todo-del-ask'){S.todoDel=b.dataset.id==='0'?null:+b.dataset.id;return render()}
   if(a==='todo-del'){todoDo('tasks_delete',{p_id:+b.dataset.id},'המשימה נמחקה.').then(()=>{S.todoDel=null;S.todoEdit=null;render()});return}
   if(a==='todo-f'){S.todoF=S.todoF===b.dataset.v?null:b.dataset.v;return render()}
-  if(a==='todo-go'){S.view='todo';S.todoF=null;history.pushState(null,'','#todo');render();window.scrollTo(0,0);return}
+  if(a==='todo-go'){S.view='todo';S.todoF=null;history.pushState(null,'','#todo');render();window.scrollTo(0,0);if(b.dataset.v==='new'){const i=document.getElementById('todoTitle');if(i)i.focus()}return}
   if(a==='jump'){const el=document.getElementById(b.dataset.v);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return}
   if(a==='filter'){const v=+b.dataset.v;S.filter=S.filter===v?0:v;return render()}
   if(a==='as'){const p=(S.people||[]).find(x=>x.phone===b.dataset.v);if(p)startAs(p);return}
