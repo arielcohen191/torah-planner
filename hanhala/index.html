@@ -572,9 +572,10 @@ function mkStaffPanel(m){
   const q=S.mkList==='q',L=m.staff.filter(x=>q||x.access).map(x=>({...x,done:q?!!x.q_at:!!x.entered,at:q?x.q_at:x.last_login}));
   L.sort((a,b)=>(a.done-b.done)||(b.at||'').localeCompare(a.at||'')||a.name.localeCompare(b.name,'he'));
   const not=L.filter(x=>!x.done).length;
-  const row=x=>'<div class="duty"><span class="nm" style="text-align:right">'+esc(x.name)+(x.cls?' <span class="small muted">· מחנך/ת '+esc(cls(x.cls))+'</span>':'')+'</span><span class="st">'+
+  const pr=!!(S.user&&(S.user.roles||[]).some(r=>r.id==='principal'));
+  const row=x=>'<div class="duty"><span class="nm" style="text-align:right">'+(q&&pr&&x.done?'<a href="/mapat-kita/#staffq='+encodeURIComponent(x.name)+'" style="font-weight:600;color:var(--brand-dark)" title="פתיחת השאלון המלא במפת הכיתה">'+esc(x.name)+' ←</a>':esc(x.name))+(x.cls?' <span class="small muted">· מחנך/ת '+esc(cls(x.cls))+'</span>':'')+'</span><span class="st">'+
     (x.done?(x.at?(q?'מילא/ה ':'נכנס/ה לאחרונה ')+fmtWhen(x.at):'נכנס/ה'):'<b style="color:var(--bad,#b42318)">'+(q?'לא מילא/ה':'עוד לא נכנס/ה')+'</b>')+'</span></div>';
-  return panel((q?'שאלון הצוות: ':'כניסה למפת הכיתה: ')+(L.length-not)+' מתוך '+L.length,(not?'<div class="small muted" style="margin-bottom:6px">'+not+(q?' עוד לא מילאו.':' עוד לא נכנסו.')+(q?'':' "נכנס לאחרונה" נמדד מ־15.11.')+'</div>':'')+L.map(row).join(''));
+  return panel((q?'שאלון הצוות: ':'כניסה למפת הכיתה: ')+(L.length-not)+' מתוך '+L.length,(q&&pr?'<div class="small muted" style="margin-bottom:6px">לחיצה על שם של מי שמילא פותחת את השאלון המלא שלו במפת הכיתה (נדרש הקוד האישי שלך שם).</div>':'')+(not?'<div class="small muted" style="margin-bottom:6px">'+not+(q?' עוד לא מילאו.':' עוד לא נכנסו.')+(q?'':' "נכנס לאחרונה" נמדד מ־15.11.')+'</div>':'')+L.map(row).join(''));
 }
 function viewMapat(){
   if(S.err.mk)return goTile('mapat')+failed;if(!S.mk)return goTile('mapat')+panel('מצב הנתונים',skel);

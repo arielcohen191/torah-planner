@@ -160,6 +160,12 @@ fieldset h3{font-size:15.5px;margin:18px 0 6px}
 .ch{border:1px solid var(--line);background:#fff;border-radius:20px;padding:4px 12px;font:inherit;font-size:13.5px;cursor:pointer}
 .ch.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .rolecard{border:1.5px solid #e2d3b3;border-radius:12px;padding:10px 14px;margin:12px 0;background:#fff}
+.sqlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.sqbtn{font:inherit;text-align:right;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-height:48px}
+.sqbtn:hover,.sqbtn:focus-visible{border-color:var(--accent,#2f6fd6);background:#f4f8fe}.sqbtn small{color:var(--muted);font-size:12.5px}
+.sqname{font:inherit;font-weight:700;background:none;border:0;padding:0;cursor:pointer;color:inherit;text-decoration:underline;text-underline-offset:3px}
+.sqbody{padding:16px 20px}.sqbody fieldset{margin:0 0 14px}.sqbody h3{font-size:15.5px;margin:14px 0 6px}
+.sqp{margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere}
 .rolecard h4{margin:2px 0 8px;font-size:17px}.rolecard h5{margin:14px 0 6px;font-size:14.5px}
 .sclab{font-size:14px;min-width:110px}
 .sc{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}.sc small{color:var(--muted);font-size:13px}
@@ -1182,6 +1188,7 @@ renderMeView=async function(){
   el.innerHTML='<p class="hint">טוען…</p>';
   const r=await rpc("mk_staff_map",{p_phone:SES.phone,p_pin:SES.pin});
   if(r.error){el.innerHTML=`<p class="hint">${ERR[r.error]||r.error}</p>`;return}
+  STAFFQ=r.staff;
   const S=r.staff.filter(s=>s.part_b&&((s.part_b.drains||[]).some(d=>d.t)||(s.part_b.fuel||[]).length||s.part_b.oneThing||(s.part_b.rd||[]).some(x=>x.desc||x.load||x.power)||s.part_b.personal));
   const all=S.flatMap(s=>(s.part_b.drains||[]).filter(d=>d.t).map(d=>({...d,by:s.name})));
   const bySrc={};all.forEach(d=>(bySrc[d.src]=bySrc[d.src]||[]).push(d));
@@ -1191,6 +1198,8 @@ renderMeView=async function(){
      <div class="tile mid" style="cursor:default"><div class="v">${S.length}</div><div class="l">מילאו את החלק האישי</div></div>
      <div class="tile bad" style="cursor:default"><div class="v">${all.filter(d=>d.lvl>=4).length}</div><div class="l">פריטים בעוצמה 4–5</div></div>
      <div class="tile" style="cursor:default"><div class="v">${S.filter(s=>s.part_b.personal).length}</div><div class="l">ציינו עומס אישי</div></div></div>
+   <div class="box" style="margin-bottom:16px"><h2>השאלונים המלאים · לחיצה על שם פותחת את כל מה שמילא/ה</h2>
+     ${r.staff.length?`<div class="sqlist">${r.staff.map((s,i)=>`<button type="button" class="sqbtn" onclick="openStaffQ(${i})"><b>${esc(s.name)}</b><small>${ROLE_HE[s.role]||""}${s.class_name?" · "+esc(s.class_name):""}${s.updated_at?" · עודכן "+sqDate(s.updated_at):""}</small></button>`).join("")}</div>`:'<p class="empty">עוד אף אחד לא מילא שאלון.</p>'}</div>
    ${!S.length?'<p class="empty">עוד אף אחד לא מילא את החלק האישי.</p>':`<div class="sgrid">
     <div class="box"><h2>מה מוציא את הצוות מאיזון, לפי מקור</h2>
      ${Object.entries(bySrc).sort((a,b)=>b[1].reduce((s,x)=>s+x.lvl,0)-a[1].reduce((s,x)=>s+x.lvl,0)).map(([k,a])=>`<div class="srow" style="cursor:default"><div class="lab">${esc(k)}</div><div class="tr"><span style="width:${Math.min(100,a.reduce((s,x)=>s+x.lvl,0)*6)}%;background:var(--bad)"></span></div><div class="num" style="color:var(--bad)">${a.length}</div></div>`).join("")}
@@ -1199,12 +1208,59 @@ renderMeView=async function(){
     </div>
     <div class="box"><h2>לפי איש צוות</h2>
      ${S.map(s=>{const D=(s.part_b.drains||[]).filter(d=>d.t).sort((a,b)=>b.lvl-a.lvl);return `<div style="border-bottom:1px solid var(--line);padding:10px 0">
-       <b>${esc(s.name)}</b> <span class="cat">${ROLE_HE[s.role]||""}${s.class_name?" · "+esc(s.class_name):""}</span>${s.part_b.personal?' <span class="cat" style="background:var(--mid-bg)">ℹ️ עומס אישי'+((s.part_b.share||[]).length?' · מאשר לשתף: '+s.part_b.share.map(esc).join(", "):' · לא לשתף')+'</span>':""}
+       <button type="button" class="sqname" onclick="openStaffQ(${r.staff.indexOf(s)})" title="פתיחת השאלון המלא">${esc(s.name)}</button> <span class="cat">${ROLE_HE[s.role]||""}${s.class_name?" · "+esc(s.class_name):""}</span>${s.part_b.personal?' <span class="cat" style="background:var(--mid-bg)">ℹ️ עומס אישי'+((s.part_b.share||[]).length?' · מאשר לשתף: '+s.part_b.share.map(esc).join(", "):' · לא לשתף')+'</span>':""}
        ${(s.part_b.rd||[]).filter(x=>x.desc||x.load||x.power||(x.classes||[]).length).map(x=>`<div class="hint" style="margin:6px 0 0"><b>${esc(x.role)}</b> · ${scTxt(x.load,SC_LOAD)} · ${scTxt(x.power,SC_POW)}${x.desc?`<div>״${esc(x.desc)}״</div>`:""}${(x.classes||[]).filter(c=>c.load||c.power).map(c=>`<div>${esc(c.cls)}: ${scTxt(c.load,SC_LOAD_F)} · ${scTxt(c.power,SC_POW_F)}</div>`).join("")}</div>`).join("")}
        <table class="wt">${D.map(d=>`<tr><td>${lvlDots(d.lvl)}</td><td>${esc(d.t)} <span class="cat">${esc(d.src)}</span>${d.role?` <span class="cat">${esc(d.role)}</span>`:""}${d.relief?`<div class="hint" style="margin:2px 0 0">↳ מה ישחרר: ${esc(d.relief)}</div>`:""}</td></tr>`).join("")}</table>
        ${s.part_b.oneThing?`<div class="note y">דבר אחד שישחרר: ${esc(s.part_b.oneThing)}</div>`:""}</div>`}).join("")}
     </div></div>`}`;
+  if(window._sqWant){const w=window._sqWant;window._sqWant=null;const m=bestMatch(w,STAFFQ.map((x,i)=>({n:x.name,i})));
+    if(m)openStaffQ(m.i);else el.insertAdjacentHTML("afterbegin",`<div class="note y">${esc(w)} עוד לא מילא/ה את השאלון.</div>`)}
 };
+// ----- השאלון המלא של איש צוות (מנהל בלבד): כל מה שמילא, לקריאה בלבד -----
+let STAFFQ=[],SQ_OPEN=false;
+const sqDate=t=>{const d=new Date(t);return isNaN(d)?"":d.getDate()+"."+(d.getMonth()+1)+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")};
+const sqTxt=(t,none)=>t&&String(t).trim()?`<p class="sqp">${esc(t)}</p>`:`<p class="empty">${none||"לא מולא."}</p>`;
+function staffQHtml(s){
+  const a=s.part_a||{},b=s.part_b||{},W=(a.worries||[]).filter(w=>w.t),D=(a.discuss||[]).filter(d=>d.stu||d.why);
+  const rd=Array.isArray(b.rd)?b.rd:(b.roles||[]).map((role,i)=>({role,desc:"",load:0,power:0,fuel:i?[]:(b.fuel||[]),fuelTxt:i?"":(b.fuelTxt||""),classes:[]}));
+  const drains=(b.drains||[]).filter(d=>d.t),loose=drains.filter(d=>!rd.some(r=>r.role===d.role));
+  const dr=L=>L.length?`<table class="wt">${L.slice().sort((x,y)=>y.lvl-x.lvl).map(d=>`<tr><td>${lvlDots(d.lvl||0)}</td><td>${esc(d.t)} <span class="cat">${esc(d.src||"")}</span>${d.relief?`<div class="hint" style="margin:2px 0 0">↳ מה ישחרר: ${esc(d.relief)}</div>`:""}</td></tr>`).join("")}</table>`:'<p class="empty">לא נרשם דבר.</p>';
+  const anyB=rd.length||drains.length||b.oneThing||b.personal;
+  return `<div class="sqbody">
+   <fieldset><legend>חלק א' · הכיתות</legend>
+    <h3>1. מה מטריד או מדאיג</h3>
+    ${W.length?`<table class="wt">${W.map(w=>`<tr><td>${lvlDots(w.lvl||0)}</td><td>${esc(w.t)} <span class="cat">${esc(w.cls||"")}</span><span class="cat">${esc(w.cat||"")}</span>${(w.stu||[]).length?`<div class="hint" style="margin:2px 0 0">תלמידים: ${(w.stu||[]).map(esc).join(", ")}</div>`:""}${w.help?`<div class="hint" style="margin:2px 0 0">↳ מה יכול לעזור: ${esc(w.help)}</div>`:""}</td></tr>`).join("")}</table>`:'<p class="empty">לא נרשמו דאגות.</p>'}
+    <h3>2. תלמידים שחשוב לדבר עליהם בישיבה</h3>
+    ${D.length?`<table class="wt">${D.map(d=>`<tr><td>${esc(d.cls||"")}</td><td><b>${esc(d.stu||"")}</b>${d.why?" · "+esc(d.why):""}</td></tr>`).join("")}</table>`:'<p class="empty">לא נבחרו תלמידים.</p>'}
+    <h3>3. נקודות אור</h3>${sqTxt(a.bright)}
+    <h3>4. מה צריך מהצוות או מההנהלה</h3>${sqTxt(a.needs)}
+   </fieldset>
+   <fieldset class="me"><legend>חלק ב' · אני בתפקיד <span class="tagm s">🔒 גלוי רק למנהל</span></legend>
+    ${!anyB?'<p class="empty">החלק האישי לא מולא.</p>':`
+    ${rd.map(r=>`<div class="rolecard"><h4>${esc(r.role)}</h4>
+      ${r.desc?`<p class="sqp">״${esc(r.desc)}״</p>`:""}
+      <p class="sqp"><b>התפקיד בשבילו/ה:</b> ${scTxt(r.load,SC_LOAD)} · <b>מבחינת כוח:</b> ${scTxt(r.power,SC_POW)}</p>
+      <h5>מה נותן כוח</h5>${(r.fuel||[]).length||r.fuelTxt?`<p class="sqp">${(r.fuel||[]).map(f=>`<span class="cat">${esc(f)}</span>`).join("")}${r.fuelTxt?" "+esc(r.fuelTxt):""}</p>`:'<p class="empty">לא נרשם דבר.</p>'}
+      <h5>מה זולל כוח</h5>${dr(drains.filter(d=>d.role===r.role))}
+      ${(r.classes||[]).length?`<h5>הכיתות שהוא/היא מלמד/ת</h5>${r.classes.map(c=>`<p class="sqp"><b>${esc(c.cls)}</b>: ${scTxt(c.load,SC_LOAD_F)} · ${scTxt(c.power,SC_POW_F)}</p>`).join("")}`:""}
+     </div>`).join("")}
+    ${loose.length?`<div class="rolecard"><h4>לא משויך לתפקיד</h4>${dr(loose)}</div>`:""}
+    <h3>7. דבר אחד שאם יילקח, יתפנה לעבודה החינוכית</h3>${sqTxt(b.oneThing)}
+    <h3>8. עומס אישי</h3>
+    <p class="sqp">${b.personal?"סימן/ה שיש כרגע עומס אישי מחוץ לבית הספר. "+((b.share||[]).length?"מאשר/ת לשתף גם את: "+b.share.map(esc).join(", ")+".":"לא אישר/ה לשתף אף אחד נוסף."):"לא סומן."}</p>`}
+   </fieldset></div>`;
+}
+function openStaffQ(i){const s=STAFFQ[i];if(!s||!USER||USER.role!=="principal")return;SQ_OPEN=true;
+  document.getElementById("modal").innerHTML=`<div class="mh"><div><div style="opacity:.8;font-size:13px">השאלון המלא · ${ROLE_HE[s.role]||""}${s.class_name?" · "+esc(s.class_name):""}${s.updated_at?" · עודכן "+sqDate(s.updated_at):""}</div><h3>${esc(s.name)}</h3></div>
+   <div class="nav2"><button onclick="openStaffQ(${i-1})" ${i<=0?"disabled":""}>→ הקודם</button><button onclick="openStaffQ(${i+1})" ${i>=STAFFQ.length-1?"disabled":""}>הבא ←</button><button onclick="closeS()" aria-label="סגירה">✕</button></div></div>${staffQHtml(s)}`;
+  document.getElementById("ov").classList.add("on");document.getElementById("modal").scrollTop=0;}
+{const _cs=closeS;closeS=function(){SQ_OPEN=false;return _cs.apply(this,arguments)}}
+document.addEventListener("keydown",e=>{if(SQ_OPEN&&e.key=="Escape")closeS()});
+/* קישור ישיר מלוח ההנהלה: /mapat-kita/#staffq=שם פותח (אחרי כניסה עם הקוד האישי) את השאלון של אותו איש צוות */
+{const _al=afterLogin;afterLogin=function(){const r=_al.apply(this,arguments);
+  const m=/^#staffq=(.+)$/.exec(location.hash);
+  if(m&&USER&&USER.role==="principal"){try{window._sqWant=decodeURIComponent(m[1])}catch(e){}history.replaceState(null,"",location.pathname);setTimeout(()=>go("me"),0)}
+  return r}}
 
 // ================= v4: נתוני שפה (מיפוי קריאה) · סנכרון ועדכון עכשיו =================
 IND[66]=["קריאה — הבנת הנקרא",{1:"85–100",2:"60–84",3:"מתחת ל־60"}];
