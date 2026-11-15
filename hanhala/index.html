@@ -266,7 +266,7 @@ async function loadData(){
   S.mk=r.mk||null;S.dataMonth=m;
   if(!S.house){const ph=pref().house;S.house=(ph==='all'||HOUSES.some(h=>h.id===ph)||(ph==='mine'&&S.user.layers.length))?ph:myHouse()}
   if(S.house==='mine'&&!S.user.layers.length)S.house='all';
-  if(!canSee(S.view))S.view=isStaff()?'home':'my';
+  if(!canSee(S.view)&&S.view!=='ped')S.view=isStaff()?'home':'my';
 }
 async function loadAll(force){
   if(force){S.dataMonth=null;S.say=null;S.plans=null;S.myMonth=null}
@@ -280,6 +280,7 @@ async function loadAll(force){
     S.hol?null:part('hol',async()=>{const r=await rpc('get_settings',{code:'x'});S.hol=(r&&r.holidays)||[]})
   ]);
   if(!allowed('sayarot'))S.say=null;if(!allowed('hespek'))S.plans=null;
+  if(S.user&&!canSee(S.view))S.view=isStaff()?'home':'my';
   if(S.view==='perms'&&S.user&&S.user.can_manage&&!S.admin)await loadAdmin();
   if(S.view==='viewas'&&isDev()&&!S.people)await loadPeople();
   if(isDev()){await part('fb',async()=>{S.fbOpen=await rpc('hanhala_feedback_open',{p_phone:S.phone})});if(S.view==='feedback')await loadFb()}
@@ -635,20 +636,26 @@ const PED_OWN=['מחנך','רכזת','יועצת','הנהלה','מורה מקצ�
 const PED_ST={open:['טרם טופל','red'],doing:['בטיפול','orange'],done:['הושלם','green'],cancel:['בוטל / לא רלוונטי','grey']};
 const ENERGY=[null,'באנרגיה גבוהה / מלא כוחות','שגרתי / מתפקד היטב','בעומס / עייף אך מוחזק','שחוק מאוד / זקוק לתמיכה או אוורור'];
 const ENERGY_C=[null,'green','green','orange','red'];
-const PED_ERR={forbidden:'אין לך הרשאה לפעולה הזו.',students_required:'בחרו לפחות תלמיד אחד.',bad_due:'תאריך היעד לא תקין.',bad_date:'תאריך הפגישה לא תקין (עד 60 יום אחורה).',escalate_text_required:'כתבו פירוט למנהל.',not_found:'הפריט לא נמצא.'};
+const PED_ERR={forbidden:'אין לך הרשאה לפעולה הזו.',students_required:'בחרו לפחות תלמיד אחד.',bad_due:'תאריך היעד לא תקין.',bad_date:'תאריך הפגישה לא תקין (עד 60 יום אחורה).',escalate_text_required:'כתבו פירוט למנהל.',nature_other_required:'כתבו מה מהות הצורך (אחר).',owner_name_required:'בחרו את שם המורה המקצועי.',not_found:'הפריט לא נמצא.'};
 const pedOk=()=>!!(S.ped&&(S.ped.me.lvl>0||S.ped.me.principal||S.ped.me.homeroom.length));
 async function loadPed(){try{S.ped=await rpc('ped_data',{p_phone:S.phone});S.err.ped=false}catch(e){console.error('ped',e);S.err.ped=true}}
+const pedNat=d=>d.nature==='אחר'&&d.nature_other?'אחר: '+d.nature_other:d.nature;
+const pedOwn=d=>d.owner==='מורה מקצועי'&&d.owner_name?d.owner_name+' (מורה מקצועי)':d.owner;
+function pedTeacherOpts(c,sel){const T=(S.ped&&S.ped.teachers)||[],inC=T.filter(t=>(t.classes||[]).includes(c)),rest=T.filter(t=>!(t.classes||[]).includes(c));
+  const o=t=>'<option'+(t.name===sel?' selected':'')+'>'+esc(t.name)+'</option>';
+  return '<option value="">בחירת מורה…</option>'+(inC.length?'<optgroup label="מלמדים ב'+esc(cls(c))+'">'+inC.map(o).join('')+'</optgroup>':'')+'<optgroup label="כל המורים">'+rest.map(o).join('')+'</optgroup>'}
 const pedLate=d=>(d.status==='open'||d.status==='doing')&&d.due<today();
 function pedFlags(){return S.ped&&S.ped.me.principal?(S.ped.meetings||[]).filter(m=>(m.escalate||m.energy===4)&&!m.seen_at):[]}
 function pedDecItem(d){
   const st=PED_ST[d.status],late=pedLate(d);
-  let h='<div class="item '+(late?'s-open':d.status==='done'?'s-ok':d.status==='cancel'?'':'s-asking')+'"><div class="t"><b>'+esc(cls(d.class))+' · '+esc(d.nature)+(d.scope==='student'?' · '+esc(d.students.join(', ')):' · כיתתי')+'</b>'+
+  let h='<div class="item '+(late?'s-open':d.status==='done'?'s-ok':d.status==='cancel'?'':'s-asking')+'"><div class="t"><b>'+esc(cls(d.class))+' · '+esc(pedNat(d))+(d.scope==='student'?' · '+esc(d.students.join(', ')):' · כיתתי')+'</b>'+
     '<span class="tag '+st[1]+'">'+st[0]+'</span></div><div>'+esc(d.answer)+'</div>'+
-    '<div class="small muted">אחראי: '+esc(d.owner)+' · יעד לבקרה: <b style="color:'+(late?'var(--red-ink)':'inherit')+'">'+shortDate(d.due)+(late?' (באיחור)':'')+'</b> · הוזן ע"י '+esc(d.by||'')+' ב־'+shortDate(String(d.created_at).slice(0,10))+'</div>'+
+    '<div class="small muted">אחראי: '+esc(pedOwn(d))+' · יעד לבקרה: <b style="color:'+(late?'var(--red-ink)':'inherit')+'">'+shortDate(d.due)+(late?' (באיחור)':'')+'</b> · הוזן ע"י '+esc(d.by||'')+' ב־'+shortDate(String(d.created_at).slice(0,10))+'</div>'+
     (d.notes?'<div class="small"><b>הערות מעקב:</b> '+esc(d.notes)+'</div>':'');
   if(d.edit)h+='<details><summary class="small" style="cursor:pointer;color:var(--brand-ink);font-weight:600">עדכון סטטוס והערות</summary><form data-form="ped-upd" data-id="'+d.id+'" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">'+
     '<div class="opts">'+Object.keys(PED_ST).map(k=>'<label class="opt"><input type="radio" name="status" value="'+k+'"'+(d.status===k?' checked':'')+'><span>'+PED_ST[k][0]+'</span></label>').join('')+'</div>'+
-    '<div class="frow"><label>תאריך יעד<input type="date" name="due" value="'+d.due+'"></label><label>גורם אחראי<select name="owner">'+PED_OWN.map(o=>'<option'+(o===d.owner?' selected':'')+'>'+o+'</option>').join('')+'</select></label></div>'+
+    '<div class="frow"><label>תאריך יעד<input type="date" name="due" value="'+d.due+'"></label><label>גורם אחראי<select name="owner" data-pedown="'+d.id+'">'+PED_OWN.map(o=>'<option'+(o===d.owner?' selected':'')+'>'+o+'</option>').join('')+'</select></label>'+
+    '<label id="pedOwnN'+d.id+'"'+(d.owner==='מורה מקצועי'?'':' hidden')+'>שם המורה<select name="owner_name">'+pedTeacherOpts(d.class,d.owner_name)+'</select></label></div>'+
     '<label class="small" style="font-weight:600">הערות מעקב<textarea name="notes" rows="2" maxlength="2000" class="ta">'+esc(d.notes||'')+'</textarea></label>'+
     '<div class="chips"><button class="btn sm">שמירה</button></div></form></details>';
   return h+'</div>';
@@ -660,12 +667,14 @@ function pedDecForm(){
     '<h3 style="margin:0;font-size:19px">החלטה מהישיבה</h3>'+
     '<div class="frow"><label>שם הכיתה<select name="class" id="pedCls">'+P.classes.map(x=>'<option value="'+esc(x)+'"'+(x===c?' selected':'')+'>'+esc(cls(x))+'</option>').join('')+'</select></label>'+
       '<label>תאריך יעד לבקרה<input type="date" name="due" required value="'+addDays(today(),14)+'"></label></div>'+
-    '<div><div class="small" style="font-weight:600;margin-bottom:6px">מהות הצורך</div><div class="opts">'+PED_NAT.map((n,i)=>'<label class="opt"><input type="radio" name="nature" value="'+n+'"'+(i===0?' checked':'')+'><span>'+n+'</span></label>').join('')+'</div></div>'+
+    '<div><div class="small" style="font-weight:600;margin-bottom:6px">מהות הצורך</div><div class="opts">'+PED_NAT.map((n,i)=>'<label class="opt"><input type="radio" name="nature" value="'+n+'"'+(i===0?' checked':'')+'><span>'+n+'</span></label>').join('')+'</div>'+
+      '<div class="frow" id="pedNatO" hidden style="margin-top:8px"><label>מה מהות הצורך?<input name="nature_other" maxlength="200" autocomplete="off"></label></div></div>'+
     '<div><div class="small" style="font-weight:600;margin-bottom:6px">היקף הצורך</div><div class="opts"><label class="opt"><input type="radio" name="scope" value="class" checked><span>כיתתי</span></label><label class="opt"><input type="radio" name="scope" value="student"><span>שמי (פרטני)</span></label></div></div>'+
     '<div id="pedStu" hidden><div class="small" style="font-weight:600;margin-bottom:6px">שמות התלמידים</div><div class="opts" id="pedStuList">'+pedStuOpts(st)+'</div>'+
       '<div class="frow" style="margin-top:8px"><label>שם שלא ברשימה (אפשר כמה, מופרדים בפסיק)<input name="extra" maxlength="200" autocomplete="off"></label></div></div>'+
     '<label class="small" style="font-weight:600;display:flex;flex-direction:column;gap:4px">מענה מוצע · הפעולה שצריך לבצע<textarea name="answer" rows="3" maxlength="1000" required class="ta"></textarea></label>'+
-    '<div><div class="small" style="font-weight:600;margin-bottom:6px">גורם אחראי לקידום</div><div class="opts">'+PED_OWN.map((o,i)=>'<label class="opt"><input type="radio" name="owner" value="'+o+'"'+(i===0?' checked':'')+'><span>'+o+'</span></label>').join('')+'</div></div>'+
+    '<div><div class="small" style="font-weight:600;margin-bottom:6px">גורם אחראי לקידום</div><div class="opts">'+PED_OWN.map((o,i)=>'<label class="opt"><input type="radio" name="owner" value="'+o+'"'+(i===0?' checked':'')+'><span>'+o+'</span></label>').join('')+'</div>'+
+      '<div class="frow" id="pedOwnN" hidden style="margin-top:8px"><label>שם המורה המקצועי<select name="owner_name" id="pedOwnSel">'+pedTeacherOpts(c,'')+'</select></label></div></div>'+
     (S.pedErr?'<div class="note bad" role="alert">'+esc(S.pedErr)+'</div>':'')+
     '<div class="chips"><button class="btn"'+(S.pedBusy?' disabled':'')+'>שמירת ההחלטה</button><button type="button" class="btn sec" data-act="ped-new" data-v="0">סגירה</button></div></form>';
 }
@@ -977,9 +986,9 @@ root.addEventListener('submit',async e=>{
     const st=fd.getAll('students').concat(String(fd.get('extra')||'').split(',').map(x=>x.trim()).filter(Boolean));
     if(fd.get('scope')==='student'&&!st.length){S.pedErr=PED_ERR.students_required;return render()}
     S.pedCls=fd.get('class');
-    if(await pedDo('ped_save_decision',{p:{class:fd.get('class'),nature:fd.get('nature'),scope:fd.get('scope'),students:st,answer:fd.get('answer'),owner:fd.get('owner'),due:fd.get('due')}},'ההחלטה נשמרה. אפשר להזין את ההחלטה הבאה לאותה כיתה.')){S.pedNew='dec';render();const a=document.querySelector('[data-form=ped-dec] textarea');if(a)a.focus()}
+    if(await pedDo('ped_save_decision',{p:{class:fd.get('class'),nature:fd.get('nature'),nature_other:fd.get('nature_other'),scope:fd.get('scope'),students:st,answer:fd.get('answer'),owner:fd.get('owner'),owner_name:fd.get('owner_name'),due:fd.get('due')}},'ההחלטה נשמרה. אפשר להזין את ההחלטה הבאה לאותה כיתה.')){S.pedNew='dec';render();const a=document.querySelector('[data-form=ped-dec] textarea');if(a)a.focus()}
     return}
-  if(f.dataset.form==='ped-upd'){const p={status:fd.get('status'),notes:fd.get('notes'),due:fd.get('due')||null,owner:fd.get('owner')};
+  if(f.dataset.form==='ped-upd'){const p={status:fd.get('status'),notes:fd.get('notes'),due:fd.get('due')||null,owner:fd.get('owner'),owner_name:fd.get('owner_name')};
     return pedDo('ped_update_decision',{p_id:+f.dataset.id,p},'העדכון נשמר.')}
   if(f.dataset.form==='ped-meet'){
     if(await pedDo('ped_save_meeting',{p:{met_on:fd.get('met_on'),teacher_id:+fd.get('teacher_id'),energy:+fd.get('energy'),reviewed:fd.get('reviewed')==='on',summary:fd.get('summary'),escalate:fd.get('escalate')==='1',escalate_text:fd.get('escalate_text')}},'הפגישה תועדה. תודה!')){S.pedNew=null;render()}
@@ -1000,7 +1009,10 @@ root.addEventListener('click',e=>{
 root.addEventListener('input',e=>{if(e.target.id==='asQ'){S.asQ=e.target.value;const l=document.getElementById('asList');if(l)l.innerHTML=peopleList()}});
 root.addEventListener('change',e=>{
   const t=e.target;
-  if(t.id==='pedCls'){S.pedCls=t.value;const l=document.getElementById('pedStuList');if(l)l.innerHTML=pedStuOpts((S.ped.students||{})[t.value]||[]);return}
+  if(t.id==='pedCls'){S.pedCls=t.value;const l=document.getElementById('pedStuList');if(l)l.innerHTML=pedStuOpts((S.ped.students||{})[t.value]||[]);const o=document.getElementById('pedOwnSel');if(o)o.innerHTML=pedTeacherOpts(t.value,'');return}
+  if(t.name==='nature'&&t.closest('[data-form=ped-dec]')){const x=document.getElementById('pedNatO');x.hidden=t.value!=='אחר';x.querySelector('input').required=t.value==='אחר';if(t.value==='אחר')x.querySelector('input').focus();return}
+  if(t.name==='owner'&&t.closest('[data-form=ped-dec]')){const x=document.getElementById('pedOwnN');x.hidden=t.value!=='מורה מקצועי';x.querySelector('select').required=t.value==='מורה מקצועי';return}
+  if(t.dataset.pedown){const x=document.getElementById('pedOwnN'+t.dataset.pedown);if(x){x.hidden=t.value!=='מורה מקצועי';x.querySelector('select').required=t.value==='מורה מקצועי'}return}
   if(t.name==='scope'&&t.closest('[data-form=ped-dec]')){document.getElementById('pedStu').hidden=t.value!=='student';return}
   if(t.name==='escalate'&&t.closest('[data-form=ped-meet]')){const x=document.getElementById('pedEsc');x.hidden=t.value!=='1';x.querySelector('textarea').required=t.value==='1';return}
   if(t.dataset.pedf){S.pedF=Object.assign({},S.pedF,{[t.dataset.pedf]:t.value});return render()}

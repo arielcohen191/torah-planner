@@ -125,9 +125,9 @@
       case 'hanhala_data':return {me:meObj,classes:[CLS,CLS2],staff_n:7};
       case 'hanhala_my':return my();
       case 'hanhala_save_prefs':return null;
-      case 'ped_data':return {me:{name:ME,lvl:0,tid:-1,layers:[],can_meet:false,homeroom:[CLS],principal:false},classes:[CLS],students:{[CLS]:NAMES},decisions:PDEC,meetings:[],homerooms:[]};
-      case 'ped_save_decision':{const p=a.p||{};PDEC.push({id:++PID,created_at:new Date().toISOString(),by:'נועם ישראלי',class:p.class,nature:p.nature,scope:p.scope,students:p.scope==='student'?p.students:[],answer:p.answer,owner:p.owner,due:p.due,status:'open',notes:null,edit:true});PDEC.sort((x,y)=>x.due<y.due?-1:1);return PID}
-      case 'ped_update_decision':{const d=PDEC.find(x=>x.id===a.p_id),p=a.p||{};if(d){if(p.status)d.status=p.status;if('notes' in p)d.notes=p.notes||null;if(p.due)d.due=p.due;if(p.owner)d.owner=p.owner}return null}
+      case 'ped_data':return {me:{name:ME,lvl:0,tid:-1,layers:[],can_meet:false,homeroom:[CLS],principal:false},classes:[CLS],students:{[CLS]:NAMES},decisions:PDEC,meetings:[],homerooms:[],teachers:Object.values(T).map(n=>({name:n,classes:[...new Set(SLOTS.filter(x=>x.teacher===n).flatMap(x=>x.classes))]}))};
+      case 'ped_save_decision':{const p=a.p||{};PDEC.push({id:++PID,created_at:new Date().toISOString(),by:'נועם ישראלי',class:p.class,nature:p.nature,scope:p.scope,students:p.scope==='student'?p.students:[],answer:p.answer,owner:p.owner,due:p.due,status:'open',notes:null,edit:true,nature_other:p.nature==='אחר'?p.nature_other:null,owner_name:p.owner==='מורה מקצועי'?p.owner_name:null});PDEC.sort((x,y)=>x.due<y.due?-1:1);return PID}
+      case 'ped_update_decision':{const d=PDEC.find(x=>x.id===a.p_id),p=a.p||{};if(d){if(p.status)d.status=p.status;if('notes' in p)d.notes=p.notes||null;if(p.due)d.due=p.due;if(p.owner){d.owner=p.owner;d.owner_name=p.owner==='מורה מקצועי'?p.owner_name:null}}return null}
       case 'mk_check_phone':return {status:'pin'};
       case 'mk_login':case 'mk_create_pin':return a.p_pin===PIN||a.p_new_pin?{name:'נועם ישראלי',role:'teacher',class_name:CLS,classes:[{class_name:CLS,has_data:true,teacher:'נועם ישראלי'},{class_name:CLS2,has_data:true,teacher:'מחנך ה׳8',limited:true}],can_manage:false}:{error:'bad'};
       case 'mk_get':if(a.p_class===CLS2)return {class_name:CLS2,teacher:'מחנך ה׳8',limited:true,subjects:['מתמטיקה'],rows:subjRows(rows(),[40]),reading:null,voices:[],synced_at:new Date(Date.now()-36e5).toISOString(),sync_url:null};
