@@ -232,6 +232,7 @@ body.pc-measure #printCards{display:block;position:absolute;left:-9999px;top:0;w
 }
 /* לוגו כנפי רוח במקום כ״ר */
 .mark{background:#fff!important;padding:2px;box-sizing:border-box;overflow:hidden}.mark img{width:100%;height:100%;object-fit:contain;display:block}.gate-card .mark,.gate .mark,#gate .mark{width:76px;height:76px;padding:6px;border-radius:18px}
+.qdone{margin:18px 0 6px;padding:14px 16px;border:1.5px solid #9cc3a4;background:#eef8f0;border-radius:12px;line-height:1.6}
 </style>
 </head>
 <body class="proj">
@@ -1087,6 +1088,10 @@ const drainRow=(d,i)=>`<div class="qitem">
      <select onchange="qSet('me.drains.${i}.src',this.value)" title="מקור">${opt(D_SRCS,d.src)}</select>
      <button class="x" onclick="qDelIn('me.drains',${i})" title="מחיקה">🗑</button></div>
      <div class="qrow">${lvlSel(d.lvl,'me.drains.'+i+'.lvl')}<input value="${esc(d.relief||"")}" placeholder="מה היה משחרר אותי? מה אפשר לקחת ממני או לתת לי?" oninput="qSet('me.drains.${i}.relief',this.value)" class="grow"></div></div>`;
+function qDone(b){const m=document.getElementById("qdoneMsg");b.disabled=true;m.textContent="שומר…";qSave();
+  setTimeout(()=>{const t=(document.getElementById("qstat")||{}).textContent||"";b.disabled=false;
+    m.textContent=/⚠/.test(t)?t:"✓ השאלון נשמר. תודה! אפשר לסגור את העמוד.";
+    try{(USER.classes||[]).forEach(c=>{if(c.class_name==CUR_CLASS)c.has_q=true});renderClassList()}catch(e){}},1600)}
 {const _qs=qSave;qSave=function(){if(Q&&Q.me)meNorm();return _qs.apply(this,arguments)}}
 renderQForm=function(){
   if(!Q||!USER)return;meNorm();const c=Q.cls,m=Q.me;
@@ -1109,7 +1114,7 @@ renderQForm=function(){
   const dc=myDefaultClass();
   document.getElementById("qform").innerHTML=`
   <div class="qhead"><div><b>${esc(USER.name)}</b> <span class="hint" style="margin:0">· ${ROLE_HE[USER.role]||""}${USER.class_name?" · מחנך "+esc(USER.class_name):""}</span></div>
-    <div><span id="qstat" class="hint" style="margin:0"></span></div></div>
+    <div><span id="qstat" class="hint" style="margin:0">${SES?"נשמר אוטומטית":""}</span></div></div>
 
   <fieldset><legend>חלק א' · הכיתות שלי <span class="tagm">גלוי להנהלה ולמחנך הכיתה · מוצג בישיבה</span></legend>
    <h3>1. מה מטריד או מדאיג אותי באחת הכיתות שאני עובד בהן?</h3>
@@ -1158,7 +1163,9 @@ renderQForm=function(){
    <label class="cb"><input type="checkbox" ${m.personal?"checked":""} onchange="qSet('me.personal',this.checked);renderQForm()"> יש כרגע עומס אישי מחוץ לבית הספר שכדאי שהמנהל ידע עליו, בלי פירוט</label>
    ${m.personal?`<p class="hint" style="margin:8px 0 4px">המנהל רואה את הסימון הזה. אם תרצו, אפשר לאשר לו לשתף גם את:</p>
    <div class="chips">${SHARE.map(x=>`<button class="ch ${m.share.includes(x)?'on':''}" onclick="qToggle('me.share',this.textContent)">${x}</button>`).join("")}</div>`:""}`}
-  </fieldset>`;
+  </fieldset>
+  ${SES?`<div class="qdone"><div><b>סיימת?</b> אין כפתור "שליחה": כל מה שכתבת נשמר אוטומטית ברגע שכתבת אותו, וכבר מופיע אצל מי שאמור לראות אותו. אפשר לחזור ולעדכן בכל זמן.</div>
+   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px"><button class="btn primary" onclick="qDone(this)">סיימתי</button><span id="qdoneMsg" class="hint" role="status" style="margin:0"></span></div></div>`:""}`;
 };
 
 // ----- קול הצוות (בתצוגת הכיתה) -----
