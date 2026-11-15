@@ -561,7 +561,16 @@ function renderQuality(){
   const rows=items.map(([n,c])=>{const k=R.filter(s=>(s.r[c]||"").trim()).length;return [n,k]});
   SUBJ.forEach(x=>{const k=R.filter(s=>[...Array(x.c==60?5:4).keys()].some(o=>(s.r[x.c+o]||"").trim())).length;rows.push(["מורה מקצועי: "+x.n,k])});
   document.getElementById("qtab").innerHTML=`<tr><th style="text-align:right">שדה</th><th>מולא</th><th style="width:50%"></th></tr>`+rows.map(([n,k])=>{const p=k/N;const sc=p==1?1:p>=.5?2:p>0?2:0;
-    return `<tr><td class="nm" style="cursor:default">${n}</td><td class="c c${p==1?1:p==0?3:2}">${k}/${N}</td><td><div class="bar"><span class="s${p==1?1:2}" style="width:${p*100}%"></span></div></td></tr>`}).join("");
+    return `<tr><td class="nm" style="cursor:default">${n}</td><td class="c c${p==1?1:p==0?3:2}">${k}/${N}</td><td><div class="bar"><span class="s${p==1?1:2}" style="width:${p*100}%"></span></div></td></tr>`}).join("")+qualityMismatch(R);
+}
+/* #20: "רמת שילוב" לא מתאימה ל"איזה מענים": מסומן שילוב או סל אישי, אבל במענים אין שילוב/סל אישי (או להפך) */
+function qualityMismatch(R){
+  const lvl=s=>parseInt((s.r[7]||"").trim()),m=s=>(s.r[26]||"");
+  const L=R.filter(s=>{const l=lvl(s),has=(s.maane||[]).some(x=>/^[^א-ת]*(שילוב|סל אישי)/.test(x));return (l===2||l===3)?!has:has&&l===1});
+  if(!L.length)return "";
+  return `<tr><td colspan="3" style="padding-top:14px"><b>לבדיקה: רמת שילוב לא תואמת את המענים (${L.length})</b>
+    <div class="hint" style="margin:4px 0">התלמידים האלה מסומנים בעמודה "רמת שילוב" אחרת ממה שכתוב אצלם ב"איזה מענים מקבלים". המספר בקובייה "שילוב / סל אישי" נספר לפי "רמת שילוב", אז כדאי לתקן בגיליון.</div>
+    ${L.map(s=>`<div>${esc(s.num)}. ${esc(s.name)}: רמת שילוב ${esc((s.r[7]||"").trim()||"ריק")}${m(s).trim()?"":" · אין מענה רשום"}</div>`).join("")}</td></tr>`;
 }
 
 // ---------- student card ----------
