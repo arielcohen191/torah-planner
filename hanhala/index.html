@@ -257,8 +257,8 @@ const plural=(n,one,many)=>n===1?one:n+' '+many;
 
 const S={view:'home',filter:0,house:null,phone:null,user:null,date:null,milui:null,dataMonth:null,tor:null,say:null,mk:null,plans:null,hol:null,classes:[],staffN:null,admin:null,edit:null,err:{},busy:false};
 try{S.phone=localStorage.getItem('hanhala_phone')||localStorage.getItem('milui_phone')}catch(e){}
-/* "בנעליים של": מנהל המערכת צופה בלוח כמו איש צוות אחר. נשמר רק בלשונית הנוכחית, וצפייה בלבד. */
-try{const a=JSON.parse(sessionStorage.getItem('hanhala_as')||'null');if(a&&a.real===S.phone){S.realPhone=a.real;S.phone=a.phone;S.asName=a.name}}catch(e){}
+/* "בנעליים של": מנהל המערכת צופה כמו איש צוות אחר, בלוח ובשאר הכלים (as/as.js). נשמר בדפדפן עד יציאה יזומה, וצפייה בלבד. */
+try{const a=JSON.parse(localStorage.getItem('kr_as')||'null');if(a&&a.real===S.phone){S.realPhone=a.real;S.phone=a.phone;S.asName=a.name}}catch(e){}
 const VIEWONLY='במצב "בנעליים של" אי אפשר לשמור שינויים. חזרו לעצמכם כדי לשנות.';
 const root=document.getElementById('root');
 function schoolDay(s){let d=s;for(let i=0;i<7&&dow(d)===6;i++)d=addDays(d,1);return d}
@@ -1061,13 +1061,13 @@ function peopleList(){const q=(S.asQ||'').trim(),L=(S.people||[]).filter(p=>!q||
 function viewAs(){
   if(!isDev())return '<div class="note bad">המסך הזה פתוח רק למנהל המערכת.</div>';
   if(!S.people)return S.peopleErr?'<div class="note bad">'+esc(S.peopleErr)+'</div>':panel('אנשי צוות',skel);
-  return panel('במי לצפות?','<p class="muted small" style="margin:0">הלוח ייפתח בדיוק כמו אצל איש הצוות: אותם מסכים, אותם נתונים ואותן הרשאות. במצב הזה לא נשמר שום שינוי, והוא נשאר רק בלשונית הזאת.</p>'+
+  return panel('במי לצפות?','<p class="muted small" style="margin:0">הלוח ייפתח בדיוק כמו אצל איש הצוות: אותם מסכים, אותם נתונים ואותן הרשאות. במצב הזה לא נשמר שום שינוי. הוא נשאר פעיל בלוח, במילוי מקום, בתורנויות ובמפת הכיתה, גם אחרי רענון או סגירת הלשונית, עד שתלחצו "חזרה אליי".</p>'+
     '<div class="frow"><label>חיפוש לפי שם או תפקיד<input type="search" id="asQ" value="'+esc(S.asQ||'')+'" placeholder="למשל: גילה, מחנכת, רכזת" autocomplete="off"></label></div><div class="plist" id="asList">'+peopleList()+'</div>');
 }
 function resetData(){Object.assign(S,{team:null,teamF:null,todoPeople:null,todoDraft:null,todo:null,todoEdit:null,todoDel:null,todoMsg:null,todoErr:null,todoF:null,ped:null,pedNew:null,pedMsg:null,pedErr:null,user:null,house:null,milui:null,tor:null,mk:null,say:null,plans:null,admin:null,dataMonth:null,my:null,myMonth:null,fb:null,fbOpen:0,edit:null,filter:0,saved:null})}
-function startAs(p){S.realPhone=S.phone;S.phone=p.phone;S.asName=p.name;try{sessionStorage.setItem('hanhala_as',JSON.stringify({real:S.realPhone,phone:p.phone,name:p.name}))}catch(e){}
+function startAs(p){S.realPhone=S.phone;S.phone=p.phone;S.asName=p.name;try{localStorage.setItem('kr_as',JSON.stringify({real:S.realPhone,phone:p.phone,name:p.name}))}catch(e){}
   resetData();S.view='home';history.pushState(null,'',location.pathname);render();refresh(true);window.scrollTo(0,0)}
-function stopAs(){S.phone=S.realPhone;S.realPhone=null;S.asName=null;try{sessionStorage.removeItem('hanhala_as')}catch(e){}
+function stopAs(){S.phone=S.realPhone;S.realPhone=null;S.asName=null;try{const a=JSON.parse(localStorage.getItem('kr_as')||'null');localStorage.removeItem('kr_as');if(a&&a.mk)rpc('mk_as_stop',{p_token:a.mk}).catch(()=>{})}catch(e){}
   resetData();S.view='viewas';history.pushState(null,'','#viewas');render();refresh(true).then(()=>loadPeople().then(render))}
 /* ---------- משובים מהצוות (מנהל מערכת בלבד) ---------- */
 const FBK={bug:['תקלה','red'],idea:['רעיון','green'],question:['שאלה','orange']};
@@ -1140,7 +1140,7 @@ function render(){
   if(!S.user){root.innerHTML=S.err.data?'<div class="login"><div class="card"><h1>לוח הנהלה</h1><div class="err">אין חיבור לשרת כרגע.</div><button class="btn wide" data-act="refresh">ניסיון נוסף</button></div></div>':'<div class="loading">טוען…</div>';return}
   const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view),setv=S.view==='prefs'||S.view==='perms'||S.view==='feedback'||S.view==='viewas'||S.view==='ped'||S.view==='pedm'||S.view==='todo'||S.view==='tasks';
   const title=S.view==='home'||S.view==='my'?(S.user.staff?greet(S.user.name):greetT(S.user.name)):S.view==='prefs'?'התאמה אישית':S.view==='perms'?'ניהול הרשאות':S.view==='feedback'?'משובים מהצוות':S.view==='viewas'?'כניסה בנעליים של איש צוות':v[1];
-  let h=S.realPhone?'<div class="card banner asbar" role="status"><span>את/ה רואה את הלוח בדיוק כמו <b>'+esc(S.asName||S.user.name)+'</b> · צפייה בלבד</span><button class="btn sm" data-act="as-stop">חזרה אליי</button></div>':'';
+  let h=S.realPhone?'<div class="card banner asbar" role="status"><span>את/ה בנעליים של <b>'+esc(S.asName||S.user.name)+'</b> · צפייה בלבד · פעיל בכל הכלים עד שתצאו</span><button class="btn sm" data-act="as-stop">חזרה אליי</button></div>':'';
   if(window.KR_DEMO&&KR_DEMO.isDemo(S.phone))h+='<div class="card banner" role="status">'+esc(KR_DEMO.note)+'</div>';
   h+='<header class="card topbar"><div><h1>'+esc(title)+'</h1><div class="muted">'+(setv?esc(S.user.role_label):(S.view==='home'?esc(S.user.role_label)+' · ':S.view==='my'?'הדף שלי · ':'תמונת מצב · ')+fmtFull(S.date)+(isToday?' · היום':'')+(S.loadedAt?' · עודכן '+pad(S.loadedAt.getHours())+':'+pad(S.loadedAt.getMinutes()):''))+'</div></div>'+
     (setv?'':'<div class="chips"><button class="btn sec" data-act="day" data-n="-1">יום קודם</button><button class="btn sec" data-act="today" aria-pressed="'+isToday+'">היום</button><button class="btn sec" data-act="day" data-n="1">יום הבא</button><button class="btn" data-act="refresh">'+(S.busy?'מרענן…':'רענון')+'</button></div>')+'</header>';
@@ -1279,6 +1279,8 @@ root.addEventListener('click',e=>{
 root.addEventListener('input',e=>{const T=e.target;if(!T.classList||!T.classList.contains('pin'))return;
   const v=T.value.trim(),P=(S.todoPeople||[]).find(x=>x.name===v);if(!P)return;
   const box=T.closest('.pbox').querySelector('.pchips');if(![...box.children].some(c=>c.dataset.k===P.k))box.insertAdjacentHTML('beforeend',pChip(P));T.value=''});
+/* יציאה מ"בנעליים של" (או כניסה) בלשונית אחרת או בכלי אחר: מתעדכנים גם כאן */
+window.addEventListener('storage',e=>{if(e.key==='kr_as')location.reload()});
 /* רענון אוטומטי כשחוזרים ללשונית אחרי יותר מ־5 דקות */
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.phone&&S.loadedAt&&Date.now()-S.loadedAt>3e5)refresh(true)});
 window.addEventListener('popstate',()=>{S.view=hashView();if(S.user&&!canSee(S.view))S.view='home';if(S.view==='feedback'&&S.user&&isDev())loadFb().then(render);if(S.phone){if(S.view==='perms'&&S.user&&S.user.can_manage&&!S.admin)loadAdmin().then(render);render()}});
