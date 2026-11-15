@@ -128,6 +128,7 @@
   /* תקלות ותחזוקה */
   let MID=2;const MAINT=[{id:2,created_at:add(TODAY,-1)+'T09:10:00Z',by:ME,place:'כיתה '+CLS.replace("' ",'׳'),descr:'המזגן לא מקרר',urgency:1,status:'doing',status_at:add(TODAY,-1)+'T12:00:00Z',status_by:'אב הבית',note:'הוזמן טכנאי',thanked_at:null,mine:true},
     {id:1,created_at:add(TODAY,-6)+'T08:00:00Z',by:ME,place:'חצר',descr:'ברז דולף ליד המגרש',urgency:2,status:'done',status_at:add(TODAY,-4)+'T10:00:00Z',status_by:'אב הבית',note:null,thanked_at:null,mine:true}];
+  const DPH={};
   function rpc(fn,a){
     a=a||{};
     switch(fn){
@@ -158,6 +159,8 @@
           return {class_name:CLS3,teacher:'מחנך ה׳9',limited:true,shiluv:true,picked:pick||[],pick_set:pick!==null,roster:all.map(r=>[r[1],r[2]]),rows:pr,reading:null,voices:[],synced_at:new Date(Date.now()-36e5).toISOString()}}
         if(a.p_class===CLS2)return {class_name:CLS2,teacher:'מחנך ה׳8',limited:true,subjects:['מתמטיקה'],rows:subjRows(rows(),[40]),reading:null,voices:[],synced_at:new Date(Date.now()-36e5).toISOString(),sync_url:null};
         return {class_name:CLS,teacher:'נועם ישראלי',rows:rows(),reading:reading(),voices:[],synced_at:new Date(Date.now()-36e5).toISOString(),sync_url:null};
+      case 'mk_photos':return {can_edit:true,photos:DPH};
+      case 'mk_photo_set':{const k=String(a.p_student||'').replace(/[^א-תa-zA-Z0-9]/g,'');if(a.p_data)DPH[k]=a.p_data;else delete DPH[k];return {ok:true}}
       case 'mk_my_q':return Q||{};
       case 'mk_save_q':Q={part_a:a.p_part_a,part_b:a.p_part_b};return {ok:true};
       case 'mk_change_pin':return {error:'forbidden'};

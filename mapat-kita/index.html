@@ -202,7 +202,10 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 body.pc-measure #printCards{display:block;position:absolute;left:-9999px;top:0;width:130mm}
 .pcard{font:11pt/1.4 Heebo,Assistant,Rubik,sans-serif;color:#000;direction:rtl;background:#fff}
 .pc-h{display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #000;padding-bottom:5px;margin-bottom:7px}
-.pc-h img{width:15mm;height:15mm;object-fit:contain}
+.pc-h img{width:15mm;height:15mm;object-fit:contain}.pc-h img.pc-ph{width:20mm;height:20mm;object-fit:cover;border-radius:3mm;border:1px solid #000;margin-inline-start:auto;margin-inline-end:4mm}
+.mhs{display:flex;align-items:center;gap:14px;min-width:0}.sph{width:76px;height:76px;border-radius:14px;object-fit:cover;border:2px solid rgba(255,255,255,.8);flex:none;background:#fff}
+.phctl{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.phctl button,.phctl label{background:rgba(255,255,255,.18);border:0;color:#fff;font:inherit;font-size:13px;border-radius:8px;padding:5px 10px;cursor:pointer;min-height:32px;display:inline-flex;align-items:center}
+.phctl input{position:absolute;opacity:0;width:1px;height:1px}.phctl label:focus-within{outline:2px solid #fff}.phctl small{align-self:center;opacity:.9}
 .pc-name{font:800 19pt/1.1 Rubik,Heebo,sans-serif}.pc-sub{font-size:9.5pt;color:#333;margin-top:2px}
 .pc-good{margin:0 0 7px;padding:5px 9px;border-right:3px solid #000;background:#f2f2f2;font-size:10.5pt}
 .pc-info{margin-bottom:7px}.pc-li{margin:2px 0;font-size:10pt}.pc-li b{margin-left:4px}
@@ -605,7 +608,7 @@ function cardBody(s){
    </div>`;
 }
 function openS(i){CUR=i;const s=STATE.rows[i];const L=list();const pos=L.findIndex(x=>x.i==i);
-  document.getElementById("modal").innerHTML=`<div class="mh"><div><div style="opacity:.8;font-size:13px">${STATE.cls} · תלמיד ${s.num}</div><h3>${esc(s.name)}</h3></div>
+  document.getElementById("modal").innerHTML=`<div class="mh"><div class="mhs">${photoOf(s)?`<img class="sph" src="${photoOf(s)}" alt="תמונה של ${esc(s.name)}">`:""}<div><div style="opacity:.8;font-size:13px">${STATE.cls} · תלמיד ${s.num}</div><h3>${esc(s.name)}</h3>${photoCtl(i)}</div></div>
    <div class="nav2"><button onclick="step(-1)" ${pos<=0?'disabled':''}>→ הקודם</button><button onclick="step(1)" ${pos>=L.length-1?'disabled':''}>הבא ←</button><button onclick="closeS()">✕</button></div></div>
    ${cardBody(s)}`;
   document.getElementById("ov").classList.add("on");
@@ -621,7 +624,7 @@ function printCard(s){
     return `<tr class="pc-${st[2]}"><th>${d.name}</th><td class="pc-st"><span>${st[0]}</span> ${st[1]}</td><td>${det||(x.score===1?'<span class="pc-muted">הכול תקין</span>':'')}${x.txt&&!sub?`<div class="pc-note">✎ ${esc(x.txt)}</div>`:""}</td></tr>`}).join("");
   const flags=s.flags.map(f=>`<span class="pc-tag ${f.s?'sens':''}">${esc(f.t)}</span>`).join("");
   return `<section class="pcard">
-   <header class="pc-h"><div><div class="pc-name">${esc(s.name)}</div><div class="pc-sub">${esc(STATE.cls)} · תלמיד ${esc(s.num)}${STATE.teacher?" · מחנך: "+esc(STATE.teacher):""}</div></div><img src="/icons/kanfei-ruach-logo.png" alt=""></header>
+   <header class="pc-h"><div><div class="pc-name">${esc(s.name)}</div><div class="pc-sub">${esc(STATE.cls)} · תלמיד ${esc(s.num)}${STATE.teacher?" · מחנך: "+esc(STATE.teacher):""}</div></div>${photoOf(s)?`<img class="pc-ph" src="${photoOf(s)}" alt="">`:""}<img src="/icons/kanfei-ruach-logo.png" alt=""></header>
    ${!sub&&s.good?`<p class="pc-good">${esc(s.good)}</p>`:""}
    <div class="pc-info">
     ${li("חוזקות:",s.strengths.map(esc).join(" · "))}
@@ -920,7 +923,7 @@ async function openClass(c){
   document.getElementById("ttl").textContent="טוען את "+c+"…";
   let d;try{d=await rpc("mk_get",{p_phone:SES.phone,p_pin:SES.pin,p_class:c})}catch(e){showNoClass("אין חיבור לשרת כרגע.");return}
   if(d.error){if(d.error==="bad"||d.error==="locked"){logout();return}showNoClass(ERR[d.error]||d.error);return}
-  VOICES=d.voices||[];applyView(d);window._pick=d.shiluv?{cls:d.class_name,roster:d.roster||[],picked:d.picked||[]}:null;
+  VOICES=d.voices||[];applyView(d);loadPhotos(d.class_name||c);window._pick=d.shiluv?{cls:d.class_name,roster:d.roster||[],picked:d.picked||[]}:null;
   if(d.shiluv&&d.pick_set&&!(d.picked||[]).length){load([],d.class_name,d.teacher||"");document.getElementById("subttl").textContent="";return}
   if(d.shiluv&&!(d.picked||[]).length){load([],d.class_name,d.teacher||"");document.getElementById("subttl").textContent="בחירת התלמידים שלך";openPick();return}
   const rows=mergeReading(d.rows?rowsFromSheet(d.rows):[],d.reading);window._syncUrl=d.sync_url||null;updateSyncBtn();
@@ -1262,6 +1265,28 @@ document.addEventListener("keydown",e=>{if(SQ_OPEN&&e.key=="Escape")closeS()});
   const m=/^#staffq=(.+)$/.exec(location.hash);
   if(m&&USER&&USER.role==="principal"){try{window._sqWant=decodeURIComponent(m[1])}catch(e){}history.replaceState(null,"",location.pathname);setTimeout(()=>go("me"),0)}
   return r}}
+
+// ================= תמונות תלמידים בכרטיס האישי (משוב #19) =================
+// מעלים: מחנך הכיתה וההנהלה. התמונה מוקטנת בדפדפן ל־240×240 לפני השליחה.
+let PHOTOS={},PH_EDIT=false,PH_MSG="";
+const stuKey=n=>String(n||"").replace(/[^א-תa-zA-Z0-9]/g,"");
+const photoOf=s=>PHOTOS[stuKey(s.name)]||"";
+async function loadPhotos(c){PHOTOS={};PH_EDIT=false;PH_MSG="";
+  try{const r=await rpc("mk_photos",{p_phone:SES.phone,p_pin:SES.pin,p_class:c});if(r&&!r.error&&c===(STATE.cls||c)){PHOTOS=r.photos||{};PH_EDIT=!!r.can_edit;if(CUR>=0)openS(CUR)}}catch(e){}}
+function photoCtl(i){if(!PH_EDIT)return "";const has=!!photoOf(STATE.rows[i]);
+  return `<div class="phctl"><label>${has?"החלפת תמונה":"＋ הוספת תמונה"}<input type="file" accept="image/*" onchange="photoPick(${i},this)"></label>${has?`<button type="button" onclick="photoSet(${i},'')">הסרת התמונה</button>`:""}${PH_MSG&&window._phFor===i?`<small role="status">${esc(PH_MSG)}</small>`:""}</div>`}
+function photoShrink(file){return new Promise((ok,no)=>{const u=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{const S=240,w=im.naturalWidth,h=im.naturalHeight,m=Math.min(w,h),c=document.createElement("canvas");c.width=c.height=S;
+    const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,S,S);x.drawImage(im,(w-m)/2,(h-m)/2,m,m,0,0,S,S);URL.revokeObjectURL(u);ok(c.toDataURL("image/jpeg",.82))};
+  im.onerror=()=>{URL.revokeObjectURL(u);no(new Error("img"))};im.src=u})}
+async function photoPick(i,inp){const f=inp.files&&inp.files[0];if(!f)return;window._phFor=i;PH_MSG="שומר…";openS(i);
+  try{await photoSet(i,await photoShrink(f))}catch(e){PH_MSG="לא הצלחנו לקרוא את התמונה. נסו קובץ אחר.";openS(i)}}
+async function photoSet(i,data){const s=STATE.rows[i];window._phFor=i;
+  try{const r=await rpc("mk_photo_set",{p_phone:SES.phone,p_pin:SES.pin,p_class:CUR_CLASS,p_student:s.name,p_data:data});
+    if(r&&r.error){PH_MSG=r.error==="forbidden"?"רק מחנך הכיתה וההנהלה יכולים להעלות תמונה.":"התמונה לא נשמרה. נסו שוב."}
+    else{if(data)PHOTOS[stuKey(s.name)]=data;else delete PHOTOS[stuKey(s.name)];PH_MSG=data?"התמונה נשמרה.":"התמונה הוסרה."}
+  }catch(e){PH_MSG=/403|view_only/.test(e.message)?'במצב "בנעליים של" אי אפשר לשמור.':"התמונה לא נשמרה. אין חיבור לשרת."}
+  if(CUR===i)openS(i)}
 
 // ================= v4: נתוני שפה (מיפוי קריאה) · סנכרון ועדכון עכשיו =================
 IND[66]=["קריאה — הבנת הנקרא",{1:"85–100",2:"60–84",3:"מתחת ל־60"}];
