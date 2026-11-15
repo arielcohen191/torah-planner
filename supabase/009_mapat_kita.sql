@@ -13,3 +13,5 @@
 --   mk_my_q / mk_save_q(phone,pin,a,b) · mk_get מחזיר voices (כל מי שכתב על הכיתה) · mk_staff_map — מנהל בלבד, כולל חלק ב'.
 -- עדכון (mapat_kita_reading): mk_reading (מיפוי קריאה מקובץ השפה, לפי כיתה) · mk_set_reading (הנהלה מעלה את הקובץ) ·
 --   mk_get_settings / mk_set_sync_url (קישור Web App ל"עדכון עכשיו") · mk_get מחזיר גם reading ו-sync_url.
+-- עדכון (mapat_kita_extra_grades): mk_access.extra_grades — שכבות נוספות למורי שילוב/בעלי תפקיד ('*' = כל ביה"ס),
+--   מצטרפות ב-_mk_teacher_classes לכיתות ממערכת השעות (תצוגת מורה מקצועי). mk_staff_set_grades · mk_staff_list כולל גם אנשים שנוספו ידנית.
