@@ -319,6 +319,8 @@ function viewBoard(){
    :'<div class="card holiday">אין היעדרויות ביום הזה. אם מישהו חסר, לחצו על "דיווח על מורה נעדר".</div>'));
 }
 
+/* #15: איש צוות בלי מערכת שעות בכלי (מורות שילוב, מסייעות). מופיע במועמדים כ"מסייע/ת". */
+const KIND_SEL='<fieldset style="border:0;padding:0;margin:0;display:flex;gap:14px;flex-wrap:wrap"><legend class="small" style="margin-bottom:4px">סוג</legend><label class="small"><input type="radio" name="kind" value="support" checked> איש צוות בית הספר (שילוב, מסייע/ת)</label><label class="small"><input type="radio" name="kind" value="external"> ממלא/ת מקום מבחוץ</label></fieldset>';
 /* ---------- candidates ---------- */
 const MEETING=/מליאה|ממ``י|מנהל|צוות מוביל|פדגוגי/;
 function candidates(date,slot){
@@ -335,6 +337,7 @@ function candidates(date,slot){
     const at=day.find(s=>s.hour===h);
     let g,why='';
     if(t.is_external){g=8;why='ממלא/ת מקום מבחוץ'}
+    else if(t.kind==='support'){g=5.5;why='מסייע/ת · מערכת השעות לא בכלי, לבדוק זמינות'}
     else if(!day.length){g=7;why='לא עובד/ת ביום '+DAYS[d]}
     else if(!at){const hs=day.map(s=>s.hour);if(h>Math.min(...hs)&&h<Math.max(...hs)){g=1;why='חלון'}else{g=7;why='לא בבית הספר בשעה זו'}}
     else if(at.kind==='חלון'){g=1;why='חלון'}
@@ -348,7 +351,7 @@ function candidates(date,slot){
   out.sort((a,b)=>a.g-b.g||(b.knows-a.knows)||a.n-b.n||a.t.name.localeCompare(b.t.name,'he'));
   return out;
 }
-const GROUPS={1:'בחלון · הכי מתאימים',2:'בשהייה',3:'בשהייה עם ישיבה',4:'בשעה פרטנית',5:'בשעת תפקיד',6:'מלמדים באותה שעה (איחוד כיתות)',7:'לא בבית הספר בשעה זו',8:'ממלאי מקום מבחוץ'};
+const GROUPS={5.5:'מסייעים: מורות שילוב ואנשי צוות בלי מערכת בכלי',1:'בחלון · הכי מתאימים',2:'בשהייה',3:'בשהייה עם ישיבה',4:'בשעה פרטנית',5:'בשעת תפקיד',6:'מלמדים באותה שעה (איחוד כיתות)',7:'לא בבית הספר בשעה זו',8:'ממלאי מקום מבחוץ'};
 function msgFor(date,tid){
   const T=S.data.T;
   const mine=S.data.assignments.filter(x=>x.date===date&&x.substitute_id===tid&&x.status==='assigned').map(x=>S.data.SL[x.slot_id]).filter(Boolean).sort((a,b)=>a.hour-b.hour);
@@ -403,7 +406,7 @@ function viewCand(){
   if(lastG)groups+='</div>';
   if(!shown)groups+='<div class="empty">אין מועמדים פנויים בשעה הזו. לחצו על "הצג עוד".</div>';
   groups+='<button class="btn sec wide" data-act="more">'+(more?'הצג פחות':'הצג עוד: מלמדים באותה שעה, לא בבית הספר, ממלאים מבחוץ')+'</button>';
-  groups+='<details class="card" style="padding:14px 16px;box-shadow:none;background:var(--card-muted)"><summary style="font-size:17px;font-weight:600;cursor:pointer">הוספת ממלא/ת מקום מבחוץ</summary><form id="extForm" style="display:flex;flex-direction:column;gap:10px;margin-top:12px"><label>שם מלא<input type="text" name="name" required></label><label>טלפון<input type="tel" name="phone" inputmode="tel"></label><button class="btn sm" type="submit">הוסף לרשימה</button></form></details>';
+  groups+='<details class="card" style="padding:14px 16px;box-shadow:none;background:var(--card-muted)"><summary style="font-size:17px;font-weight:600;cursor:pointer">הוספת איש צוות או ממלא/ת מקום</summary><form id="extForm" style="display:flex;flex-direction:column;gap:10px;margin-top:12px"><label>שם מלא<input type="text" name="name" required></label><label>טלפון<input type="tel" name="phone" inputmode="tel"></label>'+KIND_SEL+'<button class="btn sm" type="submit">הוסף לרשימה</button></form></details>';
   let side='';
   if(chosen){
     const txt=msgFor(D,chosen);S.msg=txt;
@@ -555,11 +558,12 @@ function viewTeachers(){
   const miss=ts.filter(t=>!t.phone&&!t.email).length;
   return '<header class="card topbar"><div><h1>מורים</h1><div class="muted">טלפון ומייל משמשים רק לכפתורי השליחה. '+(miss?miss+' מורים עדיין בלי פרטי קשר.':'לכולם יש פרטי קשר.')+'</div></div></header>'+
    '<section class="card" style="padding:20px"><div class="tablewrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>מייל</th><th>שם בהודעה לצוות</th><th>שליחה מועדפת</th><th>פנייה</th></tr></thead><tbody>'+
-   ts.map(t=>'<tr><td><b>'+esc(t.name)+'</b>'+(t.is_external?'<div class="small muted">מבחוץ</div>':'')+'</td><td><input type="tel" inputmode="tel" data-f="phone" data-id="'+t.id+'" value="'+esc(t.phone||'')+'" aria-label="טלפון של '+esc(t.name)+'"></td><td><input type="email" data-f="email" data-id="'+t.id+'" value="'+esc(t.email||'')+'" aria-label="מייל של '+esc(t.name)+'"></td>'+
+   ts.map(t=>'<tr><td><b>'+esc(t.name)+'</b>'+(t.is_external?'<div class="small muted">מבחוץ</div>':t.kind==='support'?'<div class="small muted">מסייע/ת, בלי מערכת</div>':'')+'</td><td><input type="tel" inputmode="tel" data-f="phone" data-id="'+t.id+'" value="'+esc(t.phone||'')+'" aria-label="טלפון של '+esc(t.name)+'"></td><td><input type="email" data-f="email" data-id="'+t.id+'" value="'+esc(t.email||'')+'" aria-label="מייל של '+esc(t.name)+'"></td>'+
     '<td><input type="text" data-f="nick" data-id="'+t.id+'" value="'+esc(t.nick||'')+'" placeholder="'+esc(shortName0(t.name))+'" aria-label="שם בהודעה של '+esc(t.name)+'" style="min-width:120px"></td>'+
     '<td><div class="pills" role="group" aria-label="שליחה מועדפת">'+[['whatsapp','וואטסאפ'],['sms','SMS'],['email','מייל']].map(([k,l])=>'<button type="button" data-act="chan" data-id="'+t.id+'" data-v="'+k+'" aria-pressed="'+(t.channel===k)+'">'+l+'</button>').join('')+'</div></td>'+
     '<td><div class="pills" role="group" aria-label="פנייה בהודעה">'+[['m','היקר'],['f','היקרה']].map(([k,l])=>'<button type="button" data-act="gend" data-id="'+t.id+'" data-v="'+k+'" aria-pressed="'+(t.gender===k)+'">'+l+'</button>').join('')+'</div></td>'+
-    '</tr>').join('')+'</tbody></table></div></section>';
+    '</tr>').join('')+'</tbody></table></div>'+
+   '<details style="margin-top:14px"><summary style="font-weight:600;cursor:pointer">＋ הוספת איש צוות שלא ברשימה</summary><p class="small muted" style="margin:6px 0">למשל מורות שילוב או מסייעות, שאין להן מערכת שעות בכלי. הן יופיעו כמסייעות בבחירת ממלא מקום.</p><form id="extForm" style="display:flex;flex-direction:column;gap:10px;max-width:360px"><label>שם מלא<input type="text" name="name" required></label><label>טלפון<input type="tel" name="phone" inputmode="tel"></label>'+KIND_SEL+'<button class="btn sm" type="submit">הוספה</button></form></details></section>';
 }
 
 /* ---------- actions ---------- */
@@ -587,7 +591,7 @@ root.addEventListener('submit',async e=>{
   }
   if(e.target.id==='extForm'){
     const f=new FormData(e.target),name=(f.get('name')||'').trim();if(!name)return;
-    act(()=>rpc('milui_save_teacher',{p_phone:S.phone,p:{name,phone:f.get('phone')||null}}),name+' נוסף/ה לרשימה');S.showMore=true;
+    act(()=>rpc('milui_save_teacher',{p_phone:S.phone,p:{name,phone:f.get('phone')||null,kind:f.get('kind')==='support'?'support':null}}),name+' נוסף/ה לרשימה');S.showMore=true;e.target.reset();
   }
 });
 root.addEventListener('click',async e=>{
