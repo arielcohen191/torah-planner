@@ -876,7 +876,7 @@ function afterLogin(){
   document.getElementById("classBox").hidden=!isMgmt&&!USER.classes.length;
   if(!isMgmt)document.querySelector("#classBox h6").textContent="הכיתות שלי";
   if(isMgmt||USER.classes.length)renderClassList();
-  const start=USER.class_name||(USER.classes.find(c=>c.has_data)||USER.classes[0]||{}).class_name;
+  const start=USER.class_name||(USER.shiluv&&(USER.classes.find(c=>c.pick_n>0)||USER.classes.find(c=>c.pick_n===null))||USER.classes.find(c=>c.has_data)||USER.classes[0]||{}).class_name;
   if(start)openClass(start);else{showNoClass("שלום "+USER.name.split(" ")[0]);document.getElementById("subttl").textContent="אין לך כיתת חינוך, אבל אפשר למלא את השאלון על הכיתות שאתה עובד בהן.";["overview","map","strengths","quality"].forEach(v=>document.querySelector(`#nav [data-v="${v}"]`).hidden=true);go("q")}
 }
 // ----- תצוגת מורה מקצועי: השרת שולח רק את העמודות המותרות (view:"subject", grades: עמודות הציון של המקצועות שהוא מלמד בכיתה).
@@ -900,11 +900,13 @@ function applyView(d){
     DOMAINS.push(y)});
   SUBJ.length=0;ALL_SUBJ.forEach(x=>{if(!sub||ok.has(x.c))SUBJ.push(x)});
   document.body.classList.toggle("subj",sub);
-  document.getElementById("viewTag").innerHTML=shiluv?`<span class="demo" style="background:#e6f0fb;color:#1c4f8a">תצוגת מורה שילוב: רק התלמידים שבחרת (${(d.picked||[]).length}), עם ההישגים, מיפוי הקריאה והמענים. <a href="#" onclick="openPick();return false">שינוי התלמידים שלי</a></span>`:sub?'<span class="demo" style="background:#e6f0fb;color:#1c4f8a">תצוגת מורה מקצועי: מוצג המידע שנוגע להוראה בכיתה. מידע משפחתי ורגשי מפורט נמצא אצל המחנך.</span>':"";
+  document.getElementById("viewTag").innerHTML=shiluv&&d.pick_set&&!(d.picked||[]).length?`<span class="demo" style="background:#e6f0fb;color:#1c4f8a">סימנת שאינך מלמד/ת בכיתה הזו. <a href="#" onclick="openPick();return false">אני כן מלמד/ת כאן</a></span>`:shiluv?`<span class="demo" style="background:#e6f0fb;color:#1c4f8a">תצוגת מורה שילוב: רק התלמידים שבחרת (${(d.picked||[]).length}), עם ההישגים, מיפוי הקריאה והמענים. <a href="#" onclick="openPick();return false">שינוי התלמידים שלי</a></span>`:sub?'<span class="demo" style="background:#e6f0fb;color:#1c4f8a">תצוגת מורה מקצועי: מוצג המידע שנוגע להוראה בכיתה. מידע משפחתי ורגשי מפורט נמצא אצל המחנך.</span>':"";
 }
 function renderClassList(){
-  document.getElementById("classList").innerHTML=USER.classes.map(c=>`<button data-c="${esc(c.class_name)}" class="${c.class_name==CUR_CLASS?'on':''}" onclick="openClass(this.dataset.c)" title="${c.teacher?esc(c.teacher):'לא שויך מחנך'}">
-    <span>${esc(c.class_name)}${c.view==="subject"||c.limited?' <small style="opacity:.75">· מקצועי</small>':""}</span><i class="dot ${c.has_data?'ok':''}" title="${c.has_data?'יש נתונים':'אין עדיין נתונים'}"></i>${c.has_q?'<i class="qd" title="השאלון מולא">📝</i>':''}</button>`).join("");
+  const tag=c=>c.pick_n===0?' <small style="opacity:.75">· לא מלמד/ת</small>':c.pick_n===null?' <small style="opacity:.75">· לבחירה</small>':c.pick_n>0?' <small style="opacity:.75">· '+c.pick_n+' תלמידים</small>':'';
+  const ord=USER.shiluv?[...USER.classes.filter(c=>c.pick_n!==0),...USER.classes.filter(c=>c.pick_n===0)]:USER.classes;
+  document.getElementById("classList").innerHTML=ord.map((c,i)=>(USER.shiluv&&c.pick_n===0&&(i===0||ord[i-1].pick_n!==0)?'<h6 style="margin:10px 0 4px;opacity:.7">כיתות שאינך מלמד/ת בהן</h6>':'')+`<button style="${c.pick_n===0?'opacity:.55':''}"  data-c="${esc(c.class_name)}" class="${c.class_name==CUR_CLASS?'on':''}" onclick="openClass(this.dataset.c)" title="${c.teacher?esc(c.teacher):'לא שויך מחנך'}">
+    <span>${esc(c.class_name)}${'pick_n' in c?tag(c):c.view==="subject"||c.limited?' <small style="opacity:.75">· מקצועי</small>':""}</span><i class="dot ${c.has_data?'ok':''}" title="${c.has_data?'יש נתונים':'אין עדיין נתונים'}"></i>${c.has_q?'<i class="qd" title="השאלון מולא">📝</i>':''}</button>`).join("");
 }
 async function openClass(c){
   CUR_CLASS=c;if(USER.classes.length)renderClassList();
@@ -912,6 +914,7 @@ async function openClass(c){
   let d;try{d=await rpc("mk_get",{p_phone:SES.phone,p_pin:SES.pin,p_class:c})}catch(e){showNoClass("אין חיבור לשרת כרגע.");return}
   if(d.error){if(d.error==="bad"||d.error==="locked"){logout();return}showNoClass(ERR[d.error]||d.error);return}
   VOICES=d.voices||[];applyView(d);window._pick=d.shiluv?{cls:d.class_name,roster:d.roster||[],picked:d.picked||[]}:null;
+  if(d.shiluv&&d.pick_set&&!(d.picked||[]).length){load([],d.class_name,d.teacher||"");document.getElementById("subttl").textContent="";return}
   if(d.shiluv&&!(d.picked||[]).length){load([],d.class_name,d.teacher||"");document.getElementById("subttl").textContent="בחירת התלמידים שלך";openPick();return}
   const rows=mergeReading(d.rows?rowsFromSheet(d.rows):[],d.reading);window._syncUrl=d.sync_url||null;updateSyncBtn();
   document.body.classList.toggle("nodata",!rows.length);
@@ -924,15 +927,16 @@ async function openClass(c){
 /* מורה שילוב: בוחר את התלמידים שהוא מלמד בכיתה, ורואה רק אותם */
 function openPick(){const P=window._pick;if(!P)return;
   document.getElementById("modal").innerHTML=`<div class="mh"><div><div style="opacity:.8;font-size:13px">${esc(P.cls)} · מורה שילוב</div><h3>אילו תלמידים אתה מלמד בכיתה?</h3></div><div class="nav2"><button onclick="closeS()">✕</button></div></div>
-   <div style="padding:16px 20px"><p class="hint" style="margin:0 0 10px">תראה במפה רק את התלמידים שתסמן. אפשר לשנות את הבחירה בכל זמן.</p>
+   <div style="padding:16px 20px"><p class="hint" style="margin:0 0 10px">תראה במפה רק את התלמידים שתסמן. אם אינך מלמד בכיתה הזו, לחץ "אני לא מלמד/ת בכיתה הזו" והיא תרד לתחתית הרשימה. אפשר לשנות את הבחירה בכל זמן.</p>
    ${P.roster.length?`<div class="pick-list">${P.roster.map(([n,nm])=>`<label class="cb"><input type="checkbox" value="${esc(nm)}" ${P.picked.includes(nm)?"checked":""}> ${esc(n)}. ${esc(nm)}</label>`).join("")}</div>`:'<p class="empty">הטבלה של הכיתה עוד לא סונכרנה, אין רשימת תלמידים.</p>'}
-   <div style="margin-top:14px;display:flex;gap:8px;align-items:center"><button class="btn primary" onclick="savePick(this)">שמירה</button><span id="pickMsg" class="hint" role="status"></span></div></div>`;
+   <div style="margin-top:14px;display:flex;gap:8px;align-items:center"><button class="btn primary" onclick="savePick(this)">שמירה</button><button class="btn" onclick="savePick(this,true)">אני לא מלמד/ת בכיתה הזו</button><span id="pickMsg" class="hint" role="status"></span></div></div>`;
   document.getElementById("ov").classList.add("on");
 }
-async function savePick(b){const st=[...document.querySelectorAll('.pick-list input:checked')].map(x=>x.value),m=document.getElementById("pickMsg");
-  if(!st.length){m.textContent="נא לסמן לפחות תלמיד אחד.";return}
+async function savePick(b,none){const st=none?[]:[...document.querySelectorAll('.pick-list input:checked')].map(x=>x.value),m=document.getElementById("pickMsg");
+  if(!none&&!st.length){m.textContent="נא לסמן לפחות תלמיד אחד, או ללחוץ \"אני לא מלמד/ת בכיתה הזו\".";return}
   b.disabled=true;m.textContent="שומר…";
-  try{const r=await rpc("mk_shiluv_pick",{p_phone:SES.phone,p_pin:SES.pin,p_class:CUR_CLASS,p_students:st});if(r.error)throw new Error(r.error);closeS();openClass(CUR_CLASS)}
+  try{const r=await rpc("mk_shiluv_pick",{p_phone:SES.phone,p_pin:SES.pin,p_class:CUR_CLASS,p_students:st});if(r.error)throw new Error(r.error);const cc=USER.classes.find(c=>c.class_name==CUR_CLASS);if(cc&&'pick_n' in cc)cc.pick_n=st.length;closeS();
+    if(none){const nx=USER.classes.find(c=>c.pick_n>0)||USER.classes.find(c=>c.pick_n===null);openClass(nx?nx.class_name:CUR_CLASS)}else openClass(CUR_CLASS)}
   catch(e){b.disabled=false;m.textContent="השמירה לא הצליחה. נסו שוב."}
 }
 function showNoClass(t){document.getElementById("ttl").textContent=t;document.getElementById("subttl").textContent=""}

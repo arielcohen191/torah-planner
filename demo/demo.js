@@ -135,7 +135,7 @@
           let pick=null;try{pick=JSON.parse(sessionStorage.getItem('kr_demo_pick'))}catch(e){}
           const all=rows(),ok=new Set([0,1,2,4,5,6,7,8,9,10,11,15,16,17,18,20,22,23,24,25,26,31,32,33,34,36,37,40,41,44,45,48,49]);
           const pr=pick?all.filter(r=>pick.includes(r[2])).map(r=>r.map((x,i)=>ok.has(i)?x:'')):null;
-          return {class_name:CLS3,teacher:'מחנך ה׳9',limited:true,shiluv:true,picked:pick||[],roster:all.map(r=>[r[1],r[2]]),rows:pr,reading:null,voices:[],synced_at:new Date(Date.now()-36e5).toISOString()}}
+          return {class_name:CLS3,teacher:'מחנך ה׳9',limited:true,shiluv:true,picked:pick||[],pick_set:pick!==null,roster:all.map(r=>[r[1],r[2]]),rows:pr,reading:null,voices:[],synced_at:new Date(Date.now()-36e5).toISOString()}}
         if(a.p_class===CLS2)return {class_name:CLS2,teacher:'מחנך ה׳8',limited:true,subjects:['מתמטיקה'],rows:subjRows(rows(),[40]),reading:null,voices:[],synced_at:new Date(Date.now()-36e5).toISOString(),sync_url:null};
         return {class_name:CLS,teacher:'נועם ישראלי',rows:rows(),reading:reading(),voices:[],synced_at:new Date(Date.now()-36e5).toISOString(),sync_url:null};
       case 'mk_my_q':return Q||{};
