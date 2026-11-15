@@ -248,7 +248,7 @@ const H=()=>S.house==='mine'?{id:'mine',label:'השכבות שלי',layers:S.use
 const allowed=k=>!!(S.user&&S.user.tools.includes(k));
 const isDev=()=>!!(S.user&&(S.user.roles||[]).some(r=>r.id==='sysadmin'));
 const isStaff=()=>!!(S.user&&(S.user.staff||S.user.tools.length));
-const canSee=v=>v==='my'||v==='todo'||(v==='ped'&&(pedOk()||allowed('ped')))||(v==='pedm'&&pedCanMeet())||(v==='viewas'&&isDev())||(v==='home'||v==='prefs'?isStaff():false)||(v==='perms'?!!(S.user&&S.user.can_manage):v==='feedback'?isDev():allowed(v));
+const canSee=v=>v==='my'||v==='todo'||v==='maint'||(v==='ped'&&(pedOk()||allowed('ped')))||(v==='pedm'&&pedCanMeet())||(v==='viewas'&&isDev())||(v==='home'||v==='prefs'?isStaff():false)||(v==='perms'?!!(S.user&&S.user.can_manage):v==='feedback'?isDev():allowed(v));
 const clsIn=c=>{const h=H();return !h||h.layers.includes(String(c).trim()[0])};
 const layerLetters=t=>{t=String(t||'');const m=t.match(/\(([^)]+)\)/);return ((m?m[1]:t).match(/[א-ו]/g))||[]};
 const SUBJ={torah:'חומש',navi:'נביא',mishna:'משנה',gemara:'גמרא',halacha:'הלכה',math:'מתמטיקה',hebrew:'עברית',science:'מדעים',other:'אחר'};
@@ -263,7 +263,7 @@ const VIEWONLY='במצב "בנעליים של" אי אפשר לשמור שינו
 const root=document.getElementById('root');
 function schoolDay(s){let d=s;for(let i=0;i<7&&dow(d)===6;i++)d=addDays(d,1);return d}
 S.date=schoolDay(today());
-const hashView=()=>{const k=location.hash.slice(1);return ['my','todo','tasks','milui','toranut','sayarot','mapat','ped','pedm','hespek','prefs','perms','feedback','viewas'].includes(k)?k:'home'};
+const hashView=()=>{const k=location.hash.slice(1);return ['my','todo','tasks','maint','milui','toranut','sayarot','mapat','ped','pedm','hespek','prefs','perms','feedback','viewas'].includes(k)?k:'home'};
 S.view=hashView();
 
 const ICON={
@@ -272,6 +272,7 @@ const ICON={
  fb:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
  prefs:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>',
  perms:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+ maint:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14.5 6.5a4 4 0 0 0-5.2 5.2L3.5 17.5l3 3 5.8-5.8a4 4 0 0 0 5.2-5.2l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>',
  tasks:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9.5l1.5 1.5L11 8.5M7 15l1.5 1.5L11 14M14 10h4M14 15.5h4"/></svg>',
  todo:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6.5l1.8 1.8L9 5M4 12.5l1.8 1.8L9 11M4 18.5l1.8 1.8L9 17M12.5 7H20M12.5 13H20M12.5 19H20"/></svg>',
  my:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>',
@@ -313,6 +314,7 @@ async function loadAll(force){
     S.plans||!allowed('hespek')?null:part('plans',async()=>{S.plans=await rpc('list_plans',{code:'x'})||[]}),
     part('ped',loadPed),
     part('todo',loadTodo),
+    part('maint',loadMaint),
     S.hol?null:part('hol',async()=>{const r=await rpc('get_settings',{code:'x'});S.hol=(r&&r.holidays)||[]})
   ]);
   if(!allowed('sayarot'))S.say=null;if(!allowed('hespek'))S.plans=null;
@@ -387,9 +389,9 @@ function sayDay(date){
 }
 
 /* ---------- תצוגה ---------- */
-const VIEWS=[['home','משימות','לוח הנהלה'],['my','הדף שלי','#my'],['todo','המשימות שלי','#todo'],['tasks','משימות הצוות','#tasks'],['milui','מילוי מקום','/milui/'],['toranut','תורנויות חצר','/toranut/'],['sayarot','סיירות','/sayarot/'],['mapat','מפת כיתה','/mapat-kita/'],['ped','החלטות מהישיבות','#ped'],['pedm','פגישות עם מחנכים (ימ"מ/ממ"י)','#pedm'],['hespek','מתכנן הספק','/']];
+const VIEWS=[['home','משימות','לוח הנהלה'],['my','הדף שלי','#my'],['todo','המשימות שלי','#todo'],['tasks','משימות הצוות','#tasks'],['maint','תקלות ותחזוקה','#maint'],['milui','מילוי מקום','/milui/'],['toranut','תורנויות חצר','/toranut/'],['sayarot','סיירות','/sayarot/'],['mapat','מפת כיתה','/mapat-kita/'],['ped','החלטות מהישיבות','#ped'],['pedm','פגישות עם מחנכים (ימ"מ/ממ"י)','#pedm'],['hespek','מתכנן הספק','/']];
 const viewOf=k=>VIEWS.find(v=>v[0]===k)||VIEWS[0];
-const navViews=()=>VIEWS.filter(v=>v[0]==='my'||v[0]==='todo'||(v[0]==='home'?isStaff():v[0]==='ped'?pedOk():v[0]==='pedm'?pedCanMeet():allowed(v[0])));
+const navViews=()=>VIEWS.filter(v=>v[0]==='my'||v[0]==='todo'||v[0]==='maint'||(v[0]==='home'?isStaff():v[0]==='ped'?pedOk():v[0]==='pedm'?pedCanMeet():allowed(v[0])));
 function kpiLink(c,title,sub,n,href,go){return '<a class="kpi '+c+'" href="'+href+'"><div><b>'+title+'</b><span>'+sub+'</span><span class="go">'+go+' ←</span></div><div class="n">'+n+'</div></a>'}
 function kpiBtn(c,title,sub,n,act,val,go,pressed){return '<button type="button" class="kpi '+c+'" data-act="'+act+'" data-v="'+val+'"'+(pressed!=null?' aria-pressed="'+pressed+'"':'')+'><div><b>'+title+'</b><span>'+sub+'</span><span class="go">'+go+' ←</span></div><div class="n">'+n+'</div></button>'}
 function goTile(k){const v=viewOf(k);return '<a class="gotile" href="'+v[2]+'">'+ICON[k]+'<span><b>למעבר לכלי '+v[1]+'</b><span>פתיחת הכלי המלא לעריכה ולטיפול</span></span><span class="arr" aria-hidden="true">←</span></a>'}
@@ -429,6 +431,7 @@ function tasks(){
   if(S.ped){pedFlags().forEach(m=>add(1,'pedm','דגל אדום: '+m.teacher+(m.escalate?' · ביקשו את התערבותך':' · מדד אנרגיה 4 (שחוק מאוד)'),(m.escalate?m.escalate_text:m.summary)+' · תיעד/ה '+m.by));
     const late=(S.ped.decisions||[]).filter(x=>x.edit&&pedLate(x)&&clsIn(x.class));if(late.length)add(2,'ped',plural(late.length,'החלטה אחת מהישיבות הפדגוגיות עברה','החלטות מהישיבות הפדגוגיות עברו')+' את תאריך היעד',[...new Set(late.map(x=>cls(x.class)))].join(', '))}
   if(S.team){const L=teamList().filter(teamLate);if(L.length)add(2,'tasks',plural(L.length,'משימת צוות אחת עברה','משימות צוות עברו')+' את תאריך היעד',L.slice(0,3).map(t=>t.title).join(' · ')+(L.length>3?' ועוד '+(L.length-3):''))}
+  if(S.maint&&S.maint.me.lvl>=1){const U=S.maint.tickets.filter(t=>t.status==='open'&&t.urgency===1);if(U.length)add(2,'maint',plural(U.length,'תקלה דחופה אחת מחכה','תקלות דחופות מחכות')+' לטיפול',U.slice(0,3).map(t=>t.place).join(' · ')+(U.length>3?' ועוד '+(U.length-3):''))}
   if(isDev()&&S.fbOpen)add(2,'feedback',plural(S.fbOpen,'משוב חדש אחד','משובים חדשים')+' מהצוות','תקלות, רעיונות ושאלות שנשלחו מכפתור המשוב');
   if(S.plans&&S.staffN&&!H()){const st=S.staffN;
     if(S.plans.length<st)add(3,'hespek','תוכניות הספק: '+S.plans.length+' מתוך '+st+' מורים שמרו תוכנית','')}
@@ -660,7 +663,7 @@ function viewMy(){
     kpiBtn('k-blue',hol?'אין לימודים':'שיעורים ביום הזה','לפי המערכת שלי',hol?0:les,'jump','my-day','ליום שלי')+
     kpiBtn(cov?'k-orange':'k-green','מילויי מקום שלי','השבוע (שיעורים ותורנויות)',cov,'jump','my-day','לפרטים')+
     kpiBtn('k-purple','תורנויות','בכל שבוע',dn,'jump','my-duty','לרשימה')+'</section>';
-  h+=todoT;
+  h+=todoT+maintTile();
   if(!M.teacher)h+='<div class="note">לא מצאנו אותך במערכת השעות של מילוי מקום, ולכן אין כאן מערכת אישית. אם זו טעות, כתבו לנו דרך כפתור המשוב.</div>';
   const tl=hol?'<div class="empty">'+esc(hol)+'</div>':items.length?'<div class="tl">'+items.map(i=>'<div class="tli '+i.cls+'"><span class="when">'+i.when+'</span><span class="what"><b>'+i.main+'</b>'+(i.sub?'<div class="small muted">'+i.sub+'</div>':'')+(i.tag?'<div>'+i.tag+'</div>':'')+'</span></div>').join('')+'</div>':'<div class="empty">אין לך שיעורים או תורנויות ביום הזה.</div>';
   h+='<div id="my-day">'+panel('היום שלי · '+DAYS[day]+' '+shortDate(date),tl)+'</div>';
@@ -758,6 +761,62 @@ function viewTodo(){
   h+=panel(f==='late'?'משימות באיחור':f==='now'?'משימות להיום':'משימות פתוחות',L.length?L.map(todoRow).join(''):'<div class="empty">'+(f==='late'?'אין משימות באיחור.':f==='now'?'אין משימות להיום.':'אין משימות פתוחות. אפשר להוסיף משימה למעלה.')+'</div>');
   if(D.length)h+='<details class="card" style="padding:14px 20px"><summary style="cursor:pointer;font-weight:600">בוצעו ב־60 הימים האחרונים ('+D.length+')</summary><div class="tbody" style="padding:12px 0 0">'+D.map(todoRow).join('')+'</div></details>';
   return h+'<div class="small muted">כאן מופיעות רק משימות שפתחת או שצירפו אותך אליהן. משימה בלי שותפים נשארת פרטית שלך.</div>'+CREDIT;
+}
+/* ---------- תקלות ותחזוקה: דיווח לאב הבית, מעקב סטטוס, ולוח טיפול (כלי המשימות · שלב 3) ---------- */
+const MAINT_ST={open:['חדש','red','late'],doing:['בטיפול','orange','now'],done:['טופל','green','done']};
+const MAINT_U={1:['דחוף','red'],2:['רגיל','grey'],3:['לא דחוף','grey']};
+const MAINT_ERR={forbidden:'אין לך הרשאה לפעולה הזו.',not_found:'הדיווח לא נמצא. רעננו את הדף.',bad_place:'כתבו איפה התקלה (עד 120 תווים).',bad_descr:'כתבו מה התקלה (עד 1500 תווים).',too_many:'יש לך יותר מדי דיווחים פתוחים.',bad_note:'ההערה ארוכה מדי.'};
+async function loadMaint(){const r=await rpc('maint_list',{p_phone:S.phone});if(!r||!r.me)throw new Error('maint');S.maint=r}
+async function maintDo(fn,args,msg){
+  if(S.realPhone){S.maintErr=VIEWONLY;S.maintMsg=null;render();return false}
+  S.maintBusy=true;S.maintErr=null;S.maintMsg=null;render();
+  try{await rpc(fn,Object.assign({p_phone:S.phone},args));await loadMaint();S.maintMsg=msg;return true}
+  catch(e){console.error(e);S.maintErr=MAINT_ERR[e.message]||'השמירה נכשלה. נסו שוב.';return false}
+  finally{S.maintBusy=false;render()}
+}
+function maintTile(){
+  if(S.err.maint||!S.maint)return '';
+  const M=S.maint.tickets.filter(t=>t.mine&&t.status!=='done').length;
+  return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-act="maint-go">'+ICON.maint+'<span><b>תקלות ותחזוקה · '+(M?plural(M,'דיווח אחד שלך בטיפול','דיווחים שלך בטיפול'):'דיווח על תקלה')+'</b><span>מזגן, ברז, רהיט שבור: מדווחים כאן לאב הבית ועוקבים אחרי הטיפול</span></span><span class="arr" aria-hidden="true">←</span></button>'}
+function maintRow(t,lvl){const st=MAINT_ST[t.status],u=MAINT_U[t.urgency]||MAINT_U[2],h=lvl>=2;
+  return '<div class="todo '+st[2]+'" style="grid-template-columns:1fr"><div class="tx" style="padding-top:0"><b>'+esc(t.place)+'</b><div class="nt" style="color:var(--ink);font-size:16px">'+esc(t.descr)+'</div>'+
+    '<span class="chips" style="gap:4px 12px"><span class="tag '+st[1]+'">'+st[0]+(t.status!=='open'&&t.status_at?' · '+fmtWhen(t.status_at)+(t.status_by?' · '+esc(t.status_by):''):'')+'</span>'+(t.urgency!==2?'<span class="tag '+u[1]+'">'+u[0]+'</span>':'')+
+    '<span class="tag grey">'+(t.mine?'דיווח שלך':'דיווח/ה '+esc(t.by))+' · '+fmtWhen(t.created_at)+'</span>'+(t.thanked_at?'<span class="tag green">נאמרה תודה</span>':'')+'</span>'+
+    (t.note?'<div class="nt">הערת המטפל: '+esc(t.note)+'</div>':'')+
+    '<div class="chips" style="margin-top:6px">'+
+      (h?['open','doing','done'].filter(x=>x!==t.status).map(x=>'<button type="button" class="btn '+(x==='done'?'':'sec ')+'sm" data-act="maint-st" data-id="'+t.id+'" data-v="'+x+'">'+(x==='open'?'החזרה לחדש':x==='doing'?'סימון בטיפול':'סימון טופל')+'</button>').join('')
+        :t.mine&&t.status!=='done'?'<button type="button" class="btn sec sm" data-act="maint-st" data-id="'+t.id+'" data-v="done">התקלה טופלה</button>'
+        :t.mine?'<button type="button" class="btn sec sm" data-act="maint-st" data-id="'+t.id+'" data-v="open">עדיין לא תקין, לפתוח שוב</button>':'')+
+      (t.mine&&t.status==='done'&&!t.thanked_at?'<button type="button" class="btn sm" style="background:var(--green)" data-act="maint-thanks" data-id="'+t.id+'">תודה לאבים</button>':'')+
+      ((t.mine&&t.status==='open')||lvl>=3?'<button type="button" class="btn sec sm" data-act="maint-del" data-id="'+t.id+'">'+(S.maintDel===t.id?'בטוח? לחיצה נוספת מוחקת':'מחיקה')+'</button>':'')+'</div>'+
+    (h?'<details><summary>הערה ודחיפות</summary><form data-form="maint-upd" data-id="'+t.id+'"><textarea class="ta" name="note" rows="2" maxlength="1500" aria-label="הערת המטפל" placeholder="למשל: הוזמן טכנאי ליום שלישי">'+esc(t.note||'')+'</textarea>'+
+      '<div class="frow">'+'<label>דחיפות<select name="urgency">'+[1,2,3].map(n=>'<option value="'+n+'"'+(t.urgency===n?' selected':'')+'>'+MAINT_U[n][0]+'</option>').join('')+'</select></label></div>'+
+      '<div class="chips"><button class="btn sm"'+(S.maintBusy?' disabled':'')+'>שמירה</button></div></form></details>':'')+'</div></div>'}
+function viewMaint(){
+  if(S.err.maint)return '<div class="note bad">הנתונים לא נטענו כרגע. נסו לרענן.</div><div class="chips"><button class="btn" data-act="refresh">רענון</button></div>';
+  if(!S.maint)return panel('תקלות ותחזוקה',skel);
+  const lvl=S.maint.me.lvl,T=S.maint.tickets,d=S.maintDraft||{},f=S.maintF,srt=S.maintSort||'urg';
+  let h='';
+  if(S.maintErr)h+='<div class="note bad" role="alert">'+esc(S.maintErr)+'</div>';
+  if(S.maintMsg)h+='<div class="note" role="status" style="background:#e8f4e1;color:#2f5f18">'+esc(S.maintMsg)+'</div>';
+  if(lvl>=1){const n=k=>T.filter(t=>t.status===k).length,wk=T.filter(t=>t.status==='done'&&new Date(t.status_at)>Date.now()-7*864e5).length;
+    h+='<section class="kpis k3" aria-label="תקלות לפי מצב">'+kpiBtn(n('open')?'k-red':'k-green','חדשות','עוד לא התחילו לטפל',n('open'),'maint-f','open','לסינון',f==='open')+
+      kpiBtn('k-orange','בטיפול','בעבודה',n('doing'),'maint-f','doing','לסינון',f==='doing')+kpiBtn('k-green','טופלו השבוע','ב־7 הימים האחרונים',wk,'maint-f','done','לסינון',f==='done')+'</section>'}
+  h+='<form class="card todoadd" data-form="maint-new"><h2>דיווח על תקלה</h2><div class="frow"><label>איפה?<input name="place" maxlength="120" required autocomplete="off" list="maintPlaces" value="'+esc(d.place||'')+'" placeholder="למשל: כיתה ג׳2, חדר מורים, חצר"></label>'+
+    '<label>דחיפות<select name="urgency">'+[1,2,3].map(n=>'<option value="'+n+'"'+((d.urgency||2)===n?' selected':'')+'>'+MAINT_U[n][0]+'</option>').join('')+'</select></label></div>'+
+    '<datalist id="maintPlaces">'+(S.classes||[]).map(c=>'<option value="כיתה '+esc(cls(c))+'">').join('')+['חדר מורים','מזכירות','חצר','שירותים','בית הכנסת','ספרייה','מעבדה','אולם'].map(x=>'<option value="'+x+'">').join('')+'</datalist>'+
+    '<label style="display:flex;flex-direction:column;gap:4px;font-size:15px;font-weight:600">מה התקלה?<textarea class="ta" name="descr" rows="2" maxlength="1500" required placeholder="למשל: המזגן לא מקרר, ברז דולף, כיסא שבור">'+esc(d.descr||'')+'</textarea></label>'+
+    '<div class="chips"><button class="btn"'+(S.maintBusy?' disabled':'')+'>'+(S.maintBusy?'שולח…':'שליחת הדיווח')+'</button></div></form>';
+  const UO={open:0,doing:1,done:2};
+  const sortF=srt==='date'?(a,b)=>String(b.created_at).localeCompare(String(a.created_at)):srt==='by'?(a,b)=>String(a.by).localeCompare(String(b.by),'he')||String(b.created_at).localeCompare(String(a.created_at)):(a,b)=>a.urgency-b.urgency||UO[a.status]-UO[b.status]||String(a.created_at).localeCompare(String(b.created_at));
+  if(lvl>=1){const L=(f?T.filter(t=>t.status===f):T.filter(t=>t.status!=='done')).slice().sort(sortF);
+    const tabs='<div class="chips" role="group" aria-label="מיון"><span class="small muted">מיון:</span>'+[['urg','דחיפות'],['date','תאריך כניסה'],['by','פונה']].map(x=>'<button type="button" class="btn sec sm" data-act="maint-sort" data-v="'+x[0]+'" aria-pressed="'+(srt===x[0])+'">'+x[1]+'</button>').join('')+'</div>';
+    let body='',last=null;L.forEach(t=>{if(srt==='by'&&t.by!==last){last=t.by;body+='<div class="ghead k-blue">'+esc(t.by)+'<span>'+L.filter(x=>x.by===t.by).length+'</span></div>'}body+=maintRow(t,lvl)});
+    h+='<section class="card tool"><div class="thead"><h2>'+(f?'תקלות: '+MAINT_ST[f][0]:'תקלות פתוחות (חדשות ובטיפול)')+'</h2></div><div class="tbody">'+tabs+(L.length?body:'<div class="okline">'+ICON.ok+'אין תקלות ברשימה הזאת.</div>')+'</div></section>';
+    if(lvl<2)h+='<div class="small muted">יש לך הרשאת צפייה בכל התקלות. הטיפול עצמו אצל אב הבית.</div>'}
+  else{const L=T.slice().sort((a,b)=>UO[a.status]-UO[b.status]||String(b.created_at).localeCompare(String(a.created_at)));
+    h+=panel('הדיווחים שלי',L.length?L.map(t=>maintRow(t,lvl)).join(''):'<div class="empty">עוד לא דיווחת על תקלה.</div>')}
+  return h+CREDIT.replace('כלי המשימות','תקלות ותחזוקה');
 }
 /* ---------- משימות הצוות: דוח סטטוס להנהלה (רק משימות עם שותפים; משימות אישיות נשארות פרטיות) ---------- */
 const teamList=()=>{const h=H();return (S.team||[]).filter(t=>!h||(t.ly||[]).some(l=>h.layers.includes(l)))};
@@ -978,7 +1037,7 @@ function viewPrefs(){
 /* ---------- ניהול הרשאות (למורשים בלבד) ---------- */
 /* תפקיד = משרה (כמו "מנהלת בית א׳–ב׳"): יש לו כלים ושכבות. לאדם יכולים להיות כמה תפקידים. */
 const LAYERS=['א','ב','ג','ד','ה','ו'];
-const TOOLS=['milui','toranut','sayarot','mapat','ped','hespek','tasks'];
+const TOOLS=['milui','toranut','sayarot','mapat','ped','hespek','tasks','maint'];
 const ERR={phone_exists:'מספר הטלפון הזה כבר רשום.',bad_phone:'מספר הטלפון לא תקין.',bad_name:'חסר שם.',no_roles:'צריך לסמן לפחות תפקיד אחד.',bad_role:'אחד התפקידים לא קיים. רעננו ונסו שוב.',role_in_use:'אי אפשר למחוק תפקיד שמשויכים אליו אנשים.',
   cannot_delete_self:'אי אפשר להסיר את עצמך.',forbidden:'אין לך הרשאה לנהל הרשאות.',bad_label:'חסר שם לתפקיד.',not_found:'הרשומה לא נמצאה. רעננו ונסו שוב.'};
 const errText=e=>{const k=Object.keys(ERR).find(k=>String(e&&e.message).includes(k));return k?ERR[k]:'הפעולה נכשלה. נסו שוב.'};
@@ -1069,7 +1128,7 @@ function viewAs(){
   return panel('במי לצפות?','<p class="muted small" style="margin:0">הלוח ייפתח בדיוק כמו אצל איש הצוות: אותם מסכים, אותם נתונים ואותן הרשאות. במצב הזה לא נשמר שום שינוי. הוא נשאר פעיל בלוח, במילוי מקום, בתורנויות ובמפת הכיתה, גם אחרי רענון או סגירת הלשונית, עד שתלחצו "חזרה אליי".</p>'+
     '<div class="frow"><label>חיפוש לפי שם או תפקיד<input type="search" id="asQ" value="'+esc(S.asQ||'')+'" placeholder="למשל: גילה, מחנכת, רכזת" autocomplete="off"></label></div><div class="plist" id="asList">'+peopleList()+'</div>');
 }
-function resetData(){Object.assign(S,{team:null,teamF:null,todoPeople:null,todoDraft:null,todo:null,todoEdit:null,todoDel:null,todoMsg:null,todoErr:null,todoF:null,ped:null,pedNew:null,pedMsg:null,pedErr:null,user:null,house:null,milui:null,tor:null,mk:null,say:null,plans:null,admin:null,dataMonth:null,my:null,myMonth:null,fb:null,fbOpen:0,edit:null,filter:0,saved:null})}
+function resetData(){Object.assign(S,{maint:null,maintMsg:null,maintErr:null,maintF:null,maintDraft:null,team:null,teamF:null,todoPeople:null,todoDraft:null,todo:null,todoEdit:null,todoDel:null,todoMsg:null,todoErr:null,todoF:null,ped:null,pedNew:null,pedMsg:null,pedErr:null,user:null,house:null,milui:null,tor:null,mk:null,say:null,plans:null,admin:null,dataMonth:null,my:null,myMonth:null,fb:null,fbOpen:0,edit:null,filter:0,saved:null})}
 function startAs(p){S.realPhone=S.phone;S.phone=p.phone;S.asName=p.name;try{localStorage.setItem('kr_as',JSON.stringify({real:S.realPhone,phone:p.phone,name:p.name}))}catch(e){}
   resetData();S.view='home';history.pushState(null,'',location.pathname);render();refresh(true);window.scrollTo(0,0)}
 function stopAs(){S.phone=S.realPhone;S.realPhone=null;S.asName=null;try{const a=JSON.parse(localStorage.getItem('kr_as')||'null');localStorage.removeItem('kr_as');if(a&&a.mk)rpc('mk_as_stop',{p_token:a.mk}).catch(()=>{})}catch(e){}
@@ -1143,7 +1202,7 @@ function shell(inner){
 function render(){
   if(!S.phone)return renderLogin();
   if(!S.user){root.innerHTML=S.err.data?'<div class="login"><div class="card"><h1>לוח הנהלה</h1><div class="err">אין חיבור לשרת כרגע.</div><button class="btn wide" data-act="refresh">ניסיון נוסף</button></div></div>':'<div class="loading">טוען…</div>';return}
-  const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view),setv=S.view==='prefs'||S.view==='perms'||S.view==='feedback'||S.view==='viewas'||S.view==='ped'||S.view==='pedm'||S.view==='todo'||S.view==='tasks';
+  const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view),setv=S.view==='prefs'||S.view==='perms'||S.view==='feedback'||S.view==='viewas'||S.view==='ped'||S.view==='pedm'||S.view==='todo'||S.view==='tasks'||S.view==='maint';
   const title=S.view==='home'||S.view==='my'?(S.user.staff?greet(S.user.name):greetT(S.user.name)):S.view==='prefs'?'התאמה אישית':S.view==='perms'?'ניהול הרשאות':S.view==='feedback'?'משובים מהצוות':S.view==='viewas'?'כניסה בנעליים של איש צוות':v[1];
   let h=S.realPhone?'<div class="card banner asbar" role="status"><span>את/ה בנעליים של <b>'+esc(S.asName||S.user.name)+'</b> · צפייה בלבד · פעיל בכל הכלים עד שתצאו</span><button class="btn sm" data-act="as-stop">חזרה אליי</button></div>':'';
   if(window.KR_DEMO&&KR_DEMO.isDemo(S.phone))h+='<div class="card banner" role="status">'+esc(KR_DEMO.note)+'</div>';
@@ -1158,7 +1217,7 @@ function render(){
     if(hol)h+='<div class="card banner">'+esc(hol)+' — אין לימודים ביום הזה.</div>';
     if(S.view==='home'&&!S.user.tools.length)h+='<div class="note">לתפקיד שלך עדיין לא נפתחו כלים בלוח. פנו למנהל בית הספר.</div>';
   }
-  h+=({tasks:viewTeam,todo:viewTodo,pedm:viewPedM,ped:viewPed,viewas:viewAs,my:viewMy,home:viewHome,milui:viewMilui,toranut:viewToranut,sayarot:viewSayarot,mapat:viewMapat,hespek:viewHespek,prefs:viewPrefs,perms:viewPerms,feedback:viewFeedback}[S.view]||viewHome)();
+  h+=({maint:viewMaint,tasks:viewTeam,todo:viewTodo,pedm:viewPedM,ped:viewPed,viewas:viewAs,my:viewMy,home:viewHome,milui:viewMilui,toranut:viewToranut,sayarot:viewSayarot,mapat:viewMapat,hespek:viewHespek,prefs:viewPrefs,perms:viewPerms,feedback:viewFeedback}[S.view]||viewHome)();
   root.innerHTML=shell(h);
 }
 function renderLogin(err){
@@ -1167,7 +1226,7 @@ function renderLogin(err){
    (err?'<div class="err" role="alert">'+esc(err)+'</div>':'')+'<button class="btn wide" type="submit">כניסה</button></form></div>';
   root.querySelector('#ph').focus();
 }
-function logout(msg){S.phone=null;S.user=null;S.house=null;S.milui=null;S.tor=null;S.mk=null;S.say=null;S.plans=null;S.admin=null;S.dataMonth=null;S.my=null;S.myMonth=null;S.todo=null;S.todoEdit=null;S.team=null;S.todoDraft=null;try{localStorage.removeItem('hanhala_phone')}catch(e){};renderLogin(msg)}
+function logout(msg){S.phone=null;S.user=null;S.house=null;S.milui=null;S.tor=null;S.mk=null;S.say=null;S.plans=null;S.admin=null;S.dataMonth=null;S.my=null;S.myMonth=null;S.todo=null;S.todoEdit=null;S.team=null;S.todoDraft=null;S.maint=null;S.maintDraft=null;try{localStorage.removeItem('hanhala_phone')}catch(e){};renderLogin(msg)}
 async function refresh(force){
   S.busy=true;render();
   try{await loadAll(force)}catch(e){S.busy=false;if(e.message==='no_access'){if(S.realPhone)return stopAs();return logout('המספר הזה לא מורשה להיכנס.')}console.error(e)}
@@ -1188,6 +1247,10 @@ root.addEventListener('submit',async e=>{
     if(!title){S.todoErr='כתבו מה המשימה.';return render()}
     if(await todoDo('tasks_save',{p},id?'המשימה עודכנה.':partners&&partners.length?'המשימה נוספה ונשלחה ל'+plural(partners.length,'שותף אחד','־'+partners.length+' שותפים')+'.':'המשימה נוספה.')){S.todoEdit=null;if(!id)S.todoDraft=null;render();if(!id){const i=document.getElementById('todoTitle');if(i)i.focus()}}
     return}
+  if(f.dataset.form==='maint-new'){const p={place:String(fd.get('place')||'').trim(),descr:String(fd.get('descr')||'').trim(),urgency:+fd.get('urgency')||2};S.maintDraft=p;
+    if(!p.place||!p.descr){S.maintErr='כתבו איפה התקלה ומה קרה.';return render()}
+    if(await maintDo('maint_report',{p},'הדיווח נשלח לאב הבית. אפשר לעקוב כאן אחרי הסטטוס.')){S.maintDraft=null;render()}return}
+  if(f.dataset.form==='maint-upd'){await maintDo('maint_update',{p_id:+f.dataset.id,p:{note:String(fd.get('note')||''),urgency:+fd.get('urgency')||2}},'העדכון נשמר.');return}
   if(f.dataset.form==='todo-note'){await todoDo('tasks_note',{p_id:+f.dataset.id,p_note:String(fd.get('note')||'')},'ההערה נשמרה.');return}
   if(f.dataset.form==='ped-dec')return pedSaveRows(f);
   if(f.dataset.form==='ped-upd'){const p={status:fd.get('status'),notes:fd.get('notes'),due:fd.get('due')||null,owner:fd.get('owner'),owner_name:fd.get('owner_name')};
@@ -1264,6 +1327,12 @@ root.addEventListener('click',e=>{
     const was=t.done_at,on=!was,sh=t.partners&&t.partners.length;t.done_at=on?new Date().toISOString():null;S.todoErr=null;S.todoDel=null;
     S.todoMsg=on?(t.mine&&sh?'המשימה נסגרה לכל השותפים.':!t.mine?'סומן שביצעת את החלק שלך. תודה!':'כל הכבוד! המשימה סומנה כבוצעה.'):'המשימה הוחזרה לרשימה.';render();
     rpc('tasks_done',{p_phone:S.phone,p_id:t.id,p_done:on}).then(()=>sh?loadTodo().then(render):null).catch(e=>{console.error(e);t.done_at=was;S.todoMsg=null;S.todoErr='הסימון לא נשמר. נסו שוב.';render()});return}
+  if(a==='maint-st'){maintDo('maint_update',{p_id:+b.dataset.id,p:{status:b.dataset.v}},b.dataset.v==='done'?'התקלה סומנה כטופלה.':b.dataset.v==='doing'?'התקלה סומנה בטיפול.':'התקלה הוחזרה לחדשות.');return}
+  if(a==='maint-thanks'){maintDo('maint_thanks',{p_id:+b.dataset.id},'התודה נשלחה לאבים.');return}
+  if(a==='maint-del'){if(S.maintDel!==+b.dataset.id){S.maintDel=+b.dataset.id;return render()}S.maintDel=null;maintDo('maint_update',{p_id:+b.dataset.id,p:{delete:true}},'הדיווח נמחק.');return}
+  if(a==='maint-f'){S.maintF=S.maintF===b.dataset.v?null:b.dataset.v;return render()}
+  if(a==='maint-sort'){S.maintSort=b.dataset.v;return render()}
+  if(a==='maint-go'){S.view='maint';history.pushState(null,'','#maint');render();window.scrollTo(0,0);return}
   if(a==='todo-unp'){b.closest('.pchip').remove();return}
   if(a==='team-f'){const v=b.dataset.v;if(S.view!=='tasks'){S.view='tasks';S.teamF=v;history.pushState(null,'','#tasks');window.scrollTo(0,0)}else S.teamF=v;return render()}
   if(a==='team-by'){S.teamBy=b.dataset.v;return render()}

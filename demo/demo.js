@@ -125,6 +125,9 @@
     {id:3,title:'לתאם שיחה עם ההורים של אחד התלמידים',due:null,note:null,done_at:null,created_at:add(TODAY,-1)+'T08:00:00Z',mine:true,by:ME,partners:[]},
     {id:4,title:'להזין ציוני מחצית לגיליון',due:add(TODAY,3),note:'כל המחנכים בשכבה',done_at:null,created_at:add(TODAY,-2)+'T08:00:00Z',mine:false,by:'הנהלת בית הספר',my_note:null,closed:false,
       partners:[{k:'me',name:ME,done_at:null}].concat(TPEOPLE.slice(0,2).map((x,i)=>({k:x.k,name:x.name,done_at:i?null:add(TODAY,-1)+'T12:00:00Z'})))}];
+  /* תקלות ותחזוקה */
+  let MID=2;const MAINT=[{id:2,created_at:add(TODAY,-1)+'T09:10:00Z',by:ME,place:'כיתה '+CLS.replace("' ",'׳'),descr:'המזגן לא מקרר',urgency:1,status:'doing',status_at:add(TODAY,-1)+'T12:00:00Z',status_by:'אב הבית',note:'הוזמן טכנאי',thanked_at:null,mine:true},
+    {id:1,created_at:add(TODAY,-6)+'T08:00:00Z',by:ME,place:'חצר',descr:'ברז דולף ליד המגרש',urgency:2,status:'done',status_at:add(TODAY,-4)+'T10:00:00Z',status_by:'אב הבית',note:null,thanked_at:null,mine:true}];
   function rpc(fn,a){
     a=a||{};
     switch(fn){
@@ -135,6 +138,10 @@
       case 'ped_data':return {me:{name:ME,lvl:0,tid:-1,layers:[],can_meet:false,homeroom:[CLS],principal:false},classes:[CLS],students:{[CLS]:NAMES},decisions:PDEC,meetings:[],homerooms:[],teachers:Object.values(T).map(n=>({name:n,classes:[...new Set(SLOTS.filter(x=>x.teacher===n).flatMap(x=>x.classes))]}))};
       case 'ped_save_decision':{const p=a.p||{};PDEC.push({id:++PID,created_at:new Date().toISOString(),by:'נועם ישראלי',class:p.class,nature:p.nature,scope:p.scope,students:p.scope==='student'?p.students:[],answer:p.answer,owner:p.owner,due:p.due,status:'open',notes:null,edit:true,nature_other:p.nature==='אחר'?p.nature_other:null,owner_name:p.owner==='מורה מקצועי'?p.owner_name:null});PDEC.sort((x,y)=>x.due<y.due?-1:1);return PID}
       case 'ped_update_decision':{const d=PDEC.find(x=>x.id===a.p_id),p=a.p||{};if(d){if(p.status)d.status=p.status;if('notes' in p)d.notes=p.notes||null;if(p.due)d.due=p.due;if(p.owner){d.owner=p.owner;d.owner_name=p.owner==='מורה מקצועי'?p.owner_name:null}}return null}
+      case 'maint_list':return {me:{name:ME,lvl:0},tickets:MAINT};
+      case 'maint_report':{const p=a.p||{};MAINT.unshift({id:++MID,created_at:new Date().toISOString(),by:ME,place:p.place,descr:p.descr,urgency:p.urgency||2,status:'open',status_at:null,status_by:null,note:null,thanked_at:null,mine:true});return MID}
+      case 'maint_update':{const x=MAINT.find(y=>y.id===a.p_id),p=a.p||{};if(p.delete){MAINT.splice(MAINT.indexOf(x),1);return null}if(x&&p.status){x.status=p.status;x.status_at=new Date().toISOString();x.status_by=ME;if(p.status!=='done')x.thanked_at=null}return null}
+      case 'maint_thanks':{const x=MAINT.find(y=>y.id===a.p_id);if(x)x.thanked_at=new Date().toISOString();return null}
       case 'tasks_list':return {name:ME,report:false,people:TPEOPLE,tasks:TODO};
       case 'tasks_save':{const p=a.p||{};let x=TODO.find(y=>y.id===p.id);if(!x){x={id:++TID,created_at:new Date().toISOString(),done_at:null,mine:true,by:ME,partners:[]};TODO.push(x)}x.title=p.title;x.due=p.due||null;x.note=p.note||null;x.urgency=p.urgency||null;x.importance=p.importance||null;
         if(p.partners)x.partners=p.partners.map(k=>(x.partners.find(q=>q.k===k)||{k,name:(TPEOPLE.find(q=>q.k===k)||{}).name,done_at:null,note:null}));return x.id}
