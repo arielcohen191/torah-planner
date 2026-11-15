@@ -188,6 +188,16 @@ input[type=tel]{min-height:56px;border:1.5px solid #c9d1db;border-radius:var(--r
 .todo .tx{min-width:0;display:flex;flex-direction:column;gap:2px;padding-top:6px}.todo .tx b{font-size:18px;font-weight:600;overflow-wrap:anywhere}
 .todo.done .tx b{text-decoration:line-through;font-weight:500}.todo .nt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;color:var(--ink-muted)}
 .todo form{grid-column:1/-1;display:flex;flex-direction:column;gap:12px}
+.todo .ck[disabled]{cursor:default;opacity:.85}
+.todo .who{display:flex;flex-direction:column;gap:2px;margin-top:4px;font-size:15px}.todo .who span{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.todo .who .y{color:var(--green-ink);font-weight:700}.todo .who .n{color:var(--ink-muted)}
+.todo details{margin-top:6px}.todo details summary{cursor:pointer;color:var(--brand-dark);font-weight:600;font-size:15px}
+.todo details form{margin-top:8px;gap:8px}
+.pbox{display:flex;flex-direction:column;gap:6px;font-size:15px;font-weight:600}
+.pbox input{min-height:46px;border:1.5px solid #c9d1db;border-radius:var(--r-md);padding:0 12px;font-size:16px;font-weight:400;background:#fff;width:100%}
+.pchip{display:inline-flex;align-items:center;gap:6px;background:#e7eef7;border-radius:999px;padding:4px 6px 4px 12px;font-size:15px;font-weight:500}
+.pchip button{border:0;background:#fff;border-radius:50%;width:28px;height:28px;font-size:13px;padding:0;color:var(--ink)}
+.prog{height:8px;border-radius:99px;background:var(--line);overflow:hidden;max-width:220px;margin-top:4px}.prog i{display:block;height:100%;background:var(--green)}
 .todoadd{padding:20px;display:flex;flex-direction:column;gap:12px}
 .credit{text-align:center;color:var(--ink-muted);font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}.credit img{height:28px;width:auto}
 @media (max-width:760px){.todo{grid-template-columns:44px 1fr}.todo .acts{grid-column:1/-1}}
@@ -253,7 +263,7 @@ const VIEWONLY='במצב "בנעליים של" אי אפשר לשמור שינו
 const root=document.getElementById('root');
 function schoolDay(s){let d=s;for(let i=0;i<7&&dow(d)===6;i++)d=addDays(d,1);return d}
 S.date=schoolDay(today());
-const hashView=()=>{const k=location.hash.slice(1);return ['my','todo','milui','toranut','sayarot','mapat','ped','pedm','hespek','prefs','perms','feedback','viewas'].includes(k)?k:'home'};
+const hashView=()=>{const k=location.hash.slice(1);return ['my','todo','tasks','milui','toranut','sayarot','mapat','ped','pedm','hespek','prefs','perms','feedback','viewas'].includes(k)?k:'home'};
 S.view=hashView();
 
 const ICON={
@@ -262,6 +272,7 @@ const ICON={
  fb:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
  prefs:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>',
  perms:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+ tasks:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9.5l1.5 1.5L11 8.5M7 15l1.5 1.5L11 14M14 10h4M14 15.5h4"/></svg>',
  todo:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6.5l1.8 1.8L9 5M4 12.5l1.8 1.8L9 11M4 18.5l1.8 1.8L9 17M12.5 7H20M12.5 13H20M12.5 19H20"/></svg>',
  my:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>',
  home:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
@@ -376,7 +387,7 @@ function sayDay(date){
 }
 
 /* ---------- תצוגה ---------- */
-const VIEWS=[['home','משימות','לוח הנהלה'],['my','הדף שלי','#my'],['todo','המשימות שלי','#todo'],['milui','מילוי מקום','/milui/'],['toranut','תורנויות חצר','/toranut/'],['sayarot','סיירות','/sayarot/'],['mapat','מפת כיתה','/mapat-kita/'],['ped','החלטות מהישיבות','#ped'],['pedm','פגישות עם מחנכים (ימ"מ/ממ"י)','#pedm'],['hespek','מתכנן הספק','/']];
+const VIEWS=[['home','משימות','לוח הנהלה'],['my','הדף שלי','#my'],['todo','המשימות שלי','#todo'],['tasks','משימות הצוות','#tasks'],['milui','מילוי מקום','/milui/'],['toranut','תורנויות חצר','/toranut/'],['sayarot','סיירות','/sayarot/'],['mapat','מפת כיתה','/mapat-kita/'],['ped','החלטות מהישיבות','#ped'],['pedm','פגישות עם מחנכים (ימ"מ/ממ"י)','#pedm'],['hespek','מתכנן הספק','/']];
 const viewOf=k=>VIEWS.find(v=>v[0]===k)||VIEWS[0];
 const navViews=()=>VIEWS.filter(v=>v[0]==='my'||v[0]==='todo'||(v[0]==='home'?isStaff():v[0]==='ped'?pedOk():v[0]==='pedm'?pedCanMeet():allowed(v[0])));
 function kpiLink(c,title,sub,n,href,go){return '<a class="kpi '+c+'" href="'+href+'"><div><b>'+title+'</b><span>'+sub+'</span><span class="go">'+go+' ←</span></div><div class="n">'+n+'</div></a>'}
@@ -417,6 +428,7 @@ function tasks(){
     if(n<tot)add(3,'mapat','מפת כיתה: יש נתונים רק ל־'+n+' מתוך '+tot+' כיתות','לקראת הישיבות הפדגוגיות · '+plural(m.q_filled,'שאלון צוות אחד מולא','שאלוני צוות מולאו'))}
   if(S.ped){pedFlags().forEach(m=>add(1,'pedm','דגל אדום: '+m.teacher+(m.escalate?' · ביקשו את התערבותך':' · מדד אנרגיה 4 (שחוק מאוד)'),(m.escalate?m.escalate_text:m.summary)+' · תיעד/ה '+m.by));
     const late=(S.ped.decisions||[]).filter(x=>x.edit&&pedLate(x)&&clsIn(x.class));if(late.length)add(2,'ped',plural(late.length,'החלטה אחת מהישיבות הפדגוגיות עברה','החלטות מהישיבות הפדגוגיות עברו')+' את תאריך היעד',[...new Set(late.map(x=>cls(x.class)))].join(', '))}
+  if(S.team){const L=teamList().filter(teamLate);if(L.length)add(2,'tasks',plural(L.length,'משימת צוות אחת עברה','משימות צוות עברו')+' את תאריך היעד',L.slice(0,3).map(t=>t.title).join(' · ')+(L.length>3?' ועוד '+(L.length-3):''))}
   if(isDev()&&S.fbOpen)add(2,'feedback',plural(S.fbOpen,'משוב חדש אחד','משובים חדשים')+' מהצוות','תקלות, רעיונות ושאלות שנשלחו מכפתור המשוב');
   if(S.plans&&S.staffN&&!H()){const st=S.staffN;
     if(S.plans.length<st)add(3,'hespek','תוכניות הספק: '+S.plans.length+' מתוך '+st+' מורים שמרו תוכנית','')}
@@ -425,10 +437,10 @@ function tasks(){
 const URG={1:['דחוף','k-red','s-open','red'],2:['להיום','k-orange','s-asking','orange'],3:['למעקב','k-blue','s-info','grey']};
 /* ---------- אריחי מסך הבית: כל משתמש בוחר מה מוצג לו ---------- */
 const WIDGETS=[['absent','מי נעדר היום','milui'],['open','שיעורים בלי מורה','milui'],['merged','שיעורים עם איחוד כיתות','milui'],['covered','מי מחליף את מי','milui'],
-  ['duty','תורנים נעדרים','toranut'],['patrols','יציאות סיירות','sayarot'],['tasks','משימות לפי דחיפות',null]];
+  ['duty','תורנים נעדרים','toranut'],['patrols','יציאות סיירות','sayarot'],['team','משימות הצוות','tasks'],['tasks','משימות לפי דחיפות',null]];
 const myWidgets=()=>{const p=pref().widgets,ok=w=>!w[2]||allowed(w[2]);
   if(Array.isArray(p))return WIDGETS.filter(w=>p.includes(w[0])&&ok(w));
-  return WIDGETS.filter(w=>ok(w)&&(w[0]==='tasks'||(['absent','open','merged'].includes(w[0]))))};
+  return WIDGETS.filter(w=>ok(w)&&(w[0]==='tasks'||(['absent','open','merged','team'].includes(w[0]))))};
 const slotTxt=s=>'שעה '+s.hour+' · '+s.classes.map(cls).join(', ')+(s.subject?' · '+s.subject:'');
 const tName=id=>(S.milui&&S.milui.T[id]||{}).name||'';
 function mergedItems(date){
@@ -469,6 +481,10 @@ function widget(id){
     const L=hol?[]:sayDay(date);
     return wCard(id,'יציאות סיירות','sayarot',L.length,'k-purple',
       L.map(o=>wrow(esc(o.name)+' · '+esc(o.hour),o.groups.map(g=>esc(g.cls)+': '+(g.names.length?esc(g.names.join(', ')):'עוד לא נבחרו')).join(' | '),o.done?'<span class="tag green">בוצע</span>':'')),hol?esc(hol):'אין יציאות.')}
+  if(id==='team'){if(!S.team)return wCard(id,'משימות הצוות','tasks','–','k-blue',[],S.err.todo?'הנתונים לא נטענו.':'טוען…');
+    const T=teamList(),o=T.filter(t=>!t.done_at),l=o.filter(teamLate).length,d=T.filter(teamWeek).length,bt=(v,t,n)=>'<button type="button" class="btn sec sm" data-act="team-f" data-v="'+v+'">'+t+' · '+n+'</button>';
+    return '<section class="card wcard"><button type="button" class="whead '+(l?'k-red':o.length?'k-blue':'k-green')+'" data-go="tasks"><span><b>משימות הצוות</b><span class="small">'+(l?l+' באיחור':'אין איחורים')+' ←</span></span><span class="wn">'+o.length+'</span></button>'+
+      '<div class="wbody"><div class="chips" style="padding-top:8px">'+bt('open','פתוחות',o.length)+bt('late','באיחור',l)+bt('done','בוצעו השבוע',d)+'</div></div></section>'}
   return '';
 }
 const viewOfW=id=>(WIDGETS.find(w=>w[0]===id)||['',''])[1];
@@ -668,9 +684,11 @@ function viewMy(){
   return h;
 }
 /* ---------- המשימות שלי (כלי המשימות · שלב 1: משימות אישיות) ---------- */
-const TODO_ERR={bad_title:'כתבו מה המשימה (עד 200 תווים).',bad_note:'ההערה ארוכה מדי.',bad_due:'תאריך היעד לא תקין.',too_many:'יש יותר מדי משימות פתוחות. סמנו או מחקו משימות ישנות.',not_found:'המשימה לא נמצאה. רעננו את הדף.'};
-/* במצב "בנעליים של" לא טוענים משימות אישיות של אדם אחר */
-async function loadTodo(){if(S.realPhone){S.todo=null;return}const r=await rpc('tasks_list',{p_phone:S.phone});S.todo=(r&&r.tasks)||[]}
+const TODO_ERR={bad_partner:'אחד השותפים לא נמצא ברשימת הצוות. רעננו ונסו שוב.',too_many_partners:'אפשר לצרף עד 80 שותפים.',forbidden:'אין לך הרשאה לפעולה הזו.',bad_title:'כתבו מה המשימה (עד 200 תווים).',bad_note:'ההערה ארוכה מדי.',bad_due:'תאריך היעד לא תקין.',too_many:'יש יותר מדי משימות פתוחות. סמנו או מחקו משימות ישנות.',not_found:'המשימה לא נמצאה. רעננו את הדף.'};
+/* במצב "בנעליים של" לא טוענים משימות אישיות של אדם אחר. דוח הצוות נטען למי שיש לו הרשאה לכלי 'tasks'. */
+async function loadTodo(){
+  if(S.realPhone){S.todo=null}else{const r=await rpc('tasks_list',{p_phone:S.phone});S.todo=(r&&r.tasks)||[];S.todoPeople=(r&&r.people)||[]}
+  if(allowed('tasks')){const r=await rpc('tasks_report',{p_phone:S.phone});S.team=(r&&r.tasks)||[]}else S.team=null}
 async function todoDo(fn,args,msg){
   if(S.realPhone){S.todoErr=VIEWONLY;render();return false}
   S.todoBusy=true;S.todoErr=null;S.todoMsg=null;render();
@@ -687,24 +705,40 @@ function todoDue(t){const k=todoKind(t);if(!t.due)return '<span class="tag grey"
 function todoTile(){
   if(S.realPhone||S.err.todo||!S.todo)return '';
   const O=todoOpen(),L=O.filter(t=>todoKind(t)==='late').length,N=O.filter(t=>todoKind(t)==='now').length;
-  return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-act="todo-go">'+ICON.todo+'<span><b>המשימות שלי · '+(O.length?plural(O.length,'אחת פתוחה','פתוחות'):'אין פתוחות')+(L?' · '+L+' באיחור':'')+(N?' · '+N+' להיום':'')+'</b><span>רשימה אישית: רק את/ה רואה אותה</span></span><span class="arr" aria-hidden="true">←</span></button>'}
-function todoForm(t){const e=!!t;t=t||{};
+  return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-act="todo-go">'+ICON.todo+'<span><b>המשימות שלי · '+(O.length?plural(O.length,'אחת פתוחה','פתוחות'):'אין פתוחות')+(L?' · '+L+' באיחור':'')+(N?' · '+N+' להיום':'')+'</b><span>רק משימות שפתחת או שצירפו אותך אליהן</span></span><span class="arr" aria-hidden="true">←</span></button>'}
+const pChip=p=>'<span class="pchip" data-k="'+esc(p.k)+'">'+esc(p.name)+'<button type="button" data-act="todo-unp" aria-label="הסרת '+esc(p.name)+'">✕</button></span>';
+/* בחירת שותפים: מקלידים שם ובוחרים מהרשימה */
+function pBox(sel,id){const P=S.todoPeople||[];if(!P.length)return '';
+  return '<div class="pbox"><label for="'+id+'">שותפים למשימה (לא חובה)</label><input class="pin" id="'+id+'" list="'+id+'L" placeholder="הקלידו שם של איש צוות ובחרו מהרשימה" autocomplete="off">'+
+    '<datalist id="'+id+'L">'+P.map(x=>'<option value="'+esc(x.name)+'">').join('')+'</datalist>'+
+    '<div class="chips pchips">'+sel.map(k=>P.find(x=>x.k===k)).filter(Boolean).map(pChip).join('')+'</div>'+
+    '<span class="small muted" style="font-weight:400">כל שותף יראה את המשימה ברשימה שלו, יסמן "בוצע" על החלק שלו ויוכל להוסיף הערה.</span></div>'}
+function todoForm(t){const e=!!t;t=t||S.todoDraft||{};const sel=e?(t.partners||[]).map(x=>x.k):(t.partners||[]);
   return '<form data-form="todo"'+(e?' data-id="'+t.id+'"':' class="card todoadd"')+'>'+(e?'':'<h2>משימה חדשה</h2>')+
     '<div class="frow"><label style="grid-column:1/-1">מה צריך לעשות?<input id="'+(e?'todoT'+t.id:'todoTitle')+'" name="title" maxlength="200" required autocomplete="off" value="'+esc(t.title||'')+'"'+(e?'':' placeholder="למשל: להחזיר טפסי טיול למזכירות"')+'></label>'+
     '<label>תאריך יעד (לא חובה)<input type="date" name="due" value="'+esc(t.due||'')+'"></label></div>'+
     '<label style="display:flex;flex-direction:column;gap:4px;font-size:15px;font-weight:600">הערה (לא חובה)<textarea class="ta" name="note" rows="2" maxlength="2000">'+esc(t.note||'')+'</textarea></label>'+
+    pBox(sel,e?'todoP'+t.id:'todoP')+
     '<div class="chips"><button class="btn"'+(S.todoBusy?' disabled':'')+'>'+(S.todoBusy?'שומר…':e?'שמירה':'＋ הוספת המשימה')+'</button>'+
     (e?'<button type="button" class="btn sec" data-act="todo-edit" data-id="0">ביטול</button>'+
-      (S.todoDel===t.id?'<span class="small" role="alert">למחוק את המשימה?</span><button type="button" class="btn sm" style="background:var(--red)" data-act="todo-del" data-id="'+t.id+'">כן, למחוק</button><button type="button" class="btn sec sm" data-act="todo-del-ask" data-id="0">לא</button>'
+      (S.todoDel===t.id?'<span class="small" role="alert">למחוק את המשימה'+((t.partners||[]).length?' לכל השותפים':'')+'?</span><button type="button" class="btn sm" style="background:var(--red)" data-act="todo-del" data-id="'+t.id+'">כן, למחוק</button><button type="button" class="btn sec sm" data-act="todo-del-ask" data-id="0">לא</button>'
         :'<button type="button" class="btn sec sm" data-act="todo-del-ask" data-id="'+t.id+'">מחיקה</button>'):'')+'</div></form>'}
-function todoRow(t){const k=todoKind(t);
-  if(S.todoEdit===t.id)return '<div class="todo '+k+'">'+todoForm(t)+'</div>';
-  return '<div class="todo '+k+'"><button type="button" class="ck" data-act="todo-done" data-id="'+t.id+'" aria-pressed="'+!!t.done_at+'" aria-label="'+(t.done_at?'החזרה לרשימה: ':'סימון בוצע: ')+esc(t.title)+'">'+ICON.ck+'</button>'+
-    '<div class="tx"><b>'+esc(t.title)+'</b>'+(t.done_at?'<span class="tag green">בוצע '+fmtWhen(t.done_at)+'</span>':todoDue(t))+(t.note?'<div class="nt">'+esc(t.note)+'</div>':'')+'</div>'+
-    (t.done_at?'':'<div class="acts"><button type="button" class="btn sec sm" data-act="todo-edit" data-id="'+t.id+'">עריכה</button></div>')+'</div>'}
+/* מי עשה מה: שורת התקדמות ורשימת השותפים. notes: היוצר וההנהלה רואים גם את ההערות */
+function whoList(P,notes){const n=P.filter(x=>x.done_at).length;
+  return '<div class="small" style="font-weight:600">ביצעו '+n+' מתוך '+P.length+'</div><div class="prog" role="img" aria-label="'+n+' מתוך '+P.length+' ביצעו"><i style="width:'+Math.round(100*n/P.length)+'%"></i></div>'+
+    '<div class="who">'+P.map(x=>'<span><span class="'+(x.done_at?'y':'n')+'" aria-hidden="true">'+(x.done_at?'✔':'○')+'</span><span>'+esc(x.name)+(x.done_at?' <span class="muted">· בוצע '+fmtWhen(x.done_at)+'</span>':' <span class="muted">· עוד לא</span>')+'</span>'+(notes&&x.note?'<span class="nt" style="flex-basis:100%;padding-inline-start:20px">״'+esc(x.note)+'״</span>':'')+'</span>').join('')+'</div>'}
+function todoRow(t){const k=todoKind(t),P=t.partners||[],sh=P.length>0,auto=t.mine&&sh&&t.done_at&&!t.closed;
+  if(S.todoEdit===t.id&&t.mine)return '<div class="todo '+k+'">'+todoForm(t)+'</div>';
+  const lab=t.done_at?'החזרה לרשימה: ':t.mine&&sh?'סגירת המשימה לכל השותפים: ':t.mine?'סימון בוצע: ':'סימון שביצעתי את החלק שלי: ';
+  return '<div class="todo '+k+'"><button type="button" class="ck" data-act="todo-done" data-id="'+t.id+'" aria-pressed="'+!!t.done_at+'"'+(auto?' disabled title="כל השותפים ביצעו"':'')+' aria-label="'+lab+esc(t.title)+'">'+ICON.ck+'</button>'+
+    '<div class="tx"><b>'+esc(t.title)+'</b>'+(t.mine?'':'<span class="small muted">מאת '+esc(t.by||'')+'</span>')+
+    (t.done_at?'<span class="tag green">'+(auto?'כל השותפים ביצעו · ':'בוצע ')+fmtWhen(t.done_at)+'</span>':todoDue(t))+(t.note?'<div class="nt">'+esc(t.note)+'</div>':'')+
+    (sh?whoList(P,t.mine):'')+
+    (t.mine?'':'<details'+(t.my_note?' open':'')+'><summary>'+(t.my_note?'ההערה שלי':'הוספת הערה')+'</summary><form data-form="todo-note" data-id="'+t.id+'"><textarea class="ta" name="note" rows="2" maxlength="1000" aria-label="הערה על החלק שלי במשימה">'+esc(t.my_note||'')+'</textarea><div class="chips"><button class="btn sm"'+(S.todoBusy?' disabled':'')+'>שמירת ההערה</button></div></form></details>')+'</div>'+
+    (t.mine&&!t.done_at?'<div class="acts"><button type="button" class="btn sec sm" data-act="todo-edit" data-id="'+t.id+'">עריכה</button></div>':'')+'</div>'}
+const CREDIT='<div class="credit"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח"><span>כלי המשימות · כנפי רוח · נבנה על ידי אריאל כהן</span></div>';
 function viewTodo(){
-  const credit='<div class="credit"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח"><span>כלי המשימות · כנפי רוח · נבנה על ידי אריאל כהן</span></div>';
-  if(S.realPhone)return '<div class="note">משימות אישיות לא מוצגות במצב "בנעליים של". כל איש צוות רואה רק את המשימות של עצמו.</div>'+credit;
+  if(S.realPhone)return '<div class="note">משימות אישיות לא מוצגות במצב "בנעליים של". כל איש צוות רואה רק את המשימות של עצמו.</div>'+CREDIT;
   if(S.err.todo)return '<div class="note bad">המשימות לא נטענו כרגע. נסו לרענן.</div><div class="chips"><button class="btn" data-act="refresh">רענון</button></div>';
   if(!S.todo)return panel('המשימות שלי',skel);
   const O=todoOpen().sort(todoSort),D=S.todo.filter(t=>t.done_at).sort((a,b)=>String(b.done_at).localeCompare(String(a.done_at))),f=S.todoF;
@@ -718,7 +752,38 @@ function viewTodo(){
   const L=f==='late'||f==='now'?O.filter(t=>todoKind(t)===f):O;
   h+=panel(f==='late'?'משימות באיחור':f==='now'?'משימות להיום':'משימות פתוחות',L.length?L.map(todoRow).join(''):'<div class="empty">'+(f==='late'?'אין משימות באיחור.':f==='now'?'אין משימות להיום.':'אין משימות פתוחות. אפשר להוסיף משימה למעלה.')+'</div>');
   if(D.length)h+='<details class="card" style="padding:14px 20px"><summary style="cursor:pointer;font-weight:600">בוצעו ב־60 הימים האחרונים ('+D.length+')</summary><div class="tbody" style="padding:12px 0 0">'+D.map(todoRow).join('')+'</div></details>';
-  return h+'<div class="small muted">הרשימה אישית: רק את/ה רואה את המשימות שלך.</div>'+credit;
+  return h+'<div class="small muted">כאן מופיעות רק משימות שפתחת או שצירפו אותך אליהן. משימה בלי שותפים נשארת פרטית שלך.</div>'+CREDIT;
+}
+/* ---------- משימות הצוות: דוח סטטוס להנהלה (רק משימות עם שותפים; משימות אישיות נשארות פרטיות) ---------- */
+const teamList=()=>{const h=H();return (S.team||[]).filter(t=>!h||(t.ly||[]).some(l=>h.layers.includes(l)))};
+const teamLate=t=>!t.done_at&&t.due&&t.due<today();
+const teamWeek=t=>t.done_at&&new Date(t.done_at)>Date.now()-7*864e5;
+function teamRow(t,who){const P=t.partners||[],k=t.done_at?'done':teamLate(t)?'late':!t.due?'nodue':t.due===today()?'now':'next';
+  return '<div class="todo '+k+'" style="grid-template-columns:1fr"><div class="tx" style="padding-top:0"><b>'+esc(t.title)+'</b><span class="small muted">מאת '+esc(t.by||'')+'</span>'+
+    (t.done_at?'<span class="tag green">בוצע '+fmtWhen(t.done_at)+'</span>':todoDue(t))+(t.note?'<div class="nt">'+esc(t.note)+'</div>':'')+
+    (who?(who.note?'<div class="nt">״'+esc(who.note)+'״</div>':''):'<details><summary>ביצעו '+P.filter(x=>x.done_at).length+' מתוך '+P.length+' · מי עשה מה</summary>'+whoList(P,true)+'</details>')+'</div></div>'}
+function viewTeam(){
+  if(!allowed('tasks'))return '<div class="note bad">המסך הזה פתוח למי שקיבל הרשאה לכלי "משימות הצוות".</div>';
+  if(S.err.todo&&!S.team)return '<div class="note bad">הנתונים לא נטענו כרגע. נסו לרענן.</div><div class="chips"><button class="btn" data-act="refresh">רענון</button></div>';
+  if(!S.team)return panel('משימות הצוות',skel);
+  const mine=myHouse(),T=teamList(),O=T.filter(t=>!t.done_at),f=S.teamF||'open',by=S.teamBy||'task';
+  let h='<div class="pills" role="group" aria-label="תצוגה לפי שכבות" style="margin-top:0"><button type="button" data-act="house" data-v="all" aria-pressed="'+(!H())+'">כל בית הספר</button>'+
+    (mine==='mine'?'<button type="button" data-act="house" data-v="mine" aria-pressed="'+(S.house==='mine')+'">השכבות שלי</button>':'')+
+    HOUSES.map(x=>'<button type="button" data-act="house" data-v="'+x.id+'" aria-pressed="'+(S.house===x.id)+'">'+x.label+'</button>').join('')+'</div>';
+  h+='<section class="kpis k3" aria-label="משימות הצוות לפי מצב">'+kpiBtn('k-blue','פתוחות','משימות משותפות שעוד לא הושלמו',O.length,'team-f','open','הצג',f==='open')+
+    kpiBtn(O.some(teamLate)?'k-red':'k-green','באיחור','עבר תאריך היעד',O.filter(teamLate).length,'team-f','late','הצג',f==='late')+
+    kpiBtn('k-green','בוצעו השבוע','הושלמו ב־7 הימים האחרונים',T.filter(teamWeek).length,'team-f','done','הצג',f==='done')+'</section>';
+  const L=(f==='late'?O.filter(teamLate):f==='done'?T.filter(t=>t.done_at).sort((a,b)=>String(b.done_at).localeCompare(String(a.done_at))):O.slice().sort(todoSort));
+  const ttl=f==='late'?'משימות צוות באיחור':f==='done'?'משימות צוות שבוצעו (30 יום)':'משימות צוות פתוחות';
+  const tabs=f==='done'?'':'<div class="chips" role="group" aria-label="אופן התצוגה">'+[['task','לפי משימה'],['person','לפי איש צוות']].map(x=>'<button type="button" class="btn sec sm" data-act="team-by" data-v="'+x[0]+'" aria-pressed="'+(by===x[0])+'">'+x[1]+'</button>').join('')+'</div>';
+  let body;
+  if(!L.length)body='<div class="okline">'+ICON.ok+(f==='late'?'אין משימות צוות באיחור.':f==='done'?'עוד לא הושלמו משימות צוות בחודש האחרון.':'אין משימות צוות פתוחות.')+'</div>';
+  else if(by==='person'&&f!=='done'){const G={};const hh=H();L.forEach(t=>(t.partners||[]).filter(x=>!x.done_at&&(!hh||(x.ly||[]).some(l=>hh.layers.includes(l)))).forEach(x=>(G[x.name]=G[x.name]||[]).push({t,x})));
+    const names=Object.keys(G).sort((a,b)=>G[b].filter(r=>teamLate(r.t)).length-G[a].filter(r=>teamLate(r.t)).length||G[b].length-G[a].length||a.localeCompare(b,'he'));
+    body=names.length?names.map(nm=>{const l=G[nm].filter(r=>teamLate(r.t)).length;return '<div class="ghead '+(l?'k-red':'k-blue')+'">'+esc(nm)+(l?' · '+l+' באיחור':'')+'<span>'+G[nm].length+'</span></div>'+G[nm].map(r=>teamRow(r.t,r.x)).join('')}).join(''):'<div class="okline">'+ICON.ok+'כל השותפים ביצעו את החלק שלהם.</div>'}
+  else body=L.map(t=>teamRow(t)).join('');
+  h+='<section class="card tool"><div class="thead"><h2>'+ttl+'</h2></div><div class="tbody">'+tabs+body+'</div></section>';
+  return h+'<div class="small muted">הדוח מציג רק משימות שיש בהן שותפים. משימות אישיות של אנשי הצוות אינן מוצגות כאן.</div>'+CREDIT;
 }
 /* ---------- ישיבות פדגוגיות: מעקב החלטות + פגישות רכזת/יועצת עם מחנך ---------- */
 const PED_NAT=['לימודי','רגשי','התנהגותי','חברתי','אחר'];
@@ -907,7 +972,7 @@ function viewPrefs(){
 /* ---------- ניהול הרשאות (למורשים בלבד) ---------- */
 /* תפקיד = משרה (כמו "מנהלת בית א׳–ב׳"): יש לו כלים ושכבות. לאדם יכולים להיות כמה תפקידים. */
 const LAYERS=['א','ב','ג','ד','ה','ו'];
-const TOOLS=['milui','toranut','sayarot','mapat','ped','hespek'];
+const TOOLS=['milui','toranut','sayarot','mapat','ped','hespek','tasks'];
 const ERR={phone_exists:'מספר הטלפון הזה כבר רשום.',bad_phone:'מספר הטלפון לא תקין.',bad_name:'חסר שם.',no_roles:'צריך לסמן לפחות תפקיד אחד.',bad_role:'אחד התפקידים לא קיים. רעננו ונסו שוב.',role_in_use:'אי אפשר למחוק תפקיד שמשויכים אליו אנשים.',
   cannot_delete_self:'אי אפשר להסיר את עצמך.',forbidden:'אין לך הרשאה לנהל הרשאות.',bad_label:'חסר שם לתפקיד.',not_found:'הרשומה לא נמצאה. רעננו ונסו שוב.'};
 const errText=e=>{const k=Object.keys(ERR).find(k=>String(e&&e.message).includes(k));return k?ERR[k]:'הפעולה נכשלה. נסו שוב.'};
@@ -998,7 +1063,7 @@ function viewAs(){
   return panel('במי לצפות?','<p class="muted small" style="margin:0">הלוח ייפתח בדיוק כמו אצל איש הצוות: אותם מסכים, אותם נתונים ואותן הרשאות. במצב הזה לא נשמר שום שינוי, והוא נשאר רק בלשונית הזאת.</p>'+
     '<div class="frow"><label>חיפוש לפי שם או תפקיד<input type="search" id="asQ" value="'+esc(S.asQ||'')+'" placeholder="למשל: גילה, מחנכת, רכזת" autocomplete="off"></label></div><div class="plist" id="asList">'+peopleList()+'</div>');
 }
-function resetData(){Object.assign(S,{todo:null,todoEdit:null,todoDel:null,todoMsg:null,todoErr:null,todoF:null,ped:null,pedNew:null,pedMsg:null,pedErr:null,user:null,house:null,milui:null,tor:null,mk:null,say:null,plans:null,admin:null,dataMonth:null,my:null,myMonth:null,fb:null,fbOpen:0,edit:null,filter:0,saved:null})}
+function resetData(){Object.assign(S,{team:null,teamF:null,todoPeople:null,todoDraft:null,todo:null,todoEdit:null,todoDel:null,todoMsg:null,todoErr:null,todoF:null,ped:null,pedNew:null,pedMsg:null,pedErr:null,user:null,house:null,milui:null,tor:null,mk:null,say:null,plans:null,admin:null,dataMonth:null,my:null,myMonth:null,fb:null,fbOpen:0,edit:null,filter:0,saved:null})}
 function startAs(p){S.realPhone=S.phone;S.phone=p.phone;S.asName=p.name;try{sessionStorage.setItem('hanhala_as',JSON.stringify({real:S.realPhone,phone:p.phone,name:p.name}))}catch(e){}
   resetData();S.view='home';history.pushState(null,'',location.pathname);render();refresh(true);window.scrollTo(0,0)}
 function stopAs(){S.phone=S.realPhone;S.realPhone=null;S.asName=null;try{sessionStorage.removeItem('hanhala_as')}catch(e){}
@@ -1072,7 +1137,7 @@ function shell(inner){
 function render(){
   if(!S.phone)return renderLogin();
   if(!S.user){root.innerHTML=S.err.data?'<div class="login"><div class="card"><h1>לוח הנהלה</h1><div class="err">אין חיבור לשרת כרגע.</div><button class="btn wide" data-act="refresh">ניסיון נוסף</button></div></div>':'<div class="loading">טוען…</div>';return}
-  const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view),setv=S.view==='prefs'||S.view==='perms'||S.view==='feedback'||S.view==='viewas'||S.view==='ped'||S.view==='pedm'||S.view==='todo';
+  const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view),setv=S.view==='prefs'||S.view==='perms'||S.view==='feedback'||S.view==='viewas'||S.view==='ped'||S.view==='pedm'||S.view==='todo'||S.view==='tasks';
   const title=S.view==='home'||S.view==='my'?(S.user.staff?greet(S.user.name):greetT(S.user.name)):S.view==='prefs'?'התאמה אישית':S.view==='perms'?'ניהול הרשאות':S.view==='feedback'?'משובים מהצוות':S.view==='viewas'?'כניסה בנעליים של איש צוות':v[1];
   let h=S.realPhone?'<div class="card banner asbar" role="status"><span>את/ה רואה את הלוח בדיוק כמו <b>'+esc(S.asName||S.user.name)+'</b> · צפייה בלבד</span><button class="btn sm" data-act="as-stop">חזרה אליי</button></div>':'';
   if(window.KR_DEMO&&KR_DEMO.isDemo(S.phone))h+='<div class="card banner" role="status">'+esc(KR_DEMO.note)+'</div>';
@@ -1087,7 +1152,7 @@ function render(){
     if(hol)h+='<div class="card banner">'+esc(hol)+' — אין לימודים ביום הזה.</div>';
     if(S.view==='home'&&!S.user.tools.length)h+='<div class="note">לתפקיד שלך עדיין לא נפתחו כלים בלוח. פנו למנהל בית הספר.</div>';
   }
-  h+=({todo:viewTodo,pedm:viewPedM,ped:viewPed,viewas:viewAs,my:viewMy,home:viewHome,milui:viewMilui,toranut:viewToranut,sayarot:viewSayarot,mapat:viewMapat,hespek:viewHespek,prefs:viewPrefs,perms:viewPerms,feedback:viewFeedback}[S.view]||viewHome)();
+  h+=({tasks:viewTeam,todo:viewTodo,pedm:viewPedM,ped:viewPed,viewas:viewAs,my:viewMy,home:viewHome,milui:viewMilui,toranut:viewToranut,sayarot:viewSayarot,mapat:viewMapat,hespek:viewHespek,prefs:viewPrefs,perms:viewPerms,feedback:viewFeedback}[S.view]||viewHome)();
   root.innerHTML=shell(h);
 }
 function renderLogin(err){
@@ -1096,7 +1161,7 @@ function renderLogin(err){
    (err?'<div class="err" role="alert">'+esc(err)+'</div>':'')+'<button class="btn wide" type="submit">כניסה</button></form></div>';
   root.querySelector('#ph').focus();
 }
-function logout(msg){S.phone=null;S.user=null;S.house=null;S.milui=null;S.tor=null;S.mk=null;S.say=null;S.plans=null;S.admin=null;S.dataMonth=null;S.my=null;S.myMonth=null;S.todo=null;S.todoEdit=null;try{localStorage.removeItem('hanhala_phone')}catch(e){};renderLogin(msg)}
+function logout(msg){S.phone=null;S.user=null;S.house=null;S.milui=null;S.tor=null;S.mk=null;S.say=null;S.plans=null;S.admin=null;S.dataMonth=null;S.my=null;S.myMonth=null;S.todo=null;S.todoEdit=null;S.team=null;S.todoDraft=null;try{localStorage.removeItem('hanhala_phone')}catch(e){};renderLogin(msg)}
 async function refresh(force){
   S.busy=true;render();
   try{await loadAll(force)}catch(e){S.busy=false;if(e.message==='no_access'){if(S.realPhone)return stopAs();return logout('המספר הזה לא מורשה להיכנס.')}console.error(e)}
@@ -1111,9 +1176,13 @@ root.addEventListener('submit',async e=>{
     return}
   const fd=new FormData(f);
   if(f.dataset.form==='todo'){const id=f.dataset.id?+f.dataset.id:null,title=String(fd.get('title')||'').trim();
+    const pb=f.querySelector('.pchips'),partners=pb?[...pb.children].map(c=>c.dataset.k):null;
+    const p={id,title,due:fd.get('due')||null,note:fd.get('note')||''};if(partners)p.partners=partners;
+    if(!id)S.todoDraft=p;
     if(!title){S.todoErr='כתבו מה המשימה.';return render()}
-    if(await todoDo('tasks_save',{p:{id,title,due:fd.get('due')||null,note:fd.get('note')||''}},id?'המשימה עודכנה.':'המשימה נוספה.')){S.todoEdit=null;render();if(!id){const i=document.getElementById('todoTitle');if(i)i.focus()}}
+    if(await todoDo('tasks_save',{p},id?'המשימה עודכנה.':partners&&partners.length?'המשימה נוספה ונשלחה ל'+plural(partners.length,'שותף אחד','־'+partners.length+' שותפים')+'.':'המשימה נוספה.')){S.todoEdit=null;if(!id)S.todoDraft=null;render();if(!id){const i=document.getElementById('todoTitle');if(i)i.focus()}}
     return}
+  if(f.dataset.form==='todo-note'){await todoDo('tasks_note',{p_id:+f.dataset.id,p_note:String(fd.get('note')||'')},'ההערה נשמרה.');return}
   if(f.dataset.form==='ped-dec')return pedSaveRows(f);
   if(f.dataset.form==='ped-upd'){const p={status:fd.get('status'),notes:fd.get('notes'),due:fd.get('due')||null,owner:fd.get('owner'),owner_name:fd.get('owner_name')};
     return pedDo('ped_update_decision',{p_id:+f.dataset.id,p},'העדכון נשמר.')}
@@ -1186,8 +1255,12 @@ root.addEventListener('click',e=>{
   if(a==='ped-seen'){pedDo('ped_meeting_seen',{p_id:+b.dataset.id},'סומן שראית.');return}
   if(a==='todo-done'){const t=(S.todo||[]).find(x=>x.id===+b.dataset.id);if(!t)return;
     if(S.realPhone){S.todoErr=VIEWONLY;return render()}
-    const was=t.done_at,on=!was;t.done_at=on?new Date().toISOString():null;S.todoErr=null;S.todoMsg=on?'כל הכבוד! המשימה סומנה כבוצעה.':'המשימה הוחזרה לרשימה.';S.todoDel=null;render();
-    rpc('tasks_done',{p_phone:S.phone,p_id:t.id,p_done:on}).catch(e=>{console.error(e);t.done_at=was;S.todoMsg=null;S.todoErr='הסימון לא נשמר. נסו שוב.';render()});return}
+    const was=t.done_at,on=!was,sh=t.partners&&t.partners.length;t.done_at=on?new Date().toISOString():null;S.todoErr=null;S.todoDel=null;
+    S.todoMsg=on?(t.mine&&sh?'המשימה נסגרה לכל השותפים.':!t.mine?'סומן שביצעת את החלק שלך. תודה!':'כל הכבוד! המשימה סומנה כבוצעה.'):'המשימה הוחזרה לרשימה.';render();
+    rpc('tasks_done',{p_phone:S.phone,p_id:t.id,p_done:on}).then(()=>sh?loadTodo().then(render):null).catch(e=>{console.error(e);t.done_at=was;S.todoMsg=null;S.todoErr='הסימון לא נשמר. נסו שוב.';render()});return}
+  if(a==='todo-unp'){b.closest('.pchip').remove();return}
+  if(a==='team-f'){const v=b.dataset.v;if(S.view!=='tasks'){S.view='tasks';S.teamF=v;history.pushState(null,'','#tasks');window.scrollTo(0,0)}else S.teamF=v;return render()}
+  if(a==='team-by'){S.teamBy=b.dataset.v;return render()}
   if(a==='todo-edit'){S.todoEdit=b.dataset.id==='0'?null:+b.dataset.id;S.todoDel=null;S.todoMsg=null;S.todoErr=null;return render()}
   if(a==='todo-del-ask'){S.todoDel=b.dataset.id==='0'?null:+b.dataset.id;return render()}
   if(a==='todo-del'){todoDo('tasks_delete',{p_id:+b.dataset.id},'המשימה נמחקה.').then(()=>{S.todoDel=null;S.todoEdit=null;render()});return}
@@ -1202,6 +1275,9 @@ root.addEventListener('click',e=>{
   if(a==='today'){S.date=schoolDay(today());return refresh(false)}
   if(a==='day'){let d=addDays(S.date,+b.dataset.n);while(dow(d)===6)d=addDays(d,+b.dataset.n);S.date=d;return refresh(false)}
 });
+root.addEventListener('input',e=>{const T=e.target;if(!T.classList||!T.classList.contains('pin'))return;
+  const v=T.value.trim(),P=(S.todoPeople||[]).find(x=>x.name===v);if(!P)return;
+  const box=T.closest('.pbox').querySelector('.pchips');if(![...box.children].some(c=>c.dataset.k===P.k))box.insertAdjacentHTML('beforeend',pChip(P));T.value=''});
 /* רענון אוטומטי כשחוזרים ללשונית אחרי יותר מ־5 דקות */
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.phone&&S.loadedAt&&Date.now()-S.loadedAt>3e5)refresh(true)});
 window.addEventListener('popstate',()=>{S.view=hashView();if(S.user&&!canSee(S.view))S.view='home';if(S.view==='feedback'&&S.user&&isDev())loadFb().then(render);if(S.phone){if(S.view==='perms'&&S.user&&S.user.can_manage&&!S.admin)loadAdmin().then(render);render()}});
