@@ -685,7 +685,7 @@ function viewMy(){
   return h;
 }
 /* ---------- המשימות שלי (כלי המשימות · שלב 1: משימות אישיות) ---------- */
-const TODO_ERR={bad_partner:'אחד השותפים לא נמצא ברשימת הצוות. רעננו ונסו שוב.',too_many_partners:'אפשר לצרף עד 80 שותפים.',forbidden:'אין לך הרשאה לפעולה הזו.',bad_title:'כתבו מה המשימה (עד 200 תווים).',bad_note:'ההערה ארוכה מדי.',bad_due:'תאריך היעד לא תקין.',too_many:'יש יותר מדי משימות פתוחות. סמנו או מחקו משימות ישנות.',not_found:'המשימה לא נמצאה. רעננו את הדף.'};
+const TODO_ERR={bad_rank:'הדירוג לא תקין.',bad_partner:'אחד השותפים לא נמצא ברשימת הצוות. רעננו ונסו שוב.',too_many_partners:'אפשר לצרף עד 80 שותפים.',forbidden:'אין לך הרשאה לפעולה הזו.',bad_title:'כתבו מה המשימה (עד 200 תווים).',bad_note:'ההערה ארוכה מדי.',bad_due:'תאריך היעד לא תקין.',too_many:'יש יותר מדי משימות פתוחות. סמנו או מחקו משימות ישנות.',not_found:'המשימה לא נמצאה. רעננו את הדף.'};
 /* במצב "בנעליים של" לא טוענים משימות אישיות של אדם אחר. דוח הצוות נטען למי שיש לו הרשאה לכלי 'tasks'. */
 async function loadTodo(){
   if(S.realPhone){S.todo=[];try{const r=await rpc('tasks_list',{p_phone:S.realPhone});S.todoPeople=(r&&r.people)||[]}catch(e){S.todoPeople=[]}}else{const r=await rpc('tasks_list',{p_phone:S.phone});S.todo=(r&&r.tasks)||[];S.todoPeople=(r&&r.people)||[]}
@@ -699,7 +699,11 @@ async function todoDo(fn,args,msg){
 }
 const todoOpen=()=>(S.todo||[]).filter(t=>!t.done_at);
 const todoKind=t=>t.done_at?'done':!t.due?'nodue':t.due<today()?'late':t.due===today()?'now':'next';
-const todoSort=(a,b)=>(a.due||'9999').localeCompare(b.due||'9999')||a.id-b.id;
+/* דירוג: 1 גבוהה, 2 בינונית, 3 נמוכה. בלי דירוג ממוין כמו בינונית. */
+const RANK_U={1:['דחוף','red'],2:['דחיפות רגילה','grey'],3:['לא דחוף','grey']},RANK_I={1:['חשיבות גבוהה','orange'],2:['חשיבות בינונית','grey'],3:['חשיבות נמוכה','grey']};
+const rankTags=t=>(t.urgency&&t.urgency!==2?'<span class="tag '+RANK_U[t.urgency][1]+'">'+RANK_U[t.urgency][0]+'</span>':'')+(t.importance&&t.importance!==2?'<span class="tag '+RANK_I[t.importance][1]+'">'+RANK_I[t.importance][0]+'</span>':'');
+const rankSel=(name,label,v,L)=>'<label>'+label+'<select name="'+name+'"><option value="">לא דורג</option>'+[1,2,3].map(n=>'<option value="'+n+'"'+(v===n?' selected':'')+'>'+L[n]+'</option>').join('')+'</select></label>';
+const todoSort=(a,b)=>((a.due&&a.due<today()?0:1)-(b.due&&b.due<today()?0:1))||(a.urgency||2)-(b.urgency||2)||(a.due||'9999').localeCompare(b.due||'9999')||(a.importance||2)-(b.importance||2)||a.id-b.id;
 function todoDue(t){const k=todoKind(t);if(!t.due)return '<span class="tag grey">בלי תאריך יעד</span>';
   const n=Math.round((parse(t.due)-parse(today()))/864e5),d='יום '+DAYS[dow(t.due)]+' '+shortDate(t.due);
   return k==='late'?'<span class="tag red">באיחור של '+plural(-n,'יום','ימים')+' · '+d+'</span>':k==='now'?'<span class="tag orange">להיום</span>':'<span class="tag grey">'+(n===1?'מחר · ':'')+d+'</span>'}
@@ -717,7 +721,8 @@ function pBox(sel,id){const P=S.todoPeople||[];if(!P.length)return '';
 function todoForm(t){const e=!!t;t=t||S.todoDraft||{};const sel=e?(t.partners||[]).map(x=>x.k):(t.partners||[]);
   return '<form data-form="todo"'+(e?' data-id="'+t.id+'"':' class="card todoadd"')+'>'+(e?'':'<h2>משימה חדשה</h2>')+
     '<div class="frow"><label style="grid-column:1/-1">מה צריך לעשות?<input id="'+(e?'todoT'+t.id:'todoTitle')+'" name="title" maxlength="200" required autocomplete="off" value="'+esc(t.title||'')+'"'+(e?'':' placeholder="למשל: להחזיר טפסי טיול למזכירות"')+'></label>'+
-    '<label>תאריך יעד (לא חובה)<input type="date" name="due" value="'+esc(t.due||'')+'"></label></div>'+
+    '<label>תאריך יעד (לא חובה)<input type="date" name="due" value="'+esc(t.due||'')+'"></label>'+
+    rankSel('urgency','דחיפות',t.urgency,{1:'דחוף',2:'רגילה',3:'לא דחוף'})+rankSel('importance','חשיבות',t.importance,{1:'גבוהה',2:'בינונית',3:'נמוכה'})+'</div>'+
     '<label style="display:flex;flex-direction:column;gap:4px;font-size:15px;font-weight:600">הערה (לא חובה)<textarea class="ta" name="note" rows="2" maxlength="2000">'+esc(t.note||'')+'</textarea></label>'+
     pBox(sel,e?'todoP'+t.id:'todoP')+
     '<div class="chips"><button class="btn"'+(S.todoBusy?' disabled':'')+'>'+(S.todoBusy?'שומר…':e?'שמירה':'＋ הוספת המשימה')+'</button>'+
@@ -733,7 +738,7 @@ function todoRow(t){const k=todoKind(t),P=t.partners||[],sh=P.length>0,auto=t.mi
   const lab=t.done_at?'החזרה לרשימה: ':t.mine&&sh?'סגירת המשימה לכל השותפים: ':t.mine?'סימון בוצע: ':'סימון שביצעתי את החלק שלי: ';
   return '<div class="todo '+k+'"><button type="button" class="ck" data-act="todo-done" data-id="'+t.id+'" aria-pressed="'+!!t.done_at+'"'+(auto?' disabled title="כל השותפים ביצעו"':'')+' aria-label="'+lab+esc(t.title)+'">'+ICON.ck+'</button>'+
     '<div class="tx"><b>'+esc(t.title)+'</b>'+(t.mine?'':'<span class="small muted">מאת '+esc(t.by||'')+'</span>')+
-    (t.done_at?'<span class="tag green">'+(auto?'כל השותפים ביצעו · ':'בוצע ')+fmtWhen(t.done_at)+'</span>':todoDue(t))+(t.note?'<div class="nt">'+esc(t.note)+'</div>':'')+
+    (t.done_at?'<span class="tag green">'+(auto?'כל השותפים ביצעו · ':'בוצע ')+fmtWhen(t.done_at)+'</span>':'<span class="chips" style="gap:4px 12px">'+todoDue(t)+rankTags(t)+'</span>')+(t.note?'<div class="nt">'+esc(t.note)+'</div>':'')+
     (sh?whoList(P,t.mine):'')+
     (t.mine?'':'<details'+(t.my_note?' open':'')+'><summary>'+(t.my_note?'ההערה שלי':'הוספת הערה')+'</summary><form data-form="todo-note" data-id="'+t.id+'"><textarea class="ta" name="note" rows="2" maxlength="1000" aria-label="הערה על החלק שלי במשימה">'+esc(t.my_note||'')+'</textarea><div class="chips"><button class="btn sm"'+(S.todoBusy?' disabled':'')+'>שמירת ההערה</button></div></form></details>')+'</div>'+
     (t.mine&&!t.done_at?'<div class="acts"><button type="button" class="btn sec sm" data-act="todo-edit" data-id="'+t.id+'">עריכה</button></div>':'')+'</div>'}
@@ -760,7 +765,7 @@ const teamLate=t=>!t.done_at&&t.due&&t.due<today();
 const teamWeek=t=>t.done_at&&new Date(t.done_at)>Date.now()-7*864e5;
 function teamRow(t,who){const P=t.partners||[],k=t.done_at?'done':teamLate(t)?'late':!t.due?'nodue':t.due===today()?'now':'next';
   return '<div class="todo '+k+'" style="grid-template-columns:1fr"><div class="tx" style="padding-top:0"><b>'+esc(t.title)+'</b><span class="small muted">מאת '+esc(t.by||'')+'</span>'+
-    (t.done_at?'<span class="tag green">בוצע '+fmtWhen(t.done_at)+'</span>':todoDue(t))+(t.note?'<div class="nt">'+esc(t.note)+'</div>':'')+
+    (t.done_at?'<span class="tag green">בוצע '+fmtWhen(t.done_at)+'</span>':'<span class="chips" style="gap:4px 12px">'+todoDue(t)+rankTags(t)+'</span>')+(t.note?'<div class="nt">'+esc(t.note)+'</div>':'')+
     (who?(who.note?'<div class="nt">״'+esc(who.note)+'״</div>':''):'<details><summary>ביצעו '+P.filter(x=>x.done_at).length+' מתוך '+P.length+' · מי עשה מה</summary>'+whoList(P,true)+'</details>')+'</div></div>'}
 function viewTeam(){
   if(!allowed('tasks'))return '<div class="note bad">המסך הזה פתוח למי שקיבל הרשאה לכלי "משימות הצוות".</div>';
@@ -1178,7 +1183,7 @@ root.addEventListener('submit',async e=>{
   const fd=new FormData(f);
   if(f.dataset.form==='todo'){const id=f.dataset.id?+f.dataset.id:null,title=String(fd.get('title')||'').trim();
     const pb=f.querySelector('.pchips'),partners=pb?[...pb.children].map(c=>c.dataset.k):null;
-    const p={id,title,due:fd.get('due')||null,note:fd.get('note')||''};if(partners)p.partners=partners;
+    const p={id,title,due:fd.get('due')||null,note:fd.get('note')||'',urgency:+fd.get('urgency')||null,importance:+fd.get('importance')||null};if(partners)p.partners=partners;
     if(!id)S.todoDraft=p;
     if(!title){S.todoErr='כתבו מה המשימה.';return render()}
     if(await todoDo('tasks_save',{p},id?'המשימה עודכנה.':partners&&partners.length?'המשימה נוספה ונשלחה ל'+plural(partners.length,'שותף אחד','־'+partners.length+' שותפים')+'.':'המשימה נוספה.')){S.todoEdit=null;if(!id)S.todoDraft=null;render();if(!id){const i=document.getElementById('todoTitle');if(i)i.focus()}}

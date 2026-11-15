@@ -120,7 +120,7 @@
 
   /* המשימות שלי (כלי המשימות): אישיות, ומשימות עם שותפים */
   const TPEOPLE=Object.values(T).filter(n=>n!==ME).map((n,i)=>({k:'d'+i,name:n}));
-  let TID=4;const TODO=[{id:1,title:'להחזיר טפסי טיול למזכירות',due:add(TODAY,-2),note:'חסרים עוד שלושה אישורים',done_at:null,created_at:add(TODAY,-6)+'T08:00:00Z',mine:true,by:ME,partners:[]},
+  let TID=4;const TODO=[{id:1,urgency:1,importance:1,title:'להחזיר טפסי טיול למזכירות',due:add(TODAY,-2),note:'חסרים עוד שלושה אישורים',done_at:null,created_at:add(TODAY,-6)+'T08:00:00Z',mine:true,by:ME,partners:[]},
     {id:2,title:'להכין דף חזרה לקראת המבחן',due:TODAY,note:null,done_at:null,created_at:add(TODAY,-3)+'T08:00:00Z',mine:true,by:ME,partners:[]},
     {id:3,title:'לתאם שיחה עם ההורים של אחד התלמידים',due:null,note:null,done_at:null,created_at:add(TODAY,-1)+'T08:00:00Z',mine:true,by:ME,partners:[]},
     {id:4,title:'להזין ציוני מחצית לגיליון',due:add(TODAY,3),note:'כל המחנכים בשכבה',done_at:null,created_at:add(TODAY,-2)+'T08:00:00Z',mine:false,by:'הנהלת בית הספר',my_note:null,closed:false,
@@ -136,7 +136,7 @@
       case 'ped_save_decision':{const p=a.p||{};PDEC.push({id:++PID,created_at:new Date().toISOString(),by:'נועם ישראלי',class:p.class,nature:p.nature,scope:p.scope,students:p.scope==='student'?p.students:[],answer:p.answer,owner:p.owner,due:p.due,status:'open',notes:null,edit:true,nature_other:p.nature==='אחר'?p.nature_other:null,owner_name:p.owner==='מורה מקצועי'?p.owner_name:null});PDEC.sort((x,y)=>x.due<y.due?-1:1);return PID}
       case 'ped_update_decision':{const d=PDEC.find(x=>x.id===a.p_id),p=a.p||{};if(d){if(p.status)d.status=p.status;if('notes' in p)d.notes=p.notes||null;if(p.due)d.due=p.due;if(p.owner){d.owner=p.owner;d.owner_name=p.owner==='מורה מקצועי'?p.owner_name:null}}return null}
       case 'tasks_list':return {name:ME,report:false,people:TPEOPLE,tasks:TODO};
-      case 'tasks_save':{const p=a.p||{};let x=TODO.find(y=>y.id===p.id);if(!x){x={id:++TID,created_at:new Date().toISOString(),done_at:null,mine:true,by:ME,partners:[]};TODO.push(x)}x.title=p.title;x.due=p.due||null;x.note=p.note||null;
+      case 'tasks_save':{const p=a.p||{};let x=TODO.find(y=>y.id===p.id);if(!x){x={id:++TID,created_at:new Date().toISOString(),done_at:null,mine:true,by:ME,partners:[]};TODO.push(x)}x.title=p.title;x.due=p.due||null;x.note=p.note||null;x.urgency=p.urgency||null;x.importance=p.importance||null;
         if(p.partners)x.partners=p.partners.map(k=>(x.partners.find(q=>q.k===k)||{k,name:(TPEOPLE.find(q=>q.k===k)||{}).name,done_at:null,note:null}));return x.id}
       case 'tasks_done':{const x=TODO.find(y=>y.id===a.p_id);if(x){x.done_at=a.p_done?new Date().toISOString():null;const m=x.partners.find(q=>q.k==='me');if(m)m.done_at=x.done_at}return null}
       case 'tasks_note':{const x=TODO.find(y=>y.id===a.p_id);if(x)x.my_note=a.p_note||null;return null}
