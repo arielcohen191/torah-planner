@@ -192,21 +192,29 @@ body.nodata #v-overview>:not(#qview):not(.keep){display:none}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 @media (max-width:820px){.mb,.sgrid{grid-template-columns:1fr}main{padding:14px}header{padding:14px 14px 0}}
 #printCards{display:none}
+body.pc-measure #printCards{display:block;position:absolute;left:-9999px;top:0;width:130mm}
+.pcard{font:11pt/1.4 Heebo,Assistant,Rubik,sans-serif;color:#000;direction:rtl;background:#fff}
+.pc-h{display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #000;padding-bottom:5px;margin-bottom:7px}
+.pc-h img{width:15mm;height:15mm;object-fit:contain}
+.pc-name{font:800 19pt/1.1 Rubik,Heebo,sans-serif}.pc-sub{font-size:9.5pt;color:#333;margin-top:2px}
+.pc-good{margin:0 0 7px;padding:5px 9px;border-right:3px solid #000;background:#f2f2f2;font-size:10.5pt}
+.pc-info{margin-bottom:7px}.pc-li{margin:2px 0;font-size:10pt}.pc-li b{margin-left:4px}
+.pc-tag{display:inline-block;border:1px solid #000;border-radius:10px;padding:0 6px;margin:1px 0 1px 3px;font-size:9pt}
+.pc-t{width:100%;border-collapse:collapse;font-size:9.5pt}
+.pc-t th,.pc-t td{border:1px solid #999;padding:3px 5px;text-align:right;vertical-align:top}
+.pc-t thead th{background:#e6e6e6;font-size:8.5pt}
+.pc-t tbody th{width:27%;font-weight:700}.pc-st{width:24%;white-space:nowrap}
+.pc-st span{display:inline-block;width:14px;text-align:center;font-weight:800}
+.pc-bad .pc-st{font-weight:800}.pc-bad th,.pc-bad td{border-width:1.5px;border-color:#000}.pc-bad .pc-st{background:#d9d9d9}
+.pc-mid .pc-st{background:#f0f0f0}
+.pc-d{display:inline-block;margin-left:8px}.pc-d.b{font-weight:700;text-decoration:underline}
+.pc-muted{color:#666}.pc-note{margin:3px 0 0;font-size:9pt}
+.pc-f{margin-top:8px;font-size:7.5pt;color:#555;text-align:center;border-top:1px solid #bbb;padding-top:3px}
 @media print{
   body.print-cards>*:not(#printCards){display:none!important}
   body.print-cards #printCards{display:block}
-  body.print-cards .pcard{page-break-after:always;break-after:page}
+  body.print-cards .pcard{page-break-after:always;break-after:page;font:11pt/1.4 Heebo,Assistant,Rubik,sans-serif;color:#000;direction:rtl}
   body.print-cards .pcard:last-child{page-break-after:auto;break-after:auto}
-  body.print-cards .pcard .mh{background:#fff!important;color:#000!important;border-bottom:2px solid #000;padding:0 0 6px}
-  body.print-cards .pcard .mb{max-height:none!important;overflow:visible!important}
-  body.print-cards .pcard{font-size:11px}
-  body.print-cards .pcard .mb{display:grid!important;grid-template-columns:1fr 1.35fr;gap:10px;padding:8px 0 0}
-  body.print-cards .pcard .sec{padding:0;margin:0}
-  body.print-cards .pcard h4{margin:6px 0 2px!important;font-size:11.5px}
-  body.print-cards .pcard .ind{padding:1px 6px;min-height:0;margin:1px 0}
-  body.print-cards .pcard .dhead{margin:5px 0 1px}
-  body.print-cards .pcard .good,body.print-cards .pcard .note{padding:4px 8px;margin:3px 0}
-  body.print-cards .pcard .p{padding:0 6px}
   .rail,.topbar,.hero .acts,.filters,.btn{display:none!important}.app{display:block}
   .view{display:block!important;page-break-after:always}
   body{background:#fff}
@@ -585,13 +593,43 @@ function openS(i){CUR=i;const s=STATE.rows[i];const L=list();const pos=L.findInd
    ${cardBody(s)}`;
   document.getElementById("ov").classList.add("on");
 }
+/* כרטיס מודפס (A5): קודם השורה התחתונה לכל תחום, ורק מה שדורש תשומת לב מפורט. סימן + מילה, כדי שיעבוד בשחור־לבן. */
+const P_ST=[["—","לא מולא","n"],["✓","תקין","ok"],["!","לשים לב","mid"],["✗","דורש התערבות","bad"]];
+function printCard(s){
+  const sub=STATE.view==="subject",li=(t,v)=>v?`<div class="pc-li"><b>${t}</b> ${v}</div>`:"";
+  const rows=DOMAINS.map(d=>{const x=s.dom[d.id],st=P_ST[x.score]||P_ST[0];
+    const det=d.cols.map((c,j)=>{const val=x.vals[j],lab=IND[c]?IND[c][0]:"";if(!val)return "";
+      const txt=IND[c]?(IND[c][1][val]||P_ST[val][1]):"";const ach=d.id==="ach"||d.id==="ach2";
+      return (ach||val>=2)?`<span class="pc-d ${val>=3&&!ach?'b':''}">${esc(lab)}: ${esc(txt)}</span>`:""}).filter(Boolean).join("");
+    return `<tr class="pc-${st[2]}"><th>${d.name}</th><td class="pc-st"><span>${st[0]}</span> ${st[1]}</td><td>${det||(x.score===1?'<span class="pc-muted">הכול תקין</span>':'')}${x.txt&&!sub?`<div class="pc-note">✎ ${esc(x.txt)}</div>`:""}</td></tr>`}).join("");
+  const flags=s.flags.map(f=>`<span class="pc-tag ${f.s?'sens':''}">${esc(f.t)}</span>`).join("");
+  return `<section class="pcard">
+   <header class="pc-h"><div><div class="pc-name">${esc(s.name)}</div><div class="pc-sub">${esc(STATE.cls)} · תלמיד ${esc(s.num)}${STATE.teacher?" · מחנך: "+esc(STATE.teacher):""}</div></div><img src="/icons/kanfei-ruach-logo.png" alt=""></header>
+   ${!sub&&s.good?`<p class="pc-good">${esc(s.good)}</p>`:""}
+   <div class="pc-info">
+    ${li("חוזקות:",s.strengths.map(esc).join(" · "))}
+    ${li("תחביבים:",esc(s.hob))}
+    ${flags?`<div class="pc-li"><b>רקע:</b> ${flags}</div>`:""}
+    ${!sub?li("מענים:",s.maane.map(esc).join(" · ")):""}
+    ${!sub?li("צרכים משנים קודמות:",esc(s.prev)):""}
+   </div>
+   <table class="pc-t"><thead><tr><th>תחום</th><th>מצב</th><th>מה כדאי לדעת</th></tr></thead><tbody>${rows}</tbody></table>
+   ${!sub&&s.extra?`<p class="pc-note"><b>תוספות מחנך:</b> ${esc(s.extra)}</p>`:""}
+   <footer class="pc-f">מפת כיתה · כנפי רוח · חסוי, לשימוש צוות בית הספר בלבד</footer>
+  </section>`;
+}
 /* הדפסת כרטיסי כל התלמידים בכיתה, לפי מספר התלמיד. בשחור־לבן המצב כתוב במילים, לא רק בצבע. */
 function printCards(){
   const box=document.getElementById("printCards");
   const L=[...STATE.rows].sort((a,b)=>(+a.num||0)-(+b.num||0));
-  box.innerHTML=L.map(s=>`<section class="pcard"><div class="mh"><div><div style="font-size:13px">${esc(STATE.cls)} · תלמיד ${esc(s.num)}</div><h3>${esc(s.name)}</h3></div></div>${cardBody(s)}</section>`).join("");
+  box.innerHTML=L.map(printCard).join("");
+  const pg=document.createElement("style");pg.id="pcPage";pg.textContent="@page{size:A5 portrait;margin:9mm}";document.head.appendChild(pg);
+  // כרטיס ארוך מדי לעמוד A5 מוקטן מעט, כדי שכל תלמיד יישאר בעמוד אחד
+  document.body.classList.add("print-cards","pc-measure");const mm=n=>n*96/25.4;
+  box.querySelectorAll(".pcard").forEach(c=>{let fs=11;while(c.offsetHeight>mm(188)&&fs>7.5){fs-=.5;c.style.fontSize=fs+"pt";c.querySelector(".pc-t").style.fontSize=(fs-1.5)+"pt"}});
+  document.body.classList.remove("pc-measure");
   document.body.classList.add("print-cards");
-  const done=()=>{document.body.classList.remove("print-cards");box.innerHTML="";window.removeEventListener("afterprint",done)};
+  const done=()=>{document.body.classList.remove("print-cards");box.innerHTML="";pg.remove();window.removeEventListener("afterprint",done)};
   window.addEventListener("afterprint",done);setTimeout(()=>window.print(),60);
 }
 function step(d){const L=list();const pos=L.findIndex(x=>x.i==CUR);const n=L[pos+d];if(n)openS(n.i)}
