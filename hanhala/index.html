@@ -535,11 +535,21 @@ function viewSayarot(){
     o.groups.map(g=>'<div class="small"><span class="muted">'+esc(g.cls)+':</span> '+(g.names.length?esc(g.names.join(', ')):'<span class="tag orange">עוד לא נבחרו תלמידים</span>')+'</div>').join('')+'</div>').join('');
   return h+panel('יציאות היום',b);
 }
+/* #18: מי מילא את שאלון הצוות, ומי נכנס למפת הכיתה ומתי. מי שעוד לא, ראשון ברשימה. */
+function mkStaffPanel(m){
+  if(!S.mkList||!m.staff)return '';
+  const q=S.mkList==='q',L=m.staff.filter(x=>q||x.access).map(x=>({...x,done:q?!!x.q_at:!!x.entered,at:q?x.q_at:x.last_login}));
+  L.sort((a,b)=>(a.done-b.done)||(b.at||'').localeCompare(a.at||'')||a.name.localeCompare(b.name,'he'));
+  const not=L.filter(x=>!x.done).length;
+  const row=x=>'<div class="duty"><span class="nm" style="text-align:right">'+esc(x.name)+(x.cls?' <span class="small muted">· מחנך/ת '+esc(cls(x.cls))+'</span>':'')+'</span><span class="st">'+
+    (x.done?(x.at?(q?'מילא/ה ':'נכנס/ה לאחרונה ')+fmtWhen(x.at):'נכנס/ה'):'<b style="color:var(--bad,#b42318)">'+(q?'לא מילא/ה':'עוד לא נכנס/ה')+'</b>')+'</span></div>';
+  return panel((q?'שאלון הצוות: ':'כניסה למפת הכיתה: ')+(L.length-not)+' מתוך '+L.length,(not?'<div class="small muted" style="margin-bottom:6px">'+not+(q?' עוד לא מילאו.':' עוד לא נכנסו.')+(q?'':' "נכנס לאחרונה" נמדד מ־15.11.')+'</div>':'')+L.map(row).join(''));
+}
 function viewMapat(){
   if(S.err.mk)return goTile('mapat')+failed;if(!S.mk)return goTile('mapat')+panel('מצב הנתונים',skel);
   const m=S.mk,cs=(m.classes_synced||[]).filter(c=>clsIn(c.name)),tot=mkTotal();
   const h='<section class="kpis k3" aria-label="מצב מפת הכיתה">'+kpiLink(cs.length<tot?'k-orange':'k-green','כיתות עם נתונים','מתוך '+tot+' כיתות',cs.length,'/mapat-kita/','למפות')+
-    kpiLink('k-blue','שאלוני צוות','מולאו עד עכשיו',m.q_filled,'/mapat-kita/','לשאלונים')+kpiLink('k-purple','נכנסו לכלי','מתוך '+m.staff_access+' בעלי גישה',m.staff_entered,'/mapat-kita/','לניהול גישה')+'</section>'+goTile('mapat');
+    kpiBtn('k-blue','שאלוני צוות','מולאו עד עכשיו',m.q_filled,'mk-list','q',S.mkList==='q'?'הסתרה':'מי מילא',S.mkList==='q')+kpiBtn('k-purple','נכנסו לכלי','מתוך '+m.staff_access+' בעלי גישה',m.staff_entered,'mk-list','in',S.mkList==='in'?'הסתרה':'מי נכנס',S.mkList==='in')+'</section>'+mkStaffPanel(m)+goTile('mapat');
   const b=cs.length?cs.map(c=>'<div class="duty"><span class="nm" style="text-align:right">'+esc(cls(c.name))+' · '+c.students+' תלמידים</span><span class="st">סונכרן '+fmtWhen(c.synced_at)+'</span></div>').join(''):'<div class="empty">עוד לא סונכרנה אף כיתה.</div>';
   return h+panel('כיתות שסונכרנו מהגיליון',b+(m.q_last?'<div class="small muted">שאלון אחרון מולא: '+fmtWhen(m.q_last)+'</div>':''));
 }
@@ -1075,6 +1085,7 @@ root.addEventListener('click',e=>{
   if(a==='staff-del')return adminDo('hanhala_admin_delete_staff',{p_target:b.dataset.v});
   if(a==='role-del')return adminDo('hanhala_admin_delete_role',{p_id:b.dataset.v});
   if(a==='house'){S.house=b.dataset.v;render();const p=Object.assign(pref(),{house:S.house});S.user.prefs=p;if(!S.realPhone)rpc('hanhala_save_prefs',{p_phone:S.phone,p_prefs:p}).catch(e=>console.error(e));return}
+  if(a==='mk-list'){S.mkList=S.mkList===b.dataset.v?null:b.dataset.v;return render()}
   if(a==='fb-filter'){S.fbFilter=S.fbFilter===b.dataset.v?null:b.dataset.v;return render()}
   if((a==='fb-set'||a==='fb-urg'||a==='fb-size')&&S.realPhone){S.fbErr=VIEWONLY;return render()}
   if(a==='fb-urg'){const f=(S.fb||[]).find(x=>x.id===+b.dataset.id),v=+b.dataset.v;if(f){const was={urgency:f.urgency,dev_note:f.dev_note,size:f.size};f.urgency=f.urgency===v?null:v;S.fbErr=null;S.fbMsg=null;render();fbSave(f,was)}return}
