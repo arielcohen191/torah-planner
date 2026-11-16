@@ -233,6 +233,7 @@ body.pc-measure #printCards{display:block;position:absolute;left:-9999px;top:0;w
 /* לוגו כנפי רוח במקום כ״ר */
 .mark{background:#fff!important;padding:2px;box-sizing:border-box;overflow:hidden}.mark img{width:100%;height:100%;object-fit:contain;display:block}.gate-card .mark,.gate .mark,#gate .mark{width:76px;height:76px;padding:6px;border-radius:18px}
 .qdone{margin:18px 0 6px;padding:14px 16px;border:1.5px solid #9cc3a4;background:#eef8f0;border-radius:12px;line-height:1.6}
+.myq{margin:10px 0 4px;padding:10px 14px;border-radius:12px;background:#fff8e1;color:#5a4300;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;line-height:1.5}.myq-go{font:inherit;font-weight:700;border:0;border-radius:10px;padding:8px 14px;background:#1c4f8a;color:#fff;cursor:pointer}.myq-go:focus-visible{outline:3px solid #f2b705;outline-offset:2px}.myq.ok{background:rgba(255,255,255,.18);color:inherit;font-size:.92em}.myq.ok a{color:inherit;text-decoration:underline}
 </style>
 </head>
 <body class="proj">
@@ -265,7 +266,7 @@ body.pc-measure #printCards{display:block;position:absolute;left:-9999px;top:0;w
     <div class="content">
       <div class="hero">
         <div class="quote">"כי על ידי שמוצאין בו עוד מעט טוב, איזה נקודה טובה, ודנין אותו לכף זכות… מוציאין אותו באמת מכף חובה לכף זכות" (ליקו"מ א, רפב)</div>
-        <div id="demoTag"></div><div id="viewTag"></div>
+        <div id="demoTag"></div><div id="viewTag"></div><div id="myQTag"></div>
         <h2 id="ttl">מפת כיתה</h2>
         <div class="sub" id="subttl"></div>
         
@@ -1037,13 +1038,18 @@ function voiceDiscuss(){return VOICES.flatMap(v=>v.discuss.map(d=>({...d,by:v.na
 function voiceWorries(){return VOICES.flatMap(v=>v.worries.map(w=>({...w,by:v.name})))}
 
 qLoad=function(){};   // השאלון האישי נטען פעם אחת בכניסה (loadMyQ), לא לפי כיתה
-async function loadMyQ(){
+let MYQ_DONE=false;
+function myQTag(){const el=document.getElementById("myQTag");if(!el)return;if(!USER){el.innerHTML="";return}
+  el.innerHTML=MYQ_DONE?`<div class="myq ok">✓ השאלון האישי שלך נשמר. <a href="#" onclick="go('q');return false">לעדכון השאלון</a></div>`
+    :`<div class="myq"><b>📝 עוד לא מילאת את השאלון האישי שלך.</b> הוא עוזר להכין את הישיבה הפדגוגית. <button class="myq-go" onclick="go('q')">למילוי השאלון ←</button></div>`}
+async function loadMyQ(){MYQ_DONE=false;
   Q=blankQ();Q.who=USER.name;
   try{const r=await rpc("mk_my_q",{p_phone:SES.phone,p_pin:SES.pin});
     if(r&&!r.error){const a=r.part_a||{};Q.cls.worries=a.worries||[];Q.cls.discuss=a.discuss||[];Q.cls.bright=a.bright||"";Q.cls.needs=a.needs||"";
-      Q.who=a.who||USER.name;Q.date=a.date||Q.date;if(r.part_b)Q.me=Object.assign(Q.me,r.part_b);}
+      Q.who=a.who||USER.name;Q.date=a.date||Q.date;if(r.part_b)Q.me=Object.assign(Q.me,r.part_b);
+      MYQ_DONE=!!(r.updated_at||Object.keys(a).length||(r.part_b&&Object.keys(r.part_b).length));}
   }catch(e){}
-  renderQForm();
+  renderQForm();myQTag();
 }
 qSave=function(){
   const st=document.getElementById("qstat");if(st)st.textContent="שומר…";
@@ -1092,7 +1098,7 @@ function qDone(b){const m=document.getElementById("qdoneMsg");b.disabled=true;m.
   setTimeout(()=>{const t=(document.getElementById("qstat")||{}).textContent||"";b.disabled=false;
     m.textContent=/⚠/.test(t)?t:"✓ השאלון נשמר. תודה! אפשר לסגור את העמוד.";
     try{(USER.classes||[]).forEach(c=>{if(c.class_name==CUR_CLASS)c.has_q=true});renderClassList()}catch(e){}},1600)}
-{const _qs=qSave;qSave=function(){if(Q&&Q.me)meNorm();return _qs.apply(this,arguments)}}
+{const _qs=qSave;qSave=function(){if(Q&&Q.me)meNorm();if(!MYQ_DONE){MYQ_DONE=true;myQTag()}return _qs.apply(this,arguments)}}
 renderQForm=function(){
   if(!Q||!USER)return;meNorm();const c=Q.cls,m=Q.me;
   const worries=c.worries.map((w,i)=>`<div class="qitem">
