@@ -152,6 +152,8 @@
       case 'tasks_delete':{const i=TODO.findIndex(y=>y.id===a.p_id);if(i>=0)TODO.splice(i,1);return null}
       case 'mk_check_phone':return {status:'pin'};
       case 'mk_login':case 'mk_create_pin':return a.p_pin===PIN||a.p_new_pin?{name:'נועם ישראלי',role:'teacher',class_name:CLS,classes:[{class_name:CLS,has_data:true,teacher:'נועם ישראלי'},{class_name:CLS2,has_data:true,teacher:'מחנך ה׳8',limited:true},{class_name:CLS3,has_data:true,teacher:'מחנך ה׳9',limited:true}],can_manage:false}:{error:'bad'};
+      case 'mk_notes_get':{let n={};try{n=JSON.parse(sessionStorage.getItem('kr_demo_notes')||'{}')}catch(e){}return {notes:n[a.p_class]||{}}}
+      case 'mk_note_save':{let n={};try{n=JSON.parse(sessionStorage.getItem('kr_demo_notes')||'{}')}catch(e){}n[a.p_class]=n[a.p_class]||{};if((a.p_note||'').trim())n[a.p_class][a.p_student]=a.p_note;else delete n[a.p_class][a.p_student];try{sessionStorage.setItem('kr_demo_notes',JSON.stringify(n))}catch(e){}return {ok:true}}
       case 'mk_shiluv_pick':try{sessionStorage.setItem('kr_demo_pick',JSON.stringify(a.p_students||[]))}catch(e){}return {ok:true,n:(a.p_students||[]).length};
       case 'mk_get':if(a.p_class===CLS3){ /* כיתת הדגמה למורה שילוב: בוחרים תלמידים בכניסה הראשונה */
           let pick=null;try{pick=JSON.parse(sessionStorage.getItem('kr_demo_pick'))}catch(e){}

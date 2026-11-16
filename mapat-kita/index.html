@@ -237,6 +237,7 @@ body.pc-measure #printCards{display:block;position:absolute;left:-9999px;top:0;w
 .as-l{display:grid;gap:6px;max-height:60vh;overflow:auto}.as-i{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:right;font:inherit;padding:10px 12px;border:1px solid #d5dce5;border-radius:10px;background:#fff;cursor:pointer}.as-i span{font-size:13px;opacity:.75}.as-i:hover,.as-i:focus-visible{border-color:#2f7fd6;background:#f2f7fd}
 .ch.lock,.ch.on.lock{cursor:default;background:#eef1f5;color:#2b3440;border-color:#c9d1db}.rgroup{display:flex;gap:8px;align-items:baseline;margin:4px 0}.rglab{min-width:84px;font-size:13px;font-weight:700;opacity:.7}.rgroup .chips{margin:0}
 body.loading-class .view{opacity:.35;pointer-events:none;transition:opacity .15s}
+.mynote{margin:10px 0 14px;padding:10px 12px;border:1.5px dashed #c9b26b;border-radius:12px;background:#fffbea}.mynote textarea{width:100%;min-height:70px;margin:6px 0 2px;font:inherit}
 </style>
 </head>
 <body class="proj">
@@ -555,7 +556,7 @@ function renderMap(){
   document.getElementById("fsel").value=STATE.filter&&!/\d$/.test(STATE.filter)?STATE.filter:"";
   document.getElementById("fbadge").innerHTML=STATE.filter?`<span class="fbadge" onclick="STATE.filter=null;renderMap()">${FILTERS[STATE.filter].n} · ${L.length} ✕</span>`:"";
   const th=`<tr><th onclick="STATE.sort=null;renderMap()" class="${!STATE.sort?'sorted':''}">תלמיד</th>${DOMAINS.map(d=>`<th class="${STATE.sort==d.id?'sorted':''}" onclick="STATE.sort='${d.id}';renderMap()">${d.short}</th>`).join("")}<th class="${STATE.sort=='risk'?'sorted':''}" onclick="STATE.sort='risk';renderMap()">מוקדים</th><th>מענים</th><th>רקע</th></tr>`;
-  const rows=L.map(s=>`<tr><td class="nm" onclick="openS(${s.i})"><small>${s.num}</small>${esc(s.name)}${voiceDiscuss().some(d=>d.stu==s.name)?' <span title="המחנך ביקש לדון">⭐</span>':""}</td>${DOMAINS.map(d=>{const x=s.dom[d.id];return cell(x.score,d.name+(x.txt?": "+x.txt:"")+` (${x.filled}/${x.total} מדדים מולאו)`)}).join("")}
+  const rows=L.map(s=>`<tr><td class="nm" onclick="openS(${s.i})"><small>${s.num}</small>${esc(s.name)}${voiceDiscuss().some(d=>d.stu==s.name)?' <span title="המחנך ביקש לדון">⭐</span>':""}${NOTES[s.name]?' <span title="יש לך הערה על התלמיד">✎</span>':""}</td>${DOMAINS.map(d=>{const x=s.dom[d.id];return cell(x.score,d.name+(x.txt?": "+x.txt:"")+` (${x.filled}/${x.total} מדדים מולאו)`)}).join("")}
    <td style="font-size:12.5px;white-space:nowrap">${s.reds.length?`<b style="color:var(--bad)">${s.reds.length} אדום</b>`:""}${s.reds.length&&s.ambers.length?"<br>":""}${s.ambers.length?`<span style="color:#a87a1e">${s.ambers.length} צהוב</span>`:""}</td>
    <td style="font-size:12px">${s.maane.map(esc).join("<br>")}</td>
    <td><div class="flags">${s.flags.map(f=>`<span class="flag ${f.s?'s sens':''}">${esc(f.t)}</span>`).join("")}</div></td></tr>`).join("");
@@ -617,6 +618,8 @@ function cardBody(s){
 function openS(i){CUR=i;const s=STATE.rows[i];const L=list();const pos=L.findIndex(x=>x.i==i);
   document.getElementById("modal").innerHTML=`<div class="mh"><div class="mhs">${photoOf(s)?`<img class="sph" src="${photoOf(s)}" alt="תמונה של ${esc(s.name)}">`:""}<div><div style="opacity:.8;font-size:13px">${STATE.cls} · תלמיד ${s.num}</div><h3>${esc(s.name)}</h3>${photoCtl(i)}</div></div>
    <div class="nav2"><button onclick="step(-1)" ${pos<=0?'disabled':''}>→ הקודם</button><button onclick="step(1)" ${pos>=L.length-1?'disabled':''}>הבא ←</button><button onclick="closeS()">✕</button></div></div>
+   <div class="mynote"><label for="myNote"><b>✎ ההערות שלי</b> <span class="hint" style="margin:0">· רק את/ה רואה אותן, נשמר אוטומטית</span></label>
+     <textarea id="myNote" maxlength="4000" placeholder="מחשבות, דברים לבדוק, מה עלה בישיבה…" oninput="noteSave(this.value)">${esc(NOTES[s.name]||"")}</textarea><span id="noteSt" class="hint" role="status" style="margin:0"></span></div>
    ${cardBody(s)}`;
   document.getElementById("ov").classList.add("on");
 }
@@ -950,6 +953,11 @@ function renderClassList(){
   document.getElementById("classList").innerHTML=ord.map((c,i)=>(USER.shiluv&&c.pick_n===0&&(i===0||ord[i-1].pick_n!==0)?'<h6 style="margin:10px 0 4px;opacity:.7">כיתות שאינך מלמד/ת בהן</h6>':'')+`<button style="${c.pick_n===0?'opacity:.55':''}"  data-c="${esc(c.class_name)}" class="${c.class_name==CUR_CLASS?'on':''}" onclick="openClass(this.dataset.c)" title="${c.teacher?esc(c.teacher):'לא שויך מחנך'}">
     <span>${esc(c.class_name)}${'pick_n' in c?tag(c):c.view==="subject"||c.limited?' <small style="opacity:.75">· מקצועי</small>':""}</span><i class="dot ${c.has_data?'ok':''}" title="${c.has_data?'יש נתונים':'אין עדיין נתונים'}"></i>${c.has_q?'<i class="qd" title="השאלון מולא">📝</i>':''}</button>`).join("");
 }
+let NOTES={},_noteT=null;
+async function loadNotes(c,my){try{const r=await rpc("mk_notes_get",{p_phone:SES.phone,p_pin:SES.pin,p_class:c});if(my===OPEN_REQ&&r&&r.notes){NOTES=r.notes;renderMap()}}catch(e){}}
+function noteSave(v){const s=STATE.rows[CUR];if(!s)return;const name=s.name,cls=STATE.cls,st=document.getElementById("noteSt");
+  if(v.trim())NOTES[name]=v;else delete NOTES[name];if(st)st.textContent="…";clearTimeout(_noteT);
+  _noteT=setTimeout(async()=>{try{const r=await rpc("mk_note_save",{p_phone:SES.phone,p_pin:SES.pin,p_class:cls,p_student:name,p_note:v});const e=document.getElementById("noteSt");if(e)e.textContent=r&&r.ok?"✓ נשמר":"⚠ לא נשמר"}catch(x){const e=document.getElementById("noteSt");if(e)e.textContent="⚠ לא נשמר, בדקו חיבור"}},700)}
 let OPEN_REQ=0;
 async function openClass(c){
   const my=++OPEN_REQ;   // לחיצות מהירות: רק התשובה של הכיתה האחרונה שנבחרה נטענת
@@ -957,7 +965,7 @@ async function openClass(c){
   document.getElementById("ttl").textContent="טוען את "+c+"…";document.getElementById("subttl").textContent="";
   document.body.classList.add("loading-class");
   let d;try{d=await rpc("mk_get",{p_phone:SES.phone,p_pin:SES.pin,p_class:c})}catch(e){if(my!==OPEN_REQ)return;document.body.classList.remove("loading-class");showNoClass("אין חיבור לשרת כרגע.");return}
-  if(my!==OPEN_REQ)return;document.body.classList.remove("loading-class");
+  if(my!==OPEN_REQ)return;document.body.classList.remove("loading-class");NOTES={};loadNotes(c,my);
   if(d.error){if(d.error==="bad"||d.error==="locked"){logout();return}showNoClass(ERR[d.error]||d.error);return}
   VOICES=d.voices||[];applyView(d);loadPhotos(d.class_name||c);window._pick=d.shiluv?{cls:d.class_name,roster:d.roster||[],picked:d.picked||[]}:null;
   if(d.shiluv&&d.pick_set&&!(d.picked||[]).length){load([],d.class_name,d.teacher||"");document.getElementById("subttl").textContent="";return}

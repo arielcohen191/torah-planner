@@ -204,6 +204,7 @@ input[type=tel]{min-height:56px;border:1.5px solid #c9d1db;border-radius:var(--r
 .camdlg{border:0;border-radius:var(--r-lg);padding:0;width:min(640px,calc(100vw - 24px));box-shadow:0 20px 60px rgba(20,30,50,.35);color:var(--ink);font-family:inherit;direction:rtl}
 .camdlg::backdrop{background:rgba(20,28,38,.6)}.cambox{display:flex;flex-direction:column;gap:12px;padding:20px}
 .camdlg video{width:100%;max-height:60vh;background:#111;border-radius:var(--r-md);aspect-ratio:4/3;object-fit:contain}
+.fbmsg{margin:6px 0;padding:6px 10px;border-radius:8px;background:#f2f4f7;font-size:14px}.fbmsg.dev{background:#e8f1fb}.fbrep textarea{width:100%;min-height:70px;margin:6px 0}
 .fbshot img{display:block;max-width:100%;max-height:70vh;margin:8px 0;border:1px solid #c9d1db;border-radius:10px}
 </style>
 </head>
@@ -1210,6 +1211,7 @@ function fbReport(){
       g.filter(x=>x.tool===tool).sort((a,b)=>(a.size||9)-(b.size||9)||a.id-b.id).forEach(x=>{
         L.push('','**#'+x.id+' · '+(FBK[x.kind]||FBK.bug)[0]+'** · '+x.name+' · '+fbDate(x)+' · '+FBS[x.status]+' · גודל: '+(FBZ[x.size]||'לא הוגדר')+(x.sender_urgency&&FBU[x.sender_urgency]?' · לפי השולח: '+FBU[x.sender_urgency][0]:'')+(x.page?' · `'+x.page+'`':'')+(x.has_shot?' · 📷 יש צילום מסך':''),'',
           String(x.body).split('\n').map(l=>'> '+l).join('\n'));
+        (x.msgs||[]).forEach(m=>L.push('','↳ '+(m.dev?'תשובת מפתח':m.name||'השולח')+': '+String(m.body).replace(/\n/g,' ')));
         if(x.dev_note)L.push('','הערת מפתח: '+x.dev_note)})})});
   return L.join('\n')+'\n';
 }
@@ -1235,7 +1237,8 @@ function viewFeedback(){
   const b=list.length?list.map(x=>{const k=FBK[x.kind]||FBK.bug,u=x.urgency||0;
     const head=u!==last?'<h3 style="margin:14px 0 6px">'+(u?FBU[u][0]:'ממתינים לדירוג')+' ('+list.filter(y=>(y.urgency||0)===u).length+')</h3>':'';last=u;
     return head+'<div class="item '+(u===1?'s-open':u===2?'s-asking':u===3?'s-info':'')+'"><div class="t"><b><span class="tag '+k[1]+'">'+k[0]+'</span> '+esc(x.tool)+' <span class="small muted">#'+x.id+'</span>'+(x.sender_urgency&&FBU[x.sender_urgency]?' <span class="tag '+FBU[x.sender_urgency][1]+'">לפי השולח: '+FBU[x.sender_urgency][0]+'</span>':'')+'</b><span class="small muted">'+esc(x.name)+' · '+fbDate(x)+' · '+FBS[x.status]+'</span></div>'+
-      '<div class="fbbody">'+esc(x.body)+'</div>'+(x.page?'<div class="small muted" dir="ltr" style="text-align:right">'+esc(x.page)+'</div>':'')+(x.has_shot?((S.fbShots||{})[x.id]?'<div class="fbshot"><img src="'+S.fbShots[x.id]+'" alt="צילום מסך שצורף למשוב #'+x.id+'"><div class="chips"><a class="btn sec sm" download="feedback-'+x.id+'.jpg" href="'+S.fbShots[x.id]+'">הורדת הצילום</a><button class="btn sec sm" data-act="fb-shot" data-id="'+x.id+'">הסתרה</button></div></div>':'<div class="chips"><button class="btn sec sm" data-act="fb-shot" data-id="'+x.id+'">📷 הצגת צילום המסך</button></div>'):'')+
+      '<div class="fbbody">'+esc(x.body)+'</div>'+(x.page?'<div class="small muted" dir="ltr" style="text-align:right">'+esc(x.page)+'</div>':'')+(x.msgs||[]).map(m=>'<div class="fbmsg'+(m.dev?' dev':'')+'"><b>'+(m.dev?'תשובה שלי':esc(m.name||'השולח'))+':</b> '+esc(m.body)+'</div>').join('')+
+      (S.fbRep===x.id?'<div class="fbrep"><textarea id="fbRepTxt" maxlength="2000" aria-label="תשובה לשולח" placeholder="התשובה תופיע לשולח ב׳הפניות הקודמות שלי׳"></textarea><div class="chips"><button class="btn sm" data-act="fb-rep-send" data-id="'+x.id+'">שליחת תשובה</button><button class="btn sec sm" data-act="fb-rep" data-id="">ביטול</button></div></div>':'<div class="chips"><button class="btn sec sm" data-act="fb-rep" data-id="'+x.id+'">↩ תשובה לשולח</button></div>')+(x.has_shot?((S.fbShots||{})[x.id]?'<div class="fbshot"><img src="'+S.fbShots[x.id]+'" alt="צילום מסך שצורף למשוב #'+x.id+'"><div class="chips"><a class="btn sec sm" download="feedback-'+x.id+'.jpg" href="'+S.fbShots[x.id]+'">הורדת הצילום</a><button class="btn sec sm" data-act="fb-shot" data-id="'+x.id+'">הסתרה</button></div></div>':'<div class="chips"><button class="btn sec sm" data-act="fb-shot" data-id="'+x.id+'">📷 הצגת צילום המסך</button></div>'):'')+
       '<div class="chips" role="group" aria-label="דחיפות"><span class="small muted">דחיפות:</span>'+[1,2,3].map(n=>'<button class="btn sec sm" data-act="fb-urg" data-id="'+x.id+'" data-v="'+n+'" aria-pressed="'+(u===n)+'">'+FBU[n][0]+'</button>').join('')+'</div>'+
       '<div class="chips" role="group" aria-label="גודל העבודה" style="margin-top:8px"><span class="small muted">גודל:</span>'+[1,2,3].map(n=>'<button class="btn sec sm" data-act="fb-size" data-id="'+x.id+'" data-v="'+n+'" aria-pressed="'+(x.size===n)+'">'+FBZ[n]+'</button>').join('')+'</div>'+
       '<label class="small muted" style="display:block;margin-top:8px">הערת מפתח (נכנסת לדוח)<textarea data-fbnote="'+x.id+'" maxlength="1000" rows="2" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;font:inherit;font-size:16px;color:var(--ink);border:1.5px solid #c9d1db;border-radius:10px;padding:8px 10px">'+esc(x.dev_note||'')+'</textarea></label>'+
@@ -1361,6 +1364,9 @@ root.addEventListener('click',e=>{
   if(a==='mk-list'){S.mkList=S.mkList===b.dataset.v?null:b.dataset.v;return render()}
   if(a==='hr-new-cancel'){S.hrNew=null;return render()}
   if(a==='hr-new-save'){const n=(document.getElementById('hrNewName')||{}).value||'';if(!n.trim()){S.adminErr='נא לכתוב את שם המחנך/ת.';return render()}S.hrNew=null;return adminDo('hanhala_admin_add_homeroom',{p_class:b.dataset.c,p_name:n.trim()},true)}
+  if(a==='fb-rep'){S.fbRep=b.dataset.id?+b.dataset.id:null;render();const t=document.getElementById('fbRepTxt');if(t)t.focus();return}
+  if(a==='fb-rep-send'){const t=document.getElementById('fbRepTxt'),id=+b.dataset.id;if(!t||!t.value.trim())return;b.disabled=true;
+    rpc('hanhala_feedback_reply',{p_phone:S.phone,p_id:id,p_body:t.value.trim()}).then(()=>{const x=(S.fb||[]).find(f=>f.id===id);if(x){x.msgs=(x.msgs||[]).concat([{dev:true,body:t.value.trim()}])}S.fbRep=null;render()}).catch(()=>{b.disabled=false;S.fbErr='התשובה לא נשלחה. נסו שוב.';render()});return}
   if(a==='fb-shot'){const id=+b.dataset.id;S.fbShots=S.fbShots||{};if(S.fbShots[id]){delete S.fbShots[id];return render()}b.disabled=true;b.textContent='טוען…';rpc('hanhala_feedback_shot',{p_phone:S.phone,p_id:id}).then(d=>{if(d&&/^data:image\//.test(d))S.fbShots[id]=d;else S.fbErr='הצילום לא נמצא.';render()}).catch(()=>{S.fbErr='הצילום לא נטען. נסו שוב.';render()});return}
   if(a==='fb-filter'){S.fbFilter=S.fbFilter===b.dataset.v?null:b.dataset.v;return render()}
   if((a==='fb-set'||a==='fb-urg'||a==='fb-size')&&S.realPhone){S.fbErr=VIEWONLY;return render()}

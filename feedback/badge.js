@@ -27,7 +27,7 @@
   '.kfb-dlg h2{margin:0;font-size:20px}.kfb-dlg p{margin:0;color:#5b6878;font-size:15px}'+
   '.kfb-dlg label{display:flex;flex-direction:column;gap:5px;font-weight:600;font-size:15px}'+
   '.kfb-dlg input,.kfb-dlg textarea{font:400 16px Heebo,Assistant,system-ui,sans-serif;border:1.5px solid #c9d1db;border-radius:10px;padding:10px 12px;background:#fff;color:inherit;width:100%;box-sizing:border-box}'+
-  '.kfb-dlg textarea{min-height:110px;resize:vertical}'+'.kfb-file{display:inline-flex!important;align-items:center;gap:6px;cursor:pointer;border:1.5px dashed #9aa7b6;border-radius:10px;padding:10px 12px;font-weight:500}.kfb-file input{position:absolute;opacity:0;width:1px;height:1px}.kfb-file:focus-within{outline:3px solid #2f7fd6}.kfb-prev{display:flex;align-items:center;gap:10px;margin-top:8px}.kfb-prev button{font:500 15px Heebo,Assistant,system-ui,sans-serif;border:1.5px solid #c9d1db;background:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;color:inherit}.kfb-prev img{max-height:90px;max-width:140px;border:1px solid #c9d1db;border-radius:8px}'+
+  '.kfb-dlg textarea{min-height:110px;resize:vertical}'+'.kfb-m{margin:6px 0 0;padding:6px 10px;border-radius:8px;background:#f2f4f7;font-size:14px}.kfb-m.dev{background:#e8f1fb}.kfb-rep{margin-top:6px}.kfb-rep textarea{min-height:60px}.kfb-rs{font-size:13px;opacity:.8}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}'+'.kfb-file{display:inline-flex!important;align-items:center;gap:6px;cursor:pointer;border:1.5px dashed #9aa7b6;border-radius:10px;padding:10px 12px;font-weight:500}.kfb-file input{position:absolute;opacity:0;width:1px;height:1px}.kfb-file:focus-within{outline:3px solid #2f7fd6}.kfb-prev{display:flex;align-items:center;gap:10px;margin-top:8px}.kfb-prev button{font:500 15px Heebo,Assistant,system-ui,sans-serif;border:1.5px solid #c9d1db;background:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;color:inherit}.kfb-prev img{max-height:90px;max-width:140px;border:1px solid #c9d1db;border-radius:8px}'+
   '.kfb-dlg input:focus,.kfb-dlg textarea:focus{outline:3px solid #2f7fd6;outline-offset:1px;border-color:#2f7fd6}'+
   '.kfb-kinds{display:flex;flex-wrap:wrap;gap:8px;border:0;margin:0;padding:0}.kfb-kinds legend{font-weight:600;font-size:15px;margin-bottom:6px;padding:0}'+
   '.kfb-kinds label{flex-direction:row;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1.5px solid #c9d1db;border-radius:10px;font-weight:500;cursor:pointer}'+
@@ -82,6 +82,11 @@
     function shrink(file){return new Promise(function(ok,no){var u=URL.createObjectURL(file),im=new Image();im.onload=function(){var m=1600,w=im.naturalWidth,h=im.naturalHeight,r=Math.min(1,m/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.round(w*r);c.height=Math.round(h*r);var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);var q=.8,d=c.toDataURL('image/jpeg',q);while(d.length>850000&&q>.3){q-=.15;d=c.toDataURL('image/jpeg',q)}d.length>850000?no():ok(d)};im.onerror=function(){URL.revokeObjectURL(u);no()};im.src=u})}
     d.addEventListener('change',function(e){if(e.target.name!=='shot')return;var f=e.target.files&&e.target.files[0],pv=d.querySelector('.kfb-prev'),err=d.querySelector('.kfb-err');SHOT=null;pv.hidden=true;pv.innerHTML='';if(!f)return;
       shrink(f).then(function(x){SHOT=x;pv.innerHTML='<img src="'+x+'" alt="הצילום שיצורף"><button type="button" class="sec" data-unshot>הסרת הצילום</button>';pv.hidden=false}).catch(function(){e.target.value='';err.textContent='לא הצלחנו לקרוא את התמונה. נסו צילום אחר.';err.hidden=false})});
+    function repBox(w){w.innerHTML='<label class="kfb-row" style="margin:6px 0 0"><span class="sr">הוספה לפנייה</span><textarea maxlength="2000" placeholder="מה עוד חשוב לדעת? (הפנייה תיפתח מחדש)"></textarea></label><div class="kfb-act" style="margin-top:6px"><button type="button" data-repsend>שליחה</button><span class="kfb-rs" role="status"></span></div>';w.querySelector('textarea').focus()}
+    function repSend(w){var t=w.querySelector('textarea'),rs=w.querySelector('.kfb-rs'),bt=w.querySelector('[data-repsend]');if(!t.value.trim()){t.focus();return}
+      bt.disabled=true;rs.textContent='שולח…';call('feedback_reply',{id:+w.dataset.id,body:t.value,phone:myPhone(),token:token()}).then(function(){
+        var li=w.closest('li'),m=document.createElement('div');m.className='kfb-m';m.innerHTML='<b>אני:</b> '+esc(t.value);w.before(m);w.innerHTML='<span class="kfb-rs">נשלח. הפנייה נפתחה מחדש.</span>'})
+      .catch(function(){bt.disabled=false;rs.textContent='לא נשלח. נסו שוב.'})}
     function mine(){
       d.innerHTML='<form method="dialog"><h2 id="kfb-t">הפניות הקודמות שלי</h2><p role="status">טוען…</p><div class="kfb-act"><button type="button" class="sec" data-new>פנייה חדשה</button><button type="button" class="sec" data-close>סגירה</button></div></form>';
       var st=d.querySelector('p');
@@ -90,12 +95,14 @@
         st.textContent=list.length===1?'פנייה אחת':list.length+' פניות';
         var ul=document.createElement('ul');ul.className='kfb-list';
         ul.innerHTML=list.map(function(x){var s=STAT[x.status]||STAT.new,dt=new Date(x.created_at);
-          return '<li><div class="h"><span>'+esc(KIND[x.kind]||'')+' · '+esc(x.tool)+' · '+dt.getDate()+'.'+(dt.getMonth()+1)+'</span><span class="st" style="color:'+s[1]+'">'+s[0]+'</span></div><div class="b">'+esc(x.body)+'</div></li>'}).join('');
+          return '<li><div class="h"><span>'+esc(KIND[x.kind]||'')+' · '+esc(x.tool)+' · '+dt.getDate()+'.'+(dt.getMonth()+1)+'</span><span class="st" style="color:'+s[1]+'">'+s[0]+'</span></div><div class="b">'+esc(x.body)+'</div>'+
+            (x.msgs||[]).map(function(m){return '<div class="kfb-m'+(m.dev?' dev':'')+'"><b>'+(m.dev?'תשובה':'אני')+':</b> '+esc(m.body)+'</div>'}).join('')+
+            '<div class="kfb-rep" data-id="'+x.id+'"><button type="button" class="sec" data-rep>המשך התכתבות</button></div></li>'}).join('');
         st.after(ul);
       }).catch(function(){st.textContent='הפניות לא נטענו. בדקו את החיבור ונסו שוב.'});
     }
     b.addEventListener('click',function(){form();d.showModal();d.querySelector('textarea').focus()});
-    d.addEventListener('click',function(e){if(e.target.closest('[data-unshot]')){SHOT=null;var i=d.querySelector('[name=shot]');if(i)i.value='';var pv=d.querySelector('.kfb-prev');pv.hidden=true;pv.innerHTML='';return}if(e.target.closest('[data-mine]'))return mine();if(e.target.closest('[data-new]')){form();d.querySelector('textarea').focus();return}if(e.target.closest('[data-close]')||e.target===d)d.close()});
+    d.addEventListener('click',function(e){if(e.target.closest('[data-unshot]')){SHOT=null;var i=d.querySelector('[name=shot]');if(i)i.value='';var pv=d.querySelector('.kfb-prev');pv.hidden=true;pv.innerHTML='';return}if(e.target.closest('[data-rep]'))return repBox(e.target.closest('.kfb-rep'));if(e.target.closest('[data-repsend]'))return repSend(e.target.closest('.kfb-rep'));if(e.target.closest('[data-mine]'))return mine();if(e.target.closest('[data-new]')){form();d.querySelector('textarea').focus();return}if(e.target.closest('[data-close]')||e.target===d)d.close()});
     d.addEventListener('submit',function(e){
       e.preventDefault();var f=e.target,err=f.querySelector('.kfb-err'),btn=f.querySelector('button[type=submit]');
       var body=f.body.value.trim(),name=f.name.value.trim(),phone=f.phone.value.trim();
