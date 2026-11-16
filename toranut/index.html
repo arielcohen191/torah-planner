@@ -131,6 +131,12 @@ html.print-yards #yardsCard{padding:0}
  html.print-yards *{-webkit-print-color-adjust:exact;print-color-adjust:exact}html.print-yards .tablewrap{overflow:visible}}
 @media print{nav.rail,.noprint,.toast{display:none!important}main{padding:0}body{background:#fff;font-size:12px}.card{box-shadow:none;padding:0;margin-bottom:12px;break-inside:avoid}
  table.grid{font-size:11px;min-width:0}table.grid thead th{background:#ddd;color:#000}td.cell.empty{background:#fff}td.cell .lk{display:none}}
+#ppPrint{display:none}
+@media print{html.print-pp .app,html.print-pp .modal,html.print-pp .toast{display:none!important}html.print-pp #ppPrint{display:block}
+ #ppPrint .pp{break-after:page;page-break-after:always}#ppPrint .pp:last-child{break-after:auto;page-break-after:auto}
+ #ppPrint .pp-h h1{font-size:18px;margin:0 0 4px}#ppPrint .pp-h p{margin:2px 0;font-size:12px}#ppPrint .pp-h ul{margin:4px 0 10px;padding-inline-start:18px;font-size:12px;columns:2}
+ #ppPrint .noprint{display:none!important}#ppPrint .card{box-shadow:none;padding:0;margin-bottom:8px;break-inside:avoid}#ppPrint .grid{font-size:10px}
+ #ppPrint td.cell.me{background:#fff!important;box-shadow:inset 0 0 0 3px #000!important;font-weight:800;color:#000}#ppPrint td.cell.me::before{content:"★ "}}
 </style>
 </head>
 <body>
@@ -336,6 +342,20 @@ function focusCard(){
     }).join('')+'</tr>').join('')+'</tbody></table></div></div>';
   return h;
 }
+/* הדפסה אישית: הלוח כולו לכל איש צוות, והתורנויות שלו מסומנות (★ ומסגרת שחורה, מתאים להדפסה בשחור-לבן) */
+function myDuties(id){const A=curAssign(),out=[];
+  Object.keys(A).forEach(k=>{if(A[k]!==id)return;const [sh,d,st]=k.split('@'),S1=shiftOf(sh),St=stOf(st);if(!S1||!St)return;out.push({o:+d*100+S.cfg.shifts.indexOf(S1),t:D[+d]+' · '+S1.label+' · '+St.name})});
+  return out.sort((a,b)=>a.o-b.o).map(x=>x.t)}
+function personalHtml(id){const P=byId(),p=P[id];if(!p)return '';
+  const keep={f:S.focus,t:S.shiftTab,c:S.printClean,e:S.onlyEmpty};S.focus=id;S.shiftTab='all';S.printClean=true;S.onlyEmpty=false;S.ppMode=true;
+  let b='';try{b=viewBoard()}finally{S.focus=keep.f;S.shiftTab=keep.t;S.printClean=keep.c;S.onlyEmpty=keep.e;S.ppMode=false}
+  const L=myDuties(id);
+  return '<section class="pp"><div class="pp-h"><h1>לוח התורנויות · '+esc(p.name)+'</h1><p>התורנויות שלך מסומנות ב־★ ובמסגרת עבה:</p>'+(L.length?'<ul>'+L.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p>אין לך תורנויות בלוח הקבוע.</p>')+'</div>'+b+'</section>'}
+function printPersonal(ids){ids=ids.filter(Boolean);if(!ids.length){toast('אין למי להדפיס.');return}
+  let w=document.getElementById('ppPrint');if(!w){w=document.createElement('div');w.id='ppPrint';document.body.appendChild(w)}
+  w.innerHTML=ids.map(personalHtml).join('');document.documentElement.classList.add('print-pp');
+  const done=()=>{document.documentElement.classList.remove('print-pp');w.innerHTML='';window.removeEventListener('afterprint',done)};
+  window.addEventListener('afterprint',done);setTimeout(()=>{window.print();setTimeout(done,500)},60)}
 function viewBoard(){
   const P=byId(),A=curAssign(),LK=S.data.plan.locked||{},F=S.focus&&P[S.focus]?P[S.focus]:null;
   const tabs=S.cfg.shifts.map(sh=>'<button data-act="tab" data-t="'+sh.id+'" aria-pressed="'+(S.shiftTab===sh.id)+'">'+esc(sh.label)+'</button>').join('')+'<button data-act="tab" data-t="all" aria-pressed="'+(S.shiftTab==='all')+'">הכול (להדפסה)</button>';
@@ -343,21 +363,21 @@ function viewBoard(){
   const EK=new Set(emptyKeys());if(S.onlyEmpty)show=show.filter(sh=>[...EK].some(k=>k.startsWith(sh.id+'@')));
   const R2=S.R.people.reduce((m,p)=>(m[p.id]=p,m),{});
   const people=S.data.staff.filter(s=>!prof(s.id).excluded).slice().sort((a,b)=>a.name.localeCompare(b.name,'he'));
-  let h='<div class="card topbar noprint"><div><h1>לוח תורנויות</h1><div class="muted small">לחיצה על משבצת: החלפת תורן. שיבוץ ידני ננעל ונשמר בהרצה הבאה.</div></div><div class="row"><button class="btn sm" data-act="print" title="הלוח הקבוע, בלי נעדרים ומחליפים של היום">הדפסה לפרסום</button><button class="btn sec sm" data-act="printNow" title="כולל הנעדרים והמחליפים של היום">הדפסת מצב היום</button><button class="btn sec sm" data-act="csv">הורדה לאקסל</button></div></div>'+
+  let h='<div class="card topbar noprint"><div><h1>לוח תורנויות</h1><div class="muted small">לחיצה על משבצת: החלפת תורן. שיבוץ ידני ננעל ונשמר בהרצה הבאה.</div></div><div class="row"><button class="btn sm" data-act="print" title="הלוח הקבוע, בלי נעדרים ומחליפים של היום">הדפסה לפרסום</button><button class="btn sec sm" data-act="printNow" title="כולל הנעדרים והמחליפים של היום">הדפסת מצב היום</button><button class="btn sec sm" data-act="ppAll" title="דף לכל איש צוות: הלוח כולו, והתורנויות שלו מסומנות">הדפסה אישית לכל הצוות</button><button class="btn sec sm" data-act="csv">הורדה לאקסל</button></div></div>'+
     '<div class="card noprint focusbar"><label for="focusSel"><b>תצוגה לפי איש צוות</b></label><select id="focusSel" data-ch="focus"><option value="">— כל הצוות —</option>'+
       people.map(s=>'<option value="'+s.id+'"'+(F&&F.id===s.id?' selected':'')+'>'+esc(s.name)+' ('+R2[s.id].got+'/'+R2[s.id].target+')</option>').join('')+'</select>'+
-      (F?'<button class="btn sec sm" data-act="focusPrev">‹ הקודם</button><button class="btn sec sm" data-act="focusNext">הבא ›</button><button class="btn sec sm" data-act="unfocus">ניקוי</button>':'')+'</div>'+
-    (F?focusCard():'')+
+      (F?'<button class="btn sec sm" data-act="focusPrev">‹ הקודם</button><button class="btn sec sm" data-act="focusNext">הבא ›</button><button class="btn sec sm" data-act="unfocus">ניקוי</button><button class="btn sm" data-act="ppOne">הדפסה אישית ל'+esc(F.name)+'</button>':'')+'</div>'+
+    (F&&!S.ppMode?focusCard():'')+
     '<div class="row noprint"><div class="tabs">'+tabs+'</div>'+(EK.size||S.onlyEmpty?'<label class="chip" style="background:#fdecea;border-color:#f3b4ae"><input type="checkbox" data-ch="onlyEmpty"'+(S.onlyEmpty?' checked':'')+'> רק משבצות חסרות ('+EK.size+')</label>'+(EK.size?'<button class="btn sm" data-act="kFix" style="background:var(--red)">לאייש את הבאה</button>':''):'')+'</div>'+
     (S.onlyEmpty&&!EK.size?'<div class="card"><p style="color:var(--green);font-weight:600;margin:0">כל העמדות מאוישות.</p></div>':'');
   show.forEach(sh=>{
     const sts=S.cfg.stations.filter(st=>st.shifts.includes(sh.id)&&(!S.onlyEmpty||[0,1,2,3,4,5].some(d=>EK.has(sh.id+'@'+d+'@'+st.id))));
-    h+='<div class="card'+(F?' focusing':'')+'"><h2>'+esc(sh.label)+'</h2><div class="tablewrap"><table class="grid"><thead><tr><th>עמדה</th>'+[0,1,2,3,4,5].map(d=>'<th>'+D[d]+'</th>').join('')+'</tr></thead><tbody>'+
+    h+='<div class="card'+(F&&!S.ppMode?' focusing':'')+'"><h2>'+esc(sh.label)+'</h2><div class="tablewrap"><table class="grid"><thead><tr><th>עמדה</th>'+[0,1,2,3,4,5].map(d=>'<th>'+D[d]+'</th>').join('')+'</tr></thead><tbody>'+
      sts.map(st=>'<tr><th class="st">'+esc(st.name)+'</th>'+[0,1,2,3,4,5].map(d=>{
        if(!sh.days.includes(d))return '<td class="cell off"></td>';
        const k=sh.id+'@'+d+'@'+st.id,sid=A[k],ly=T.stationLayer(S.cfg,st,sh,d);
        let extra='';
-       if(F){if(sid===F.id)extra=' me';else if(!mySlotAt(F.id,sh.id,d)&&!canPlace(F,sh.id,d,st.id))extra=' can'}
+       if(F){if(sid===F.id)extra=' me';else if(!S.ppMode&&!mySlotAt(F.id,sh.id,d)&&!canPlace(F,sh.id,d,st.id))extra=' can'}
        if(S.cfg.skip[k]){const m=(S.data.merges||[]).find(x=>x.key===k);return '<td class="cell merged">אוחד לפטרול עם<br>'+esc(m?(stOf(m.into.split('@')[2])||{name:''}).name.split(' (')[0]:'')+'</td>'}
        const mi=S.cfg.mergeInto[k];
        return '<td class="cell'+(sid?'':' empty')+extra+'" data-act="cell" data-k="'+k+'">'+(sid&&P[sid]?holderHtml(k,sid,P)+(LK[k]?' <span class="lk">●</span>':''):'')+(mi?'<span class="ly" style="color:var(--brand-dark)">+ פטרול גם ב'+mi.map(x=>esc(stOf(x.split('@')[2]).name.split(' (')[0])).join(', ')+'</span>':'')+(ly&&!st.floor?'<span class="ly">שכבה '+esc(ly)+'</span>':'')+'</td>'}).join('')+'</tr>').join('')+
@@ -1203,6 +1223,8 @@ root.addEventListener('click',async e=>{
   else if(a==='place'){S.modal={kind:'place',sh:b.dataset.sh,d:+b.dataset.d};render()}
   else if(a==='placeAt'){if(!b.disabled)placeFocus(b.dataset.k)}
   else if(a==='unfocus'){S.focus=null;render()}
+  else if(a==='ppOne'){printPersonal([S.focus])}
+  else if(a==='ppAll'){const A=curAssign(),has=new Set(Object.values(A));printPersonal(S.data.staff.filter(x=>!prof(x.id).excluded&&has.has(x.id)).sort((x,y)=>x.name.localeCompare(y.name,'he')).map(x=>x.id))}
   else if(a==='focusPrev'||a==='focusNext'){const L=S.data.staff.filter(s=>!prof(s.id).excluded).sort((x,y)=>x.name.localeCompare(y.name,'he'));const i=L.findIndex(s=>s.id===S.focus);S.focus=L[(i+(a==='focusNext'?1:-1)+L.length)%L.length].id;render()}
   else if(a==='focus'){S.focus=b.dataset.id;S.view='board';render();window.scrollTo(0,0)}
   else if(a==='close'){if(e.target===b||b.tagName==='BUTTON'){S.modal=null;render()}}
