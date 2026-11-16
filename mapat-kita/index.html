@@ -236,6 +236,7 @@ body.pc-measure #printCards{display:block;position:absolute;left:-9999px;top:0;w
 .myq{margin:10px 0 4px;padding:10px 14px;border-radius:12px;background:#fff8e1;color:#5a4300;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;line-height:1.5}.myq-go{font:inherit;font-weight:700;border:0;border-radius:10px;padding:8px 14px;background:#1c4f8a;color:#fff;cursor:pointer}.myq-go:focus-visible{outline:3px solid #f2b705;outline-offset:2px}.myq.ok{background:rgba(255,255,255,.18);color:inherit;font-size:.92em}.myq.ok a{color:inherit;text-decoration:underline}
 .as-l{display:grid;gap:6px;max-height:60vh;overflow:auto}.as-i{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:right;font:inherit;padding:10px 12px;border:1px solid #d5dce5;border-radius:10px;background:#fff;cursor:pointer}.as-i span{font-size:13px;opacity:.75}.as-i:hover,.as-i:focus-visible{border-color:#2f7fd6;background:#f2f7fd}
 .ch.lock,.ch.on.lock{cursor:default;background:#eef1f5;color:#2b3440;border-color:#c9d1db}.rgroup{display:flex;gap:8px;align-items:baseline;margin:4px 0}.rglab{min-width:84px;font-size:13px;font-weight:700;opacity:.7}.rgroup .chips{margin:0}
+body.loading-class .view{opacity:.35;pointer-events:none;transition:opacity .15s}
 </style>
 </head>
 <body class="proj">
@@ -947,10 +948,14 @@ function renderClassList(){
   document.getElementById("classList").innerHTML=ord.map((c,i)=>(USER.shiluv&&c.pick_n===0&&(i===0||ord[i-1].pick_n!==0)?'<h6 style="margin:10px 0 4px;opacity:.7">כיתות שאינך מלמד/ת בהן</h6>':'')+`<button style="${c.pick_n===0?'opacity:.55':''}"  data-c="${esc(c.class_name)}" class="${c.class_name==CUR_CLASS?'on':''}" onclick="openClass(this.dataset.c)" title="${c.teacher?esc(c.teacher):'לא שויך מחנך'}">
     <span>${esc(c.class_name)}${'pick_n' in c?tag(c):c.view==="subject"||c.limited?' <small style="opacity:.75">· מקצועי</small>':""}</span><i class="dot ${c.has_data?'ok':''}" title="${c.has_data?'יש נתונים':'אין עדיין נתונים'}"></i>${c.has_q?'<i class="qd" title="השאלון מולא">📝</i>':''}</button>`).join("");
 }
+let OPEN_REQ=0;
 async function openClass(c){
+  const my=++OPEN_REQ;   // לחיצות מהירות: רק התשובה של הכיתה האחרונה שנבחרה נטענת
   CUR_CLASS=c;if(USER.classes.length)renderClassList();
-  document.getElementById("ttl").textContent="טוען את "+c+"…";
-  let d;try{d=await rpc("mk_get",{p_phone:SES.phone,p_pin:SES.pin,p_class:c})}catch(e){showNoClass("אין חיבור לשרת כרגע.");return}
+  document.getElementById("ttl").textContent="טוען את "+c+"…";document.getElementById("subttl").textContent="";
+  document.body.classList.add("loading-class");
+  let d;try{d=await rpc("mk_get",{p_phone:SES.phone,p_pin:SES.pin,p_class:c})}catch(e){if(my!==OPEN_REQ)return;document.body.classList.remove("loading-class");showNoClass("אין חיבור לשרת כרגע.");return}
+  if(my!==OPEN_REQ)return;document.body.classList.remove("loading-class");
   if(d.error){if(d.error==="bad"||d.error==="locked"){logout();return}showNoClass(ERR[d.error]||d.error);return}
   VOICES=d.voices||[];applyView(d);loadPhotos(d.class_name||c);window._pick=d.shiluv?{cls:d.class_name,roster:d.roster||[],picked:d.picked||[]}:null;
   if(d.shiluv&&d.pick_set&&!(d.picked||[]).length){load([],d.class_name,d.teacher||"");document.getElementById("subttl").textContent="";return}
@@ -978,7 +983,7 @@ async function savePick(b,none){const st=none?[]:[...document.querySelectorAll('
     if(none){const nx=USER.classes.find(c=>c.pick_n>0)||USER.classes.find(c=>c.pick_n===null);openClass(nx?nx.class_name:CUR_CLASS)}else openClass(CUR_CLASS)}
   catch(e){b.disabled=false;m.textContent="השמירה לא הצליחה. נסו שוב."}
 }
-function showNoClass(t){document.getElementById("ttl").textContent=t;document.getElementById("subttl").textContent=""}
+function showNoClass(t){document.body.classList.remove("loading-class");try{load([],CUR_CLASS||"","")}catch(e){}document.getElementById("ttl").textContent=t;document.getElementById("subttl").textContent=""}
 
 // ----- questionnaire ⇄ server -----
 qLoad=function(){

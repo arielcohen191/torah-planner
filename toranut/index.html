@@ -625,12 +625,15 @@ async function yardsImport(){
   let values;
   try{const j=await sheetJSONP(S.data.sheet,'חלוקת מגרשים וחצרות');values=j.table.rows.map(r=>(r.c||[]).map(c=>c?(c.v==null?'':String(c.v)):''))}
   catch(e){S.modal={kind:'import',err:e.message};render();return}
-  const KEY=[[/משולב/,'מגרש משולב'],[/סינטטי/,'דשא סינטטי'],[/פינג/,'פינג פונג + תחתון'],[/כדורסל/,'כדורסל'],[/עליון/,'מגרש עליון'],[/הדשא הגדול|דשא גדול/,'דשא גדול']];
-  const Y={b1:{},b2:{}};let b=null,n=0;
+  // הסדר חשוב: "כניסה למנהלה (צופה על המגרש המשולב)" = הספסל של המנהלה; שורה ששמה "מגרש משולב"/"דשא סינטטי" = הדשא הסינטטי
+  const KEY=[[/כניסה למנהלה/,'מגרש משולב'],[/סינטטי|^\s*מגרש משולב/,'דשא סינטטי'],[/משולב/,'מגרש משולב'],[/פינג/,'פינג פונג + תחתון'],[/כדורסל/,'כדורסל'],[/עליון/,'מגרש עליון'],[/הדשא הגדול|דשא גדול/,'דשא גדול']];
+  const Y={b1:{},b2:{}},dup=[];let b=null,n=0;
   values.forEach(r=>{const a=String(r[0]||''),y=String(r[1]||'');
     if(/ראשונה/.test(a))b='b1';else if(/שני/.test(a)&&/הפסקה/.test(a))b='b2';
     const k=(KEY.find(([re])=>re.test(y))||[])[1];
-    if(b&&k){Y[b][k]=[2,4,6,8,10,12].map(i=>String(r[i]||'').trim());n++}});
+    if(b&&k){if(Y[b][k])dup.push(y.replace(/\s+/g,' ').trim());Y[b][k]=[2,4,6,8,10,12].map(i=>String(r[i]||'').trim());n++}});
+  if(dup.length){toast('לא עודכן: שתי שורות בגיליון מתאימות לאותו מגרש ('+dup.join(', ')+'). כדאי לבדוק את שמות השורות.');return}
+  const miss=T.DEFAULT_CONFIG.yardRows.filter(x=>!Y.b1[x.key]).map(x=>x.name);if(miss.length){toast('לא עודכן: חסרה בגיליון שורה של '+miss.join(', '));return}
   if(n<6){toast('לא זיהיתי את מבנה הגיליון');return}
   S.data.yards=Y;S.data.plan.stale=true;recompute();await save(true);render();toast('חלוקת החצרות עודכנה מהגיליון ('+n+' שורות)');
 }
