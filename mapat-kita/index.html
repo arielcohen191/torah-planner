@@ -234,6 +234,7 @@ body.pc-measure #printCards{display:block;position:absolute;left:-9999px;top:0;w
 .mark{background:#fff!important;padding:2px;box-sizing:border-box;overflow:hidden}.mark img{width:100%;height:100%;object-fit:contain;display:block}.gate-card .mark,.gate .mark,#gate .mark{width:76px;height:76px;padding:6px;border-radius:18px}
 .qdone{margin:18px 0 6px;padding:14px 16px;border:1.5px solid #9cc3a4;background:#eef8f0;border-radius:12px;line-height:1.6}
 .myq{margin:10px 0 4px;padding:10px 14px;border-radius:12px;background:#fff8e1;color:#5a4300;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;line-height:1.5}.myq-go{font:inherit;font-weight:700;border:0;border-radius:10px;padding:8px 14px;background:#1c4f8a;color:#fff;cursor:pointer}.myq-go:focus-visible{outline:3px solid #f2b705;outline-offset:2px}.myq.ok{background:rgba(255,255,255,.18);color:inherit;font-size:.92em}.myq.ok a{color:inherit;text-decoration:underline}
+.as-l{display:grid;gap:6px;max-height:60vh;overflow:auto}.as-i{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:right;font:inherit;padding:10px 12px;border:1px solid #d5dce5;border-radius:10px;background:#fff;cursor:pointer}.as-i span{font-size:13px;opacity:.75}.as-i:hover,.as-i:focus-visible{border-color:#2f7fd6;background:#f2f7fd}
 </style>
 </head>
 <body class="proj">
@@ -251,7 +252,7 @@ body.pc-measure #printCards{display:block;position:absolute;left:-9999px;top:0;w
       <button data-v="manage" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>ניהול גישה</button>
     </nav>
     <div id="classBox" hidden><h6>כיתות</h6><div class="nav clist" id="classList"></div></div>
-    <div class="rail-foot"><div class="who" id="who"></div><span><button class="btn sm" onclick="changeMyPin()" title="שינוי הסיסמה שלי">🔑</button> <button class="btn sm" onclick="logout()">יציאה</button></span></div>
+    <div class="rail-foot"><div class="who" id="who"></div><span><button class="btn sm" onclick="changeMyPin()" title="שינוי הסיסמה שלי">🔑</button> <button class="btn sm" id="asBtn" hidden onclick="openAs()" title="לצפות בכלי כמו איש צוות אחר">👤 בנעליים של</button> <button class="btn sm" onclick="logout()">יציאה</button></span></div>
   </aside>
   <div class="main">
     <header class="topbar">
@@ -878,10 +879,25 @@ async function doLogin(phone,pin,silent){
 }
 function showGate(){document.getElementById("gate").hidden=false;gateStep("phone")}
 function logout(){ses(null);location.reload()}
+/* "בנעליים של" מתוך מפת הכיתה (מנהל המערכת בלבד). המצב עצמו מנוהל ב-as/as.js, כמו בלוח ההנהלה */
+let AS_LIST=null;
+async function openAs(){
+  document.getElementById("modal").innerHTML=`<div class="mh"><div><h3>בנעליים של…</h3><div style="opacity:.8;font-size:13px">המפה תיפתח בדיוק כמו אצל איש הצוות. צפייה בלבד, שום שינוי לא נשמר.</div></div><div class="nav2"><button onclick="closeS()" aria-label="סגירה">✕</button></div></div>
+   <div style="padding:16px 20px"><input id="asQ" type="search" placeholder="חיפוש לפי שם או כיתה" oninput="asRender()" style="width:100%;margin-bottom:10px" aria-label="חיפוש איש צוות"><div id="asL" class="as-l"><p class="hint">טוען…</p></div></div>`;
+  document.getElementById("ov").classList.add("on");
+  if(!AS_LIST){try{const r=await rpc("mk_staff_list",{p_phone:SES.phone,p_pin:SES.pin});AS_LIST=(r.staff||[]).filter(x=>x.role&&x.name!==USER.name)}catch(e){document.getElementById("asL").innerHTML='<p class="hint">הרשימה לא נטענה. נסו שוב.</p>';return}}
+  asRender();setTimeout(()=>{const q=document.getElementById("asQ");if(q)q.focus()},50)}
+function asRender(){const el=document.getElementById("asL");if(!el||!AS_LIST)return;const q=(document.getElementById("asQ").value||"").trim();
+  const L=AS_LIST.filter(x=>!q||x.name.includes(q)||(x.class_name||"").replace(/[^א-ת0-9]/g,"").includes(q.replace(/[^א-ת0-9]/g,"")));
+  el.innerHTML=L.length?L.map((x,i)=>`<button class="as-i" onclick="startAs(${AS_LIST.indexOf(x)})"><b>${esc(x.name)}</b><span>${x.class_name?"מחנך/ת "+esc(x.class_name):({teacher:"מורה",admin:"הנהלה",principal:"מנהל"})[x.role]||""}${x.has_pin?"":" · עוד לא נכנס/ה"}</span></button>`).join(""):'<p class="hint">לא נמצא.</p>'}
+function startAs(i){const x=AS_LIST[i];if(!x)return;
+  try{localStorage.setItem("kr_as",JSON.stringify({real:String(SES.phone).replace(/\D/g,""),phone:x.phone,name:x.name}))}catch(e){}
+  location.reload()}
 function afterLogin(){
   document.getElementById("gate").hidden=true;
   document.getElementById("who").innerHTML=`<b>${esc(USER.name)}</b><small>${ROLE_HE[USER.role]||""}${USER.class_name?" · "+esc(USER.class_name):""}</small>`;
   document.querySelector('#nav [data-v="manage"]').hidden=!USER.can_manage;
+  {const b=document.getElementById("asBtn");if(b)b.hidden=!(USER.is_dev&&!(window.KR_AS&&KR_AS.get()))}
   const meBtn=document.querySelector('#nav [data-v="me"]');meBtn.hidden=USER.role!=="principal";
   loadMyQ();
   const isMgmt=USER.role!=="teacher";
