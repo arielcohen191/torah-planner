@@ -1135,7 +1135,7 @@ renderQForm=function(){
      <div class="qrow">${lvlSel(d.lvl,'me.drains.'+i+'.lvl')}<input value="${esc(d.relief||"")}" placeholder="מה היה משחרר אותי? מה אפשר לקחת ממני או לתת לי?" oninput="qSet('me.drains.${i}.relief',this.value)" class="grow"></div></div>`).join("");
   const dc=myDefaultClass();
   document.getElementById("qform").innerHTML=`
-  <div class="qhead"><div><b>${esc(USER.name)}</b> <span class="hint" style="margin:0">· ${ROLE_HE[USER.role]||""}${USER.class_name?" · מחנך "+esc(USER.class_name):""}</span></div>
+  <div class="qhead"><div><b>${esc(USER.name)}</b> <span class="hint" style="margin:0">${(()=>{const rs=(Q.me&&Q.me.rd||[]).map(r=>r.role).filter(x=>x&&!/^מחנך/.test(x));const a=[USER.class_name?"מחנך/ת "+USER.class_name:"",...rs];if(!a.filter(Boolean).length)a.push(USER.role==="teacher"?"מורה":(ROLE_HE[USER.role]||""));return a.filter(Boolean).map(x=>"· "+esc(x)).join(" ")})()}</span></div>
     <div><span id="qstat" class="hint" style="margin:0">${SES?"נשמר אוטומטית":""}</span></div></div>
 
   <fieldset><legend>חלק א' · הכיתות שלי <span class="tagm">גלוי להנהלה ולמחנך הכיתה · מוצג בישיבה</span></legend>
