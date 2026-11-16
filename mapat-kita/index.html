@@ -235,6 +235,7 @@ body.pc-measure #printCards{display:block;position:absolute;left:-9999px;top:0;w
 .qdone{margin:18px 0 6px;padding:14px 16px;border:1.5px solid #9cc3a4;background:#eef8f0;border-radius:12px;line-height:1.6}
 .myq{margin:10px 0 4px;padding:10px 14px;border-radius:12px;background:#fff8e1;color:#5a4300;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;line-height:1.5}.myq-go{font:inherit;font-weight:700;border:0;border-radius:10px;padding:8px 14px;background:#1c4f8a;color:#fff;cursor:pointer}.myq-go:focus-visible{outline:3px solid #f2b705;outline-offset:2px}.myq.ok{background:rgba(255,255,255,.18);color:inherit;font-size:.92em}.myq.ok a{color:inherit;text-decoration:underline}
 .as-l{display:grid;gap:6px;max-height:60vh;overflow:auto}.as-i{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:right;font:inherit;padding:10px 12px;border:1px solid #d5dce5;border-radius:10px;background:#fff;cursor:pointer}.as-i span{font-size:13px;opacity:.75}.as-i:hover,.as-i:focus-visible{border-color:#2f7fd6;background:#f2f7fd}
+.rgroup{display:flex;gap:8px;align-items:baseline;margin:4px 0}.rglab{min-width:84px;font-size:13px;font-weight:700;opacity:.7}.rgroup .chips{margin:0}
 </style>
 </head>
 <body class="proj">
@@ -663,7 +664,11 @@ document.addEventListener("keydown",e=>{if(CUR<0)return;if(e.key=="Escape")close
 // ================= שאלון מחנך =================
 const W_CATS=["תלמיד/ים מסוימים","אקלים חברתי בכיתה","משמעת ושיעורים","הישגים לימודיים","הורים","מורה/שיעור מסוים בכיתה","מערכת שעות ולוח זמנים","אחר"];
 const D_SRCS=["התלמידים","מורה שעובד בכיתה שלי","עמית בצוות","מזכירות / מנהלה","הנהלה","תחזוקה ולוגיסטיקה","עומס ומערכת שעות","הורים","אחר"];
-const ROLES=["מחנך","מורה מקצועי","רכז/ת","מורה שילוב","תפקיד ניהולי","אחר"];
+const ROLE_GROUPS=[["הוראה",["מחנך","מלמד","מורה מקצועי","מורה שילוב","סייע/ת"]],["ניהול",["מנהל/ת","סגן/ית","מנהלת בית"]],["ריכוז",["רכז/ת שכבה","רכז/ת מקצוע","רכז/ת פדגוגי/ת","רכז/ת חברתי/ת","רכז/ת שילוב / חנ\"מ"]],["ייעוץ וטיפול",["יועץ/ת","מטפל/ת"]]];
+const ROLES=ROLE_GROUPS.flatMap(g=>g[1]);
+/* התאמת כרטיס התפקיד: אילו שדות נפתחים לכל תפקיד */
+const ROLE_CLASSES=["מלמד","מורה מקצועי","מורה שילוב","סייע/ת"],ROLE_LAYERS=["מנהלת בית","רכז/ת שכבה","סגן/ית","יועץ/ת"],ROLE_SUBJ=["רכז/ת מקצוע","מלמד","מורה מקצועי"];
+const ROLE_HINT={"מחנך":"איך אני רואה את החינוך של הכיתה שלי? מה חשוב לי בה השנה?","מלמד":"מה אני מלמד (גמרא, משנה, חומש…) ואיך אני רואה את התפקיד?","מורה מקצועי":"מה אני מלמד ואיך אני רואה את התפקיד?","מורה שילוב":"עם אילו תלמידים ובאילו תחומים אני עובד/ת?","סייע/ת":"עם מי אני עובד/ת ובמה אני עוזר/ת?","מנהל/ת":"על מה אני מסתכל/ת השנה? מה המוקדים?","סגן/ית":"על אילו תחומים אני אחראי/ת?","מנהלת בית":"מה חשוב לי בבית שלי השנה?","רכז/ת שכבה":"מה המוקדים של השכבה השנה?","רכז/ת מקצוע":"מה אני מקדם/ת במקצוע השנה?","רכז/ת פדגוגי/ת":"על אילו תהליכים אני אחראי/ת?","רכז/ת חברתי/ת":"אילו פעילויות ותהליכים אני מוביל/ה?","יועץ/ת":"במה אני מתמקד/ת השנה?","מטפל/ת":"איזה טיפול אני נותן/ת ולמי?"};
 const FUEL=["הקשר עם התלמידים","רגעי הצלחה של תלמיד","ההוראה עצמה","הצוות והעמיתים","הערכה מההנהלה","שותפות עם ההורים","יצירה ויוזמה","סדר וארגון","לימוד תורה"];
 const LVL=["","קל","מורגש","משמעותי","כבד","מוציא מאיזון"];
 let Q=null;
@@ -707,7 +712,7 @@ function renderQForm(){
   const drains=m.drains.map((d,i)=>`<div class="qitem">
      <div class="qrow"><input value="${esc(d.t)}" placeholder="מה שואב ממני / מוציא אותי מאיזון?" oninput="qSet('me.drains.${i}.t',this.value)" class="grow">
      <select onchange="qSet('me.drains.${i}.src',this.value)" title="מקור">${opt(D_SRCS,d.src)}</select>
-     <select onchange="qSet('me.drains.${i}.role',this.value)" title="באיזה תפקיד">${opt(ROLES,d.role)}</select>
+     <select onchange="qSet('me.drains.${i}.role',this.value)" title="באיזה תפקיד">${opt((Q.me.rd||[]).map(x=>x.role).concat((Q.me.rd||[]).some(x=>x.role===d.role)?[]:[d.role]).filter(Boolean),d.role)}</select>
      <button class="x" onclick="qDelIn('me.drains',${i})">🗑</button></div>
      <div class="qrow">${lvlSel(d.lvl,'me.drains.'+i+'.lvl')}<input value="${esc(d.relief||"")}" placeholder="מה היה משחרר אותי? מה אפשר לקחת ממני או לתת לי?" oninput="qSet('me.drains.${i}.relief',this.value)" class="grow"></div></div>`).join("");
   document.getElementById("qform").innerHTML=`
@@ -1095,7 +1100,7 @@ const newRole=role=>({role,desc:"",load:0,power:0,fuel:[],fuelTxt:"",classes:[]}
 function meNorm(){const m=Q.me;m.drains=m.drains||[];m.share=m.share||[];
   if(!Array.isArray(m.rd)){m.rd=(m.roles||[]).map(newRole);
     if((m.fuel||[]).length||m.fuelTxt){if(!m.rd.length)m.rd.push(newRole("אחר"));m.rd[0].fuel=[...(m.fuel||[])];m.rd[0].fuelTxt=m.fuelTxt||""}}
-  m.rd.forEach(r=>{r.fuel=r.fuel||[];r.classes=r.classes||[];r.desc=r.desc||"";r.fuelTxt=r.fuelTxt||""});
+  m.rd.forEach(r=>{r.fuel=r.fuel||[];r.layers=r.layers||[];r.classes=r.classes||[];r.desc=r.desc||"";r.fuelTxt=r.fuelTxt||""});
   // השדות הישנים נשארים מעודכנים, בשביל מפת הצוות של המנהל
   m.roles=m.rd.map(r=>r.role);m.fuel=[...new Set(m.rd.flatMap(r=>r.fuel))];m.fuelTxt=m.rd.map(r=>r.fuelTxt).filter(Boolean).join(" · ");}
 function meRole(name){name=String(name||"").trim().slice(0,40);if(!name)return;meNorm();const m=Q.me,i=m.rd.findIndex(r=>r.role===name);
@@ -1130,7 +1135,7 @@ renderQForm=function(){
   const drains=m.drains.map((d,i)=>`<div class="qitem">
      <div class="qrow"><input value="${esc(d.t)}" placeholder="מה שואב ממני / מוציא אותי מאיזון?" oninput="qSet('me.drains.${i}.t',this.value)" class="grow">
      <select onchange="qSet('me.drains.${i}.src',this.value)" title="מקור">${opt(D_SRCS,d.src)}</select>
-     <select onchange="qSet('me.drains.${i}.role',this.value)" title="באיזה תפקיד">${opt(ROLES,d.role)}</select>
+     <select onchange="qSet('me.drains.${i}.role',this.value)" title="באיזה תפקיד">${opt((Q.me.rd||[]).map(x=>x.role).concat((Q.me.rd||[]).some(x=>x.role===d.role)?[]:[d.role]).filter(Boolean),d.role)}</select>
      <button class="x" onclick="qDelIn('me.drains',${i})">🗑</button></div>
      <div class="qrow">${lvlSel(d.lvl,'me.drains.'+i+'.lvl')}<input value="${esc(d.relief||"")}" placeholder="מה היה משחרר אותי? מה אפשר לקחת ממני או לתת לי?" oninput="qSet('me.drains.${i}.relief',this.value)" class="grow"></div></div>`).join("");
   const dc=myDefaultClass();
@@ -1159,12 +1164,16 @@ renderQForm=function(){
   <fieldset class="me"><legend>חלק ב' · אני בתפקיד <span class="tagm s">🔒 גלוי רק לך ולמנהל</span></legend>
    ${!window._meOpen?`<p>החלק הזה נועד לשיחה אישית עם המנהל, ולא לישיבה עצמה. <button class="chip" onclick="window._meOpen=1;renderQForm()">פתיחת החלק האישי</button></p>`:`
    <h3>5. באילו תפקידים אני משמש השנה?</h3>
-   <div class="chips">${ROLES.map(r=>`<button class="ch ${m.rd.some(x=>x.role===r)?'on':''}" onclick="meRole(this.textContent)">${r}</button>`).join("")}${m.rd.filter(x=>!ROLES.includes(x.role)).map(x=>`<button class="ch on" onclick="meRole(this.textContent)" title="לחיצה מסירה את התפקיד">${esc(x.role)}</button>`).join("")}</div>
+   <p class="hint" style="margin:0 0 6px">אפשר לבחור כמה תפקידים. לכל תפקיד שתבחרו ייפתח למטה כרטיס משלו.</p>
+   ${ROLE_GROUPS.map(([g,L])=>`<div class="rgroup"><span class="rglab">${g}</span><div class="chips">${L.map(r=>`<button class="ch ${m.rd.some(x=>x.role===r)?'on':''}" aria-pressed="${m.rd.some(x=>x.role===r)}" onclick="meRole(this.textContent)">${esc(r)}</button>`).join("")}</div></div>`).join("")}
+   ${m.rd.some(x=>!ROLES.includes(x.role))?`<div class="rgroup"><span class="rglab">שלי</span><div class="chips">${m.rd.filter(x=>!ROLES.includes(x.role)).map(x=>`<button class="ch on" aria-pressed="true" onclick="meRole(this.textContent)" title="לחיצה מסירה את התפקיד">${esc(x.role)}</button>`).join("")}</div></div>`:""}
    <div class="qrow"><input id="meNewRole" maxlength="40" placeholder="תפקיד נוסף, במילים שלי" class="grow" onkeydown="if(event.key==='Enter'){event.preventDefault();meRole(this.value)}"><button class="add" style="margin:0" onclick="meRole(document.getElementById('meNewRole').value)">+ הוספה</button></div>
    <h3>6. כל תפקיד בפני עצמו: מה נותן לי בו כוח ומה זולל</h3>
    ${m.rd.length?"":'<p class="empty">בחרו תפקיד אחד לפחות בשאלה 5, והוא ייפתח כאן.</p>'}
    ${m.rd.map((r,i)=>`<div class="rolecard"><h4>${esc(r.role)}</h4>
-     ${ta('me.rd.'+i+'.desc',r.desc,'איך אני רואה את התפקיד הזה? מה הוא בעיניי?')}
+     ${ROLE_SUBJ.includes(r.role)?`<div class="qrow"><b class="sclab">${r.role==="רכז/ת מקצוע"?"המקצוע":"המקצועות שלי"}:</b><input class="grow" maxlength="80" value="${esc(r.subject||"")}" placeholder="${r.role==="מלמד"?"למשל: גמרא, משנה":"למשל: אנגלית, מתמטיקה"}" onchange="qSet('me.rd.${i}.subject',this.value)"></div>`:""}
+     ${ROLE_LAYERS.includes(r.role)?`<div class="qrow"><b class="sclab">השכבות שלי:</b><div class="chips">${["א","ב","ג","ד","ה","ו"].map(l=>`<button class="ch ${(r.layers||[]).includes(l)?'on':''}" aria-pressed="${(r.layers||[]).includes(l)}" onclick="qToggle('me.rd.${i}.layers','${l}')">${l}'</button>`).join("")}</div></div>`:""}
+     ${ta('me.rd.'+i+'.desc',r.desc,ROLE_HINT[r.role]||'איך אני רואה את התפקיד הזה? מה הוא בעיניי?')}
      <div class="qrow"><b class="sclab">התפקיד בשבילי:</b>${scale(r.load,'me.rd.'+i+'.load',SC_LOAD)}</div>
      <div class="qrow"><b class="sclab">ומבחינת כוח:</b>${scale(r.power,'me.rd.'+i+'.power',SC_POW)}</div>
      <h5>מה נותן לי כוח בתפקיד הזה</h5>
@@ -1173,7 +1182,7 @@ renderQForm=function(){
      <h5>מה זולל ממני כוח בתפקיד הזה</h5>
      ${m.drains.map((d,j)=>d.role===r.role?drainRow(d,j):"").join("")||'<p class="empty">עוד לא נרשם דבר.</p>'}
      <button class="add" onclick="meDrain(${i})">+ פריט נוסף</button>
-     ${r.role==="מורה מקצועי"?`<h5>הכיתות שאני מלמד: איך כל כיתה בשבילי</h5>
+     ${ROLE_CLASSES.includes(r.role)?`<h5>הכיתות שאני ${r.role==="סייע/ת"?"עובד/ת בהן":"מלמד/ת"}: איך כל כיתה בשבילי</h5>
        ${r.classes.map((c,j)=>`<div class="qitem"><div class="qrow"><b>${esc(c.cls)}</b><button class="x" onclick="qDelIn('me.rd.${i}.classes',${j})" title="מחיקה">🗑</button></div>
          <div class="qrow">${scale(c.load,'me.rd.'+i+'.classes.'+j+'.load',SC_LOAD_F)}</div><div class="qrow">${scale(c.power,'me.rd.'+i+'.classes.'+j+'.power',SC_POW_F)}</div></div>`).join("")}
        <select onchange="if(this.value){qPush('me.rd.${i}.classes',{cls:this.value,load:0,power:0});renderQForm()}"><option value="">+ הוספת כיתה…</option>${(USER.all_classes||[]).filter(c=>!r.classes.some(x=>x.cls===c)).map(c=>`<option>${esc(c)}</option>`).join("")}</select>`:""}
