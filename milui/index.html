@@ -304,7 +304,8 @@ function viewBoard(){
     let body='<div class="small muted">במקום '+esc(T[s.tid].name)+'</div>';
     if(st==='open')body+='<button class="btn sm wide" data-act="cand" data-slot="'+s.id+'">מצא מחליף</button>';
     if(st==='asking')body+='<div>שאלנו את <b>'+esc(T[r.substitute_id]?.name)+'</b></div><div class="grid2"><button class="btn ok sm" data-act="yes" data-slot="'+s.id+'" data-tid="'+r.substitute_id+'">יכול/ה</button><button class="btn sec sm" data-act="no" data-slot="'+s.id+'" data-tid="'+r.substitute_id+'">לא יכול/ה</button></div>';
-    if(st==='assigned')body+='<div>ממלא/ת: <b>'+esc(T[r.substitute_id]?.name)+'</b>'+(r.from_permanent?' <span class="small muted">(קבוע)</span>':'')+'</div><button class="link" data-act="cand" data-slot="'+s.id+'">פרטים והודעה</button>';
+    if(st==='assigned'){const mg=mergeOf(r.substitute_id,s);body+='<div>ממלא/ת: <b>'+esc(T[r.substitute_id]?.name)+'</b>'+(r.from_permanent?' <span class="small muted">(קבוע)</span>':'')+'</div>'+(mg?'<div class="tag other" style="display:inline-block;margin:4px 0">איחוד כיתות: '+esc(s.classes.concat(mg.classes).map(cls).join(' + '))+'</div><div class="small muted">'+esc(T[r.substitute_id]?.name)+' מלמד/ת באותה שעה '+esc(mg.subject||'')+' ב'+esc(mg.classes.map(cls).join(', '))+'</div>':'')}
+    if(st==='assigned')body+='<button class="link" data-act="cand" data-slot="'+s.id+'">פרטים והודעה</button>';
     if(st==='other')body+='<div>'+esc(r.other_note||'טופל אחרת')+'</div><button class="link" data-act="cand" data-slot="'+s.id+'">שינוי</button>';
     return '<div class="item s-'+st+'"><div class="t"><b>'+esc(lessonLabel(s))+'</b><span class="tag '+st+'">'+tag+'</span></div>'+body+'</div>';
   };
@@ -323,6 +324,9 @@ function viewBoard(){
 /* #15: איש צוות בלי מערכת שעות בכלי (מורות שילוב, מסייעות). מופיע במועמדים כ"מסייע/ת". */
 const KIND_SEL='<fieldset style="border:0;padding:0;margin:0;display:flex;gap:14px;flex-wrap:wrap"><legend class="small" style="margin-bottom:4px">סוג</legend><label class="small"><input type="radio" name="kind" value="support" checked> איש צוות בית הספר (שילוב, מסייע/ת)</label><label class="small"><input type="radio" name="kind" value="external"> ממלא/ת מקום מבחוץ</label></fieldset>';
 /* ---------- candidates ---------- */
+/* איחוד כיתות: ממלא/ת המקום מלמד/ת בעצמו/ה בשעה הזו כיתה אחרת, כך שהכיתות מאוחדות */
+function mergeOf(tid,slot){if(!tid||!slot)return null;const day=S.data.byTD[tid+'|'+dow(S.date)]||[];const at=day.find(x=>x.hour===slot.hour);
+  return at&&at.kind!=='חלון'&&at.kind!=='שהייה'&&at.kind!=='פרטני'&&at.kind!=='תפקיד'&&(at.classes||[]).length?at:null}
 const MEETING=/מליאה|ממ``י|מנהל|צוות מוביל|פדגוגי/;
 function candidates(date,slot){
   const d=dow(date),h=slot.hour,T=S.data.T,cls0=slot.classes;
