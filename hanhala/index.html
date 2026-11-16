@@ -251,7 +251,11 @@ const H=()=>S.house==='mine'?{id:'mine',label:'השכבות שלי',layers:S.use
 const allowed=k=>!!(S.user&&S.user.tools.includes(k));
 const isDev=()=>!!(S.user&&(S.user.roles||[]).some(r=>r.id==='sysadmin'));
 const isStaff=()=>!!(S.user&&(S.user.staff||S.user.tools.length));
-const canSee=v=>v==='my'||v==='todo'||v==='maint'||(v==='ped'&&(pedOk()||allowed('ped')))||(v==='pedm'&&pedCanMeet())||(v==='viewas'&&isDev())||(v==='home'||v==='prefs'?isStaff():false)||(v==='perms'?!!(S.user&&S.user.can_manage):v==='feedback'?isDev():allowed(v));
+/* שינוי תפקידים: מנהל הרשאות, וגם המנהל ומנהלות הבתים (רק תפקידים של אנשי צוות קיימים) */
+const ROLE_EDITORS=['principal','house_ab','house_gd','house_hv'];
+const canRoles=()=>!!(S.user&&(S.user.can_manage||(S.user.roles||[]).some(r=>ROLE_EDITORS.includes(r.id))));
+const rolesOnly=()=>!!(S.user&&!S.user.can_manage&&canRoles());
+const canSee=v=>v==='my'||v==='todo'||v==='maint'||(v==='ped'&&(pedOk()||allowed('ped')))||(v==='pedm'&&pedCanMeet())||(v==='viewas'&&isDev())||(v==='home'||v==='prefs'?isStaff():false)||(v==='perms'?canRoles():v==='feedback'?isDev():allowed(v));
 const clsIn=c=>{const h=H();return !h||h.layers.includes(String(c).trim()[0])};
 const layerLetters=t=>{t=String(t||'');const m=t.match(/\(([^)]+)\)/);return ((m?m[1]:t).match(/[א-ו]/g))||[]};
 const SUBJ={torah:'חומש',navi:'נביא',mishna:'משנה',gemara:'גמרא',halacha:'הלכה',math:'מתמטיקה',hebrew:'עברית',science:'מדעים',other:'אחר'};
@@ -323,7 +327,7 @@ async function loadAll(force){
   ]);
   if(!allowed('sayarot'))S.say=null;if(!allowed('hespek'))S.plans=null;
   if(S.user&&!canSee(S.view))S.view=isStaff()?'home':'my';
-  if(S.view==='perms'&&S.user&&S.user.can_manage&&!S.admin)await loadAdmin();
+  if(S.view==='perms'&&canRoles()&&!S.admin)await loadAdmin();
   if(S.view==='viewas'&&isDev()&&!S.people)await loadPeople();
   if(isDev()){await part('fb',async()=>{S.fbOpen=await rpc('hanhala_feedback_open',{p_phone:S.phone})});if(S.view==='feedback')await loadFb()}
   S.loadedAt=new Date();
@@ -1106,11 +1110,11 @@ function staffForm(x){
   const roles=S.admin.roles,isNew=!x.old,sel=x.roles||[];
   return '<form class="card eform" data-form="staff"><h3 class="sub" style="margin-top:0">'+(isNew?'הוספת איש צוות':'עריכה: '+esc(x.name))+'</h3>'+
     '<input type="hidden" name="old_phone" value="'+esc(x.old||'')+'">'+
-    '<div class="frow"><label>שם מלא<input name="name" required maxlength="60" value="'+esc(x.name||'')+'"></label>'+
-    '<label>טלפון<input name="phone" type="tel" inputmode="tel" required value="'+esc(x.phone||'')+'"></label></div>'+
+    '<div class="frow"><label>שם מלא<input name="name" required maxlength="60" value="'+esc(x.name||'')+'"'+(rolesOnly()&&x.old?' readonly':'')+'></label>'+
+    '<label>טלפון<input name="phone" type="tel" inputmode="tel" required value="'+esc(x.phone||'')+'"'+(rolesOnly()&&x.old?' readonly':'')+'></label></div>'+
     '<div><div class="small" style="font-weight:600;margin-bottom:6px">תפקידים (אפשר כמה)</div><div class="opts">'+
-      roles.map(r=>'<label class="opt"><input type="checkbox" name="roles" value="'+esc(r.id)+'"'+(sel.includes(r.id)?' checked':'')+'><span>'+esc(r.label)+'</span></label>').join('')+'</div></div>'+
-    '<label class="opt" style="align-self:flex-start"><input type="checkbox" name="can_manage"'+(x.can_manage?' checked':'')+(x.self?' disabled':'')+'><span>רשאי/ת לנהל הרשאות</span></label>'+
+      roles.map(r=>{const lock=rolesOnly()&&(r.id==='principal'||r.id==='sysadmin');return '<label class="opt"'+(lock?' title="רק מנהל ההרשאות משנה את התפקיד הזה"':'')+'><input type="checkbox" name="roles" value="'+esc(r.id)+'"'+(sel.includes(r.id)?' checked':'')+(lock?' disabled':'')+'><span>'+esc(r.label)+'</span></label>'}).join('')+'</div></div>'+
+    (rolesOnly()?'':'<label class="opt" style="align-self:flex-start"><input type="checkbox" name="can_manage"'+(x.can_manage?' checked':'')+(x.self?' disabled':'')+'><span>רשאי/ת לנהל הרשאות</span></label>')+
     (S.adminErr?'<div class="err" role="alert">'+esc(S.adminErr)+'</div>':'')+
     '<div class="chips"><button class="btn" type="submit"'+(S.adminBusy?' disabled':'')+'>'+(S.adminBusy?'שומר…':'שמירה')+'</button><button class="btn sec" type="button" data-act="edit-cancel">ביטול</button></div></form>';
 }
@@ -1126,11 +1130,11 @@ function roleForm(x){
     (isNew?'':(x.holders.length?'<span class="small muted">אפשר למחוק רק תפקיד שאין בו אנשים</span>':'<button class="link" type="button" data-act="role-del" data-v="'+esc(x.id)+'">מחיקת התפקיד</button>'))+'</div></form>';
 }
 function viewPerms(){
-  if(!S.user.can_manage)return '<div class="note bad">המסך הזה פתוח רק למי שמנהל הרשאות.</div>';
+  if(!canRoles())return '<div class="note bad">המסך הזה פתוח רק למי שמנהל הרשאות.</div>';
   if(!S.admin)return S.adminErr?'<div class="note bad">'+esc(S.adminErr)+'</div>':panel('אנשי צוות',skel);
   const A=S.admin,RL={};A.roles.forEach(r=>RL[r.id]=r);
-  const tab=S.permTab||'staff';
-  let h='<div class="pills" role="tablist" style="margin-top:0"><button type="button" role="tab" data-act="perm-tab" data-v="staff" aria-pressed="'+(tab==='staff')+'">אנשי צוות ('+A.staff.length+')</button>'+
+  const tab=rolesOnly()?'staff':(S.permTab||'staff');
+  let h=rolesOnly()?'<p class="muted small">כאן משנים תפקידים לאנשי הצוות ומוסיפים איש צוות חדש. הסרת אנשי צוות, הגדרת התפקידים עצמם ותפקיד המנהל נעשים אצל מנהל ההרשאות.</p>':'<div class="pills" role="tablist" style="margin-top:0"><button type="button" role="tab" data-act="perm-tab" data-v="staff" aria-pressed="'+(tab==='staff')+'">אנשי צוות ('+A.staff.length+')</button>'+
     '<button type="button" role="tab" data-act="perm-tab" data-v="roles" aria-pressed="'+(tab==='roles')+'">תפקידים ('+A.roles.length+')</button>'+
     '<button type="button" role="tab" data-act="perm-tab" data-v="homeroom" aria-pressed="'+(tab==='homeroom')+'">מחנכים</button></div>';
   if(tab==='homeroom'){
@@ -1154,7 +1158,7 @@ function viewPerms(){
         '<div class="rchips">'+rs.map(r=>'<span class="rchip">'+esc(r.label)+'</span>').join('')+'</div>'+
         '<div class="small muted">'+(noTools?'<span class="tag orange">אין עדיין כלים פתוחים בתפקידים האלה</span>':'רואה: '+tools.map(k=>viewOf(k)[1]+' ('+LV[rs.reduce((m,r)=>{const v=lvOf(r,k);return ['','view','edit','admin'].indexOf(v)>['','view','edit','admin'].indexOf(m)?v:m},'')]+')').join(' · '))+'</div>'+
         '<div class="chips"><button class="btn sec sm" data-act="staff-edit" data-v="'+esc(x.phone)+'">עריכה</button>'+
-        (x.self?'':S.confirmDel===x.phone?'<button class="btn danger sm" data-act="staff-del" data-v="'+esc(x.phone)+'">בטוח? להסיר</button><button class="btn sec sm" data-act="del-cancel">ביטול</button>':'<button class="btn sec sm" data-act="del-ask" data-v="'+esc(x.phone)+'">הסרה</button>')+'</div></div>'}).join('');
+        (x.self||rolesOnly()?'':S.confirmDel===x.phone?'<button class="btn danger sm" data-act="staff-del" data-v="'+esc(x.phone)+'">בטוח? להסיר</button><button class="btn sec sm" data-act="del-cancel">ביטול</button>':'<button class="btn sec sm" data-act="del-ask" data-v="'+esc(x.phone)+'">הסרה</button>')+'</div></div>'}).join('');
     return h+panel('אנשי צוות',b);
   }
   let r='<p class="muted small" style="margin:0">ההרשאות מוגדרות לתפקיד, וכל מי שמשויך אליו מקבל אותן. מי שיש לו כמה תפקידים מקבל את כל הכלים שלהם, והלוח נפתח אצלו על השכבות שלו.</p>';
@@ -1245,7 +1249,7 @@ function shell(inner){
    navViews().map(([k,l])=>'<button type="button" data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>').join('')+
    '<div class="spacer"></div>'+
    (isStaff()?'<button type="button" data-go="prefs"'+(S.view==='prefs'?' aria-current="page"':'')+'>'+ICON.prefs+'התאמה אישית</button>':'')+
-   (S.user&&S.user.can_manage?'<button type="button" data-go="perms"'+(S.view==='perms'?' aria-current="page"':'')+'>'+ICON.perms+'הרשאות</button>':'')+
+   (canRoles()?'<button type="button" data-go="perms"'+(S.view==='perms'?' aria-current="page"':'')+'>'+ICON.perms+'הרשאות</button>':'')+
    (isDev()?'<button type="button" data-go="viewas"'+(S.view==='viewas'?' aria-current="page"':'')+'>'+ICON.my+'בנעליים של</button>':'')+
    (isDev()?'<button type="button" data-go="feedback"'+(S.view==='feedback'?' aria-current="page"':'')+'>'+ICON.fb+'משובים'+(S.fbOpen?'<span class="cnt" aria-label="'+S.fbOpen+' חדשים">'+S.fbOpen+'</span>':'')+'</button>':'')+
    '<div class="who">'+esc(S.user?S.user.name:'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+'</main></div>';
@@ -1344,7 +1348,7 @@ root.addEventListener('change',e=>{
     p[k]=t.checked?p[k].filter(x=>x!==v):p[k].concat([v]);return savePrefs(p)}
 });
 root.addEventListener('click',e=>{
-  const g=e.target.closest('[data-go]');if(g){S.view=g.dataset.go;S.filter=0;S.saved=null;S.edit=null;S.confirmDel=null;S.adminErr=null;if(S.view==='perms'&&S.user.can_manage){loadAdmin().then(render)}if(S.view==='feedback'&&isDev()){loadFb().then(render)}if(S.view==='viewas'&&isDev()&&!S.people){loadPeople().then(render)}history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
+  const g=e.target.closest('[data-go]');if(g){S.view=g.dataset.go;S.filter=0;S.saved=null;S.edit=null;S.confirmDel=null;S.adminErr=null;if(S.view==='perms'&&canRoles()){loadAdmin().then(render)}if(S.view==='feedback'&&isDev()){loadFb().then(render)}if(S.view==='viewas'&&isDev()&&!S.people){loadPeople().then(render)}history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   if(a==='staff-new'){S.adminErr=null;S.edit={kind:'staff',x:{name:'',phone:'',roles:[],can_manage:false}};render();window.scrollTo(0,0);return}
   if(a==='staff-edit'){S.adminErr=null;const x=S.admin.staff.find(x=>x.phone===b.dataset.v);S.edit={kind:'staff',x:Object.assign({},x,{old:x.phone})};render();window.scrollTo(0,0);return}
@@ -1416,7 +1420,7 @@ root.addEventListener('input',e=>{const T=e.target;if(!T.classList||!T.classList
 window.addEventListener('storage',e=>{if(e.key==='kr_as')location.reload()});
 /* רענון אוטומטי כשחוזרים ללשונית אחרי יותר מ־5 דקות */
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.phone&&S.loadedAt&&Date.now()-S.loadedAt>3e5)refresh(true)});
-window.addEventListener('popstate',()=>{S.view=hashView();if(S.user&&!canSee(S.view))S.view='home';if(S.view==='feedback'&&S.user&&isDev())loadFb().then(render);if(S.phone){if(S.view==='perms'&&S.user&&S.user.can_manage&&!S.admin)loadAdmin().then(render);render()}});
+window.addEventListener('popstate',()=>{S.view=hashView();if(S.user&&!canSee(S.view))S.view='home';if(S.view==='feedback'&&S.user&&isDev())loadFb().then(render);if(S.phone){if(S.view==='perms'&&canRoles()&&!S.admin)loadAdmin().then(render);render()}});
 if(S.phone)refresh(true);else renderLogin();
 </script>
 <script src="/feedback/badge.js" defer></script>

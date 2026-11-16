@@ -235,7 +235,7 @@ body.pc-measure #printCards{display:block;position:absolute;left:-9999px;top:0;w
 .qdone{margin:18px 0 6px;padding:14px 16px;border:1.5px solid #9cc3a4;background:#eef8f0;border-radius:12px;line-height:1.6}
 .myq{margin:10px 0 4px;padding:10px 14px;border-radius:12px;background:#fff8e1;color:#5a4300;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;line-height:1.5}.myq-go{font:inherit;font-weight:700;border:0;border-radius:10px;padding:8px 14px;background:#1c4f8a;color:#fff;cursor:pointer}.myq-go:focus-visible{outline:3px solid #f2b705;outline-offset:2px}.myq.ok{background:rgba(255,255,255,.18);color:inherit;font-size:.92em}.myq.ok a{color:inherit;text-decoration:underline}
 .as-l{display:grid;gap:6px;max-height:60vh;overflow:auto}.as-i{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:right;font:inherit;padding:10px 12px;border:1px solid #d5dce5;border-radius:10px;background:#fff;cursor:pointer}.as-i span{font-size:13px;opacity:.75}.as-i:hover,.as-i:focus-visible{border-color:#2f7fd6;background:#f2f7fd}
-.rgroup{display:flex;gap:8px;align-items:baseline;margin:4px 0}.rglab{min-width:84px;font-size:13px;font-weight:700;opacity:.7}.rgroup .chips{margin:0}
+.ch.lock,.ch.on.lock{cursor:default;background:#eef1f5;color:#2b3440;border-color:#c9d1db}.rgroup{display:flex;gap:8px;align-items:baseline;margin:4px 0}.rglab{min-width:84px;font-size:13px;font-weight:700;opacity:.7}.rgroup .chips{margin:0}
 </style>
 </head>
 <body class="proj">
@@ -666,6 +666,12 @@ const W_CATS=["תלמיד/ים מסוימים","אקלים חברתי בכיתה
 const D_SRCS=["התלמידים","מורה שעובד בכיתה שלי","עמית בצוות","מזכירות / מנהלה","הנהלה","תחזוקה ולוגיסטיקה","עומס ומערכת שעות","הורים","אחר"];
 const ROLE_GROUPS=[["הוראה",["מחנך","מלמד","מורה מקצועי","מורה שילוב","סייע/ת"]],["ניהול",["מנהל/ת","סגן/ית","מנהלת בית"]],["ריכוז",["רכז/ת שכבה","רכז/ת מקצוע","רכז/ת פדגוגי/ת","רכז/ת חברתי/ת","רכז/ת שילוב / חנ\"מ"]],["ייעוץ וטיפול",["יועץ/ת","מטפל/ת"]]];
 const ROLES=ROLE_GROUPS.flatMap(g=>g[1]);
+/* תפקידים רשמיים: נקבעים בלוח ההנהלה (ומחנך/מורה מקצועי/מורה שילוב לפי הנתונים), ומופיעים כאן נעולים */
+const OFFICIAL=()=>Array.isArray(USER&&USER.official_roles)?USER.official_roles:null;
+const isOfficial=r=>{const O=OFFICIAL();return !!O&&O.includes(r)};
+const rHasClasses=r=>/^(מלמד|מורה מקצועי|מורה שילוב|סייע)/.test(r),rHasSubject=r=>/^(מלמד|מורה מקצועי)|^רכז.? (?!שכבה|פדגוג|ח״ח|חנ״מ|שילוב|אמירים|הכלה)/.test(r),
+      rHasLayers=r=>/שכבה|מנהלת בית|יועצ|סגנ/.test(r)&&!/[אבגדהו][׳']/.test(r);
+const rHint=r=>ROLE_HINT[r]||(/^רכז.? שכבה/.test(r)?ROLE_HINT["רכז/ת שכבה"]:/^מנהלת בית/.test(r)?ROLE_HINT["מנהלת בית"]:/^יועצ/.test(r)?ROLE_HINT["יועץ/ת"]:/^סגנ/.test(r)?ROLE_HINT["סגן/ית"]:/^רכז/.test(r)?"על מה אני אחראי/ת בתפקיד הזה? מה אני מקדם/ת השנה?":isOfficial(r)?"":"מה זה בפועל? כמה זמן ואנרגיה זה לוקח ממני?");
 /* התאמת כרטיס התפקיד: אילו שדות נפתחים לכל תפקיד */
 const ROLE_CLASSES=["מלמד","מורה מקצועי","מורה שילוב","סייע/ת"],ROLE_LAYERS=["מנהלת בית","רכז/ת שכבה","סגן/ית","יועץ/ת"],ROLE_SUBJ=["רכז/ת מקצוע","מלמד","מורה מקצועי"];
 const ROLE_HINT={"מחנך":"איך אני רואה את החינוך של הכיתה שלי? מה חשוב לי בה השנה?","מלמד":"מה אני מלמד (גמרא, משנה, חומש…) ואיך אני רואה את התפקיד?","מורה מקצועי":"מה אני מלמד ואיך אני רואה את התפקיד?","מורה שילוב":"עם אילו תלמידים ובאילו תחומים אני עובד/ת?","סייע/ת":"עם מי אני עובד/ת ובמה אני עוזר/ת?","מנהל/ת":"על מה אני מסתכל/ת השנה? מה המוקדים?","סגן/ית":"על אילו תחומים אני אחראי/ת?","מנהלת בית":"מה חשוב לי בבית שלי השנה?","רכז/ת שכבה":"מה המוקדים של השכבה השנה?","רכז/ת מקצוע":"מה אני מקדם/ת במקצוע השנה?","רכז/ת פדגוגי/ת":"על אילו תהליכים אני אחראי/ת?","רכז/ת חברתי/ת":"אילו פעילויות ותהליכים אני מוביל/ה?","יועץ/ת":"במה אני מתמקד/ת השנה?","מטפל/ת":"איזה טיפול אני נותן/ת ולמי?"};
@@ -1100,10 +1106,12 @@ const newRole=role=>({role,desc:"",load:0,power:0,fuel:[],fuelTxt:"",classes:[]}
 function meNorm(){const m=Q.me;m.drains=m.drains||[];m.share=m.share||[];
   if(!Array.isArray(m.rd)){m.rd=(m.roles||[]).map(newRole);
     if((m.fuel||[]).length||m.fuelTxt){if(!m.rd.length)m.rd.push(newRole("אחר"));m.rd[0].fuel=[...(m.fuel||[])];m.rd[0].fuelTxt=m.fuelTxt||""}}
+  (OFFICIAL()||[]).forEach(n=>{if(!m.rd.some(r=>r.role===n))m.rd.push(newRole(n))});
   m.rd.forEach(r=>{r.fuel=r.fuel||[];r.layers=r.layers||[];r.classes=r.classes||[];r.desc=r.desc||"";r.fuelTxt=r.fuelTxt||""});
   // השדות הישנים נשארים מעודכנים, בשביל מפת הצוות של המנהל
   m.roles=m.rd.map(r=>r.role);m.fuel=[...new Set(m.rd.flatMap(r=>r.fuel))];m.fuelTxt=m.rd.map(r=>r.fuelTxt).filter(Boolean).join(" · ");}
 function meRole(name){name=String(name||"").trim().slice(0,40);if(!name)return;meNorm();const m=Q.me,i=m.rd.findIndex(r=>r.role===name);
+  if(i>=0&&isOfficial(name)){alert("זה תפקיד רשמי, וההנהלה קובעת אותו. אם הוא לא נכון, אפשר לבקש תיקון דרך כפתור המשוב.");return}
   if(i<0)m.rd.push(newRole(name));
   else{const r=m.rd[i],full=r.desc||r.load||r.power||r.fuel.length||r.fuelTxt||r.classes.length||m.drains.some(d=>d.role===name&&d.t);
     if(full&&!confirm("להסיר את התפקיד \""+name+"\"? מה שמילאתם בו יימחק."))return;
@@ -1164,16 +1172,23 @@ renderQForm=function(){
   <fieldset class="me"><legend>חלק ב' · אני בתפקיד <span class="tagm s">🔒 גלוי רק לך ולמנהל</span></legend>
    ${!window._meOpen?`<p>החלק הזה נועד לשיחה אישית עם המנהל, ולא לישיבה עצמה. <button class="chip" onclick="window._meOpen=1;renderQForm()">פתיחת החלק האישי</button></p>`:`
    <h3>5. באילו תפקידים אני משמש השנה?</h3>
-   <p class="hint" style="margin:0 0 6px">אפשר לבחור כמה תפקידים. לכל תפקיד שתבחרו ייפתח למטה כרטיס משלו.</p>
+   ${OFFICIAL()?`<h5 style="margin:4px 0 6px">התפקידים הרשמיים שלי</h5>
+   <div class="chips">${OFFICIAL().length?OFFICIAL().map(r=>`<span class="ch on lock" title="נקבע על ידי ההנהלה">🔒 ${esc(r)}</span>`).join(""):'<span class="hint">לא הוגדר לך תפקיד רשמי.</span>'}</div>
+   <p class="hint" style="margin:4px 0 12px">התפקידים האלה נקבעים בלוח ההנהלה. אם משהו לא נכון, שלחו בקשה דרך כפתור המשוב.</p>
+   <h5 style="margin:4px 0 6px">תפקידים ופרויקטים לא רשמיים</h5>
+   <p class="hint" style="margin:0 0 6px">משהו שלקחתם על עצמכם ולוקח אנרגיה, גם אם הוא לא תפקיד רשמי. כל אחד מקבל כרטיס משלו למטה, והמנהל רואה אותו.</p>
+   <div class="chips">${m.rd.filter(x=>!isOfficial(x.role)).map(x=>`<button class="ch on" aria-pressed="true" onclick="meRole(this.dataset.r)" data-r="${esc(x.role)}" title="לחיצה מסירה">${esc(x.role)} ✕</button>`).join("")||'<span class="hint">עוד לא נוסף.</span>'}</div>
+   <div class="qrow"><input id="meNewRole" maxlength="40" placeholder="למשל: אחראי על ההגברה בטקסים, פרויקט הספרייה" class="grow" onkeydown="if(event.key==='Enter'){event.preventDefault();meRole(this.value)}"><button class="add" style="margin:0" onclick="meRole(document.getElementById('meNewRole').value)">+ הוספה</button></div>`:`<p class="hint" style="margin:0 0 6px">אפשר לבחור כמה תפקידים. לכל תפקיד שתבחרו ייפתח למטה כרטיס משלו.</p>
    ${ROLE_GROUPS.map(([g,L])=>`<div class="rgroup"><span class="rglab">${g}</span><div class="chips">${L.map(r=>`<button class="ch ${m.rd.some(x=>x.role===r)?'on':''}" aria-pressed="${m.rd.some(x=>x.role===r)}" onclick="meRole(this.textContent)">${esc(r)}</button>`).join("")}</div></div>`).join("")}
    ${m.rd.some(x=>!ROLES.includes(x.role))?`<div class="rgroup"><span class="rglab">שלי</span><div class="chips">${m.rd.filter(x=>!ROLES.includes(x.role)).map(x=>`<button class="ch on" aria-pressed="true" onclick="meRole(this.textContent)" title="לחיצה מסירה את התפקיד">${esc(x.role)}</button>`).join("")}</div></div>`:""}
    <div class="qrow"><input id="meNewRole" maxlength="40" placeholder="תפקיד נוסף, במילים שלי" class="grow" onkeydown="if(event.key==='Enter'){event.preventDefault();meRole(this.value)}"><button class="add" style="margin:0" onclick="meRole(document.getElementById('meNewRole').value)">+ הוספה</button></div>
+   `}
    <h3>6. כל תפקיד בפני עצמו: מה נותן לי בו כוח ומה זולל</h3>
    ${m.rd.length?"":'<p class="empty">בחרו תפקיד אחד לפחות בשאלה 5, והוא ייפתח כאן.</p>'}
-   ${m.rd.map((r,i)=>`<div class="rolecard"><h4>${esc(r.role)}</h4>
-     ${ROLE_SUBJ.includes(r.role)?`<div class="qrow"><b class="sclab">${r.role==="רכז/ת מקצוע"?"המקצוע":"המקצועות שלי"}:</b><input class="grow" maxlength="80" value="${esc(r.subject||"")}" placeholder="${r.role==="מלמד"?"למשל: גמרא, משנה":"למשל: אנגלית, מתמטיקה"}" onchange="qSet('me.rd.${i}.subject',this.value)"></div>`:""}
-     ${ROLE_LAYERS.includes(r.role)?`<div class="qrow"><b class="sclab">השכבות שלי:</b><div class="chips">${["א","ב","ג","ד","ה","ו"].map(l=>`<button class="ch ${(r.layers||[]).includes(l)?'on':''}" aria-pressed="${(r.layers||[]).includes(l)}" onclick="qToggle('me.rd.${i}.layers','${l}')">${l}'</button>`).join("")}</div></div>`:""}
-     ${ta('me.rd.'+i+'.desc',r.desc,ROLE_HINT[r.role]||'איך אני רואה את התפקיד הזה? מה הוא בעיניי?')}
+   ${m.rd.map((r,i)=>`<div class="rolecard"><h4>${isOfficial(r.role)?"🔒 ":""}${esc(r.role)}${OFFICIAL()&&!isOfficial(r.role)?' <span class="tagm">לא רשמי</span>':""}</h4>
+     ${rHasSubject(r.role)?`<div class="qrow"><b class="sclab">${r.role==="רכז/ת מקצוע"?"המקצוע":"המקצועות שלי"}:</b><input class="grow" maxlength="80" value="${esc(r.subject||"")}" placeholder="${r.role==="מלמד"?"למשל: גמרא, משנה":"למשל: אנגלית, מתמטיקה"}" onchange="qSet('me.rd.${i}.subject',this.value)"></div>`:""}
+     ${rHasLayers(r.role)?`<div class="qrow"><b class="sclab">השכבות שלי:</b><div class="chips">${["א","ב","ג","ד","ה","ו"].map(l=>`<button class="ch ${(r.layers||[]).includes(l)?'on':''}" aria-pressed="${(r.layers||[]).includes(l)}" onclick="qToggle('me.rd.${i}.layers','${l}')">${l}'</button>`).join("")}</div></div>`:""}
+     ${ta('me.rd.'+i+'.desc',r.desc,rHint(r.role)||'איך אני רואה את התפקיד הזה? מה הוא בעיניי?')}
      <div class="qrow"><b class="sclab">התפקיד בשבילי:</b>${scale(r.load,'me.rd.'+i+'.load',SC_LOAD)}</div>
      <div class="qrow"><b class="sclab">ומבחינת כוח:</b>${scale(r.power,'me.rd.'+i+'.power',SC_POW)}</div>
      <h5>מה נותן לי כוח בתפקיד הזה</h5>
@@ -1182,7 +1197,7 @@ renderQForm=function(){
      <h5>מה זולל ממני כוח בתפקיד הזה</h5>
      ${m.drains.map((d,j)=>d.role===r.role?drainRow(d,j):"").join("")||'<p class="empty">עוד לא נרשם דבר.</p>'}
      <button class="add" onclick="meDrain(${i})">+ פריט נוסף</button>
-     ${ROLE_CLASSES.includes(r.role)?`<h5>הכיתות שאני ${r.role==="סייע/ת"?"עובד/ת בהן":"מלמד/ת"}: איך כל כיתה בשבילי</h5>
+     ${rHasClasses(r.role)?`<h5>הכיתות שאני ${r.role==="סייע/ת"?"עובד/ת בהן":"מלמד/ת"}: איך כל כיתה בשבילי</h5>
        ${r.classes.map((c,j)=>`<div class="qitem"><div class="qrow"><b>${esc(c.cls)}</b><button class="x" onclick="qDelIn('me.rd.${i}.classes',${j})" title="מחיקה">🗑</button></div>
          <div class="qrow">${scale(c.load,'me.rd.'+i+'.classes.'+j+'.load',SC_LOAD_F)}</div><div class="qrow">${scale(c.power,'me.rd.'+i+'.classes.'+j+'.power',SC_POW_F)}</div></div>`).join("")}
        <select onchange="if(this.value){qPush('me.rd.${i}.classes',{cls:this.value,load:0,power:0});renderQForm()}"><option value="">+ הוספת כיתה…</option>${(USER.all_classes||[]).filter(c=>!r.classes.some(x=>x.cls===c)).map(c=>`<option>${esc(c)}</option>`).join("")}</select>`:""}
