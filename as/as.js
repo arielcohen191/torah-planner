@@ -11,7 +11,7 @@
   if(/^\/hanhala(\/|$)/.test(location.pathname)||!window.fetch)return;
   var of=window.fetch.bind(window);
   /* קריאות שמותר להעביר; כל השאר נחשב שמירה ונחסם */
-  var READ=/^(hanhala_(me|data|my|summary)|milui_(login|state|who)|toranut_(load|versions_list|version_get)|mk_(check_phone|login|get|get_settings|my_q|staff_list|staff_map|photos)|ped_data|get_\w+|list_plans|check_code|check_owner|planner_staff|feedback_mine)$/;
+  var READ=/^(hanhala_(me|data|my|summary)|milui_(login|state|who)|toranut_(load|versions_list|version_get)|mk_(check_phone|login|get|get_settings|my_q|staff_list|staff_map|photos)|ped_data|yh_staff_load|yh_summary|get_\w+|list_plans|check_code|check_owner|planner_staff|feedback_mine)$/;
   var note='';
   function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   function json(o,st){return new Response(JSON.stringify(o),{status:st,headers:{'Content-Type':'application/json'}})}

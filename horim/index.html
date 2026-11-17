@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<title>יום הורים · כנפי רוח</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@200;400;500;600;700&display=swap">
+<style>
+:root{--ground:#eef1f5;--card:#fff;--card-muted:#f5f7fa;--line:#dfe4ea;--ink:#1f2a37;--ink-muted:#5b6878;--rail:#26323f;--rail-ink:#c9d3de;
+--brand:#2f7fd6;--brand-dark:#1f5fa6;--blue:#4a8ec9;--green:#4f9a2a;--green-ink:#3f7d21;--orange:#c77700;--orange-ink:#a56300;--red:#c62a20;--active:#2fbf71;
+--r-sm:6px;--r-md:10px;--r-lg:14px;--shadow:0 1px 3px rgba(31,42,55,.10)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ground);color:var(--ink);font-family:Heebo,Assistant,system-ui,sans-serif;font-size:17px;line-height:1.5}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+.app{display:flex;min-height:100vh}
+nav.rail{flex:0 0 104px;background:var(--rail);display:flex;flex-direction:column;gap:8px;padding:24px 8px}
+.rail .brand{color:#fff;font-weight:700;font-size:15px;text-align:center;padding-bottom:16px;border-bottom:1px solid #3a4756;margin-bottom:4px}
+.rail button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border-radius:var(--r-md);background:none;border:0;color:var(--rail-ink);font-size:14px}
+.rail button[aria-current="page"]{background:var(--active);color:#fff;font-weight:600}
+.rail .spacer{flex:1}
+.rail .who{color:var(--rail-ink);font-size:13px;text-align:center}
+main{flex:1;min-width:0;padding:24px 32px 80px;display:flex;flex-direction:column;gap:20px}
+.card{background:var(--card);border-radius:var(--r-md);box-shadow:var(--shadow)}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px}
+h1{margin:0;font-size:26px;line-height:34px;font-weight:700}
+h2{margin:0;font-size:20px;font-weight:600}
+h3{margin:0;font-size:18px;font-weight:600}
+.muted{color:var(--ink-muted)}
+.small{font-size:15px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 22px;border-radius:var(--r-md);border:0;background:var(--brand);color:#fff;font-size:17px;font-weight:600;text-decoration:none}
+.btn:hover{background:var(--brand-dark)}
+.btn[disabled]{opacity:.5;cursor:default}
+.btn.sec{background:#fff;color:var(--ink);border:1.5px solid #c9d1db}
+.btn.sec:hover{background:var(--card-muted)}
+.btn.ok{background:var(--green)}.btn.ok:hover{background:var(--green-ink)}
+.btn.bad{background:#fff;color:var(--red);border:1.5px solid #e6b3ae}
+.btn.wa{background:#1f9d55}.btn.wa:hover{background:#17803f}
+.btn.sm{min-height:44px;padding:0 14px;font-size:16px}
+.btn.xs{min-height:38px;padding:0 12px;font-size:15px}
+.btn.wide{width:100%}
+.link{background:none;border:0;color:var(--brand);font-size:16px;padding:6px 4px;text-decoration:underline;text-underline-offset:3px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.kpi{border:0;font:inherit;text-align:right;cursor:pointer;border-radius:var(--r-lg);padding:18px 22px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:104px;transition:transform .12s,box-shadow .12s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(31,42,55,.18)}
+.kpi b{display:block;font-size:19px;font-weight:600}.kpi span{font-size:15px}
+.kpi .n{font-size:52px;line-height:52px;font-weight:200}
+.kpi .go{display:block;font-size:13px;opacity:.85;margin-top:4px;text-decoration:underline;text-underline-offset:3px}
+.k-red{background:var(--red)}.k-orange{background:var(--orange)}.k-green{background:var(--green)}.k-blue{background:var(--blue)}
+.box{padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+input[type=text],input[type=tel],input[type=date],input[type=time],input[type=number],input[type=search],select,textarea{min-height:52px;border:1.5px solid #c9d1db;border-radius:var(--r-md);padding:0 14px;font-size:17px;background:#fff;width:100%}
+textarea{padding:12px 14px;min-height:90px}
+input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:3px solid #9cc3ef;outline-offset:1px}
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:16px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.check{display:flex;align-items:flex-start;gap:12px;font-size:16px;min-height:44px}
+.check input{width:24px;height:24px;flex:none;margin-top:2px}
+.slots{display:flex;flex-direction:column;gap:8px}
+.slot{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;background:var(--card-muted);border-radius:var(--r-sm);border-right:6px solid var(--line);padding:10px 14px}
+.slot .tm{font-size:20px;font-weight:700;min-width:58px;font-variant-numeric:tabular-nums}
+.slot .who{flex:1 1 220px;display:flex;flex-direction:column}
+.slot .who b{font-size:17px}
+.slot .acts{display:flex;flex-wrap:wrap;gap:6px}
+.slot.free{border-right-color:#b9c4d0}.slot.taken{border-right-color:var(--brand)}.slot.brk{border-right-color:#8a96a4;opacity:.7}
+.slot.now{border-right-color:var(--orange);background:#fdf3e2}.slot.done{border-right-color:var(--green);opacity:.75}.slot.ns{border-right-color:var(--red);opacity:.75}
+.tag{font-size:14px;font-weight:600;border-radius:99px;padding:2px 10px;background:#e8edf3;color:var(--ink-muted)}
+.tag.g{background:#e3f1da;color:var(--green-ink)}.tag.o{background:#fbe9cc;color:var(--orange-ink)}.tag.r{background:#f8dedb;color:var(--red)}.tag.b{background:#dceafa;color:var(--brand-dark)}
+.times{display:flex;flex-wrap:wrap;gap:8px}
+.times button{min-width:72px;min-height:48px;border:1.5px solid #c9d1db;border-radius:var(--r-md);background:#fff;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.times button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+.times button[disabled]{background:#eef1f5;color:#a9b3bf;border-color:#e1e6ec;text-decoration:line-through;cursor:default}
+.pick{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;border:1.5px solid #c9d1db;border-radius:var(--r-md);background:#fff;padding:0 14px;font-size:17px;text-align:right;width:100%}
+.pick[aria-pressed="true"]{border:2px solid var(--brand);background:#eaf3fc}
+.picklist{display:flex;flex-direction:column;gap:6px;max-height:360px;overflow:auto}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{min-height:40px;padding:0 12px;border:1.5px solid #c9d1db;border-radius:99px;background:#fff;font-size:15px}
+.chips button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+table{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:16px}
+th{text-align:right;color:var(--ink-muted);font-size:14px;font-weight:500;padding:4px 10px}
+td{padding:10px;background:var(--card-muted);vertical-align:middle}
+td:first-child{border-radius:0 var(--r-sm) var(--r-sm) 0}td:last-child{border-radius:var(--r-sm) 0 0 var(--r-sm)}
+.tablewrap{overflow-x:auto}
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(31,42,55,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{width:100%;max-width:540px;max-height:94vh;overflow:auto;background:#fff;border-radius:var(--r-lg);box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modal .mhead{background:var(--brand);color:#fff;padding:16px 22px;font-size:19px;font-weight:600}
+.modal .mbody{padding:22px;display:flex;flex-direction:column;gap:14px}
+.modal .mfoot{display:flex;gap:10px;padding:0 22px 22px}.modal .mfoot .btn{flex:1}
+.warn{background:#fdf1dc;border-right:6px solid var(--orange);border-radius:var(--r-sm);padding:10px 14px;font-size:16px}
+.info{background:#eaf3fc;border-right:6px solid var(--brand);border-radius:var(--r-sm);padding:10px 14px;font-size:16px}
+.okbox{background:#e9f5e2;border-right:6px solid var(--green);border-radius:var(--r-sm);padding:14px 16px}
+.err{color:var(--red);font-weight:600}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:14px 24px;border-radius:var(--r-md);font-size:17px;z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:92vw}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login .card{width:100%;max-width:440px;padding:32px;display:flex;flex-direction:column;gap:16px}
+.loading{padding:40px;text-align:center;color:var(--ink-muted)}
+.credit{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--ink-muted);font-size:13px;padding:12px}
+.credit img{height:28px}
+.bar{height:10px;border-radius:99px;background:#e4e9ef;overflow:hidden}.bar i{display:block;height:100%;background:var(--green)}
+.big{font-size:44px;font-weight:200;line-height:1}
+/* הורים */
+.pp{max-width:640px;margin:0 auto;padding:16px 14px 60px;display:flex;flex-direction:column;gap:16px}
+.phead{display:flex;align-items:center;gap:14px;padding:16px 18px}
+.phead img{height:52px;flex:none}
+.step{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
+.step .n{width:30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:15px;flex:none}
+.tcard{border:1.5px solid var(--line);border-radius:var(--r-md);padding:14px;display:flex;flex-direction:column;gap:10px}
+.tcard.picked{border-color:var(--green);background:#f6fbf3}
+.meet{display:flex;flex-direction:column;gap:8px;padding:16px 18px;border-right:6px solid var(--brand)}
+.meet .tm{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.meet.now{border-right-color:var(--orange);background:#fdf3e2}.meet.done{border-right-color:var(--green)}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){
+ .app{flex-direction:column}
+ nav.rail{flex:0 0 auto;flex-direction:row;padding:6px;gap:4px;position:sticky;bottom:0;order:2;justify-content:space-around;z-index:20}
+ .rail .brand,.rail .spacer,.rail .who{display:none}
+ .rail button{flex:1;padding:8px 2px;font-size:12.5px}
+ main{padding:16px 12px 24px;order:1}
+ .topbar{padding:14px 16px}.box{padding:16px}
+ .kpi{min-height:88px;padding:14px}.kpi .n{font-size:40px;line-height:40px}
+ .grid2{grid-template-columns:1fr}
+}
+@media print{nav.rail,.acts,.noprint,.kfb-btn{display:none!important}main{padding:0}}
+</style>
+</head>
+<body>
+<div id="root"><div class="loading">טוען…</div></div>
+<script src="/as/as.js"></script>
+<script>
+'use strict';
+const CFG={url:'https://onocjgbtensczpdbeanf.supabase.co',key:'sb_publishable_JpV-E-qPnV9ZdnRnY9Kv8Q_TaRzCnyc'};
+async function rpc(fn,args){
+  const r=await fetch(CFG.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:CFG.key,Authorization:'Bearer '+CFG.key,'Content-Type':'application/json'},body:JSON.stringify(args||{})});
+  const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok){const m=(j&&j.message)||t;throw new Error(m)}
+  return j;
+}
+const ERR={taken:'השעה הזו נתפסה הרגע. בחרו שעה אחרת.',already:'כבר נקבעה פגישה לתלמיד הזה אצל המורה הזה.',overlap:'יש לכם כבר פגישה אחרת באותה שעה (אולי עם ילד נוסף). בחרו שעה אחרת.',
+  closed:'ההרשמה סגורה כרגע.',bad_phone:'מספר הטלפון לא תקין.',no_parent:'נא לכתוב שם.',no_picks:'לא נבחרה אף שעה.',no_student:'התלמיד לא נמצא ברשימת הכיתה.',
+  wrong_teacher:'המורה הזה לא נפגש עם הורי הכיתה.',bad_link:'הקישור לא תקין. בקשו מהמחנך קישור חדש.',forbidden:'אין לך הרשאה לפעולה הזו.',no_access:'המספר הזה לא מורשה להיכנס.',
+  view_only:'מצב צפייה בלבד',two_same_teacher:'אפשר לבחור שעה אחת בלבד אצל כל מורה.'};
+const errMsg=e=>{const m=String(e&&e.message||e);for(const k in ERR)if(m.includes(k))return ERR[k];return 'משהו השתבש. נסו שוב בעוד רגע.'};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const parseD=s=>new Date(s+'T12:00');
+function longDate(s){const d=parseD(s);let h='';try{h=new Intl.DateTimeFormat('he-u-ca-hebrew',{day:'numeric',month:'long'}).format(d)}catch(e){}
+  return 'יום '+DAYS[d.getDay()]+', '+d.getDate()+'.'+(d.getMonth()+1)+(h?' · '+h:'')}
+const todayIso=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const hm=t=>String(t||'').slice(0,5);
+const mins=t=>{const [h,m]=hm(t).split(':').map(Number);return h*60+m};
+const fmtMin=n=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(Math.round(n%60)).padStart(2,'0');
+function nameParts(n){const t=String(n).replace(/`/g,'׳').replace(/^הרב\s+/,'').split(' ');const k=['בן','בר','אבו','אל','דה'].includes(t[0])&&t.length>2?2:1;return{last:t.slice(0,k).join(' '),first:t.slice(k).join(' ')||t[0]}}
+const tName=n=>{const p=nameParts(n);return (/^הרב\s/.test(n)?'הרב ':'')+p.first.split(' ')[0]+' '+p.last};
+function intlPhone(p){let d=String(p||'').replace(/\D/g,'');if(d.startsWith('0'))d='972'+d.slice(1);return d}
+const fold=s=>String(s||'').replace(/[`'׳"״\-]/g,'').replace(/\s+/g,' ').trim();
+let toastT;function toast(m){let el=document.querySelector('.toast');if(!el){el=document.createElement('div');el.className='toast';el.setAttribute('role','status');document.body.appendChild(el)}el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,3600)}
+async function copy(t){try{await navigator.clipboard.writeText(t);toast('הועתק')}catch(e){prompt('העתיקו:',t)}}
+const ls=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
+const BASE=location.origin+'/horim/';
+const classLink=tok=>BASE+'?k='+tok;
+const myLink=tok=>BASE+'?p='+tok;
+const LOGO='<img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח">';
+const CREDIT='<div class="credit">'+LOGO+'<span>יום הורים · כנפי רוח · נבנה על ידי אריאל כהן</span></div>';
+const root=document.getElementById('root');
+const Q=new URLSearchParams(location.search);
+
+/* ---------- קובץ יומן ---------- */
+function icsFor(items,ev){
+  const z=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//kanfei-ruach//yom-horim//HE','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  items.forEach(it=>{const s=new Date(ev.day+'T'+hm(it.t)+':00'),e=new Date(s.getTime()+ev.slot_min*60000);
+    lines.push('BEGIN:VEVENT','UID:yh-'+it.id+'@kanfei-ruach','DTSTAMP:'+z(new Date()),'DTSTART:'+z(s),'DTEND:'+z(e),
+      'SUMMARY:'+('יום הורים · '+tName(it.teacher)+' · '+it.stu).replace(/[,;]/g,' '),
+      'LOCATION:'+('כנפי רוח'+(it.room?' · '+it.room:'')).replace(/[,;]/g,' '),
+      'DESCRIPTION:'+('המקום בתור: '+(it.link||'')).replace(/[,;]/g,' '),
+      'BEGIN:VALARM','TRIGGER:-PT60M','ACTION:DISPLAY','DESCRIPTION:תזכורת: יום הורים','END:VALARM','END:VEVENT')});
+  lines.push('END:VCALENDAR');return lines.join('\r\n');
+}
+function downloadIcs(items,ev){const b=new Blob([icsFor(items,ev)],{type:'text/calendar'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='yom-horim.ics';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function gcalLink(it,ev){const z=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');const s=new Date(ev.day+'T'+hm(it.t)+':00'),e=new Date(s.getTime()+ev.slot_min*60000);
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('יום הורים · '+tName(it.teacher)+' · '+it.stu)+'&dates='+z(s)+'/'+z(e)+'&location='+encodeURIComponent('כנפי רוח'+(it.room?' · '+it.room:''))+'&details='+encodeURIComponent('המקום בתור: '+(it.link||''))}
+
+/* ---------- תור חי: זמן משוער ---------- */
+/* q: רשימת הפגישות של המורה לפי סדר (t, s=התחיל, e=הסתיים, n=לא הגיע). מחזיר את העיכוב בדקות ואת מצב הפגישה הנוכחית */
+function liveInfo(q,slotMin,now){
+  now=now||new Date();let delay=0,cur=null;
+  q.forEach(x=>{if(x.s){const sched=mins(x.t),st=new Date(x.s);const stM=st.getHours()*60+st.getMinutes()+st.getSeconds()/60;delay=Math.max(0,stM-sched);if(!x.e)cur=x}});
+  if(cur){const st=new Date(cur.s);const over=(now-st)/60000-slotMin;if(over>0)delay+=over}
+  return {delay:Math.round(delay),cur};
+}
+
+/* =================================================================== */
+/* ========================  מצב הורה  ================================ */
+/* =================================================================== */
+const P={tok:Q.get('k'),ptok:Q.get('p'),data:null,stu:null,picks:{},parent:ls('yh_parent')||'',phone:ls('yh_pphone')||'',consent:true,done:null,mine:null,q:'',busy:false,timer:null};
+function myTokens(){try{return JSON.parse(ls('yh_ptokens')||'[]')}catch(e){return[]}}
+function addMyToken(t){const a=myTokens();if(!a.includes(t)){a.push(t);lsSet('yh_ptokens',JSON.stringify(a))}}
+async function loadMine(){const toks=[...new Set([...(P.ptok?[P.ptok]:[]),...myTokens()])];const all=[];let ev=null;
+  for(const t of toks){try{const m=await rpc('yh_mine',{p_ptoken:t});if(m&&m.items&&m.items.length){ev=m.event;m.items.forEach(i=>{i.ptoken=t;i.link=myLink(t);all.push(i)})}}catch(e){}}
+  all.sort((a,b)=>mins(a.t)-mins(b.t));P.mine={ev,items:all};}
+function parentShell(inner){return '<div class="pp"><header class="card phead">'+LOGO+'<div><h1 style="font-size:22px;line-height:28px">'+esc(P.data?P.data.event.title:(P.mine&&P.mine.ev?P.mine.ev.title:'יום הורים'))+'</h1><div class="muted small">כנפי רוח'+
+  (P.data?' · כיתה '+esc(P.data.cls)+' · '+esc(longDate(P.data.event.day)):P.mine&&P.mine.ev?' · '+esc(longDate(P.mine.ev.day)):'')+'</div></div></header>'+inner+CREDIT+'</div>'}
+
+async function parentStart(){
+  try{
+    await loadMine();
+    if(P.tok){P.data=await rpc('yh_class',{p_token:P.tok})}
+  }catch(e){root.innerHTML=parentShell('<div class="card box"><div class="err">'+esc(errMsg(e))+'</div></div>');return}
+  renderParent();
+  if(P.mine&&P.mine.items.length){clearInterval(P.timer);P.timer=setInterval(async()=>{if(P.busy||document.hidden)return;await loadMine();if(!P.stu||P.done)renderParent()},30000)}
+}
+function mineHtml(){
+  const m=P.mine;if(!m||!m.items.length)return '';
+  const ev=m.ev,isDay=ev.day===todayIso(),now=new Date();
+  const cards=m.items.map(it=>{
+    const li=liveInfo(it.queue,ev.slot_min,now);const me=it.queue.find(x=>x.t===it.t)||{};
+    let cls='',status='';
+    if(it.no_show){cls='done';status='<span class="tag r">סומן שלא הגעתם. דברו עם המורה.</span>'}
+    else if(it.ended){cls='done';status='<span class="tag g">הפגישה הסתיימה</span>'}
+    else if(it.started){cls='now';status='<span class="tag o">עכשיו בפנים</span>'}
+    else if(isDay){
+      const ahead=it.queue.filter(x=>mins(x.t)<mins(it.t)&&!x.e&&!x.n).length;
+      const est=mins(it.t)+li.delay;
+      status='<div><b>'+(ahead===0?'אתם הבאים בתור':'לפניכם בתור: '+ahead)+'</b></div>'+
+        (li.delay>=3?'<div class="warn small">המורה מאחר/ת בכ־'+li.delay+' דקות. כניסה משוערת: <b>'+fmtMin(est)+'</b></div>':'<div class="small muted">בזמן. כניסה משוערת: '+fmtMin(est)+'</div>');
+    }
+    return '<div class="card meet '+cls+'"><div class="row" style="justify-content:space-between"><span class="tm">'+esc(it.t)+'</span>'+(it.room?'<span class="tag">'+esc(it.room)+'</span>':'')+'</div>'+
+      '<div><b>'+esc(tName(it.teacher))+'</b> · על '+esc(it.stu)+' ('+esc(it.cls)+')</div>'+status+
+      (!it.started&&!it.ended&&ev.can_cancel?'<div class="row noprint"><a class="link" href="'+esc(gcalLink(it,ev))+'" target="_blank" rel="noopener">ליומן גוגל</a><button class="link" data-act="ics" data-id="'+it.id+'">ליומן בטלפון</button><button class="link" style="color:var(--red)" data-act="pcancel" data-id="'+it.id+'" data-tok="'+esc(it.ptoken)+'">ביטול הפגישה</button></div>':'')+'</div>'});
+  return '<section style="display:flex;flex-direction:column;gap:10px"><h2>הפגישות שלי</h2>'+(isDay?'<div class="small muted">הדף מתעדכן לבד כל חצי דקה.</div>':'')+cards.join('')+'</section>';
+}
+function renderParent(){
+  if(!P.tok){root.innerHTML=parentShell(P.mine&&P.mine.items.length?mineHtml():'<div class="card box">לא נמצאו פגישות בקישור הזה.</div>');return}
+  const d=P.data,ev=d.event;
+  if(P.done)return renderDone();
+  let h=mineHtml();
+  if(!ev.reg_open){root.innerHTML=parentShell(h+'<div class="card box"><h2>ההרשמה סגורה כרגע</h2><div class="muted">אם צריך לקבוע או לשנות פגישה, פנו למחנך/ת הכיתה.</div></div>');return}
+  if(ev.note)h+='<div class="info">'+esc(ev.note)+'</div>';
+  // שלב 1: הילד
+  h+='<section class="card box"><div class="step"><span class="n">1</span>על איזה ילד הפגישה?</div>';
+  if(P.stu){const s=d.students.find(x=>x.n===P.stu);h+='<button class="pick" aria-pressed="true" data-act="unstu"><b>'+esc(P.stu)+'</b><span class="link">החלפה</span></button>'}
+  else{
+    h+='<input type="search" id="sq" placeholder="חיפוש לפי שם" value="'+esc(P.q)+'" autocomplete="off"><div class="picklist" id="slist">'+stuList()+'</div>';
+  }
+  h+='</section>';
+  if(P.stu){
+    const s=d.students.find(x=>x.n===P.stu)||{done:[]};
+    const left=d.teachers.filter(t=>!s.done.includes(t.tid));
+    // שלב 2: פרטי ההורה
+    h+='<section class="card box"><div class="step"><span class="n">2</span>פרטי ההורה</div><div class="grid2"><label class="f">שם ההורה<input type="text" id="pname" autocomplete="name" value="'+esc(P.parent)+'"></label>'+
+      '<label class="f">טלפון נייד<input type="tel" id="pphone" inputmode="tel" autocomplete="tel" value="'+esc(P.phone)+'"></label></div>'+
+      '<label class="check"><input type="checkbox" id="pcons"'+(P.consent?' checked':'')+'> מסכימים שהמחנך/ת ישלחו תזכורת בוואטסאפ למספר הזה</label></section>';
+    // שלב 3: שעות
+    h+='<section class="card box"><div class="step"><span class="n">3</span>בחירת שעה'+(d.teachers.length>1?' אצל כל מורה':'')+'</div>';
+    if(!left.length)h+='<div class="okbox">כבר נקבעו כל הפגישות של '+esc(P.stu)+'. '+(P.mine&&P.mine.items.some(i=>i.stu===P.stu)?'הן מופיעות למעלה.':'אם קבע אותן הורה אחר במשפחה, הקישור האישי נמצא אצלו.')+'</div>';
+    const busy=(P.mine&&P.mine.items||[]).map(i=>mins(i.t));
+    left.forEach(t=>{const sel=P.picks[t.tid];
+      const free=t.slots.filter(x=>x.free);
+      h+='<div class="tcard'+(sel?' picked':'')+'"><div><b>'+esc(tName(t.name))+'</b>'+(t.homeroom?' <span class="tag b">מחנך/ת</span>':'')+(t.room?' <span class="tag">'+esc(t.room)+'</span>':'')+'</div>'+
+        (free.length?'<div class="times" role="group" aria-label="שעות פנויות אצל '+esc(tName(t.name))+'">'+t.slots.map(x=>{
+          const clash=busy.some(b=>Math.abs(b-mins(x.t))<ev.slot_min)||Object.entries(P.picks).some(([k,v])=>+k!==t.tid&&v&&Math.abs(mins(v.t)-mins(x.t))<ev.slot_min);
+          return x.free?'<button type="button" data-act="ptime" data-tid="'+t.tid+'" data-id="'+x.id+'" data-t="'+x.t+'" aria-pressed="'+(sel&&sel.id===x.id)+'"'+(clash?' disabled title="יש לכם פגישה אחרת בשעה הזו"':'')+'>'+x.t+'</button>':''}).join('')+'</div>'
+        :'<div class="warn small">אין יותר שעות פנויות אצל המורה הזה. פנו למחנך/ת.</div>')+
+        (sel?'<button class="link" data-act="ptime" data-tid="'+t.tid+'" data-id="">בלי פגישה אצל המורה הזה</button>':'')+'</div>'});
+    h+='</section>';
+    const n=Object.values(P.picks).filter(Boolean).length;
+    if(left.length)h+='<div id="perr" class="err" role="alert"></div><button class="btn wide ok" data-act="pbook"'+(n?'':' disabled')+'>'+(n?'קביעת '+(n===1?'הפגישה':n+' פגישות'):'בחרו שעה')+'</button>';
+  }
+  root.innerHTML=parentShell(h);
+  const sq=document.getElementById('sq');if(sq){sq.addEventListener('input',()=>{P.q=sq.value;document.getElementById('slist').innerHTML=stuList()})}
+}
+function stuList(){const d=P.data,f=fold(P.q);const L=d.students.filter(s=>!f||fold(s.n).split(' ').some(w=>w.startsWith(f))||fold(s.n).includes(f));
+  if(!L.length)return '<div class="muted">לא נמצא. נסו רק שם פרטי או רק שם משפחה.</div>';
+  return L.map(s=>{const all=d.teachers.length&&d.teachers.every(t=>s.done.includes(t.tid));
+    return '<button class="pick" data-act="stu" data-n="'+esc(s.n)+'"><span>'+esc(s.n)+'</span>'+(all?'<span class="tag g">נקבע</span>':s.done.length?'<span class="tag o">נקבע חלקית</span>':'')+'</button>'}).join('')}
+function renderDone(){
+  const r=P.done,ev=P.data.event;
+  const items=r.items;
+  let h='<section class="card box"><div class="okbox"><h2>נקבע!</h2><div>'+items.map(i=>'<div><b>'+esc(i.t)+'</b> · '+esc(tName(i.teacher))+' · על '+esc(i.stu)+'</div>').join('')+'</div></div>'+
+    '<div>שמרו את הקישור האישי. בו תראו את המקום בתור ביום עצמו, ומשם אפשר גם לבטל:</div>'+
+    '<div class="row"><a class="btn sm" href="'+esc(myLink(r.ptoken))+'">לקישור האישי</a><button class="btn sec sm" data-act="copylink" data-l="'+esc(myLink(r.ptoken))+'">העתקת הקישור</button></div>'+
+    '<div class="row"><button class="btn sec sm" data-act="icsall">הוספה ליומן בטלפון (עם תזכורת שעה לפני)</button>'+items.map(i=>'<a class="link" target="_blank" rel="noopener" href="'+esc(gcalLink(i,ev))+'">ליומן גוגל · '+esc(i.t)+'</a>').join('')+'</div>'+
+    '<button class="btn sec wide" data-act="another">קביעת פגישה לילד נוסף</button></section>';
+  root.innerHTML=parentShell(h);
+}
+async function parentBook(){
+  const d=P.data,picks=Object.values(P.picks).filter(Boolean);const el=document.getElementById('perr');
+  P.parent=document.getElementById('pname').value.trim();P.phone=document.getElementById('pphone').value.trim();P.consent=document.getElementById('pcons').checked;
+  if(!P.parent){el.textContent='נא לכתוב את שם ההורה.';return}
+  if(!/^0?5\d{8}$/.test(P.phone.replace(/\D/g,'').replace(/^972/,'0'))){el.textContent='נא לכתוב מספר נייד תקין (למשל 050-1234567).';return}
+  lsSet('yh_parent',P.parent);lsSet('yh_pphone',P.phone);
+  P.busy=true;el.textContent='';
+  try{
+    const prev=myTokens()[0]||null;
+    const r=await rpc('yh_book',{p_token:P.tok,p_student:P.stu,p_parent:P.parent,p_pphone:P.phone,p_consent:P.consent,p_picks:picks.map(p=>p.id),p_ptoken:prev});
+    addMyToken(r.ptoken);
+    const items=picks.map(p=>{const t=d.teachers.find(x=>x.tid===p.tid);return {id:p.id,t:p.t,teacher:t.name,room:t.room,stu:P.stu,link:myLink(r.ptoken)}}).sort((a,b)=>mins(a.t)-mins(b.t));
+    P.done={ptoken:r.ptoken,items};
+    renderDone();
+  }catch(e){el.textContent=errMsg(e);try{P.data=await rpc('yh_class',{p_token:P.tok})}catch(x){}const keep=el.textContent;P.picks={};renderParent();const e2=document.getElementById('perr');if(e2)e2.textContent=keep}
+  P.busy=false;
+}
+function parentClick(e){
+  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  const keep=()=>{const n=document.getElementById('pname'),p=document.getElementById('pphone'),c=document.getElementById('pcons');if(n)P.parent=n.value;if(p)P.phone=p.value;if(c)P.consent=c.checked};
+  if(a==='stu'){P.stu=b.dataset.n;P.picks={};renderParent();window.scrollTo({top:0,behavior:'smooth'})}
+  else if(a==='unstu'){keep();P.stu=null;P.picks={};renderParent()}
+  else if(a==='ptime'){keep();const tid=+b.dataset.tid;P.picks[tid]=b.dataset.id?{id:+b.dataset.id,t:b.dataset.t,tid}:null;renderParent()}
+  else if(a==='pbook')parentBook();
+  else if(a==='copylink')copy(b.dataset.l);
+  else if(a==='icsall')downloadIcs(P.done.items,P.data.event);
+  else if(a==='ics'){const it=P.mine.items.find(i=>i.id===+b.dataset.id);if(it)downloadIcs([it],P.mine.ev)}
+  else if(a==='another'){P.done=null;P.stu=null;P.picks={};P.q='';parentStart()}
+  else if(a==='pcancel'){if(!confirm('לבטל את הפגישה?'))return;rpc('yh_cancel',{p_ptoken:b.dataset.tok,p_booking:+b.dataset.id}).then(()=>{toast('הפגישה בוטלה');parentStart()}).catch(x=>toast(errMsg(x)))}
+}
+
+/* =================================================================== */
+/* ========================  מצב צוות  ================================= */
+/* =================================================================== */
+const S={phone:null,d:null,view:null,tid:null,cls:null,modal:null,busy:false,timer:null};
+try{S.phone=localStorage.getItem('hanhala_phone')||localStorage.getItem('milui_phone')}catch(e){}
+try{const a=JSON.parse(localStorage.getItem('kr_as')||'null');if(a&&a.real===S.phone&&a.phone){S.phone=a.phone}}catch(e){}
+
+async function load(){
+  const d=await rpc('yh_staff_load',{p_phone:S.phone});
+  d.P={};(d.participants||[]).forEach(p=>d.P[p.tid]=p);
+  d.byT={};(d.slots||[]).forEach(s=>{(d.byT[s.tid]=d.byT[s.tid]||[]).push(s)});
+  d.C={};(d.classes||[]).forEach(c=>d.C[c.name]=c);
+  S.d=d;
+  if(S.tid==null)S.tid=d.P[d.tid]?d.tid:(d.participants&&d.participants[0]?d.participants[0].tid:null);
+  if(!S.cls){const mine=(d.classes||[]).find(c=>c.homeroom===d.tid);S.cls=mine?mine.name:(d.classes[0]&&d.classes[0].name)}
+  if(!S.view)S.view=d.P[d.tid]?'diary':d.admin?'overview':'myclass';
+}
+const ICON={
+ diary:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
+ live:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>',
+ myclass:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M15 15c3 0 6 1.6 6 4.5"/></svg>',
+ overview:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+ settings:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>'
+};
+function shell(inner){
+  const d=S.d,nav=[];
+  if(d.event&&(d.P[d.tid]||d.admin))nav.push(['diary','היומן שלי'],['live','היום עצמו']);
+  if(d.event&&d.classes.length)nav.push(['myclass',d.admin?'כיתות':'הכיתה שלי']);
+  if(d.admin)nav.push(['overview','סקירה'],['settings','הגדרות']);
+  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand">יום הורים</div>'+
+    nav.map(([k,l])=>'<button data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>').join('')+
+    '<div class="spacer"></div><div class="who">'+esc(d.me||'')+'<br><a class="link" style="color:#c9d3de;font-size:13px" href="/hanhala/">ללוח ההנהלה</a><br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+CREDIT+'</main></div>'+(S.modal?modalHtml():'');
+}
+function renderLogin(err){
+  root.innerHTML='<div class="login"><form class="card" id="loginForm"><div style="text-align:center">'+LOGO.replace('>',' style="height:64px">')+'</div><h1>יום הורים</h1><div class="muted">כנפי רוח · כניסת צוות</div>'+
+   '<label for="ph" style="font-weight:600">מספר טלפון</label><input id="ph" type="tel" inputmode="tel" autocomplete="tel" required autofocus>'+
+   (err?'<div class="err">'+esc(err)+'</div>':'')+'<button class="btn wide" type="submit">כניסה</button><div class="small muted">הורים? הקישור לקביעת פגישה נשלח בקבוצת הכיתה.</div></form></div>';
+  root.querySelector('#ph').focus();
+}
+function render(){
+  if(!S.phone)return renderLogin();
+  if(!S.d){root.innerHTML='<div class="loading">טוען…</div>';return}
+  if(!S.d.event)S.view=S.d.admin?'settings':'none';
+  const v={diary:viewDiary,live:viewLive,myclass:viewClass,overview:viewOverview,settings:viewSettings,none:()=>'<div class="card box"><h2>עדיין לא נקבע יום הורים</h2><div class="muted">ההנהלה תפתח אותו בקרוב.</div></div>'}[S.view]||viewDiary;
+  const y=window.scrollY;root.innerHTML=shell(v());if(S.keepScroll)window.scrollTo(0,y);S.keepScroll=false;
+  const f=root.querySelector('[autofocus]');if(f)f.focus();
+}
+async function refresh(keep){S.keepScroll=keep;try{await load()}catch(e){if(/no_access/.test(e.message)){lsSet('hanhala_phone',null);S.phone=null;return renderLogin('המספר הזה לא מורשה להיכנס.')}toast(errMsg(e))}render()}
+const tsel=()=>{const d=S.d;if(!d.admin)return '';
+  return '<label class="row small" style="gap:8px">מורה:<select data-act="tsel" style="width:auto;min-height:44px">'+d.participants.map(p=>'<option value="'+p.tid+'"'+(p.tid===S.tid?' selected':'')+'>'+esc(tName(p.name))+'</option>').join('')+'</select></label>'};
+const eventLine=()=>{const e=S.d.event;return esc(longDate(e.day))+' · '+hm(e.t_start)+'–'+hm(e.t_end)+' · '+e.slot_min+' דקות לפגישה'};
+
+/* ----- היומן שלי ----- */
+function reminderText(s,b){const e=S.d.event,t=S.d.P[s.tid];
+  return 'שלום '+b.parent+',\nתזכורת: נפגשים ביום ההורים, '+longDate(e.day).split(' · ')[0]+', בשעה '+s.t+' עם '+tName(t.name)+' על '+b.stu+'.'+(t.room?'\nמקום: '+t.room+'.':'')+'\nביום עצמו אפשר לראות כאן את המקום בתור:\n'+myLink(b.ptoken)+'\nנתראה!'}
+function viewDiary(){
+  const d=S.d,tid=S.tid,p=d.P[tid];
+  if(!p)return '<header class="card topbar"><h1>היומן שלי</h1>'+tsel()+'</header><div class="card box">'+(d.admin?'בחרו מורה.':'את/ה לא ברשימת המורים שנפגשים עם הורים. אם צריך, בקשו מההנהלה להוסיף אותך.')+'</div>';
+  const sl=d.byT[tid]||[];const booked=sl.filter(s=>s.b).length,free=sl.filter(s=>!s.b&&!s.brk).length;
+  let h='<header class="card topbar"><div><h1>היומן של '+esc(tName(p.name))+'</h1><div class="muted">'+eventLine()+(p.room?' · '+esc(p.room):'')+'</div><div class="small muted">כיתות: '+esc(p.classes.join(', ')||'—')+'</div></div><div class="row">'+tsel()+'<button class="btn sec sm noprint" data-act="print">הדפסה</button></div></header>';
+  h+='<section class="kpis">'+kpi('k-blue','נקבעו','פגישות',booked,'f-taken')+kpi('k-green','פנויות','משבצות',free,'f-free')+kpi('k-orange','הפסקות','משבצות',sl.filter(s=>s.brk).length,'f-brk')+kpi('k-red','עוד לא קבעו','תלמידים',notBookedFor(tid).length,'f-nb')+'</section>';
+  if(!d.event.reg_open)h+='<div class="warn">ההרשמה להורים עוד סגורה. אפשר כבר לסמן הפסקות ולשבץ ידנית.</div>';
+  const F=S.filter||'all';
+  h+='<section class="card box"><div class="row" style="justify-content:space-between"><h2>המשבצות</h2><div class="chips">'+[['all','הכול'],['f-taken','נקבעו'],['f-free','פנויות'],['f-brk','הפסקות']].map(([k,l])=>'<button data-act="filter" data-f="'+k+'" aria-pressed="'+(F===k)+'">'+l+'</button>').join('')+'</div></div><div class="slots">'+
+    sl.filter(s=>F==='all'||(F==='f-taken'&&s.b)||(F==='f-free'&&!s.b&&!s.brk)||(F==='f-brk'&&s.brk)).map(s=>slotRow(s)).join('')+'</div></section>';
+  const nb=notBookedFor(tid);
+  h+='<section class="card box" id="nb"><h2>עוד לא קבעו אצלך ('+nb.length+')</h2>'+(nb.length?'<div class="small muted">אין לנו את הטלפון שלהם עד שיקבעו. אפשר לשלוח שוב את הקישור בקבוצת הכיתה, או לשבץ ידנית.</div><div class="chips">'+nb.map(x=>'<span class="tag">'+esc(x.stu)+' · '+esc(x.cls)+'</span>').join('')+'</div>':'<div class="okbox">כל ההורים קבעו. כל הכבוד!</div>')+'</section>';
+  return h;
+}
+function notBookedFor(tid){const d=S.d,p=d.P[tid];if(!p)return[];const have=new Set((d.byT[tid]||[]).filter(s=>s.b).map(s=>s.b.cls+'|'+s.b.stu));const out=[];
+  p.classes.forEach(c=>{const C=d.C[c];if(C)C.students.forEach(n=>{if(!have.has(c+'|'+n))out.push({cls:c,stu:n})})});return out}
+function kpi(cls,title,sub,n,go){return '<button type="button" class="kpi '+cls+'" data-act="kpi" data-k="'+go+'"><div><b>'+title+'</b><span>'+sub+'</span><span class="go">הצג ←</span></div><span class="n">'+n+'</span></button>'}
+function slotRow(s){
+  const b=s.b;
+  if(s.brk)return '<div class="slot brk"><span class="tm">'+s.t+'</span><div class="who"><b>הפסקה</b></div><div class="acts"><button class="btn sec xs" data-act="brk" data-id="'+s.id+'" data-v="0">ביטול ההפסקה</button></div></div>';
+  if(!b)return '<div class="slot free"><span class="tm">'+s.t+'</span><div class="who"><span class="muted">פנוי</span></div><div class="acts"><button class="btn sec xs" data-act="mbook" data-id="'+s.id+'">שיבוץ ידני</button><button class="btn sec xs" data-act="brk" data-id="'+s.id+'" data-v="1">הפסקה</button></div></div>';
+  const st=b.no_show?'<span class="tag r">לא הגיע</span>':b.ended?'<span class="tag g">הסתיים</span>':b.started?'<span class="tag o">בפגישה</span>':'';
+  const wa=b.phone?'https://wa.me/'+intlPhone(b.phone)+'?text='+encodeURIComponent(reminderText(s,b)):null;
+  return '<div class="slot taken"><span class="tm">'+s.t+'</span><div class="who"><b>'+esc(b.stu)+' <span class="small muted">· '+esc(b.cls)+'</span></b><span class="small muted">'+esc(b.parent)+(b.phone?' · <a href="tel:'+esc(b.phone)+'">'+esc(b.phone)+'</a>':'')+(b.by_staff?' · שובץ ע"י '+esc(b.by_staff):'')+'</span></div>'+st+
+    '<div class="acts">'+(wa?'<a class="btn wa xs" target="_blank" rel="noopener" href="'+esc(wa)+'"'+(b.consent?'':' title="ההורה לא אישר תזכורות"')+'>תזכורת בוואטסאפ</a>':'')+
+    '<button class="btn sec xs" data-act="move" data-id="'+b.id+'" data-tid="'+s.tid+'">הזזה</button><button class="btn bad xs" data-act="scancel" data-id="'+b.id+'">ביטול</button></div></div>';
+}
+
+/* ----- היום עצמו ----- */
+function viewLive(){
+  const d=S.d,tid=S.tid,p=d.P[tid];
+  if(!p)return '<header class="card topbar"><h1>היום עצמו</h1>'+tsel()+'</header><div class="card box">אין לך משבצות ביום ההורים.</div>';
+  const sl=(d.byT[tid]||[]).filter(s=>s.b);const isDay=d.event.day===todayIso();
+  const q=sl.map(s=>({t:s.t,s:s.b.started,e:s.b.ended,n:s.b.no_show}));
+  const li=liveInfo(q,d.event.slot_min);
+  const cur=sl.find(s=>s.b.started&&!s.b.ended);
+  const next=sl.filter(s=>!s.b.started&&!s.b.ended&&!s.b.no_show);
+  let h='<header class="card topbar"><div><h1>היום עצמו</h1><div class="muted">'+esc(tName(p.name))+' · '+eventLine()+'</div></div>'+tsel()+'</header>';
+  if(!isDay)h+='<div class="info">המסך הזה נועד ליום ההורים עצמו ('+esc(longDate(d.event.day))+'). אפשר לנסות אותו כבר עכשיו. ההורים רואים את העדכונים בקישור האישי שלהם.</div>';
+  h+='<div class="'+(li.delay>=5?'warn':'info')+'">'+(li.delay>=3?'את/ה מאחר/ת בכ־<b>'+li.delay+' דקות</b>. ההורים רואים זמן כניסה משוער מעודכן.':'את/ה בזמן.')+'</div>';
+  if(cur)h+='<section class="card box" style="border-right:6px solid var(--orange)"><div class="muted">עכשיו בפגישה</div><h2 style="font-size:26px">'+esc(cur.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(cur.b.cls)+' · '+cur.t+'</span></h2><div>'+esc(cur.b.parent)+'</div><button class="btn ok wide" data-act="live" data-id="'+cur.b.id+'" data-a="end">סיימתי</button></section>';
+  if(next.length){const n=next[0];h+='<section class="card box"><div class="muted">'+(cur?'הבא בתור':'הראשון בתור')+'</div><h2 style="font-size:24px">'+esc(n.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(n.b.cls)+' · '+n.t+'</span></h2><div>'+esc(n.b.parent)+'</div>'+
+    '<div class="grid2"><button class="btn wide" data-act="live" data-id="'+n.b.id+'" data-a="start">ההורה נכנס · התחלתי</button><button class="btn sec wide" data-act="live" data-id="'+n.b.id+'" data-a="noshow">לא הגיע</button></div></section>'}
+  if(!cur&&!next.length)h+='<div class="okbox">'+(sl.length?'סיימת את כל הפגישות. תודה!':'אין פגישות שנקבעו.')+'</div>';
+  h+='<section class="card box"><h2>כל הפגישות</h2><div class="slots">'+sl.map(s=>{const b=s.b;const c=b.no_show?'ns':b.ended?'done':b.started?'now':'taken';
+    return '<div class="slot '+c+'"><span class="tm">'+s.t+'</span><div class="who"><b>'+esc(b.stu)+'</b><span class="small muted">'+esc(b.cls)+' · '+esc(b.parent)+'</span></div><div class="acts">'+
+      (b.ended||b.no_show?'<span class="tag '+(b.no_show?'r':'g')+'">'+(b.no_show?'לא הגיע':'הסתיים')+'</span><button class="link" data-act="live" data-id="'+b.id+'" data-a="reset">החזרה לתור</button>':b.started?'<button class="btn ok xs" data-act="live" data-id="'+b.id+'" data-a="end">סיימתי</button>':'<button class="btn sec xs" data-act="live" data-id="'+b.id+'" data-a="start">התחלתי</button>')+
+      '</div></div>'}).join('')+'</div></section>';
+  return h;
+}
+
+/* ----- הכיתה שלי / כיתות ----- */
+function classMsg(c){const e=S.d.event;return 'הורים יקרים,\nיום ההורים יתקיים '+longDate(e.day).split(' · ')[0]+', בין '+hm(e.t_start)+' ל־'+hm(e.t_end)+'.\nכדי שלא נחכה בתור, כל הורה קובע לעצמו שעה בקישור:\n'+classLink(c.token)+'\nבוחרים את שם הילד ושעה פנויה. אחרי הקביעה תקבלו קישור אישי שבו תראו את המקום בתור ביום עצמו.\nתודה!'}
+function viewClass(){
+  const d=S.d,c=d.C[S.cls];
+  const sel=d.classes.length>1?'<select data-act="csel" style="width:auto;min-height:44px">'+d.classes.map(x=>'<option'+(x.name===S.cls?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select>':'';
+  if(!c)return '<header class="card topbar"><h1>כיתות</h1>'+sel+'</header>';
+  const ts=c.teachers.map(t=>d.P[t]).filter(Boolean);
+  const bookedBy={};(d.slots||[]).forEach(s=>{if(s.b&&s.b.cls===c.name)(bookedBy[s.b.stu]=bookedBy[s.b.stu]||{})[s.tid]=s});
+  const full=c.students.filter(n=>ts.length&&ts.every(t=>bookedBy[n]&&bookedBy[n][t.tid])).length;
+  let h='<header class="card topbar"><div><h1>כיתה '+esc(c.name)+'</h1><div class="muted">'+eventLine()+'</div></div>'+sel+'</header>';
+  h+='<section class="kpis">'+kpi('k-green','קבעו הכול','תלמידים',full,'c-full')+kpi('k-red','עוד לא','תלמידים',c.students.length-full,'c-none')+kpi('k-blue','מורים','נפגשים עם הכיתה',ts.length,'c-t')+kpi(d.event.reg_open?'k-green':'k-orange','הרשמה',d.event.reg_open?'פתוחה':'סגורה',d.event.reg_open?'✓':'—','c-reg')+'</section>';
+  if(!c.token)h+='<div class="warn">אין עדיין קישור לכיתה הזו. שמרו את הגדרות האירוע כדי ליצור אותו.</div>';
+  else h+='<section class="card box"><h2>הקישור להורי הכיתה</h2>'+(d.event.reg_open?'':'<div class="warn small">ההרשמה עוד סגורה: הורים שייכנסו יראו "ההרשמה סגורה". אפשר לשלוח אחרי שההנהלה תפתח.</div>')+
+    '<div class="row"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(classMsg(c))+'">שליחה לקבוצת הכיתה בוואטסאפ</a><button class="btn sec sm" data-act="copytxt" data-t="'+esc(classMsg(c))+'">העתקת ההודעה</button><button class="btn sec sm" data-act="copytxt" data-t="'+esc(classLink(c.token))+'">העתקת הקישור בלבד</button><a class="link" href="'+esc(classLink(c.token))+'" target="_blank" rel="noopener">לראות כמו הורה</a></div></section>';
+  h+='<section class="card box" id="ctab"><h2>מי קבע</h2><div class="tablewrap"><table><thead><tr><th>תלמיד</th>'+ts.map(t=>'<th>'+esc(tName(t.name))+'</th>').join('')+'<th></th></tr></thead><tbody>'+
+    c.students.map(n=>{const bb=bookedBy[n]||{};return '<tr><td><b>'+esc(n)+'</b></td>'+ts.map(t=>{const s=bb[t.tid];return '<td>'+(s?'<span class="tag g">'+s.t+'</span> <span class="small muted">'+esc(s.b.parent)+'</span>':'<span class="tag r">—</span>')+'</td>'}).join('')+
+      '<td>'+(ts.some(t=>!bb[t.tid])?'<button class="btn sec xs" data-act="cbook" data-n="'+esc(n)+'">שיבוץ ידני</button>':'')+'</td></tr>'}).join('')+'</tbody></table></div></section>';
+  return h;
+}
+
+/* ----- סקירה (הנהלה) ----- */
+function viewOverview(){
+  const d=S.d;const by={};(d.slots||[]).forEach(s=>{if(s.b)(by[s.b.cls]=by[s.b.cls]||new Set()).add(s.b.stu)});
+  const tot=d.classes.reduce((a,c)=>a+c.students.length,0),bk=d.classes.reduce((a,c)=>a+(by[c.name]?by[c.name].size:0),0);
+  const meet=(d.slots||[]).filter(s=>s.b).length,free=(d.slots||[]).filter(s=>!s.b&&!s.brk).length;
+  let h='<header class="card topbar"><div><h1>סקירה</h1><div class="muted">'+eventLine()+'</div></div><span class="tag '+(d.event.reg_open?'g':'o')+'">ההרשמה '+(d.event.reg_open?'פתוחה':'סגורה')+'</span></header>';
+  h+='<section class="kpis">'+kpi('k-green','שובצו',tot?Math.round(bk*100/tot)+'% מהתלמידים':'תלמידים',bk,'o-cls')+kpi('k-red','עוד לא','תלמידים',tot-bk,'o-cls')+kpi('k-blue','פגישות','נקבעו',meet,'o-t')+kpi('k-orange','פנויות','משבצות',free,'o-t')+'</section>';
+  h+='<section class="card box" id="ocls"><h2>לפי כיתה</h2><div class="tablewrap"><table><thead><tr><th>כיתה</th><th>שובצו</th><th style="width:40%"></th><th></th></tr></thead><tbody>'+
+    d.classes.map(c=>{const n=by[c.name]?by[c.name].size:0,t=c.students.length,pc=t?Math.round(n*100/t):0;
+      return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+n+' / '+t+'</td><td><div class="bar"><i style="width:'+pc+'%;background:'+(pc>=80?'var(--green)':pc>=40?'var(--orange)':'var(--red)')+'"></i></div></td><td><button class="link" data-act="gocls" data-c="'+esc(c.name)+'">לכיתה</button></td></tr>'}).join('')+'</tbody></table></div></section>';
+  h+='<section class="card box" id="ot"><h2>לפי מורה</h2><div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>נקבעו</th><th>פנויות</th><th></th></tr></thead><tbody>'+
+    d.participants.map(p=>{const sl=d.byT[p.tid]||[];return '<tr><td><b>'+esc(tName(p.name))+'</b></td><td class="small">'+esc(p.classes.join(', '))+'</td><td>'+sl.filter(s=>s.b).length+'</td><td>'+sl.filter(s=>!s.b&&!s.brk).length+'</td><td><button class="link" data-act="gotid" data-t="'+p.tid+'">ליומן</button></td></tr>'}).join('')+'</tbody></table></div></section>';
+  return h;
+}
+
+/* ----- הגדרות (הנהלה) ----- */
+function viewSettings(){
+  const d=S.d,e=d.event||{day:'2026-11-29',t_start:'16:00',t_end:'20:00',slot_min:10,gap_min:0,reg_open:false,reg_close:'',note:'',title:'יום הורים'};
+  let h='<header class="card topbar"><div><h1>הגדרות יום ההורים</h1><div class="muted">רק למנהל ולמנהל המערכת</div></div></header>';
+  h+='<section class="card box"><h2>האירוע</h2><div class="grid4"><label class="f">תאריך<input type="date" id="e_day" value="'+esc(e.day)+'"></label><label class="f">משעה<input type="time" id="e_ts" value="'+hm(e.t_start)+'"></label><label class="f">עד שעה<input type="time" id="e_te" value="'+hm(e.t_end)+'"></label>'+
+    '<label class="f">דקות לפגישה<input type="number" id="e_sm" min="3" max="60" value="'+e.slot_min+'"></label><label class="f">מרווח בין פגישות (דק׳)<input type="number" id="e_gm" min="0" max="30" value="'+e.gap_min+'"></label>'+
+    '<label class="f">ההרשמה נסגרת בסוף יום<input type="date" id="e_rc" value="'+esc(e.reg_close||'')+'"></label></div>'+
+    '<label class="f">הערה להורים (מופיעה בראש דף הקביעה)<textarea id="e_note" placeholder="למשל: הפגישות בכיתות. נא להגיע 5 דקות לפני.">'+esc(e.note||'')+'</textarea></label>'+
+    '<label class="check"><input type="checkbox" id="e_open"'+(e.reg_open?' checked':'')+'> <span><b>ההרשמה להורים פתוחה</b><br><span class="small muted">כשמסומן, הורים יכולים לקבוע שעה בקישור הכיתתי.</span></span></label>'+
+    '<div class="row"><button class="btn" data-act="saveev">שמירה'+(d.event?'':' ויצירת האירוע')+'</button></div></section>';
+  if(!d.event)return h;
+  const cap=c=>{const p=d.participants.filter(x=>x.classes.includes(c.name));return p};
+  const nSlots=Math.floor((mins(e.t_end)-mins(e.t_start)+e.gap_min)/(e.slot_min+e.gap_min));
+  const tight=d.classes.filter(c=>c.students.length>nSlots);
+  h+='<section class="card box"><div class="row" style="justify-content:space-between"><h2>מי נפגש עם ההורים</h2><span class="small muted">'+d.participants.length+' מורים · '+nSlots+' משבצות לכל מורה</span></div>'+
+    (tight.length?'<div class="warn">בכיתות האלה יש יותר תלמידים ממשבצות: '+tight.map(c=>esc(c.name)+' ('+c.students.length+')').join(', ')+'. אפשר להאריך את השעות, לקצר את הפגישה, או לתת למורה שעות משלו.</div>':'')+
+    '<div class="small muted">ברירת המחדל: כל מחנך עם הכיתה שלו. אפשר להוסיף מורים מקצועיים, שילוב או יועצות ולבחור להם כיתות. שעות ומקום — רק אם שונים מהאירוע.</div>'+
+    '<div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>משעה</th><th>עד</th><th>מקום</th><th></th></tr></thead><tbody id="ptab">'+
+    d.participants.map(p=>'<tr data-tid="'+p.tid+'"><td><b>'+esc(tName(p.name))+'</b></td><td><div class="chips">'+d.classes.map(c=>'<button data-act="pcls" data-c="'+esc(c.name)+'" aria-pressed="'+p.classes.includes(c.name)+'">'+esc(c.name)+'</button>').join('')+'</div></td>'+
+      '<td><input type="time" class="pts" value="'+hm(p.t_start||'')+'" style="min-height:44px"></td><td><input type="time" class="pte" value="'+hm(p.t_end||'')+'" style="min-height:44px"></td><td><input type="text" class="prm" value="'+esc(p.room||'')+'" placeholder="כיתה/חדר" style="min-height:44px"></td>'+
+      '<td><button class="link" style="color:var(--red)" data-act="prem">הסרה</button></td></tr>').join('')+'</tbody></table></div>'+
+    '<div class="row"><select id="addt" style="width:auto;min-width:240px"><option value="">הוספת איש צוות…</option>'+d.teachers.filter(t=>!d.P[t.id]).map(t=>'<option value="'+t.id+'">'+esc(tName(t.name))+'</option>').join('')+'</select><button class="btn sec sm" data-act="padd">הוספה</button></div>'+
+    '<div class="row"><button class="btn ok" data-act="saveparts">שמירה ובניית הלוח</button><span class="small muted">פגישות שכבר נקבעו לא נמחקות לעולם.</span></div></section>';
+  return h;
+}
+function collectParts(){return [...document.querySelectorAll('#ptab tr')].map(tr=>({tid:+tr.dataset.tid,classes:[...tr.querySelectorAll('[data-act="pcls"][aria-pressed="true"]')].map(b=>b.dataset.c),
+  t_start:tr.querySelector('.pts').value,t_end:tr.querySelector('.pte').value,room:tr.querySelector('.prm').value.trim()}))}
+
+/* ----- חלונות ----- */
+function modalHtml(){const m=S.modal,d=S.d;
+  if(m.kind==='book'){
+    const slot=m.slot?d.slots.find(s=>s.id===m.slot):null;
+    const tids=slot?[slot.tid]:(d.C[m.cls]?d.C[m.cls].teachers:[]);
+    const classes=slot?d.P[slot.tid].classes:[m.cls];
+    const cls=m.cls||classes[0];const C=d.C[cls];
+    const takenFor=tid=>new Set((d.byT[tid]||[]).filter(s=>s.b&&s.b.cls===cls).map(s=>s.b.stu));
+    return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">שיבוץ ידני'+(slot?' · '+slot.t:'')+'</div><div class="mbody">'+
+      (classes.length>1?'<label class="f">כיתה<select id="m_cls">'+classes.map(c=>'<option'+(c===cls?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select></label>':'<div>כיתה <b>'+esc(cls)+'</b></div>')+
+      '<label class="f">תלמיד<select id="m_stu">'+(C?C.students:[]).map(n=>'<option'+(n===m.stu?' selected':'')+'>'+esc(n)+'</option>').join('')+'</select></label>'+
+      (slot?'':'<label class="f">מורה ושעה<select id="m_slot">'+tids.map(t=>{const p=d.P[t];if(!p)return '';const tk=takenFor(t);return '<optgroup label="'+esc(tName(p.name))+'">'+(d.byT[t]||[]).filter(s=>!s.b&&!s.brk).map(s=>'<option value="'+s.id+'">'+s.t+' · '+esc(tName(p.name))+'</option>').join('')+'</optgroup>'}).join('')+'</select></label>')+
+      '<div class="grid2"><label class="f">שם ההורה<input type="text" id="m_par"></label><label class="f">טלפון (לתזכורת)<input type="tel" id="m_ph" inputmode="tel"></label></div><div id="m_err" class="err" role="alert"></div></div>'+
+      '<div class="mfoot"><button class="btn ok" data-act="mdo">שיבוץ</button><button class="btn sec" data-act="close">ביטול</button></div></div></div>'}
+  if(m.kind==='move'){
+    const s0=d.slots.find(s=>s.b&&s.b.id===m.bid);const fr=(d.byT[s0.tid]||[]).filter(s=>!s.b&&!s.brk);
+    return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">הזזת הפגישה של '+esc(s0.b.stu)+'</div><div class="mbody"><div>עכשיו: <b>'+s0.t+'</b>. לאיזו שעה?</div>'+
+      '<div class="times">'+fr.map(s=>'<button data-act="mvto" data-id="'+s.id+'">'+s.t+'</button>').join('')+'</div><div class="small muted">כדאי לעדכן את ההורה. הקישור האישי שלו מתעדכן לבד.</div></div><div class="mfoot"><button class="btn sec" data-act="close">ביטול</button></div></div></div>'}
+  return '';
+}
+
+/* ----- אירועים ----- */
+async function act(fn,args,msg){if(S.busy)return;S.busy=true;try{await rpc(fn,args);if(msg)toast(msg);S.modal=null;await load()}catch(e){toast(errMsg(e))}S.busy=false;S.keepScroll=true;render()}
+function staffClick(e){
+  const g=e.target.closest('[data-go]');if(g){S.view=g.dataset.go;S.filter=null;render();window.scrollTo(0,0);return}
+  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='close'){if(e.target===b||b.tagName==='BUTTON'){S.modal=null;render()}return}
+  if(a==='logout'){lsSet('hanhala_phone',null);S.phone=null;S.d=null;return renderLogin()}
+  if(a==='print')return print();
+  if(a==='filter'){S.filter=b.dataset.f;S.keepScroll=true;return render()}
+  if(a==='kpi'){const k=b.dataset.k;
+    if(['f-taken','f-free','f-brk'].includes(k)){S.filter=k;S.keepScroll=true;render()}
+    const id={'f-nb':'nb','c-full':'ctab','c-none':'ctab','o-cls':'ocls','o-t':'ot'}[k];if(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth'})}
+    if(k==='c-reg'&&S.d.admin){S.view='settings';render()}
+    if(k==='c-t'){S.view='overview';render()}
+    return}
+  if(a==='brk')return act('yh_slot_break',{p_phone:S.phone,p_slot:+b.dataset.id,p_break:b.dataset.v==='1'});
+  if(a==='scancel'){if(!confirm('לבטל את הפגישה? כדאי לעדכן את ההורה.'))return;return act('yh_staff_cancel',{p_phone:S.phone,p_booking:+b.dataset.id},'הפגישה בוטלה')}
+  if(a==='mbook'){const s=S.d.slots.find(x=>x.id===+b.dataset.id);S.modal={kind:'book',slot:s.id,cls:S.d.P[s.tid].classes[0]};return render()}
+  if(a==='cbook'){S.modal={kind:'book',cls:S.cls,stu:b.dataset.n};return render()}
+  if(a==='move'){S.modal={kind:'move',bid:+b.dataset.id};return render()}
+  if(a==='mvto')return act('yh_staff_move',{p_phone:S.phone,p_booking:S.modal.bid,p_slot:+b.dataset.id},'הפגישה הוזזה');
+  if(a==='mdo'){const m=S.modal,slot=m.slot||+(document.getElementById('m_slot')||{}).value;const cls=(document.getElementById('m_cls')||{}).value||m.cls;
+    if(!slot){document.getElementById('m_err').textContent='אין שעה פנויה.';return}
+    S.busy=true;rpc('yh_staff_book',{p_phone:S.phone,p_slot:slot,p_class:cls,p_student:document.getElementById('m_stu').value,p_parent:document.getElementById('m_par').value,p_pphone:document.getElementById('m_ph').value})
+      .then(async()=>{S.modal=null;toast('שובץ');await load();S.busy=false;S.keepScroll=true;render()}).catch(x=>{S.busy=false;document.getElementById('m_err').textContent=errMsg(x)});return}
+  if(a==='live')return act('yh_live',{p_phone:S.phone,p_booking:+b.dataset.id,p_action:b.dataset.a});
+  if(a==='copytxt')return copy(b.dataset.t);
+  if(a==='gocls'){S.cls=b.dataset.c;S.view='myclass';render();return window.scrollTo(0,0)}
+  if(a==='gotid'){S.tid=+b.dataset.t;S.view='diary';render();return window.scrollTo(0,0)}
+  if(a==='pcls'){b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true');return}
+  if(a==='prem'){b.closest('tr').remove();return}
+  if(a==='padd'){const sel=document.getElementById('addt'),tid=+sel.value;if(!tid)return;const t=S.d.teachers.find(x=>x.id===tid);
+    const parts=collectParts();parts.push({tid,classes:[],t_start:'',t_end:'',room:''});S.d.participants=parts.map(p=>Object.assign({name:(S.d.P[p.tid]||{}).name||t.name},p));S.d.P={};S.d.participants.forEach(p=>S.d.P[p.tid]=p);S.keepScroll=true;render();toast('נוסף. בחרו לו כיתות ולחצו "שמירה ובניית הלוח".');return}
+  if(a==='saveparts'){const parts=collectParts();const empty=parts.filter(p=>!p.classes.length);if(empty.length){toast('לכל מורה צריך לבחור לפחות כיתה אחת');return}
+    S.busy=true;(async()=>{try{await rpc('yh_admin_set_participants',{p_phone:S.phone,p_list:parts});const r=await rpc('yh_admin_build',{p_phone:S.phone});toast('נשמר. נוספו '+r.added+' משבצות'+(r.removed?', הוסרו '+r.removed:''));await load()}catch(x){toast(errMsg(x))}S.busy=false;S.keepScroll=true;render()})();return}
+  if(a==='saveev'){const v=id=>document.getElementById(id).value;const ev={day:v('e_day'),t_start:v('e_ts'),t_end:v('e_te'),slot_min:+v('e_sm'),gap_min:+v('e_gm'),reg_close:v('e_rc'),note:v('e_note').trim(),reg_open:document.getElementById('e_open').checked};
+    if(!ev.day||!ev.t_start||!ev.t_end||ev.t_end<=ev.t_start){toast('בדקו את התאריך והשעות');return}
+    S.busy=true;(async()=>{try{await rpc('yh_admin_save_event',{p_phone:S.phone,p_ev:ev});const r=await rpc('yh_admin_build',{p_phone:S.phone});toast('נשמר'+(r.added||r.removed?' · הלוח עודכן':''));await load()}catch(x){toast(errMsg(x))}S.busy=false;S.keepScroll=true;render()})();return}
+}
+function staffChange(e){const t=e.target;
+  if(t.dataset.act==='tsel'){S.tid=+t.value;render()}
+  else if(t.dataset.act==='csel'){S.cls=t.value;render()}
+  else if(t.id==='m_cls'){S.modal.cls=t.value;S.modal.stu=null;render()}
+}
+async function staffStart(){
+  root.addEventListener('click',staffClick);root.addEventListener('change',staffChange);
+  root.addEventListener('submit',async e=>{if(e.target.id!=='loginForm')return;e.preventDefault();const ph=document.getElementById('ph').value;
+    try{await rpc('yh_staff_load',{p_phone:ph});S.phone=ph;lsSet('hanhala_phone',ph);await refresh()}catch(x){renderLogin(/no_access/.test(x.message)?'המספר הזה לא מורשה להיכנס.':errMsg(x))}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.modal){S.modal=null;render()}});
+  if(!S.phone)return renderLogin();
+  await refresh();
+  // רענון אוטומטי (בעיקר ביום עצמו)
+  S.timer=setInterval(()=>{if(document.hidden||S.busy||S.modal||!S.phone||document.activeElement&&/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))return;refresh(true)},S.d&&S.d.event&&S.d.event.day===todayIso()?20000:60000);
+  const s=document.createElement('script');s.src='/feedback/badge.js';s.defer=true;document.body.appendChild(s);
+}
+
+if(P.tok||P.ptok){root.addEventListener('click',parentClick);parentStart()}else staffStart();
+</script>
+</body>
+</html>
