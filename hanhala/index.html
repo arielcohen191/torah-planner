@@ -1509,7 +1509,10 @@ root.addEventListener('change',e=>{
     p[k]=t.checked?p[k].filter(x=>x!==v):p[k].concat([v]);return savePrefs(p)}
 });
 root.addEventListener('click',e=>{
-  const g=e.target.closest('[data-go]');if(g){S.focus=null;S.more=false;S.view=g.dataset.go;S.filter=0;S.saved=null;S.edit=null;S.confirmDel=null;S.adminErr=null;if(S.view==='perms'&&canRoles()){loadAdmin().then(render)}if(S.view==='feedback'&&isDev()){loadFb().then(render)}if(S.view==='viewas'&&isDev()&&!S.people){loadPeople().then(render)}history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
+  const g=e.target.closest('[data-go]');if(g){
+    /* מהסרגל (או מהתפריט בטלפון) נכנסים ישר לכלי עצמו; מסך תמונת המצב נשאר נגיש מהאריחים */
+    if(g.closest('nav.rail,.tabbar,.sheet')){const u=(VIEWS.find(v=>v[0]===g.dataset.go)||[])[2];if(u&&u[0]==='/'){location.href=u;return}}
+    S.focus=null;S.more=false;S.view=g.dataset.go;S.filter=0;S.saved=null;S.edit=null;S.confirmDel=null;S.adminErr=null;if(S.view==='perms'&&canRoles()){loadAdmin().then(render)}if(S.view==='feedback'&&isDev()){loadFb().then(render)}if(S.view==='viewas'&&isDev()&&!S.people){loadPeople().then(render)}history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   if(a==='wfocus'){const v=b.dataset.v,off=S.view==='home'&&S.focus===v;S.view='home';S.focus=off?null:v;history.pushState(null,'',off?location.pathname:'#w-'+v);render();window.scrollTo(0,0);return}
   if(a==='trail'){const k=b.dataset.v;if(k.startsWith('w:')){S.view='home';S.focus=k.slice(2);history.pushState(null,'','#w-'+S.focus);render();window.scrollTo(0,0)}else{const x=document.createElement('button');x.dataset.go=k;x.hidden=true;root.appendChild(x);x.click()}return}
