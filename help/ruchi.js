@@ -45,8 +45,7 @@
   '.rch-m.me{align-self:flex-end;background:#2f7fd6;color:#fff;border-top-left-radius:4px}'+
   '.rch-m.wait{opacity:.7;font-style:italic}'+
   '.rch-chips{display:flex;flex-wrap:wrap;gap:6px}.rch-chips button{border:1.5px solid #9cc0e8;background:#fff;color:#1c4f8a;border-radius:999px;padding:6px 12px;font:500 14px inherit;font-family:inherit;cursor:pointer;min-height:36px}'+
-  '.rch-fb{align-self:stretch;border:1.5px dashed #c9a227;background:#fffbea;border-radius:12px;padding:10px 12px;font-size:14px}'+
-  '.rch-fb b{display:block;margin-bottom:4px}.rch-fb p{margin:0 0 8px;white-space:pre-wrap}'+
+  '.rch-fbl{display:block;margin-top:8px;color:#1c4f8a;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.rch-fbl:focus-visible{outline:3px solid #2f7fd6;outline-offset:2px;border-radius:4px}'+
   '.rch-go{border:0;border-radius:10px;background:#2f7fd6;color:#fff;font:600 15px inherit;font-family:inherit;min-height:40px;padding:0 14px;cursor:pointer}'+
   '.rch-go.sec{background:#fff;color:#1f2a37;border:1.5px solid #c9d1db}'+
   '.rch-in{display:flex;gap:8px;padding:10px;border-top:1px solid #e3e8ef;background:#fff}'+
@@ -68,16 +67,16 @@
     var ch=body.querySelector('.rch-chips');if(ch)ch.remove();
     addMsg('me',br(q));var w=addMsg('bot wait','רוחי חושב…');
     ask({phone:phone(),tool:TOOL,page:location.pathname+location.hash,q:q,history:HIST}).then(function(r){w.remove();busy=false;
-      if(r&&r.answer){HIST.push({role:'user',content:q},{role:'assistant',content:r.answer});HIST=HIST.slice(-8);addMsg('bot',br(r.answer));
-        if(r.feedback)fbCard(r.feedback);return}
+      if(r&&r.answer){HIST.push({role:'user',content:q},{role:'assistant',content:r.answer});HIST=HIST.slice(-8);var bm=addMsg('bot',br(r.answer));
+        if(r.feedback)fbLink(bm,r.feedback);return}
       var e=r&&r.error;
-      addMsg('bot',e==='no_key'?'עוד לא חיברו אותי לשרת, אז אני לא יכול לענות כרגע. 🙂':e==='rate'?'שאלו אותי הרבה בשעה האחרונה. נסו שוב בעוד קצת.':e==='forbidden'?'אני זמין כרגע רק להנהלה.':'משהו השתבש בדרך. אפשר לנסות שוב, או לשלוח משוב לאריאל.');
-      if(e&&e!=='rate'&&e!=='forbidden')fbCard({kind:'question',body:q});
+      var em=addMsg('bot',e==='no_key'?'עוד לא חיברו אותי לשרת, אז אני לא יכול לענות כרגע. 🙂':e==='rate'?'שאלו אותי הרבה בשעה האחרונה. נסו שוב בעוד קצת.':e==='forbidden'?'אני זמין כרגע רק להנהלה.':'משהו השתבש בדרך. אפשר לנסות שוב, או לשלוח משוב לאריאל.');
+      if(e&&e!=='rate'&&e!=='forbidden')fbLink(em,{kind:'question',body:q});
     }).catch(function(){w.remove();busy=false;addMsg('bot','אין חיבור כרגע. נסו שוב בעוד רגע.')})}
-  function fbCard(f){var c=document.createElement('div');c.className='rch-fb';
-    c.innerHTML='<b>📨 משוב מוכן לאריאל</b><p>'+esc(f.body)+'</p><button type="button" class="rch-go" data-fb>פתיחת המשוב לשליחה</button>';
-    c.querySelector('[data-fb]').onclick=function(){if(window.KFB){pan.hidden=true;window.KFB.open({kind:f.kind,body:f.body+'\n\n(הוכן על ידי רוחי)'})}};
-    body.appendChild(c);body.scrollTop=body.scrollHeight}
+  /* משוב: קישור קצר בתוך הבועה של רוחי, שפותח את חלון המשוב עם ההודעה המוכנה (בלי חלונית נוספת בתוך השיחה) */
+  function fbLink(m,f){var a=document.createElement('a');a.href='#';a.className='rch-fbl';a.textContent='לשליחת משוב ←';
+    a.onclick=function(e){e.preventDefault();if(window.KFB){pan.hidden=true;window.KFB.open({kind:f.kind,body:f.body+'\n\n(הוכן על ידי רוחי)'})}};
+    m.appendChild(a);body.scrollTop=body.scrollHeight}
   function news(){body.innerHTML='';var L=ME.news||[];
     if(!L.length){addMsg('bot','עוד אין הכרזות. כשיהיה משהו חדש, אספר לך כאן.');return}
     L.forEach(function(a){var d=new Date(a.at),n=document.createElement('div');n.className='rch-news';
