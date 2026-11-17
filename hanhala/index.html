@@ -23,6 +23,7 @@ a{color:inherit}
 .app{display:flex;min-height:100vh}
 nav.rail{flex:0 0 112px;background:var(--rail);display:flex;flex-direction:column;gap:6px;padding:24px 8px;padding-top:calc(24px + env(safe-area-inset-top,0px))}
 .rail .brand{color:#fff;font-weight:700;font-size:15px;text-align:center;padding-bottom:16px;border-bottom:1px solid #3a4756;margin-bottom:4px;line-height:1.3}
+.rail button.brand{display:block;color:#fff;font-weight:700;font-size:15px;padding:0 0 16px;border-radius:0;cursor:pointer}.rail button.brand:hover{background:none;color:#cfe6fb}
 .rail .brand small{display:block;font-weight:400;color:var(--rail-ink);font-size:13px}
 .rail button{background:none;border:0;font:inherit;width:100%}
 .rail a,.rail button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 4px;border-radius:var(--r-md);color:var(--rail-ink);font-size:14px;text-decoration:none;text-align:center;line-height:1.25}
@@ -1360,7 +1361,7 @@ function tabbarHtml(){const F=navFlat(),top=F.slice(0,4),curIn=top.some(x=>x.k==
     '<div class="sh-f">הגדרות</div><div class="sh-grid">'+extraBtns()+'<button type="button" data-act="logout">'+ICON.out+'יציאה</button></div></div>'}
   return h}
 function shell(inner){
-  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand">כנפי רוח<small>'+(isStaff()?'הנהלה':'צוות')+'</small></div>'+
+  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><button type="button" class="brand" data-go="'+(isStaff()?'home':'my')+'" title="לדף הראשי">כנפי רוח<small>'+(isStaff()?'הנהלה':'צוות')+'</small></button>'+
    navHtml()+
    '<div class="spacer"></div>'+
    (isStaff()?'<button type="button" data-go="prefs"'+(S.view==='prefs'?' aria-current="page"':'')+'>'+ICON.prefs+'התאמה אישית</button>':'')+

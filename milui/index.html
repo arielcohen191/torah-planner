@@ -274,7 +274,7 @@ const ICON={
 function shell(inner){
   const nav=[['board','לוח היום'],['absence','היעדרויות'],['pay','התחשבנות'],['teachers','מורים']];
   const cur=S.view==='cand'?'board':S.view;
-  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand">מילוי מקום</div>'+
+  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand" role="link" tabindex="0" title="לדף הראשי" style="cursor:pointer" onclick="location.href=\'/hanhala/\'" onkeydown="if(event.key===\'Enter\')location.href=\'/hanhala/\'">מילוי מקום</div>'+
    nav.map(([k,l])=>'<button data-go="'+k+'"'+(cur===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>').join('')+
    '<div class="spacer"></div><div class="who">'+esc(S.me||'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+'</main></div>'+(S.modal?modalHtml():'');
 }
