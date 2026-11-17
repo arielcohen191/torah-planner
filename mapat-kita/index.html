@@ -166,6 +166,7 @@ fieldset h3{font-size:15.5px;margin:18px 0 6px}
 .sqname{font:inherit;font-weight:700;background:none;border:0;padding:0;cursor:pointer;color:inherit;text-decoration:underline;text-underline-offset:3px}
 .sqbody{padding:16px 20px}.sqbody fieldset{margin:0 0 14px}.sqbody h3{font-size:15.5px;margin:14px 0 6px}
 .sqp{margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.gate-link{background:none;border:0;font:inherit;font-size:14px;color:var(--accent,#2f6fd6);text-decoration:underline;cursor:pointer;padding:6px;align-self:center;min-height:36px}
 .rolecard h4{margin:2px 0 8px;font-size:17px}.rolecard h5{margin:14px 0 6px;font-size:14.5px}
 .sclab{font-size:14px;min-width:110px}
 .sc{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}.sc small{color:var(--muted);font-size:13px}
@@ -362,7 +363,10 @@ body.loading-class .view{opacity:.35;pointer-events:none;transition:opacity .15s
   <label class="f" id="fNew1" hidden>יצירת סיסמה (4 תווים לפחות)<input name="n1" type="password" autocomplete="new-password"></label>
   <label class="f" id="fNew2" hidden>הקלדה חוזרת<input name="n2" type="password" autocomplete="new-password"></label>
   <button class="btn primary" id="gateBtn" style="justify-content:center">המשך</button><div id="gateMsg" class="hint" style="text-align:center;min-height:20px"></div>
-  <a href="#" id="gateBack" hidden onclick="gateStep('phone');return false" class="hint" style="text-align:center">← מספר אחר</a></form></div>
+  <button type="button" id="gateForgot" hidden onclick="forgotPin()" class="gate-link">שכחתי סיסמה</button>
+  <div id="gateG" style="display:none;flex-direction:column;gap:10px"><p class="hint" style="margin:0;text-align:center">כדי לבחור סיסמה חדשה מזדהים עם חשבון הגוגל שלכם: המייל הארגוני, או המייל הרשום בבית הספר.</p>
+    <button type="button" class="btn primary" style="justify-content:center" onclick="googleStart()">הזדהות עם גוגל</button></div>
+  <a href="#" id="gateBack" hidden onclick="GTOKEN=null;gateStep('phone');return false" class="hint" style="text-align:center">← מספר אחר</a></form></div>
 <div class="ov" id="ov"><div class="modal" id="modal"></div></div>
 <div id="printCards"></div>
 
@@ -859,13 +863,42 @@ const ses=(v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(SES_
 const ROLE_HE={teacher:"מחנך/ת",admin:"הנהלה",principal:"מנהל"};
 
 let GSTEP="phone";
-function gateStep(s){GSTEP=s;const f=document.getElementById("gateForm");
-  document.getElementById("fPin").hidden=s!=="pin";document.getElementById("fNew1").hidden=s!=="new";document.getElementById("fNew2").hidden=s!=="new";
+/* שלבי הכניסה: phone, pin, new (כניסה ראשונה), forgot (הסבר + כפתור גוגל), reset (אחרי הזדהות עם גוגל: בחירת סיסמה חדשה) */
+function gateStep(s){GSTEP=s;const f=document.getElementById("gateForm"),nw=s==="new"||s==="reset";
+  document.getElementById("fPin").hidden=s!=="pin";document.getElementById("fNew1").hidden=!nw;document.getElementById("fNew2").hidden=!nw;
+  f.ph.closest("label").hidden=s==="reset"||s==="forgot";f.ph.required=!(s==="reset"||s==="forgot");
   f.ph.readOnly=s!=="phone";document.getElementById("gateBack").hidden=s==="phone";
-  document.getElementById("gateBtn").textContent=s==="phone"?"המשך":s==="pin"?"כניסה":"יצירת סיסמה וכניסה";
-  document.getElementById("gateSub").textContent=s==="new"?"כניסה ראשונה: בחרו סיסמה אישית":"כנפי רוח · ישיבות פדגוגיות";
+  document.getElementById("gateBack").textContent=s==="reset"||s==="forgot"?"← חזרה לכניסה":"← מספר אחר";
+  document.getElementById("gateForgot").hidden=s!=="pin";document.getElementById("gateG").style.display=s==="forgot"?"flex":"none";
+  document.getElementById("gateBtn").hidden=s==="forgot";
+  document.getElementById("gateBtn").textContent=s==="phone"?"המשך":s==="pin"?"כניסה":s==="reset"?"שמירת הסיסמה וכניסה":"יצירת סיסמה וכניסה";
+  document.getElementById("gateSub").textContent=s==="new"?"כניסה ראשונה: בחרו סיסמה אישית":s==="forgot"?"שכחתי סיסמה":s==="reset"?"בחירת סיסמה חדשה":"כנפי רוח · ישיבות פדגוגיות";
   document.getElementById("gateMsg").textContent="";
-  setTimeout(()=>(s==="pin"?f.pin:s==="new"?f.n1:f.ph).focus(),50)}
+  setTimeout(()=>{const el=s==="pin"?f.pin:nw?f.n1:s==="forgot"?document.querySelector("#gateG button"):f.ph;if(el)el.focus()},50)}
+/* ----- איפוס סיסמה בהזדהות עם גוגל (Supabase Auth). פעיל רק אם ספק גוגל הופעל בפרויקט. ----- */
+let GTOKEN=null,G_ON=null;
+async function googleOn(){if(G_ON!==null)return G_ON;
+  try{const r=await fetch(CFG.url+"/auth/v1/settings",{headers:{apikey:CFG.key}});const j=await r.json();G_ON=!!(j&&j.external&&j.external.google)}catch(e){G_ON=false}return G_ON}
+async function forgotPin(){const msg=document.getElementById("gateMsg");msg.textContent="בודק…";
+  if(await googleOn()){gateStep("forgot");return}
+  msg.textContent="איפוס עצמי עוד לא זמין. פנו להנהלה, והיא תאפס לכם את הסיסמה במסך \"ניהול גישה\"."}
+function googleStart(){location.href=CFG.url+"/auth/v1/authorize?provider=google&redirect_to="+encodeURIComponent(location.origin+"/mapat-kita/")}
+async function gRpc(pin){const r=await fetch(CFG.url+"/rest/v1/rpc/mk_google_reset",{method:"POST",headers:{apikey:CFG.key,Authorization:"Bearer "+GTOKEN,"Content-Type":"application/json"},body:JSON.stringify({p_new_pin:pin})});
+  if(!r.ok)throw new Error("server "+r.status);return r.json()}
+const G_ERR=r=>r.error==="no_match"?"חשבון הגוגל "+(r.email||"")+" לא רשום אצלנו כמייל של איש צוות עם גישה למפת הכיתה. נסו להזדהות עם המייל הארגוני, או פנו להנהלה.":r.error==="pin_format"?"הסיסמה צריכה להיות באורך 4 עד 30 תווים":"ההזדהות עם גוגל לא הושלמה. נסו שוב.";
+function gSignOut(){const t=GTOKEN;GTOKEN=null;if(t)fetch(CFG.url+"/auth/v1/logout",{method:"POST",headers:{apikey:CFG.key,Authorization:"Bearer "+t}}).catch(()=>{})}
+/* חזרה מגוגל: הטוקן מגיע בחלק שאחרי # בכתובת. מחזיר true אם טיפלנו בכניסה. */
+async function googleReturn(){
+  const h=new URLSearchParams(location.hash.replace(/^#/,""));if(!h.get("access_token")&&!h.get("error"))return false;
+  history.replaceState(null,"",location.pathname);
+  document.getElementById("gate").hidden=false;const msg=document.getElementById("gateMsg");
+  if(!h.get("access_token")){gateStep("phone");msg.textContent="ההזדהות עם גוגל לא הושלמה. נסו שוב.";return true}
+  GTOKEN=h.get("access_token");gateStep("reset");msg.textContent="בודק את החשבון…";
+  try{const r=await gRpc(null);
+    if(r.error){gSignOut();gateStep("phone");msg.textContent=G_ERR(r);return true}
+    document.getElementById("gateSub").textContent="שלום "+r.name+", בחרו סיסמה חדשה";msg.textContent=""}
+  catch(e){gSignOut();gateStep("phone");msg.textContent="אין חיבור לשרת כרגע. נסו שוב בעוד רגע."}
+  return true}
 async function gateSubmit(){
   const f=document.getElementById("gateForm"),msg=document.getElementById("gateMsg"),phone=f.ph.value.trim();
   try{
@@ -875,6 +908,9 @@ async function gateSubmit(){
     if(GSTEP==="pin"){doLogin(phone,f.pin.value);return}
     if(f.n1.value.length<4){msg.textContent="הסיסמה צריכה להיות באורך 4 תווים לפחות";return}
     if(f.n1.value!==f.n2.value){msg.textContent="הסיסמאות לא זהות";return}
+    if(GSTEP==="reset"){if(!GTOKEN){gateStep("phone");return}msg.textContent="שומר…";const g=await gRpc(f.n1.value);
+      if(g.error){msg.textContent=G_ERR(g);return}
+      const pin=f.n1.value;gSignOut();f.n1.value=f.n2.value="";f.ph.value=g.phone;doLogin(g.phone,pin);return}
     msg.textContent="יוצר…";const u=await rpc("mk_create_pin",{p_phone:phone,p_new_pin:f.n1.value});
     if(u.error){msg.textContent=u.error==="bad"?"לא ניתן ליצור סיסמה למספר הזה. אולי כבר נוצרה סיסמה? נסו להיכנס איתה, או פנו להנהלה לאיפוס.":(ERR[u.error]||u.error);return}
     SES={phone,pin:f.n1.value};ses(SES);USER=u;afterLogin();
@@ -1470,7 +1506,7 @@ async function uploadReading(f){
 function updateSyncBtn(){const b=document.getElementById("syncNowBtn");if(b)b.hidden=!(USER&&USER.role!=="teacher"&&window._syncUrl)}
 
 document.querySelector(".hero").hidden=false;
-(function(){const s=ses();if(s&&s.phone){SES=s;doLogin(s.phone,s.pin,true)}else showGate()})();
+(async function(){if(await googleReturn())return;const s=ses();if(s&&s.phone){SES=s;doLogin(s.phone,s.pin,true)}else showGate()})();
 </script>
 <script src="/feedback/badge.js" defer></script>
 </body>
