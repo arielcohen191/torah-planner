@@ -29,6 +29,13 @@ nav.rail{flex:0 0 112px;background:var(--rail);display:flex;flex-direction:colum
 .rail a:hover,.rail button:hover{background:#31404f;color:#fff}
 .rail button[aria-current="page"]{background:var(--active);color:#fff;font-weight:600}
 .rail .spacer{flex:1}
+.tls{display:flex;flex-wrap:wrap;gap:6px}.tl{display:inline-flex;align-items:center;min-height:32px;padding:3px 12px;border-radius:999px;font:inherit;font-size:14px;border:1.5px solid;line-height:1.3}
+.tl.ok{background:#e7f4e1;border-color:#9cc98a;color:#2f5d22}.tl.pilot{background:#e3eefb;border-color:#8db4e6;color:#1d4f8c}.tl.off{background:#f2f4f7;border-color:#cfd6df;color:#5b6878;border-style:dashed}
+button.tl{cursor:pointer}button.tl:hover{filter:brightness(.96)}
+.lrow{display:flex;flex-direction:column;gap:10px;padding:12px 14px}.lh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.lh svg{width:22px;height:22px}.lh b{font-size:18px}.lh .small{flex:1}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}.seg button{border:0;background:#fff;font:inherit;font-size:15px;padding:8px 14px;min-height:40px;cursor:pointer}.seg button+button{border-inline-start:1.5px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--active);color:#fff;font-weight:600}.seg button[disabled]{cursor:default;opacity:.7}
+.lrow select{font:inherit;font-size:15px;padding:6px 10px;border:1.5px solid var(--line);border-radius:999px;min-height:34px}
 .trail{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-bottom:-12px;font-size:15px}.trail button{border:0;background:none;font:inherit;color:var(--blue-ink,#1d5fa8);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:6px 2px;min-height:36px}.trail .sep{color:var(--ink-muted)}.trail b{font-weight:600}
 .tstrip{position:sticky;top:0;z-index:6;display:flex;gap:8px;overflow-x:auto;padding:10px 2px;margin:-10px 0 -12px;background:var(--ground);animation:tshrink .28s ease-out}
 .tchip{flex:none;display:flex;align-items:center;gap:8px;border:0;border-radius:12px;color:#fff;font:inherit;font-size:15px;padding:6px 14px;min-height:46px;cursor:pointer;white-space:nowrap;opacity:.82}
@@ -280,14 +287,16 @@ const HOUSES=[{id:'ab',label:'בית א׳–ב׳',layers:['א','ב']},{id:'gd',l
 const sameSet=(a,b)=>a.length===b.length&&a.every(x=>b.includes(x));
 const myHouse=()=>{const L=(S.user&&S.user.layers)||[];if(!L.length)return 'all';const h=HOUSES.find(h=>sameSet(h.layers,L));return h?h.id:'mine'};
 const H=()=>S.house==='mine'?{id:'mine',label:'השכבות שלי',layers:S.user.layers}:HOUSES.find(h=>h.id===S.house)||null;
-const allowed=k=>!!(S.user&&S.user.tools.includes(k));
+const hid=k=>!!(S.user&&(S.user.hidden||[]).includes(k));
+const allowed=k=>!!(S.user&&S.user.tools.includes(k))&&!hid(k);
 const isDev=()=>!!(S.user&&(S.user.roles||[]).some(r=>r.id==='sysadmin'));
 const isStaff=()=>!!(S.user&&(S.user.staff||S.user.tools.length));
 /* שינוי תפקידים: מנהל הרשאות, וגם המנהל ומנהלות הבתים (רק תפקידים של אנשי צוות קיימים) */
 const ROLE_EDITORS=['principal','house_ab','house_gd','house_hv'];
 const canRoles=()=>!!(S.user&&(S.user.can_manage||(S.user.roles||[]).some(r=>ROLE_EDITORS.includes(r.id))));
 const rolesOnly=()=>!!(S.user&&!S.user.can_manage&&canRoles());
-const canSee=v=>v==='my'||v==='todo'||v==='maint'||(v==='ped'&&(pedOk()||allowed('ped')))||(v==='pedm'&&pedCanMeet())||(v==='viewas'&&isDev())||(v==='home'||v==='prefs'?isStaff():false)||(v==='perms'?canRoles():v==='feedback'?isDev():allowed(v));
+const canSee=v=>!hid(v)&&canSee0(v);
+const canSee0=v=>v==='my'||v==='todo'||v==='maint'||(v==='ped'&&(pedOk()||allowed('ped')))||(v==='pedm'&&pedCanMeet())||(v==='viewas'&&isDev())||(v==='home'||v==='prefs'?isStaff():false)||(v==='perms'?canRoles():v==='feedback'?isDev():allowed(v));
 const clsIn=c=>{const h=H();return !h||h.layers.includes(String(c).trim()[0])};
 const layerLetters=t=>{t=String(t||'');const m=t.match(/\(([^)]+)\)/);return ((m?m[1]:t).match(/[א-ו]/g))||[]};
 const SUBJ={torah:'חומש',navi:'נביא',mishna:'משנה',gemara:'גמרא',halacha:'הלכה',math:'מתמטיקה',hebrew:'עברית',science:'מדעים',other:'אחר'};
@@ -435,7 +444,7 @@ function sayDay(date){
 /* ---------- תצוגה ---------- */
 const VIEWS=[['home','משימות','לוח הנהלה'],['my','הדף שלי','#my'],['todo','המשימות שלי','#todo'],['tasks','משימות הצוות','#tasks'],['maint','תקלות ותחזוקה','#maint'],['milui','מילוי מקום','/milui/'],['toranut','תורנויות חצר','/toranut/'],['sayarot','סיירות','/sayarot/'],['mapat','מפת כיתה','/mapat-kita/'],['ped','החלטות מהישיבות','#ped'],['pedm','פגישות עם מחנכים (ימ"מ/ממ"י)','#pedm'],['hespek','מתכנן הספק','/']];
 const viewOf=k=>VIEWS.find(v=>v[0]===k)||VIEWS[0];
-const navViews=()=>VIEWS.filter(v=>v[0]==='my'||v[0]==='todo'||v[0]==='maint'||(v[0]==='home'?isStaff():v[0]==='ped'?pedOk():v[0]==='pedm'?pedCanMeet():allowed(v[0])));
+const navViews=()=>VIEWS.filter(v=>!hid(v[0])).filter(v=>v[0]==='my'||v[0]==='todo'||v[0]==='maint'||(v[0]==='home'?isStaff():v[0]==='ped'?pedOk():v[0]==='pedm'?pedCanMeet():allowed(v[0])));
 function kpiLink(c,title,sub,n,href,go){return '<a class="kpi '+c+'" href="'+href+'"><div><b>'+title+'</b><span>'+sub+'</span><span class="go">'+go+' ←</span></div><div class="n">'+n+'</div></a>'}
 function kpiBtn(c,title,sub,n,act,val,go,pressed){return '<button type="button" class="kpi '+c+'" data-act="'+act+'" data-v="'+val+'"'+(pressed!=null?' aria-pressed="'+pressed+'"':'')+'><div><b>'+title+'</b><span>'+sub+'</span><span class="go">'+go+' ←</span></div><div class="n">'+n+'</div></button>'}
 function goTile(k){const v=viewOf(k);return '<a class="gotile" href="'+v[2]+'">'+ICON[k]+'<span><b>למעבר לכלי '+v[1]+'</b><span>פתיחת הכלי המלא לעריכה ולטיפול</span></span><span class="arr" aria-hidden="true">←</span></a>'}
@@ -729,7 +738,7 @@ function viewMy(){
     h+='<h2 style="margin:8px 0 -8px">הכיתה שלי · '+esc(cls(H.class))+'</h2>'+
       '<div class="mygrid">'+panel('מורים נעדרים בכיתה ביום הזה',tb)+
       '<a class="gotile" href="/mapat-kita/">'+ICON.mapat+'<span><b>מפת הכיתה</b><span>נפתחת עם הקוד האישי שלך'+(H.synced_at?' · עודכנה מהגיליון '+fmtWhen(H.synced_at):'')+'</span></span><span class="arr" aria-hidden="true">←</span></a></div>'+
-      (S.ped?(()=>{const D=(S.ped.decisions||[]).filter(d=>d.class===H.class&&(d.status==='open'||d.status==='doing')),L=D.filter(pedLate).length;
+      (S.ped&&!hid('ped')?(()=>{const D=(S.ped.decisions||[]).filter(d=>d.class===H.class&&(d.status==='open'||d.status==='doing')),L=D.filter(pedLate).length;
         return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-act="ped-tab" data-v="dec">'+ICON.ped+'<span><b>החלטות מהישיבה הפדגוגית · '+(D.length?plural(D.length,'אחת פתוחה','פתוחות'):'אין פתוחות')+(L?' · '+L+' באיחור':'')+'</b><span>מעקב ביצוע, והזנת החלטה חדשה לכיתה</span></span><span class="arr" aria-hidden="true">←</span></button>'})():'')+
       panel('מערכת השעות של הכיתה',ttGrid(H.slots,s=>'<b>'+esc(s.subject||'שיעור')+'</b><span>'+esc(shortName(s.teacher))+'</span>',day))});
   const P=M.plans||[];
@@ -762,7 +771,7 @@ const todoSort=(a,b)=>((a.due&&a.due<today()?0:1)-(b.due&&b.due<today()?0:1))||(
 function todoDue(t){const k=todoKind(t);if(!t.due)return '<span class="tag grey">בלי תאריך יעד</span>';
   const n=Math.round((parse(t.due)-parse(today()))/864e5),d='יום '+DAYS[dow(t.due)]+' '+shortDate(t.due);
   return k==='late'?'<span class="tag red">באיחור של '+plural(-n,'יום','ימים')+' · '+d+'</span>':k==='now'?'<span class="tag orange">להיום</span>':'<span class="tag grey">'+(n===1?'מחר · ':'')+d+'</span>'}
-function todoTile(){
+function todoTile(){if(hid('todo'))return '';
   if(S.err.todo||!S.todo)return '';
   const O=todoOpen(),L=O.filter(t=>todoKind(t)==='late').length,N=O.filter(t=>todoKind(t)==='now').length;
   return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-act="todo-go">'+ICON.todo+'<span><b>המשימות שלי · '+(O.length?plural(O.length,'אחת פתוחה','פתוחות'):'אין פתוחות')+(L?' · '+L+' באיחור':'')+(N?' · '+N+' להיום':'')+'</b><span>רק משימות שפתחת או שצירפו אותך אליהן</span></span><span class="arr" aria-hidden="true">←</span></button>'}
@@ -860,7 +869,7 @@ function maintCam(){
     stream=s;v.srcObject=s;v.onloadedmetadata=()=>{st.textContent='כוונו את המצלמה אל התקלה ולחצו "צילום".';shoot.disabled=false;shoot.focus()}
   }).catch(e=>{st.textContent=e&&e.name==='NotAllowedError'?'אין הרשאה למצלמה. אשרו גישה למצלמה בדפדפן, או בחרו קובץ במקום.':'לא נמצאה מצלמה במכשיר הזה. אפשר לבחור קובץ במקום.';st.style.color='var(--red)'});
 }
-function maintTile(){
+function maintTile(){if(hid('maint'))return '';
   if(S.err.maint||!S.maint)return '';
   const M=S.maint.tickets.filter(t=>t.mine&&t.status!=='done').length;
   return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-act="maint-go">'+ICON.maint+'<span><b>תקלות ותחזוקה · '+(M?plural(M,'דיווח אחד שלך בטיפול','דיווחים שלך בטיפול'):'דיווח על תקלה')+'</b><span>מזגן, ברז, רהיט שבור: מדווחים כאן לאב הבית ועוקבים אחרי הטיפול</span></span><span class="arr" aria-hidden="true">←</span></button>'}
@@ -1147,6 +1156,23 @@ function viewPrefs(){
 /* תפקיד = משרה (כמו "מנהלת בית א׳–ב׳"): יש לו כלים ושכבות. לאדם יכולים להיות כמה תפקידים. */
 const LAYERS=['א','ב','ג','ד','ה','ו'];
 const TOOLS=['milui','toranut','sayarot','mapat','ped','hespek','tasks','maint'];
+/* פתיחה הדרגתית: כלי "בהרצה" פתוח רק למי שסומן. כלים שפתוחים לכולם בלי קשר לתפקיד: */
+const ALWAYS=['todo','maint'],LAUNCH=['todo',...TOOLS];
+const lMode=k=>(S.admin.launch||{})[k]||'all',inPilot=(k,ph)=>((S.admin.pilot||{})[k]||[]).includes(ph);
+function personTools(x,RL){const t=new Set(ALWAYS);x.roles.forEach(id=>((RL[id]||{}).tools||[]).forEach(k=>t.add(k)));return LAUNCH.filter(k=>t.has(k))}
+function toolChip(k,x){const m=lMode(k),on=m==='all'||inPilot(k,x.phone),can=S.admin.can_launch&&m==='pilot'&&!S.realPhone;
+  const cls=m==='all'?'ok':on?'pilot':'off',txt=viewOf(k)[1]+(m==='all'?'':on?' · בהרצה ✓':' · עוד לא נפתח');
+  return can?'<button type="button" class="tl '+cls+'" data-act="pilot-tog" data-v="'+k+'" data-p="'+esc(x.phone)+'" data-on="'+(on?0:1)+'" aria-pressed="'+on+'" title="'+(on?'לסגור את הכלי עבורו':'לפתוח את הכלי עבורו')+'">'+txt+'</button>':'<span class="tl '+cls+'">'+txt+'</span>'}
+function viewLaunch(){const A=S.admin,RL={};A.roles.forEach(r=>RL[r.id]=r);
+  let b='<p class="muted small" style="margin:0">כאן פותחים את הכלים בהדרגה. כלי "פתוח לכולם" זמין לכל מי שהתפקיד שלו מאפשר. כלי "בהרצה" פתוח רק לאנשים שסימנתם כאן, גם אם התפקיד שלהם מאפשר אותו. מי שמעביר כלי להרצה נוסף אליה אוטומטית.</p>';
+  if(S.adminErr)b+='<div class="note bad" role="alert">'+esc(S.adminErr)+'</div>';
+  b+=LAUNCH.map(k=>{const m=lMode(k),elig=A.staff.filter(x=>personTools(x,RL).includes(k)),P=elig.filter(x=>inPilot(k,x.phone)),rest=elig.filter(x=>!inPilot(k,x.phone)),dis=!A.can_launch||S.adminBusy?' disabled':'';
+    return '<div class="item lrow"><div class="lh">'+ICON[k]+'<b>'+viewOf(k)[1]+'</b><span class="small muted">'+(m==='all'?'פתוח ל־'+elig.length+' אנשי צוות'+(ALWAYS.includes(k)?' (ולכל המורים)':''):'בהרצה · '+P.length+' מתוך '+elig.length)+'</span>'+
+      '<span class="seg" role="group" aria-label="מצב הכלי"><button type="button" data-act="tool-mode" data-v="'+k+'" data-m="all" aria-pressed="'+(m==='all')+'"'+dis+'>פתוח לכולם</button><button type="button" data-act="tool-mode" data-v="'+k+'" data-m="pilot" aria-pressed="'+(m==='pilot')+'"'+dis+'>בהרצה</button></span></div>'+
+      (m==='pilot'?'<div class="chips">'+(P.length?P.map(x=>'<button type="button" class="tl pilot" data-act="pilot-tog" data-v="'+k+'" data-p="'+esc(x.phone)+'" data-on="0"'+dis+' title="להסיר מההרצה">'+esc(x.name)+' ✕</button>').join(''):'<span class="small muted">עוד לא נפתח לאף אחד.</span>')+
+        (rest.length&&A.can_launch?'<select data-pilotadd="'+k+'" aria-label="להוסיף להרצה של '+viewOf(k)[1]+'"><option value="">＋ להוסיף איש צוות…</option>'+rest.map(x=>'<option value="'+esc(x.phone)+'">'+esc(x.name)+'</option>').join('')+'</select>':'')+'</div>':'')+'</div>'}).join('');
+  return panel('פתיחת כלים בהדרגה',b)}
+
 const ERR={phone_exists:'מספר הטלפון הזה כבר רשום.',bad_phone:'מספר הטלפון לא תקין.',bad_name:'חסר שם.',no_roles:'צריך לסמן לפחות תפקיד אחד.',bad_role:'אחד התפקידים לא קיים. רעננו ונסו שוב.',role_in_use:'אי אפשר למחוק תפקיד שמשויכים אליו אנשים.',
   cannot_delete_self:'אי אפשר להסיר את עצמך.',forbidden:'אין לך הרשאה לנהל הרשאות.',bad_label:'חסר שם לתפקיד.',not_found:'הרשומה לא נמצאה. רעננו ונסו שוב.'};
 const errText=e=>{const k=Object.keys(ERR).find(k=>String(e&&e.message).includes(k));return k?ERR[k]:'הפעולה נכשלה. נסו שוב.'};
@@ -1171,6 +1197,7 @@ function staffForm(x){
     '<div><div class="small" style="font-weight:600;margin-bottom:6px">תפקידים (אפשר כמה)</div><div class="opts">'+
       roles.map(r=>{const lock=rolesOnly()&&(r.id==='principal'||r.id==='sysadmin');return '<label class="opt"'+(lock?' title="רק מנהל ההרשאות משנה את התפקיד הזה"':'')+'><input type="checkbox" name="roles" value="'+esc(r.id)+'"'+(sel.includes(r.id)?' checked':'')+(lock?' disabled':'')+'><span>'+esc(r.label)+'</span></label>'}).join('')+'</div></div>'+
     (rolesOnly()?'':'<label class="opt" style="align-self:flex-start"><input type="checkbox" name="can_manage"'+(x.can_manage?' checked':'')+(x.self?' disabled':'')+'><span>רשאי/ת לנהל הרשאות</span></label>')+
+    (x.old?(()=>{const RL={};roles.forEach(r=>RL[r.id]=r);const st=S.admin.staff.find(y=>y.phone===x.old);return st?'<div><div class="small" style="font-weight:600;margin-bottom:6px">כלים פתוחים בפניו/ה עכשיו</div><div class="tls">'+personTools(st,RL).map(k=>toolChip(k,st)).join('')+'</div><p class="muted small" style="margin:6px 0 0">ירוק: פתוח. כחול: בהרצה ונפתח לו/ה. אפור: בהרצה ועוד לא נפתח. לחיצה על כלי בהרצה פותחת או סוגרת אותו (בלי צורך בשמירה).</p></div>':''})():'')+
     (S.adminErr?'<div class="err" role="alert">'+esc(S.adminErr)+'</div>':'')+
     '<div class="chips"><button class="btn" type="submit"'+(S.adminBusy?' disabled':'')+'>'+(S.adminBusy?'שומר…':'שמירה')+'</button><button class="btn sec" type="button" data-act="edit-cancel">ביטול</button></div></form>';
 }
@@ -1192,7 +1219,9 @@ function viewPerms(){
   const tab=rolesOnly()?'staff':(S.permTab||'staff');
   let h=rolesOnly()?'<p class="muted small">כאן משנים תפקידים לאנשי הצוות ומוסיפים איש צוות חדש. הסרת אנשי צוות, הגדרת התפקידים עצמם ותפקיד המנהל נעשים אצל מנהל ההרשאות.</p>':'<div class="pills" role="tablist" style="margin-top:0"><button type="button" role="tab" data-act="perm-tab" data-v="staff" aria-pressed="'+(tab==='staff')+'">אנשי צוות ('+A.staff.length+')</button>'+
     '<button type="button" role="tab" data-act="perm-tab" data-v="roles" aria-pressed="'+(tab==='roles')+'">תפקידים ('+A.roles.length+')</button>'+
-    '<button type="button" role="tab" data-act="perm-tab" data-v="homeroom" aria-pressed="'+(tab==='homeroom')+'">מחנכים</button></div>';
+    '<button type="button" role="tab" data-act="perm-tab" data-v="homeroom" aria-pressed="'+(tab==='homeroom')+'">מחנכים</button>'+
+    '<button type="button" role="tab" data-act="perm-tab" data-v="launch" aria-pressed="'+(tab==='launch')+'">פתיחת כלים</button></div>';
+  if(tab==='launch')return h+viewLaunch();
   if(tab==='homeroom'){
     const miss=A.classes.filter(c=>!c.homeroom_id).length;
     let b='<p class="muted small" style="margin:0">המחנך רואה בדף שלו את מערכת השעות של הכיתה, את המורים הנעדרים בה ואת הקישור למפת הכיתה.'+(miss?' <b>'+plural(miss,'כיתה אחת','כיתות')+' בלי מחנך.</b>':'')+'</p>';
@@ -1212,7 +1241,7 @@ function viewPerms(){
       const rs=x.roles.map(id=>RL[id]).filter(Boolean),tools=[...new Set(rs.flatMap(r=>r.tools))],noTools=!tools.length;
       return '<div class="item prow'+(noTools?' s-asking':'')+'"><div class="t"><b>'+esc(x.name)+(x.self?' <span class="tag grey">(אני)</span>':'')+(x.can_manage?' <span class="tag green">מנהל/ת הרשאות</span>':'')+'</b><span class="small muted" dir="ltr">'+esc(x.phone)+'</span></div>'+
         '<div class="rchips">'+rs.map(r=>'<span class="rchip">'+esc(r.label)+'</span>').join('')+'</div>'+
-        '<div class="small muted">'+(noTools?'<span class="tag orange">אין עדיין כלים פתוחים בתפקידים האלה</span>':'רואה: '+tools.map(k=>viewOf(k)[1]+' ('+LV[rs.reduce((m,r)=>{const v=lvOf(r,k);return ['','view','edit','admin'].indexOf(v)>['','view','edit','admin'].indexOf(m)?v:m},'')]+')').join(' · '))+'</div>'+
+        (noTools?'<div class="small"><span class="tag orange">אין עדיין כלים פתוחים בתפקידים האלה</span></div>':'')+'<div class="tls" aria-label="כלים פתוחים">'+personTools(x,RL).map(k=>toolChip(k,x)).join('')+'</div>'+
         '<div class="chips"><button class="btn sec sm" data-act="staff-edit" data-v="'+esc(x.phone)+'">עריכה</button>'+
         (x.self||rolesOnly()?'':S.confirmDel===x.phone?'<button class="btn danger sm" data-act="staff-del" data-v="'+esc(x.phone)+'">בטוח? להסיר</button><button class="btn sec sm" data-act="del-cancel">ביטול</button>':'<button class="btn sec sm" data-act="del-ask" data-v="'+esc(x.phone)+'">הסרה</button>')+'</div></div>'}).join('');
     return h+panel('אנשי צוות',b);
@@ -1431,6 +1460,7 @@ root.addEventListener('change',e=>{
     M.forEach((e,i)=>{if(e.f){const x=e.items.findIndex(y=>y.k===k);if(x>=0)item=e.items.splice(x,1)[0]}else if(e.k===k){item=e;M[i]=null}});
     const N=M.filter(Boolean);if(item){if(t.value){const F=N.find(e=>e.f===t.value);if(F)F.items.push(item)}else N.push(item)}
     const p=pref();p.nav=navToPref(N);return savePrefs(p)}
+  if(t.dataset.pilotadd&&t.value)return adminDo('hanhala_admin_tool_pilot',{p_tool:t.dataset.pilotadd,p_target:t.value,p_on:true},true);
   if(t.dataset.homeroom!=null&&t.value==='__new'){S.hrNew=t.dataset.homeroom;render();const i=document.getElementById('hrNewName');if(i)i.focus();return}
   if(t.dataset.homeroom!=null)return adminDo('hanhala_admin_set_homeroom',{p_class:t.dataset.homeroom,p_teacher:t.value?+t.value:null},true);
   if(t.dataset.pref==='widget'){const p=pref(),cur=myWidgets().map(w=>w[0]),nx=t.checked?cur.concat([t.value]):cur.filter(x=>x!==t.value);
@@ -1477,6 +1507,8 @@ root.addEventListener('click',e=>{
     S.fbMsg='הדוח ירד כקובץ.';return render()}
   if(a==='fb-set'){const id=+b.dataset.id,st=b.dataset.v,f=(S.fb||[]).find(x=>x.id===id);if(f){const was=f.status;f.status=st;S.fbErr=null;S.fbOpen=(S.fb||[]).filter(x=>x.status==='new').length;render();
     rpc('hanhala_feedback_set',{p_phone:S.phone,p_id:id,p_status:st}).catch(e=>{console.error(e);f.status=was;S.fbOpen=(S.fb||[]).filter(x=>x.status==='new').length;S.fbErr='העדכון לא נשמר. נסו שוב.';render()})}return}
+  if(a==='tool-mode')return adminDo('hanhala_admin_tool_mode',{p_tool:b.dataset.v,p_mode:b.dataset.m},true);
+  if(a==='pilot-tog')return adminDo('hanhala_admin_tool_pilot',{p_tool:b.dataset.v,p_target:b.dataset.p,p_on:b.dataset.on==='1'},true);
   if(a==='perm-tab'){S.permTab=b.dataset.v;S.edit=null;S.openRole=null;S.adminErr=null;S.adminOk=false;return render()}
   if(a==='ped-tab'){const v=b.dataset.v,to=v==='dec'?'ped':'pedm';S.pedTab=v;S.pedNew=null;S.pedMsg=null;S.pedErr=null;if(S.view!==to){S.view=to;history.pushState(null,'','#'+to);window.scrollTo(0,0)}return render()}
   if(a==='ped-addrow'){document.getElementById('pedRows').insertAdjacentHTML('beforeend',pedRow({}));return}
