@@ -116,7 +116,10 @@
       if(go){if(a.link==='#ruchi')open();else location.href=a.link}else announce(list.slice(1))}
     w.querySelector('[data-ok]').onclick=function(){done(false)};var g=w.querySelector('[data-go]');if(g)g.onclick=function(){done(true)};
     w.addEventListener('keydown',function(e){if(e.key==='Escape')done(false)})}
-  function init(){var ph=phone();if(!ph)return;
-    rpc('ruchi_me',{phone:ph}).then(function(r){if(!r||!r.ok)return;ME=r;build();announce(r.pending)}).catch(function(){})}
+  /* נבדק גם אחרי כניסה לכלי (הטלפון נשמר רק אחרי ההתחברות), בלי לרענן את הדף */
+  var tried='';
+  function init(){var ph=phone();if(!ph||ph===tried||ME)return;tried=ph;
+    rpc('ruchi_me',{phone:ph}).then(function(r){if(!r||!r.ok)return;ME=r;build();announce(r.pending)}).catch(function(){tried=''})}
+  setInterval(init,3000);addEventListener('storage',init);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(init,400)});else setTimeout(init,400);
 })();
