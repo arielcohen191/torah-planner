@@ -29,6 +29,11 @@ nav.rail{flex:0 0 112px;background:var(--rail);display:flex;flex-direction:colum
 .rail a:hover,.rail button:hover{background:#31404f;color:#fff}
 .rail button[aria-current="page"]{background:var(--active);color:#fff;font-weight:600}
 .rail .spacer{flex:1}
+.navf{border-radius:var(--r-md)}.navf summary{list-style:none;display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 4px;border-radius:var(--r-md);color:var(--rail-ink);font-size:14px;text-align:center;cursor:pointer;line-height:1.25}
+.navf summary::-webkit-details-marker{display:none}.navf summary:hover{background:#31404f;color:#fff}.navf summary::after{content:'▾';font-size:11px;opacity:.7}.navf[open] summary::after{content:'▴'}
+.navf[open]{background:#2b3846}.navf>button{font-size:13px;padding:8px 4px}
+.navlist{display:flex;flex-direction:column;gap:6px}.navrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.navrow .nm{display:flex;align-items:center;gap:8px;flex:1;min-width:140px}.navrow .nm svg{width:20px;height:20px}.navrow.in{margin-inline-start:28px;background:#f7f9fc}.navrow select{font:inherit;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;min-height:36px}#navNewF{font:inherit;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;min-height:40px}
 .rail .who{color:var(--rail-ink);font-size:13px;text-align:center}
 main{flex:1;min-width:0;padding:24px 32px 48px;display:flex;flex-direction:column;gap:24px}
 .card{background:var(--card);border-radius:var(--r-md);box-shadow:var(--shadow)}
@@ -173,6 +178,8 @@ input[type=tel]{min-height:56px;border:1.5px solid #c9d1db;border-radius:var(--r
  nav.rail{flex:none;flex-direction:row;align-items:center;overflow-x:auto;padding:8px;padding-top:calc(8px + env(safe-area-inset-top,0px));gap:4px}
  .rail .brand{border:0;margin:0;padding:0 8px;white-space:nowrap}.rail .brand small{display:none}
  .rail button{flex:none;width:auto;flex-direction:row;padding:8px 12px;white-space:nowrap}.rail button svg{width:20px;height:20px}
+ .navf{flex:none;position:relative}.navf summary{flex-direction:row;padding:8px 12px;white-space:nowrap}.navf summary svg{width:20px;height:20px}
+ .navf[open]>button{flex-direction:row}
  .rail .spacer{display:none}.rail .who{white-space:nowrap;padding:0 8px}.rail .who br{display:none}
  main{padding:16px 12px 40px;gap:16px}
  .topbar{padding:14px 16px}h1{font-size:22px;line-height:28px}
@@ -275,6 +282,7 @@ const hashView=()=>{const k=location.hash.slice(1);return ['my','todo','tasks','
 S.view=hashView();
 
 const ICON={
+ folder:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6.5h6l2 2h10v10H3z"/></svg>',
  ck:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
  ok:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M7 12.5l3.2 3.2L17 9"/></svg>',
  fb:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
@@ -1085,7 +1093,15 @@ function viewPrefs(){
     '<h3 class="sub">ברשימת המשימות: משימות מאילו כלים</h3>'+(tv.length?'<div class="opts">'+tv.map(v=>chk('tool',v[0],v[1],!p.hideTools.includes(v[0]))).join('')+'</div>':'<div class="empty">אין כלים פתוחים לתפקיד שלך כרגע.</div>');
   b+='<h3 class="sub">ברשימת המשימות: אילו רמות דחיפות</h3><div class="opts">'+[1,2,3].map(u=>chk('urg',u,URG[u][0],!p.hideUrg.includes(u))).join('')+'</div>';
   b+='<div class="small '+(S.saved==='err'?'err':'muted')+'" role="status">'+(S.saved==='saving'?'שומר…':S.saved==='ok'?'נשמר. ההעדפה תופיע בכל מכשיר שתיכנס ממנו.':S.saved==='err'?'השמירה נכשלה. נסו שוב.':S.saved==='view'?VIEWONLY:'')+'</div>';
-  return panel('מה מוצג לי במסך הבית',b)+
+  const M=navModel(),folders=M.filter(e=>e.f).map(e=>e.f);
+  const row=(e,i,fi)=>'<div class="navrow'+(fi!=null?' in':'')+'"><span class="nm">'+(e.f?ICON.folder+'<b>'+esc(e.f)+'</b>':ICON[e.k]+esc(e.l))+'</span>'+
+    '<button type="button" class="btn sec sm" data-act="nav-mv" data-i="'+i+'" data-j="'+(fi==null?'':fi)+'" data-d="-1" aria-label="להזיז למעלה">↑</button><button type="button" class="btn sec sm" data-act="nav-mv" data-i="'+i+'" data-j="'+(fi==null?'':fi)+'" data-d="1" aria-label="להזיז למטה">↓</button>'+
+    (e.f?'<button type="button" class="btn sec sm" data-act="nav-fren" data-i="'+i+'">שינוי שם</button><button type="button" class="btn sec sm" data-act="nav-fdel" data-i="'+i+'">מחיקת תיקייה</button>'
+      :'<label class="small">תיקייה <select data-navf="'+e.k+'"><option value="">ללא</option>'+folders.map(f=>'<option'+(fi!=null&&M[i].f===f?' selected':'')+'>'+esc(f)+'</option>').join('')+'</select></label>')+'</div>';
+  const nb='<p class="muted small" style="margin:0 0 8px">משנים סדר בחצים, ומכניסים כלים לתיקיות (כמו סימניות בדפדפן). השינוי נשמר מיד ומופיע בכל מכשיר.</p><div class="navlist">'+
+    M.map((e,i)=>e.f?row(e,i)+e.items.map((x,j)=>row(x,i,j)).join(''):row(e,i)).join('')+'</div>'+
+    '<div class="chips" style="margin-top:10px"><input id="navNewF" maxlength="24" placeholder="שם לתיקייה חדשה" aria-label="שם לתיקייה חדשה"><button type="button" class="btn sm" data-act="nav-fadd">＋ תיקייה</button>'+(pref().nav?'<button type="button" class="btn sec sm" data-act="nav-reset">חזרה לסדר הרגיל</button>':'')+'</div>';
+  return panel('סדר הכלים בסרגל הצד',nb)+panel('מה מוצג לי במסך הבית',b)+
     panel('התפקידים שלי','<div class="rchips">'+(S.user.roles.length?S.user.roles.map(r=>'<span class="rchip">'+esc(r.label)+'</span>').join(''):'<span class="muted">לא הוגדר תפקיד</span>')+'</div>'+
       '<div class="duty"><span class="st">כלים פתוחים</span><span class="nm" style="white-space:normal">'+(tv.length?tv.map(v=>v[1]+' ('+LV[(S.user.levels||{})[v[0]]||'view']+')').join(' · '):'—')+'</span></div>'+
       (S.user.layers.length?'<div class="duty"><span class="st">שכבות</span><span class="nm">'+S.user.layers.map(l=>l+'׳').join(' ')+'</span></div>':'')+
@@ -1251,9 +1267,20 @@ function viewFeedback(){
     :'<div class="empty">'+(f?'אין משובים במצב הזה.':'אין משובים פתוחים.')+'</div>';
   return h+panel(f?'משובים: '+FBS[f]:'משובים פתוחים (חדשים ובטיפול)',b);
 }
+/* סדר התפריט ותיקיות: נשמר בהעדפות האישיות (prefs.nav). כלי שלא מופיע בהעדפה נוסף בסוף, כדי שכלי חדש לא ייעלם */
+function navModel(){const vis=navViews(),keys=vis.map(v=>v[0]),lab=k=>(vis.find(v=>v[0]===k)||[])[1],used=new Set(),out=[];
+  (pref().nav||[]).forEach(e=>{if(typeof e==='string'){if(keys.includes(e)&&!used.has(e)){used.add(e);out.push({k:e,l:lab(e)})}}
+    else if(e&&e.f){const it=(e.items||[]).filter(k=>keys.includes(k)&&!used.has(k));it.forEach(k=>used.add(k));out.push({f:e.f,items:it.map(k=>({k,l:lab(k)}))})}});
+  keys.filter(k=>!used.has(k)).forEach(k=>out.push({k,l:lab(k)}));return out}
+function navToPref(m){return m.map(e=>e.f?{f:e.f,items:e.items.map(x=>x.k)}:e.k)}
+const navBtn=(k,l)=>'<button type="button" data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>';
+function navFolderOpen(f){try{return localStorage.getItem('hh_nav_'+f)!=='0'}catch(e){return true}}
+function navHtml(){return navModel().map(e=>{if(!e.f)return navBtn(e.k,e.l);if(!e.items.length)return '';
+  const on=e.items.some(x=>x.k===S.view),open=on||navFolderOpen(e.f);
+  return '<details class="navf"'+(open?' open':'')+' data-f="'+esc(e.f)+'"><summary>'+ICON.folder+esc(e.f)+'</summary>'+e.items.map(x=>navBtn(x.k,x.l)).join('')+'</details>'}).join('')}
 function shell(inner){
   return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand">כנפי רוח<small>'+(isStaff()?'הנהלה':'צוות')+'</small></div>'+
-   navViews().map(([k,l])=>'<button type="button" data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>').join('')+
+   navHtml()+
    '<div class="spacer"></div>'+
    (isStaff()?'<button type="button" data-go="prefs"'+(S.view==='prefs'?' aria-current="page"':'')+'>'+ICON.prefs+'התאמה אישית</button>':'')+
    (canRoles()?'<button type="button" data-go="perms"'+(S.view==='perms'?' aria-current="page"':'')+'>'+ICON.perms+'הרשאות</button>':'')+
@@ -1335,6 +1362,7 @@ root.addEventListener('click',e=>{
 },true);
 root.addEventListener('keydown',e=>{const T=e.target;if(e.key==='Enter'&&T.classList&&T.classList.contains('stuin')){e.preventDefault();const v=T.value.trim();if(v){const box=T.parentNode.querySelector('.stuchips');if(![...box.children].some(c=>c.dataset.n===v))box.insertAdjacentHTML('beforeend',stuChip(v));T.value=''}}});
 root.addEventListener('input',e=>{const T=e.target;if(T.classList&&T.classList.contains('stuin')){const v=T.value.trim(),L=(S.ped.students||{})[S.pedCls||(document.getElementById('pedCls')||{}).value]||[];if(v&&L.includes(v)){const box=T.parentNode.querySelector('.stuchips');if(![...box.children].some(c=>c.dataset.n===v))box.insertAdjacentHTML('beforeend',stuChip(v));T.value=''}return}if(T.id==='pedQ'){S.pedQ=T.value;return pedFilterDom(T,'pedList')}if(T.id==='pedMQ')return pedFilterDom(T,'pedMList');if(T.id==='pedPQ')return pedFilterDom(T,'pedPList');if(e.target.id==='asQ'){S.asQ=e.target.value;const l=document.getElementById('asList');if(l)l.innerHTML=peopleList()}});
+document.addEventListener('toggle',e=>{const d=e.target;if(d.classList&&d.classList.contains('navf')){try{localStorage.setItem('hh_nav_'+d.dataset.f,d.open?'1':'0')}catch(x){}}},true);
 root.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='pedCls'){S.pedCls=t.value;const l=document.getElementById('pedDLs');if(l)l.innerHTML=pedClassDL(t.value);return}
@@ -1347,6 +1375,10 @@ root.addEventListener('change',e=>{
   if(t.dataset.pedf){S.pedF=Object.assign({},S.pedF,{[t.dataset.pedf]:t.value});return render()}
   if(t.dataset.fbnote&&S.realPhone){S.fbErr=VIEWONLY;return render()}
   if(t.dataset.fbnote){const f=(S.fb||[]).find(x=>x.id===+t.dataset.fbnote);if(f){const was={urgency:f.urgency,dev_note:f.dev_note,size:f.size};f.dev_note=t.value.trim();S.fbErr=null;fbSave(f,was)}return}
+  if(t.dataset.navf){const M=navModel(),k=t.dataset.navf;let item=null;
+    M.forEach((e,i)=>{if(e.f){const x=e.items.findIndex(y=>y.k===k);if(x>=0)item=e.items.splice(x,1)[0]}else if(e.k===k){item=e;M[i]=null}});
+    const N=M.filter(Boolean);if(item){if(t.value){const F=N.find(e=>e.f===t.value);if(F)F.items.push(item)}else N.push(item)}
+    const p=pref();p.nav=navToPref(N);return savePrefs(p)}
   if(t.dataset.homeroom!=null&&t.value==='__new'){S.hrNew=t.dataset.homeroom;render();const i=document.getElementById('hrNewName');if(i)i.focus();return}
   if(t.dataset.homeroom!=null)return adminDo('hanhala_admin_set_homeroom',{p_class:t.dataset.homeroom,p_teacher:t.value?+t.value:null},true);
   if(t.dataset.pref==='widget'){const p=pref(),cur=myWidgets().map(w=>w[0]),nx=t.checked?cur.concat([t.value]):cur.filter(x=>x!==t.value);
@@ -1368,6 +1400,13 @@ root.addEventListener('click',e=>{
   if(a==='mk-list'){S.mkList=S.mkList===b.dataset.v?null:b.dataset.v;return render()}
   if(a==='hr-new-cancel'){S.hrNew=null;return render()}
   if(a==='hr-new-save'){const n=(document.getElementById('hrNewName')||{}).value||'';if(!n.trim()){S.adminErr='נא לכתוב את שם המחנך/ת.';return render()}S.hrNew=null;return adminDo('hanhala_admin_add_homeroom',{p_class:b.dataset.c,p_name:n.trim()},true)}
+  if(a&&a.startsWith('nav-')){const M=navModel(),save=m=>{const p=pref();p.nav=navToPref(m);return savePrefs(p)};
+    if(a==='nav-reset'){const p=pref();delete p.nav;return savePrefs(p)}
+    if(a==='nav-fadd'){const n=((document.getElementById('navNewF')||{}).value||'').trim().slice(0,24);if(!n||M.some(e=>e.f===n))return;M.push({f:n,items:[]});return save(M)}
+    const i=+b.dataset.i,j=b.dataset.j===''||b.dataset.j==null?null:+b.dataset.j,d=+b.dataset.d;
+    if(a==='nav-mv'){const L=j==null?M:M[i].items,x=j==null?i:j,y=x+d;if(y<0||y>=L.length)return;[L[x],L[y]]=[L[y],L[x]];return save(M)}
+    if(a==='nav-fdel'){const f=M[i];M.splice(i,1,...f.items);return save(M)}
+    if(a==='nav-fren'){const n=(prompt('שם חדש לתיקייה',M[i].f)||'').trim().slice(0,24);if(!n||M.some(e=>e.f===n))return;M[i].f=n;return save(M)}}
   if(a==='fb-rep'){S.fbRep=b.dataset.id?+b.dataset.id:null;render();const t=document.getElementById('fbRepTxt');if(t)t.focus();return}
   if(a==='fb-rep-send'){const t=document.getElementById('fbRepTxt'),id=+b.dataset.id;if(!t||!t.value.trim())return;b.disabled=true;
     rpc('hanhala_feedback_reply',{p_phone:S.phone,p_id:id,p_body:t.value.trim()}).then(()=>{const x=(S.fb||[]).find(f=>f.id===id);if(x){x.msgs=(x.msgs||[]).concat([{dev:true,body:t.value.trim()}])}S.fbRep=null;render()}).catch(()=>{b.disabled=false;S.fbErr='התשובה לא נשלחה. נסו שוב.';render()});return}
