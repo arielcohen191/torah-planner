@@ -130,11 +130,12 @@ h2{margin:0;font-size:20px;font-weight:600}
 .task .tx{display:flex;flex-direction:column;gap:2px;min-width:0}.task .tx b{font-size:18px;font-weight:600}
 .ghead{color:#fff;border-radius:var(--r-sm);padding:8px 16px;font-size:17px;font-weight:600;display:flex;justify-content:space-between;margin-top:4px}
 .okline{display:flex;align-items:center;gap:10px;color:var(--green-ink);font-size:18px;font-weight:600}
-.gotile{display:flex;align-items:center;gap:16px;background:var(--rail);color:#fff;border-radius:var(--r-lg);padding:18px 24px;text-decoration:none;min-height:84px;transition:transform .12s,box-shadow .12s}
-.gotile:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(31,42,55,.25)}
-.gotile svg{width:34px;height:34px;flex:none}
-.gotile b{display:block;font-size:20px;font-weight:600}.gotile span span{font-size:15px;color:var(--rail-ink)}
-.gotile .arr{margin-inline-start:auto;font-size:30px;font-weight:200}
+.gotile{display:flex;align-items:center;gap:16px;background:var(--card);color:var(--ink);border:1.5px solid var(--line);border-inline-start:6px solid var(--blue);border-radius:var(--r-lg);padding:18px 24px;text-decoration:none;min-height:84px;transition:transform .12s,box-shadow .12s}
+button.gotile{width:100%;text-align:right;cursor:pointer}
+.gotile:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(31,42,55,.12)}
+.gotile svg{width:34px;height:34px;flex:none;color:var(--blue)}
+.gotile b{display:block;font-size:20px;font-weight:600}.gotile span span{font-size:15px;color:var(--ink-muted)}
+.gotile .arr{margin-inline-start:auto;font-size:30px;font-weight:200;color:var(--blue)}
 .item.s-open{border-right-color:var(--red)}.item.s-asking{border-right-color:var(--orange)}.item.s-ok{border-right-color:var(--green)}
 .item .t{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px}
 .item .t b{font-size:18px;font-weight:600}
@@ -377,7 +378,7 @@ async function loadAll(force){
   if(S.user&&!canSee(S.view))S.view=isStaff()?'home':'my';
   if(S.view==='perms'&&canRoles()&&!S.admin)await loadAdmin();
   if(S.view==='viewas'&&isDev()&&!S.people)await loadPeople();
-  if(isDev()){await part('fb',async()=>{S.fbOpen=await rpc('hanhala_feedback_open',{p_phone:S.phone})});if(S.view==='feedback')await loadFb()}
+  if(isDev())await loadFb();
   S.loadedAt=new Date();
 }
 
@@ -568,6 +569,9 @@ function viewTasks(){
   const pf=pref(),all=tasks().filter(t=>!pf.hideTools.includes(t.tool)&&!pf.hideUrg.includes(t.u)),cnt=u=>all.filter(t=>t.u===u).length,f=S.filter;
   const loading=!S.user&&!S.err.data,tile=(u,c,t,sub)=>pf.hideUrg.includes(u)?'':kpiBtn(c,t,sub,loading?'–':cnt(u),'filter',u,'הצג',f===u);
   let h='<section class="kpis k3" aria-label="משימות לפי דחיפות">'+tile(1,'k-red','דחוף','לטיפול מיידי')+tile(2,'k-orange','להיום','לסגור עד סוף היום')+tile(3,'k-blue','למעקב','לא בוער')+'</section>';
+  if(isDev()&&S.fb){const c=k=>S.fb.filter(x=>x.status===k).length,unr=fbOpenList().filter(x=>!x.urgency).length;
+    h+='<section class="kpis k3" aria-label="משובים מהצוות">'+kpiBtn('k-red','משובים חדשים','עוד לא טופלו',c('new'),'fb-go','new','למשובים')+
+      kpiBtn('k-orange','משובים בטיפול','בעבודה',c('doing'),'fb-go','doing','למשובים')+kpiBtn(unr?'k-purple':'k-green','משובים לדירוג','פתוחים בלי דחיפות',unr,'fb-go','','לדירוג')+'</section>'}
   if(pf.hideTools.length||pf.hideUrg.length)h+='<button type="button" class="note" style="border:0;font:inherit;text-align:right;cursor:pointer" data-go="prefs">חלק מהמשימות מוסתרות לפי ההתאמה האישית שלך. לשינוי ←</button>';
   const errs=Object.keys(S.err).filter(k=>k!=='hol'&&k!=='data');
   if(errs.length)h+='<div class="note bad">חלק מהכלים לא נטענו כרגע, ולכן ייתכן שחסרות משימות. נסו לרענן.</div>';
@@ -726,7 +730,7 @@ function yhLinkPanel(name){if(hid('horim')||!S.yh||!S.yh.event)return '';const c
   return panel('יום הורים · הקישור להורי הכיתה',yhLinkBody(c))}
 function horimTile(){if(hid('horim')||!S.yh||!S.yh.event)return '';const Y=S.yh,e=Y.event;
   const sub=Y.part?(Y.booked?Y.booked+' פגישות נקבעו אצלך'+(Y.next&&e.day===today()?' · הבאה ב־'+Y.next:''):'עוד אין פגישות אצלך'):'הקישור להורים, השעות והתור החי';
-  return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-go="horim">'+ICON.horim+'<span><b>יום הורים · '+DAYS[dow(e.day)]+' '+shortDate(e.day)+'</b><span>'+sub+(e.reg_open?'':' · ההרשמה להורים עוד סגורה')+'</span></span><span class="arr" aria-hidden="true">←</span></button>'}
+  return '<button type="button" class="gotile" data-go="horim">'+ICON.horim+'<span><b>יום הורים · '+DAYS[dow(e.day)]+' '+shortDate(e.day)+'</b><span>'+sub+(e.reg_open?'':' · ההרשמה להורים עוד סגורה')+'</span></span><span class="arr" aria-hidden="true">←</span></button>'}
 function viewHorim(){
   if(S.err.yh)return '<div class="note bad">יום ההורים לא נטען כרגע. נסו לרענן.</div>'+goTile('horim');
   if(!S.yh)return panel('יום הורים',skel);
@@ -774,7 +778,7 @@ function viewMy(){
       '<div class="mygrid">'+panel('מורים נעדרים בכיתה ביום הזה',tb)+
       yhLinkPanel(H.class)+'<a class="gotile" href="/mapat-kita/">'+ICON.mapat+'<span><b>מפת הכיתה</b><span>נפתחת עם הקוד האישי שלך'+(H.synced_at?' · עודכנה מהגיליון '+fmtWhen(H.synced_at):'')+'</span></span><span class="arr" aria-hidden="true">←</span></a></div>'+
       (S.ped&&!hid('ped')?(()=>{const D=(S.ped.decisions||[]).filter(d=>d.class===H.class&&(d.status==='open'||d.status==='doing')),L=D.filter(pedLate).length;
-        return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-act="ped-tab" data-v="dec">'+ICON.ped+'<span><b>החלטות מהישיבה הפדגוגית · '+(D.length?plural(D.length,'אחת פתוחה','פתוחות'):'אין פתוחות')+(L?' · '+L+' באיחור':'')+'</b><span>מעקב ביצוע, והזנת החלטה חדשה לכיתה</span></span><span class="arr" aria-hidden="true">←</span></button>'})():'')+
+        return '<button type="button" class="gotile" data-act="ped-tab" data-v="dec">'+ICON.ped+'<span><b>החלטות מהישיבה הפדגוגית · '+(D.length?plural(D.length,'אחת פתוחה','פתוחות'):'אין פתוחות')+(L?' · '+L+' באיחור':'')+'</b><span>מעקב ביצוע, והזנת החלטה חדשה לכיתה</span></span><span class="arr" aria-hidden="true">←</span></button>'})():'')+
       panel('מערכת השעות של הכיתה',ttGrid(H.slots,s=>'<b>'+esc(s.subject||'שיעור')+'</b><span>'+esc(shortName(s.teacher))+'</span>',day))});
   const P=M.plans||[];
   h+=panel('תוכניות הלימודים שלי',(P.length?P.map(p=>{const m=p.summary||{};
@@ -809,7 +813,7 @@ function todoDue(t){const k=todoKind(t);if(!t.due)return '<span class="tag grey"
 function todoTile(){if(hid('todo'))return '';
   if(S.err.todo||!S.todo)return '';
   const O=todoOpen(),L=O.filter(t=>todoKind(t)==='late').length,N=O.filter(t=>todoKind(t)==='now').length;
-  return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-act="todo-go">'+ICON.todo+'<span><b>המשימות שלי · '+(O.length?plural(O.length,'אחת פתוחה','פתוחות'):'אין פתוחות')+(L?' · '+L+' באיחור':'')+(N?' · '+N+' להיום':'')+'</b><span>רק משימות שפתחת או שצירפו אותך אליהן</span></span><span class="arr" aria-hidden="true">←</span></button>'}
+  return '<button type="button" class="gotile" data-act="todo-go">'+ICON.todo+'<span><b>המשימות שלי · '+(O.length?plural(O.length,'אחת פתוחה','פתוחות'):'אין פתוחות')+(L?' · '+L+' באיחור':'')+(N?' · '+N+' להיום':'')+'</b><span>רק משימות שפתחת או שצירפו אותך אליהן</span></span><span class="arr" aria-hidden="true">←</span></button>'}
 const pChip=p=>'<span class="pchip" data-k="'+esc(p.k)+'">'+esc(p.name)+'<button type="button" data-act="todo-unp" aria-label="הסרת '+esc(p.name)+'">✕</button></span>';
 /* בחירת שותפים: מקלידים שם ובוחרים מהרשימה */
 function pBox(sel,id){const P=S.todoPeople||[];if(!P.length)return '';
@@ -907,7 +911,7 @@ function maintCam(){
 function maintTile(){if(hid('maint'))return '';
   if(S.err.maint||!S.maint)return '';
   const M=S.maint.tickets.filter(t=>t.mine&&t.status!=='done').length;
-  return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-act="maint-go">'+ICON.maint+'<span><b>תקלות ותחזוקה · '+(M?plural(M,'דיווח אחד שלך בטיפול','דיווחים שלך בטיפול'):'דיווח על תקלה')+'</b><span>מזגן, ברז, רהיט שבור: מדווחים כאן לאב הבית ועוקבים אחרי הטיפול</span></span><span class="arr" aria-hidden="true">←</span></button>'}
+  return '<button type="button" class="gotile" data-act="maint-go">'+ICON.maint+'<span><b>תקלות ותחזוקה · '+(M?plural(M,'דיווח אחד שלך בטיפול','דיווחים שלך בטיפול'):'דיווח על תקלה')+'</b><span>מזגן, ברז, רהיט שבור: מדווחים כאן לאב הבית ועוקבים אחרי הטיפול</span></span><span class="arr" aria-hidden="true">←</span></button>'}
 function maintRow(t,lvl){const st=MAINT_ST[t.status],u=MAINT_U[t.urgency]||MAINT_U[2],h=lvl>=2;
   return '<div class="todo '+st[2]+'" style="grid-template-columns:1fr"><div class="tx" style="padding-top:0"><b>'+esc(t.place)+'</b><div class="nt" style="color:var(--ink);font-size:16px">'+esc(t.descr)+'</div>'+
     '<span class="chips" style="gap:4px 12px"><span class="tag '+st[1]+'">'+st[0]+(t.status!=='open'&&t.status_at?' · '+fmtWhen(t.status_at)+(t.status_by?' · '+esc(t.status_by):''):'')+'</span>'+(t.urgency!==2?'<span class="tag '+u[1]+'">'+u[0]+'</span>':'')+
@@ -1366,11 +1370,12 @@ function viewFeedback(){
     :'<div class="empty">'+(f?'אין משובים במצב הזה.':'אין משובים פתוחים.')+'</div>';
   return h+panel(f?'משובים: '+FBS[f]:'משובים פתוחים (חדשים ובטיפול)',b);
 }
-/* סדר התפריט ותיקיות: נשמר בהעדפות האישיות (prefs.nav). כלי שלא מופיע בהעדפה נוסף בסוף, כדי שכלי חדש לא ייעלם */
+/* סדר התפריט ותיקיות: נשמר בהעדפות האישיות (prefs.nav). כלי שלא מופיע בהעדפה נוסף לפני התיקייה הראשונה (או בסוף כשאין תיקיות), כדי שכלי חדש לא ייעלם */
 function navModel(){const vis=navViews(),keys=vis.map(v=>v[0]),lab=k=>(vis.find(v=>v[0]===k)||[])[1],used=new Set(),out=[];
   (pref().nav||[]).forEach(e=>{if(typeof e==='string'){if(keys.includes(e)&&!used.has(e)){used.add(e);out.push({k:e,l:lab(e)})}}
     else if(e&&e.f){const it=(e.items||[]).filter(k=>keys.includes(k)&&!used.has(k));it.forEach(k=>used.add(k));out.push({f:e.f,items:it.map(k=>({k,l:lab(k)}))})}});
-  keys.filter(k=>!used.has(k)).forEach(k=>out.push({k,l:lab(k)}));return out}
+  const fresh=keys.filter(k=>!used.has(k)).map(k=>({k,l:lab(k)})),fi=out.findIndex(e=>e.f);
+  if(fi<0)out.push(...fresh);else out.splice(fi,0,...fresh);return out}
 function navToPref(m){return m.map(e=>e.f?{f:e.f,items:e.items.map(x=>x.k)}:e.k)}
 const navBtn=(k,l)=>'<button type="button" data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>';
 function navFolderOpen(f){try{return localStorage.getItem('hh_nav_'+f)!=='0'}catch(e){return true}}
@@ -1532,6 +1537,7 @@ root.addEventListener('click',e=>{
   if(a==='fb-rep-send'){const t=document.getElementById('fbRepTxt'),id=+b.dataset.id;if(!t||!t.value.trim())return;b.disabled=true;
     rpc('hanhala_feedback_reply',{p_phone:S.phone,p_id:id,p_body:t.value.trim()}).then(()=>{const x=(S.fb||[]).find(f=>f.id===id);if(x){x.msgs=(x.msgs||[]).concat([{dev:true,body:t.value.trim()}])}S.fbRep=null;render()}).catch(()=>{b.disabled=false;S.fbErr='התשובה לא נשלחה. נסו שוב.';render()});return}
   if(a==='fb-shot'){const id=+b.dataset.id;S.fbShots=S.fbShots||{};if(S.fbShots[id]){delete S.fbShots[id];return render()}b.disabled=true;b.textContent='טוען…';rpc('hanhala_feedback_shot',{p_phone:S.phone,p_id:id}).then(d=>{if(d&&/^data:image\//.test(d))S.fbShots[id]=d;else S.fbErr='הצילום לא נמצא.';render()}).catch(()=>{S.fbErr='הצילום לא נטען. נסו שוב.';render()});return}
+  if(a==='fb-go'){S.view='feedback';S.fbFilter=b.dataset.v||null;history.pushState(null,'','#feedback');render();window.scrollTo(0,0);return}
   if(a==='fb-filter'){S.fbFilter=S.fbFilter===b.dataset.v?null:b.dataset.v;return render()}
   if((a==='fb-set'||a==='fb-urg'||a==='fb-size')&&S.realPhone){S.fbErr=VIEWONLY;return render()}
   if(a==='fb-urg'){const f=(S.fb||[]).find(x=>x.id===+b.dataset.id),v=+b.dataset.v;if(f){const was={urgency:f.urgency,dev_note:f.dev_note,size:f.size};f.urgency=f.urgency===v?null:v;S.fbErr=null;S.fbMsg=null;render();fbSave(f,was)}return}
