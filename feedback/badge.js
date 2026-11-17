@@ -12,7 +12,7 @@
   /* מזהה מכשיר אקראי: לפיו (או לפי הטלפון) המשתמש רואה את הפניות הקודמות שלו */
   function token(){var t=ls('fb_token');if(!/^[A-Za-z0-9_-]{16,64}$/.test(t)){var a=new Uint8Array(18);try{crypto.getRandomValues(a)}catch(e){for(var i=0;i<a.length;i++)a[i]=Math.random()*256}
     t=Array.prototype.map.call(a,function(n){return ('0'+n.toString(16)).slice(-2)}).join('');lsSet('fb_token',t)}return t}
-  function myPhone(){return ls('fb_phone')||ls('hanhala_phone')||ls('milui_phone')}
+  function myPhone(){var m='';try{m=(JSON.parse(ls('mapat-kita-session')||'null')||{}).phone||''}catch(e){}return ls('fb_phone')||ls('hanhala_phone')||ls('milui_phone')||m}
   function call(fn,p){return fetch(CFG.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:CFG.key,Authorization:'Bearer '+CFG.key,'Content-Type':'application/json'},body:JSON.stringify({p:p})})
     .then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t)});return r.json()})}
   var KIND={bug:'תקלה',idea:'רעיון',question:'שאלה'},STAT={new:['התקבל','#5b6878'],doing:['בטיפול','#a85a00'],done:['טופל','#3f7d21']};
@@ -102,6 +102,9 @@
       }).catch(function(){st.textContent='הפניות לא נטענו. בדקו את החיבור ונסו שוב.'});
     }
     b.addEventListener('click',function(){form();d.showModal();d.querySelector('textarea').focus()});
+    /* פתיחה מבחוץ עם טיוטה מוכנה (רוחי) */
+    window.KFB={open:function(o){o=o||{};form();var k=d.querySelector('[name=kind][value="'+(o.kind||'bug')+'"]');if(k)k.checked=true;
+      var t=d.querySelector('textarea[name=body]');if(t&&o.body)t.value=o.body;d.showModal();if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length)}}};
     d.addEventListener('click',function(e){if(e.target.closest('[data-unshot]')){SHOT=null;var i=d.querySelector('[name=shot]');if(i)i.value='';var pv=d.querySelector('.kfb-prev');pv.hidden=true;pv.innerHTML='';return}if(e.target.closest('[data-rep]'))return repBox(e.target.closest('.kfb-rep'));if(e.target.closest('[data-repsend]'))return repSend(e.target.closest('.kfb-rep'));if(e.target.closest('[data-mine]'))return mine();if(e.target.closest('[data-new]')){form();d.querySelector('textarea').focus();return}if(e.target.closest('[data-close]')||e.target===d)d.close()});
     d.addEventListener('submit',function(e){
       e.preventDefault();var f=e.target,err=f.querySelector('.kfb-err'),btn=f.querySelector('button[type=submit]');
@@ -119,4 +122,6 @@
     });
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+  /* רוחי (בוט העזרה) נטען יחד עם כפתור המשוב בכל הכלים */
+  (function(){var sc=document.createElement('script');sc.src='/help/ruchi.js';sc.defer=true;document.head.appendChild(sc)})();
 })();
