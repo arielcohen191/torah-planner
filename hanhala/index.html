@@ -297,7 +297,7 @@ const ROLE_EDITORS=['principal','house_ab','house_gd','house_hv'];
 const canRoles=()=>!!(S.user&&(S.user.can_manage||(S.user.roles||[]).some(r=>ROLE_EDITORS.includes(r.id))));
 const rolesOnly=()=>!!(S.user&&!S.user.can_manage&&canRoles());
 const canSee=v=>!hid(v)&&canSee0(v);
-const canSee0=v=>v==='my'||v==='todo'||v==='maint'||(v==='ped'&&(pedOk()||allowed('ped')))||(v==='pedm'&&pedCanMeet())||(v==='viewas'&&isDev())||(v==='home'||v==='prefs'?isStaff():false)||(v==='perms'?canRoles():v==='feedback'?isDev():allowed(v));
+const canSee0=v=>v==='my'||v==='todo'||v==='maint'||v==='horim'||(v==='ped'&&(pedOk()||allowed('ped')))||(v==='pedm'&&pedCanMeet())||(v==='viewas'&&isDev())||(v==='home'||v==='prefs'?isStaff():false)||(v==='perms'?canRoles():v==='feedback'?isDev():allowed(v));
 const clsIn=c=>{const h=H();return !h||h.layers.includes(String(c).trim()[0])};
 const layerLetters=t=>{t=String(t||'');const m=t.match(/\(([^)]+)\)/);return ((m?m[1]:t).match(/[א-ו]/g))||[]};
 const SUBJ={torah:'חומש',navi:'נביא',mishna:'משנה',gemara:'גמרא',halacha:'הלכה',math:'מתמטיקה',hebrew:'עברית',science:'מדעים',other:'אחר'};
@@ -312,7 +312,7 @@ const VIEWONLY='במצב "בנעליים של" אי אפשר לשמור שינו
 const root=document.getElementById('root');
 function schoolDay(s){let d=s;for(let i=0;i<7&&dow(d)===6;i++)d=addDays(d,1);return d}
 S.date=schoolDay(today());
-const hashView=()=>{const k=location.hash.slice(1);return ['my','todo','tasks','maint','milui','toranut','sayarot','mapat','ped','pedm','hespek','prefs','perms','feedback','viewas'].includes(k)?k:'home'};
+const hashView=()=>{const k=location.hash.slice(1);return ['my','todo','tasks','maint','horim','milui','toranut','sayarot','mapat','ped','pedm','hespek','prefs','perms','feedback','viewas'].includes(k)?k:'home'};
 const hashFocus=()=>{const m=location.hash.match(/^#w-([a-z]+)$/);return m?m[1]:null};
 S.view=hashView();S.focus=hashFocus();
 
@@ -326,6 +326,7 @@ const ICON={
  prefs:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>',
  perms:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
  cam:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+ horim:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M2.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M14 19c0-2.4 1.4-4.2 3-4.2s3.5 1.6 3.5 4.2"/></svg>',
  maint:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14.5 6.5a4 4 0 0 0-5.2 5.2L3.5 17.5l3 3 5.8-5.8a4 4 0 0 0 5.2-5.2l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>',
  tasks:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9.5l1.5 1.5L11 8.5M7 15l1.5 1.5L11 14M14 10h4M14 15.5h4"/></svg>',
  todo:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6.5l1.8 1.8L9 5M4 12.5l1.8 1.8L9 11M4 18.5l1.8 1.8L9 17M12.5 7H20M12.5 13H20M12.5 19H20"/></svg>',
@@ -369,6 +370,7 @@ async function loadAll(force){
     part('ped',loadPed),
     part('todo',loadTodo),
     part('maint',loadMaint),
+    hid('horim')?null:part('yh',async()=>{S.yh=await rpc('yh_my',{p_phone:S.phone});S.yhSum=isStaff()?await rpc('yh_summary',{p_phone:S.phone}).catch(()=>null):null}),
     S.hol?null:part('hol',async()=>{const r=await rpc('get_settings',{code:'x'});S.hol=(r&&r.holidays)||[]})
   ]);
   if(!allowed('sayarot'))S.say=null;if(!allowed('hespek'))S.plans=null;
@@ -443,9 +445,9 @@ function sayDay(date){
 }
 
 /* ---------- תצוגה ---------- */
-const VIEWS=[['home','משימות','לוח הנהלה'],['my','הדף שלי','#my'],['todo','המשימות שלי','#todo'],['tasks','משימות הצוות','#tasks'],['maint','תקלות ותחזוקה','#maint'],['milui','מילוי מקום','/milui/'],['toranut','תורנויות חצר','/toranut/'],['sayarot','סיירות','/sayarot/'],['mapat','מפת כיתה','/mapat-kita/'],['ped','החלטות מהישיבות','#ped'],['pedm','פגישות עם מחנכים (ימ"מ/ממ"י)','#pedm'],['hespek','מתכנן הספק','/']];
+const VIEWS=[['home','משימות','לוח הנהלה'],['my','הדף שלי','#my'],['todo','המשימות שלי','#todo'],['tasks','משימות הצוות','#tasks'],['maint','תקלות ותחזוקה','#maint'],['milui','מילוי מקום','/milui/'],['toranut','תורנויות חצר','/toranut/'],['sayarot','סיירות','/sayarot/'],['mapat','מפת כיתה','/mapat-kita/'],['ped','החלטות מהישיבות','#ped'],['pedm','פגישות עם מחנכים (ימ"מ/ממ"י)','#pedm'],['hespek','מתכנן הספק','/'],['horim','יום הורים','/horim/']];
 const viewOf=k=>VIEWS.find(v=>v[0]===k)||VIEWS[0];
-const navViews=()=>VIEWS.filter(v=>!hid(v[0])).filter(v=>v[0]==='my'||v[0]==='todo'||v[0]==='maint'||(v[0]==='home'?isStaff():v[0]==='ped'?pedOk():v[0]==='pedm'?pedCanMeet():allowed(v[0])));
+const navViews=()=>VIEWS.filter(v=>!hid(v[0])).filter(v=>v[0]==='my'||v[0]==='todo'||v[0]==='maint'||v[0]==='horim'||(v[0]==='home'?isStaff():v[0]==='ped'?pedOk():v[0]==='pedm'?pedCanMeet():allowed(v[0])));
 function kpiLink(c,title,sub,n,href,go){return '<a class="kpi '+c+'" href="'+href+'"><div><b>'+title+'</b><span>'+sub+'</span><span class="go">'+go+' ←</span></div><div class="n">'+n+'</div></a>'}
 function kpiBtn(c,title,sub,n,act,val,go,pressed){return '<button type="button" class="kpi '+c+'" data-act="'+act+'" data-v="'+val+'"'+(pressed!=null?' aria-pressed="'+pressed+'"':'')+'><div><b>'+title+'</b><span>'+sub+'</span><span class="go">'+go+' ←</span></div><div class="n">'+n+'</div></button>'}
 function goTile(k){const v=viewOf(k);return '<a class="gotile" href="'+v[2]+'">'+ICON[k]+'<span><b>למעבר לכלי '+v[1]+'</b><span>פתיחת הכלי המלא לעריכה ולטיפול</span></span><span class="arr" aria-hidden="true">←</span></a>'}
@@ -710,6 +712,38 @@ function classToday(H,date){
 }
 const planName=p=>[SUBJ[p.subject]||p.subject,p.book].filter(Boolean).join(' · ');
 const planCls=p=>{const c=String(p.cls||'');return c.length>1?cls(c):p.grade?p.grade+'׳'+c:''};
+/* ---------- יום הורים (/horim) ---------- */
+const YH_BASE=location.origin+'/horim/';
+const yhCls=n=>((S.yh&&S.yh.classes)||[]).find(c=>c.name===n||cls(c.name)===cls(n));
+function yhMsg(c){const e=S.yh.event;return 'הורים יקרים,\nיום ההורים יתקיים ביום '+DAYS[dow(e.day)]+' '+shortDate(e.day)+', בין '+e.t_start+' ל־'+e.t_end+'.\nכדי שלא נחכה בתור, כל הורה קובע לעצמו שעה בקישור:\n'+YH_BASE+'?k='+c.token+'\nבוחרים את שם הילד ושעה פנויה. אחרי הקביעה תקבלו קישור אישי שבו תראו את המקום בתור ביום עצמו.\nתודה!'}
+function yhLinkBody(c){const e=S.yh.event;
+  return (e.reg_open?'':'<div class="note">ההרשמה להורים עוד סגורה. אפשר להכין את ההודעה, ולשלוח אחרי שההנהלה תפתח את ההרשמה.</div>')+
+    '<div class="small muted" style="margin-bottom:8px">'+c.booked+' מתוך '+c.students+' הורים כבר קבעו.</div>'+
+    '<div class="chips"><a class="btn sm" style="background:#1f9d55" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(yhMsg(c))+'">שליחה לקבוצת הכיתה בוואטסאפ</a>'+
+    '<button type="button" class="btn sec sm" data-act="yh-copy" data-v="msg" data-c="'+esc(c.name)+'">העתקת ההודעה</button>'+
+    '<button type="button" class="btn sec sm" data-act="yh-copy" data-v="link" data-c="'+esc(c.name)+'">העתקת הקישור</button></div>'}
+function yhLinkPanel(name){if(hid('horim')||!S.yh||!S.yh.event)return '';const c=yhCls(name);if(!c||!c.token)return '';
+  return panel('יום הורים · הקישור להורי הכיתה',yhLinkBody(c))}
+function horimTile(){if(hid('horim')||!S.yh||!S.yh.event)return '';const Y=S.yh,e=Y.event;
+  const sub=Y.part?(Y.booked?Y.booked+' פגישות נקבעו אצלך'+(Y.next&&e.day===today()?' · הבאה ב־'+Y.next:''):'עוד אין פגישות אצלך'):'הקישור להורים, השעות והתור החי';
+  return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-go="horim">'+ICON.horim+'<span><b>יום הורים · '+DAYS[dow(e.day)]+' '+shortDate(e.day)+'</b><span>'+sub+(e.reg_open?'':' · ההרשמה להורים עוד סגורה')+'</span></span><span class="arr" aria-hidden="true">←</span></button>'}
+function viewHorim(){
+  if(S.err.yh)return '<div class="note bad">יום ההורים לא נטען כרגע. נסו לרענן.</div>'+goTile('horim');
+  if(!S.yh)return panel('יום הורים',skel);
+  const Y=S.yh,e=Y.event;if(!e)return '<div class="note">עוד לא נקבע יום הורים.</div>'+goTile('horim');
+  const C=Y.classes||[],sum=S.yhSum&&S.yhSum.classes||[],tot=sum.reduce((a,c)=>a+c.students,0),bk=sum.reduce((a,c)=>a+c.booked,0);
+  let h='<section class="kpis k3" aria-label="יום הורים">'+
+    kpiLink('k-blue','הפגישות שלי',Y.part?'נקבעו אצלך':'לא נפגש/ת עם הורים',Y.booked,'/horim/','ליומן שלי')+
+    (C.length?kpiBtn(C[0].booked<C[0].students?'k-orange':'k-green','קבעו בכיתה שלי',cls(C[0].name)+' · מתוך '+C[0].students,C[0].booked,'jump','yh-link','לקישור להורים')
+      :kpiLink('k-green','משבצות פנויות','אצלך',Y.free,'/horim/','ליומן שלי'))+
+    (sum.length?kpiBtn(tot&&bk/tot>=.8?'k-green':'k-purple','שובצו בבית הספר',(tot?Math.round(bk*100/tot):0)+'% מהתלמידים',bk,'jump','yh-cls','לפי כיתה')
+      :kpiLink(e.reg_open?'k-green':'k-orange','ההרשמה להורים',e.reg_open?'פתוחה':'עוד סגורה',e.reg_open?'✓':'—','/horim/','לכלי'))+'</section>';
+  h+='<div class="note">'+DAYS[dow(e.day)]+' '+shortDate(e.day)+' · '+e.t_start+'–'+e.t_end+' · '+e.slot_min+' דקות לפגישה · ההרשמה '+(e.reg_open?'פתוחה':'עוד סגורה')+'</div>';
+  h+=C.map(c=>'<div id="yh-link">'+panel('הקישור להורי '+esc(cls(c.name)),yhLinkBody(c))+'</div>').join('');
+  if(sum.length)h+='<div id="yh-cls">'+panel('שיבוץ לפי כיתה',sum.map(c=>{const pc=c.students?Math.round(c.booked*100/c.students):0;
+    return '<div class="duty"><span class="st">'+esc(cls(c.name))+' · '+c.booked+'/'+c.students+'</span><span class="nm"><span class="tag '+(pc>=80?'green':pc>=40?'orange':'red')+'">'+pc+'%</span></span></div>'}).join(''))+'</div>';
+  return h+goTile('horim');
+}
 function viewMy(){
   if(S.err.my)return '<div class="note bad">הדף האישי לא נטען כרגע. נסו לרענן.</div>';
   if(!S.my)return panel('היום שלי',skel);
@@ -725,7 +759,7 @@ function viewMy(){
     kpiBtn('k-blue',hol?'אין לימודים':'שיעורים ביום הזה','לפי המערכת שלי',hol?0:les,'jump','my-day','ליום שלי')+
     kpiBtn(cov?'k-orange':'k-green','מילויי מקום שלי','השבוע (שיעורים ותורנויות)',cov,'jump','my-day','לפרטים')+
     kpiBtn('k-purple','תורנויות','בכל שבוע',dn,'jump','my-duty','לרשימה')+'</section>';
-  h+=todoT+maintTile();
+  h+=todoT+maintTile()+horimTile();
   if(!M.teacher)h+='<div class="note">לא מצאנו אותך במערכת השעות של מילוי מקום, ולכן אין כאן מערכת אישית. אם זו טעות, כתבו לנו דרך כפתור המשוב.</div>';
   const tl=hol?'<div class="empty">'+esc(hol)+'</div>':items.length?'<div class="tl">'+items.map(i=>'<div class="tli '+i.cls+'"><span class="when">'+i.when+'</span><span class="what"><b>'+i.main+'</b>'+(i.sub?'<div class="small muted">'+i.sub+'</div>':'')+(i.tag?'<div>'+i.tag+'</div>':'')+'</span></div>').join('')+'</div>':'<div class="empty">אין לך שיעורים או תורנויות ביום הזה.</div>';
   h+='<div id="my-day">'+panel('היום שלי · '+DAYS[day]+' '+shortDate(date),tl)+'</div>';
@@ -738,7 +772,7 @@ function viewMy(){
     const tb=hol?'<div class="empty">'+esc(hol)+'</div>':t.length?t.map(({s,x})=>'<div class="duty"><span class="st">שעה '+s.hour+' · '+esc(s.subject)+' · '+esc(s.teacher)+'</span><span class="nm">'+(x&&x.status==='assigned'&&x.sub?'<span class="tag green">'+esc(x.sub)+'</span>':x&&x.status==='other'?'<span class="tag grey">'+esc(x.note||'טופל')+'</span>':x&&x.status==='asking'?'<span class="tag orange">מחפשים מחליף</span>':'<span class="tag red">עוד אין מחליף</span>')+'</span></div>').join(''):'<div class="empty">כל המורים של הכיתה במקום ביום הזה.</div>';
     h+='<h2 style="margin:8px 0 -8px">הכיתה שלי · '+esc(cls(H.class))+'</h2>'+
       '<div class="mygrid">'+panel('מורים נעדרים בכיתה ביום הזה',tb)+
-      '<a class="gotile" href="/mapat-kita/">'+ICON.mapat+'<span><b>מפת הכיתה</b><span>נפתחת עם הקוד האישי שלך'+(H.synced_at?' · עודכנה מהגיליון '+fmtWhen(H.synced_at):'')+'</span></span><span class="arr" aria-hidden="true">←</span></a></div>'+
+      yhLinkPanel(H.class)+'<a class="gotile" href="/mapat-kita/">'+ICON.mapat+'<span><b>מפת הכיתה</b><span>נפתחת עם הקוד האישי שלך'+(H.synced_at?' · עודכנה מהגיליון '+fmtWhen(H.synced_at):'')+'</span></span><span class="arr" aria-hidden="true">←</span></a></div>'+
       (S.ped&&!hid('ped')?(()=>{const D=(S.ped.decisions||[]).filter(d=>d.class===H.class&&(d.status==='open'||d.status==='doing')),L=D.filter(pedLate).length;
         return '<button type="button" class="gotile" style="width:100%;text-align:right;border:0;cursor:pointer" data-act="ped-tab" data-v="dec">'+ICON.ped+'<span><b>החלטות מהישיבה הפדגוגית · '+(D.length?plural(D.length,'אחת פתוחה','פתוחות'):'אין פתוחות')+(L?' · '+L+' באיחור':'')+'</b><span>מעקב ביצוע, והזנת החלטה חדשה לכיתה</span></span><span class="arr" aria-hidden="true">←</span></button>'})():'')+
       panel('מערכת השעות של הכיתה',ttGrid(H.slots,s=>'<b>'+esc(s.subject||'שיעור')+'</b><span>'+esc(shortName(s.teacher))+'</span>',day))});
@@ -1158,7 +1192,7 @@ function viewPrefs(){
 const LAYERS=['א','ב','ג','ד','ה','ו'];
 const TOOLS=['milui','toranut','sayarot','mapat','ped','hespek','tasks','maint'];
 /* פתיחה הדרגתית: כלי "בהרצה" פתוח רק למי שסומן. כלים שפתוחים לכולם בלי קשר לתפקיד: */
-const ALWAYS=['todo','maint'],LAUNCH=['todo',...TOOLS];
+const ALWAYS=['todo','maint','horim'],LAUNCH=['todo',...TOOLS,'horim'];
 const lMode=k=>(S.admin.launch||{})[k]||'all',inPilot=(k,ph)=>((S.admin.pilot||{})[k]||[]).includes(ph);
 function personTools(x,RL){const t=new Set(ALWAYS);x.roles.forEach(id=>((RL[id]||{}).tools||[]).forEach(k=>t.add(k)));return LAUNCH.filter(k=>t.has(k))}
 function toolChip(k,x){const m=lMode(k),on=m==='all'||inPilot(k,x.phone),can=S.admin.can_launch&&m==='pilot'&&!S.realPhone;
@@ -1388,7 +1422,7 @@ function render(){
     if(hol)h+='<div class="card banner">'+esc(hol)+' — אין לימודים ביום הזה.</div>';
     if(S.view==='home'&&!S.user.tools.length)h+='<div class="note">לתפקיד שלך עדיין לא נפתחו כלים בלוח. פנו למנהל בית הספר.</div>';
   }
-  h+=({maint:viewMaint,tasks:viewTeam,todo:viewTodo,pedm:viewPedM,ped:viewPed,viewas:viewAs,my:viewMy,home:viewHome,milui:viewMilui,toranut:viewToranut,sayarot:viewSayarot,mapat:viewMapat,hespek:viewHespek,prefs:viewPrefs,perms:viewPerms,feedback:viewFeedback}[S.view]||viewHome)();
+  h+=({maint:viewMaint,tasks:viewTeam,todo:viewTodo,pedm:viewPedM,ped:viewPed,viewas:viewAs,my:viewMy,horim:viewHorim,home:viewHome,milui:viewMilui,toranut:viewToranut,sayarot:viewSayarot,mapat:viewMapat,hespek:viewHespek,prefs:viewPrefs,perms:viewPerms,feedback:viewFeedback}[S.view]||viewHome)();
   root.innerHTML=shell(h);
 }
 function renderLogin(err){
@@ -1535,6 +1569,7 @@ root.addEventListener('click',e=>{
     rpc('maint_photo',{p_phone:S.phone,p_id:id}).then(x=>{if(x&&/^data:image\//.test(x))S.maintPh[id]=x;else S.maintErr='התמונה לא נמצאה.';render()}).catch(()=>{S.maintErr='התמונה לא נטענה. נסו שוב.';render()});return}
   if(a==='maint-f'){S.maintF=S.maintF===b.dataset.v?null:b.dataset.v;return render()}
   if(a==='maint-sort'){S.maintSort=b.dataset.v;return render()}
+  if(a==='yh-copy'){const c=yhCls(b.dataset.c);if(!c)return;const t=b.dataset.v==='msg'?yhMsg(c):YH_BASE+'?k='+c.token;navigator.clipboard.writeText(t).then(()=>{b.textContent='הועתק ✓'},()=>prompt('העתיקו:',t));return}
   if(a==='maint-go'){S.view='maint';history.pushState(null,'','#maint');render();window.scrollTo(0,0);return}
   if(a==='todo-unp'){b.closest('.pchip').remove();return}
   if(a==='team-f'){const v=b.dataset.v;if(S.view!=='tasks'){S.view='tasks';S.teamF=v;history.pushState(null,'','#tasks');window.scrollTo(0,0)}else S.teamF=v;return render()}
