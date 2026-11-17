@@ -132,6 +132,8 @@ html.print-yards #yardsCard{padding:0}
 @media print{nav.rail,.noprint,.toast{display:none!important}main{padding:0}body{background:#fff;font-size:12px}.card{box-shadow:none;padding:0;margin-bottom:12px;break-inside:avoid}
  table.grid{font-size:11px;min-width:0}table.grid thead th{background:#ddd;color:#000}td.cell.empty{background:#fff}td.cell .lk{display:none}}
 #ppPrint{display:none}
+/* מצב מדידה להדפסה בעמוד אחד: מסתירים את מה שלא מודפס */
+html.pfit nav.rail,html.pfit .noprint,html.pfit .toast,.pfit .noprint{display:none!important}html.pfit main{padding:0}html.pfit .card,.pfit .card{box-shadow:none;padding:0;margin-bottom:8px}
 @media print{html.print-pp .app,html.print-pp .modal,html.print-pp .toast{display:none!important}html.print-pp #ppPrint{display:block}
  #ppPrint .pp{break-after:page;page-break-after:always}#ppPrint .pp:last-child{break-after:auto;page-break-after:auto}
  #ppPrint .pp-h h1{font-size:18px;margin:0 0 4px}#ppPrint .pp-h p{margin:2px 0;font-size:12px}#ppPrint .pp-h ul{margin:4px 0 10px;padding-inline-start:18px;font-size:12px;columns:2}
@@ -343,6 +345,17 @@ function focusCard(){
   return h;
 }
 /* הדפסה אישית: הלוח כולו לכל איש צוות, והתורנויות שלו מסומנות (★ ומסגרת שחורה, מתאים להדפסה בשחור-לבן) */
+/* הדפסה בעמוד אחד: מודדים את הלוח ברוחב של דף A4 לרוחב ומקטינים אותו כך שייכנס לגובה הדף */
+const PAGE_W=1070,PAGE_H=700;   // קצת מרווח ביטחון מתחת לגובה הדף (741px)
+function fitEl(el){el.style.zoom='';el.style.width=PAGE_W+'px';const z=Math.min(1,PAGE_H/el.scrollHeight,PAGE_W/el.scrollWidth);el.style.width='';el.style.zoom=z<1?String(Math.floor(z*1000)/1000):'';}
+/* מדידה מדויקת: מפעילים זמנית על המסך את כללי ההדפסה (@media print) של הדף */
+function withPrintCss(fn){let css='';for(const sh of document.styleSheets){let rs;try{rs=sh.cssRules}catch(e){continue}
+    for(const r of rs)if(r.media&&[...r.media].includes('print'))for(const x of r.cssRules)css+=x.cssText+'\n'}
+  const t=document.createElement('style');t.textContent=css;document.head.appendChild(t);try{fn()}finally{t.remove()}}
+function fitOnePage(){const root=document.documentElement,m=document.querySelector('main');if(!m)return()=>{};
+  const st=document.createElement('style');st.id='pgFit';st.textContent='@page{size:A4 landscape;margin:7mm}';document.head.appendChild(st);
+  root.classList.add('pfit');withPrintCss(()=>fitEl(m));root.classList.remove('pfit');
+  return()=>{m.style.zoom='';st.remove()}}
 function myDuties(id){const A=curAssign(),out=[];
   Object.keys(A).forEach(k=>{if(A[k]!==id)return;const [sh,d,st]=k.split('@'),S1=shiftOf(sh),St=stOf(st);if(!S1||!St)return;out.push({o:+d*100+S.cfg.shifts.indexOf(S1),t:D[+d]+' · '+S1.label+' · '+St.name})});
   return out.sort((a,b)=>a.o-b.o).map(x=>x.t)}
@@ -354,7 +367,9 @@ function personalHtml(id){const P=byId(),p=P[id];if(!p)return '';
 function printPersonal(ids){ids=ids.filter(Boolean);if(!ids.length){toast('אין למי להדפיס.');return}
   let w=document.getElementById('ppPrint');if(!w){w=document.createElement('div');w.id='ppPrint';document.body.appendChild(w)}
   w.innerHTML=ids.map(personalHtml).join('');document.documentElement.classList.add('print-pp');
-  const done=()=>{document.documentElement.classList.remove('print-pp');w.innerHTML='';window.removeEventListener('afterprint',done)};
+  const st=document.createElement('style');st.id='pgFitPP';st.textContent='@page{size:A4 landscape;margin:7mm}';document.head.appendChild(st);
+  w.style.display='block';w.classList.add('pfit');withPrintCss(()=>w.querySelectorAll('.pp').forEach(fitEl));w.classList.remove('pfit');w.style.display='';
+  const done=()=>{document.documentElement.classList.remove('print-pp');w.innerHTML='';const x=document.getElementById('pgFitPP');if(x)x.remove();window.removeEventListener('afterprint',done)};
   window.addEventListener('afterprint',done);setTimeout(()=>{window.print();setTimeout(done,500)},60)}
 function viewBoard(){
   const P=byId(),A=curAssign(),LK=S.data.plan.locked||{},F=S.focus&&P[S.focus]?P[S.focus]:null;
@@ -1212,7 +1227,7 @@ root.addEventListener('click',async e=>{
   else if(a==='import'){S.modal=null;render();importSheet()}
   else if(a==='impPaste'){const t=(document.getElementById('pasteBox')||{}).value||'';if(t.trim())applyImport(parseCSV(t))}
   else if(a==='tab'){S.shiftTab=b.dataset.t;render()}
-  else if(a==='print'||a==='printNow'){const t=S.shiftTab;S.shiftTab='all';S.printClean=a==='print';render();setTimeout(()=>{window.print();S.shiftTab=t;S.printClean=false;render()},50)}
+  else if(a==='print'||a==='printNow'){const t=S.shiftTab;S.shiftTab='all';S.printClean=a==='print';render();setTimeout(()=>{const undo=fitOnePage();window.print();undo();S.shiftTab=t;S.printClean=false;render()},50)}
   else if(a==='csv')csv();
   else if(a==='sf'){S.staffFilter=b.dataset.f;render()}
   else if(a==='rf'){S.ruleFilter=b.dataset.f;render()}
