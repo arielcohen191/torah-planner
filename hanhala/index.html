@@ -43,6 +43,7 @@ button.tl{cursor:pointer}button.tl:hover{filter:brightness(.96)}
 .seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}.seg button{border:0;background:#fff;font:inherit;font-size:15px;padding:8px 14px;min-height:40px;cursor:pointer}.seg button+button{border-inline-start:1.5px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--active);color:#fff;font-weight:600}.seg button[disabled]{cursor:default;opacity:.7}
 .lrow select{font:inherit;font-size:15px;padding:6px 10px;border:1.5px solid var(--line);border-radius:999px;min-height:34px}
+.rrec{display:flex;flex-direction:column;gap:2px;padding:6px 0;margin:2px 0;border-block:1px solid #3a4756}.rrec span{color:var(--rail-ink);opacity:.75;font-size:12px;text-align:center}.rail .rrec button{padding:7px 4px;font-size:13px;color:#cfe6fb;min-height:32px;justify-content:center}
 .trail{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-bottom:-12px;font-size:15px}.trail button{border:0;background:none;font:inherit;color:var(--blue-ink,#1d5fa8);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:6px 2px;min-height:36px}.trail .sep{color:var(--ink-muted)}.trail b{font-weight:600}
 .tstrip{position:sticky;top:0;z-index:6;display:flex;gap:8px;overflow-x:auto;padding:10px 2px;margin:-10px 0 -12px;background:var(--ground);animation:tshrink .28s ease-out}
 .tchip{flex:none;display:flex;align-items:center;gap:8px;border:0;border-radius:12px;color:#fff;font:inherit;font-size:15px;padding:6px 14px;min-height:46px;cursor:pointer;white-space:nowrap;opacity:.82}
@@ -213,7 +214,7 @@ div.tl{display:flex;flex-direction:column;align-items:stretch;gap:8px;border:0;b
  html body .kfb-btn{bottom:calc(76px + env(safe-area-inset-bottom,0px))}html body .rch-btn{bottom:calc(126px + env(safe-area-inset-bottom,0px))}
  .topbar{gap:10px}.topbar .muted{font-size:14px}.topbar .chips .btn{min-height:40px;padding:0 12px;font-size:15px}
  .wgrid{grid-template-columns:minmax(0,1fr);gap:12px}.whead{min-height:60px;padding:10px 14px}.whead .wn{font-size:36px;line-height:36px}
- .trail{font-size:14px;flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;margin-bottom:-8px}
+ .rrec{flex:none;flex-direction:row;align-items:center;gap:2px;padding:0 6px;margin:0;border-block:0;border-inline:1px solid #3a4756}.rrec span{padding:0 4px}.rail .rrec button{padding:6px 8px}
  nav.rail{flex:none;flex-direction:row;align-items:center;overflow-x:auto;padding:8px;padding-top:calc(8px + env(safe-area-inset-top,0px));gap:4px}
  .rail .brand{border:0;margin:0;padding:0 8px;white-space:nowrap}.rail .brand small{display:none}
  .rail button{flex:none;width:auto;flex-direction:row;padding:8px 12px;white-space:nowrap}.rail button svg{width:20px;height:20px}
@@ -1394,7 +1395,8 @@ function navModel(){const vis=navViews(),keys=vis.map(v=>v[0]),lab=k=>(vis.find(
 function navToPref(m){return m.map(e=>e.f?{f:e.f,items:e.items.map(x=>x.k)}:e.k)}
 const navBtn=(k,l)=>'<button type="button" data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>';
 function navFolderOpen(f){try{return localStorage.getItem('hh_nav_'+f)!=='0'}catch(e){return true}}
-function navHtml(){return navModel().map(e=>{if(!e.f)return navBtn(e.k,e.l);if(!e.items.length)return '';
+function navHtml(){const M=navModel(),rec=railRecent(),at=M.findIndex(e=>e.k==='my');
+  return (at<0?rec:'')+M.map((e,i)=>{if(!e.f)return navBtn(e.k,e.l)+(i===at?rec:'');if(!e.items.length)return '';
   const on=e.items.some(x=>x.k===S.view),open=on||navFolderOpen(e.f);
   return '<details class="navf"'+(open?' open':'')+' data-f="'+esc(e.f)+'"><summary>'+ICON.folder+esc(e.f)+'</summary>'+e.items.map(x=>navBtn(x.k,x.l)).join('')+'</details>'}).join('')}
 /* מסלול הדפים האחרונים (נשמר במכשיר) */
@@ -1402,8 +1404,9 @@ const keyNow=()=>S.view==='home'&&S.focus?'w:'+S.focus:S.view;
 function keyLabel(k){if(k.startsWith('w:'))return viewOfW(k.slice(2));return {prefs:'התאמה אישית',perms:'הרשאות',feedback:'משובים',viewas:'בנעליים של',home:'מסך הבית'}[k]||viewOf(k)[1]}
 function trailPush(){let T=[];try{T=JSON.parse(localStorage.getItem('hh_trail')||'[]')}catch(e){}const k=keyNow();
   if(T[T.length-1]!==k){T=T.filter(x=>x!==k);T.push(k);T=T.slice(-6);try{localStorage.setItem('hh_trail',JSON.stringify(T))}catch(e){}}return T}
-function trailHtml(){const T=trailPush().filter(k=>k==='home'||k.startsWith('w:')||canSee(k)||['prefs','perms','feedback','viewas'].includes(k));if(T.length<2)return '';
-  return '<nav class="trail" aria-label="דפים אחרונים"><span class="muted small">אחרונים:</span>'+T.map((k,i)=>i===T.length-1?'<b aria-current="page">'+esc(keyLabel(k))+'</b>':'<button type="button" data-act="trail" data-v="'+k+'">'+esc(keyLabel(k))+'</button><span class="sep" aria-hidden="true">‹</span>').join('')+'</nav>'}
+/* #46: הדפים האחרונים בסרגל הצד, בין "הדף שלי" לשאר הכלים. הדף הנוכחי לא מוצג (הוא מסומן בסרגל), החדש ביותר ראשון */
+function railRecent(){const cur=keyNow(),T=trailPush().filter(k=>k!==cur&&(k==='home'||k.startsWith('w:')||canSee(k)||['prefs','perms','feedback','viewas'].includes(k))).reverse().slice(0,4);if(!T.length)return '';
+  return '<div class="rrec" role="group" aria-label="דפים אחרונים"><span>אחרונים</span>'+T.map(k=>'<button type="button" data-act="trail" data-v="'+k+'">'+esc(keyLabel(k))+'</button>').join('')+'</div>'}
 /* טלפון: סרגל תחתון עם 4 הכלים הראשונים לפי הסדר האישי, ו"עוד" */
 function navFlat(){const o=[];navModel().forEach(e=>e.f?e.items.forEach(x=>o.push(x)):o.push(e));return o}
 function extraBtns(){return (isStaff()?navBtn('prefs','התאמה אישית'):'')+(canRoles()?navBtn('perms','הרשאות'):'')+(canAs()?'<button type="button" data-go="viewas">'+ICON.my+'בנעליים של</button>':'')+(isDev()?'<button type="button" data-go="feedback">'+ICON.fb+'משובים'+(S.fbOpen?' ('+S.fbOpen+')':'')+'</button>':'')}
@@ -1423,7 +1426,7 @@ function shell(inner){
    (canAs()?'<button type="button" data-go="viewas"'+(S.view==='viewas'?' aria-current="page"':'')+'>'+ICON.my+'בנעליים של</button>':'')+
    (isDev()?'<button type="button" data-go="feedback"'+(S.view==='feedback'?' aria-current="page"':'')+'>'+ICON.fb+'משובים'+(S.fbOpen?'<span class="cnt" aria-label="'+S.fbOpen+' חדשים">'+S.fbOpen+'</span>':'')+'</button>':'')+
    '<button type="button" onclick="window.KFB&&KFB.mine()">'+ICON.fb+'פניות המשוב שלי</button>'+
-   '<div class="who">'+esc(S.user?S.user.name:'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+trailHtml()+inner+'</main></div>'+tabbarHtml();
+   '<div class="who">'+esc(S.user?S.user.name:'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+'</main></div>'+tabbarHtml();
 }
 function render(){
   if(!S.phone)return renderLogin();
