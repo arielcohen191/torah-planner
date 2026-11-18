@@ -463,6 +463,14 @@ function panel(title,body){return '<section class="card tool"><div class="thead"
 const failed='<div class="note bad">הנתונים של הכלי הזה לא נטענו כרגע. אפשר לפתוח את הכלי עצמו או לרענן.</div>';
 const skel='<div class="skel" style="width:70%"></div><div class="skel" style="width:50%"></div><div class="skel" style="width:60%"></div>';
 const shortDate=d=>parse(d).getDate()+'.'+(parse(d).getMonth()+1);
+/* תאריך עברי: י״ט בכסלו תשפ״ז */
+function gem(n){const L=[[400,'ת'],[300,'ש'],[200,'ר'],[100,'ק'],[90,'צ'],[80,'פ'],[70,'ע'],[60,'ס'],[50,'נ'],[40,'מ'],[30,'ל'],[20,'כ'],[10,'י'],[9,'ט'],[8,'ח'],[7,'ז'],[6,'ו'],[5,'ה'],[4,'ד'],[3,'ג'],[2,'ב'],[1,'א']];
+  let s='';n=n%1000;while(n>0){if(n===15){s+='טו';break}if(n===16){s+='טז';break}const x=L.find(p=>p[0]<=n);s+=x[1];n-=x[0]}
+  return s.length>1?s.slice(0,-1)+'״'+s.slice(-1):s+'׳'}
+function hebParts(d){try{const P={};new Intl.DateTimeFormat('he-u-ca-hebrew-nu-latn',{day:'numeric',month:'long',year:'numeric'}).formatToParts(d).forEach(p=>P[p.type]=p.value);
+  return {day:gem(+P.day),month:P.month,year:gem(+P.year)}}catch(e){return null}}
+const hebDay=d=>{const h=hebParts(parse(d));return h?h.day+' ב'+h.month:shortDate(d)};
+
 
 /* ---------- משימות לפי דחיפות (נגזרות אוטומטית מכל הכלים) ---------- */
 const mkTotal=()=>S.classes.filter(clsIn).length;
@@ -726,7 +734,7 @@ const planCls=p=>{const c=String(p.cls||'');return c.length>1?cls(c):p.grade?p.g
 /* ---------- יום הורים (/horim) ---------- */
 const YH_BASE=location.origin+'/horim/';
 const yhCls=n=>((S.yh&&S.yh.classes)||[]).find(c=>c.name===n||cls(c.name)===cls(n));
-function yhMsg(c){const e=S.yh.event;return 'הורים יקרים,\nיום ההורים יתקיים ביום '+DAYS[dow(e.day)]+' '+shortDate(e.day)+', בין '+e.t_start+' ל־'+e.t_end+'.\nכדי שלא נחכה בתור, כל הורה קובע לעצמו שעה בקישור:\n'+YH_BASE+'?k='+c.token+'\nבוחרים את שם הילד ושעה פנויה. אחרי הקביעה תקבלו קישור אישי שבו תראו את המקום בתור ביום עצמו.\nתודה!'}
+function yhMsg(c){const e=S.yh.event;return 'הורים יקרים,\nיום ההורים יתקיים ביום '+DAYS[dow(e.day)]+', '+hebDay(e.day)+' ('+shortDate(e.day)+'), בין '+e.t_start+' ל־'+e.t_end+'.\nכדי שלא נחכה בתור, כל הורה קובע לעצמו שעה בקישור:\n'+YH_BASE+'?k='+c.token+'\nבוחרים את שם הילד ושעה פנויה. אחרי הקביעה תקבלו קישור אישי שבו תראו את המקום בתור ביום עצמו.\nתודה!'}
 function yhLinkBody(c){const e=S.yh.event;
   return (e.reg_open?'':'<div class="note">ההרשמה להורים עוד סגורה. אפשר להכין את ההודעה, ולשלוח אחרי שההנהלה תפתח את ההרשמה.</div>')+
     '<div class="small muted" style="margin-bottom:8px">'+c.booked+' מתוך '+c.students+' הורים כבר קבעו.</div>'+
@@ -737,7 +745,7 @@ function yhLinkPanel(name){if(hid('horim')||!S.yh||!S.yh.event)return '';const c
   return panel('יום הורים · הקישור להורי הכיתה',yhLinkBody(c))}
 function horimTile(){if(hid('horim')||!S.yh||!S.yh.event)return '';const Y=S.yh,e=Y.event;
   const sub=Y.part?(Y.booked?Y.booked+' פגישות נקבעו אצלך'+(Y.next&&e.day===today()?' · הבאה ב־'+Y.next:''):'עוד אין פגישות אצלך'):'הקישור להורים, השעות והתור החי';
-  return '<button type="button" class="gotile" data-go="horim">'+ICON.horim+'<span><b>יום הורים · '+DAYS[dow(e.day)]+' '+shortDate(e.day)+'</b><span>'+sub+(e.reg_open?'':' · ההרשמה להורים עוד סגורה')+'</span></span><span class="arr" aria-hidden="true">←</span></button>'}
+  return '<button type="button" class="gotile" data-go="horim">'+ICON.horim+'<span><b>יום הורים · '+DAYS[dow(e.day)]+', '+hebDay(e.day)+'</b><span>'+sub+(e.reg_open?'':' · ההרשמה להורים עוד סגורה')+'</span></span><span class="arr" aria-hidden="true">←</span></button>'}
 function viewHorim(){
   if(S.err.yh)return '<div class="note bad">יום ההורים לא נטען כרגע. נסו לרענן.</div>'+goTile('horim');
   if(!S.yh)return panel('יום הורים',skel);
@@ -749,7 +757,7 @@ function viewHorim(){
       :kpiLink('k-green','משבצות פנויות','אצלך',Y.free,'/horim/','ליומן שלי'))+
     (sum.length?kpiBtn(tot&&bk/tot>=.8?'k-green':'k-purple','שובצו בבית הספר',(tot?Math.round(bk*100/tot):0)+'% מהתלמידים',bk,'jump','yh-cls','לפי כיתה')
       :kpiLink(e.reg_open?'k-green':'k-orange','ההרשמה להורים',e.reg_open?'פתוחה':'עוד סגורה',e.reg_open?'✓':'—','/horim/','לכלי'))+'</section>';
-  h+='<div class="note">'+DAYS[dow(e.day)]+' '+shortDate(e.day)+' · '+e.t_start+'–'+e.t_end+' · '+e.slot_min+' דקות לפגישה · ההרשמה '+(e.reg_open?'פתוחה':'עוד סגורה')+'</div>';
+  h+='<div class="note">יום '+DAYS[dow(e.day)]+', '+hebDay(e.day)+' ('+shortDate(e.day)+') · '+e.t_start+'–'+e.t_end+' · '+e.slot_min+' דקות לפגישה · ההרשמה '+(e.reg_open?'פתוחה':'עוד סגורה')+'</div>';
   h+=C.map(c=>'<div id="yh-link">'+panel('הקישור להורי '+esc(cls(c.name)),yhLinkBody(c))+'</div>').join('');
   if(sum.length)h+='<div id="yh-cls">'+panel('שיבוץ לפי כיתה',sum.map(c=>{const pc=c.students?Math.round(c.booked*100/c.students):0;
     return '<div class="duty"><span class="st">'+esc(cls(c.name))+' · '+c.booked+'/'+c.students+'</span><span class="nm"><span class="tag '+(pc>=80?'green':pc>=40?'orange':'red')+'">'+pc+'%</span></span></div>'}).join(''))+'</div>';

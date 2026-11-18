@@ -128,7 +128,7 @@ td:first-child{border-radius:0 var(--r-sm) var(--r-sm) 0}td:last-child{border-ra
 .phero h1{font-size:24px;line-height:30px;color:#fff}.phero .sub{font-size:15px;opacity:.92}
 .datechip{margin-inline-start:auto;flex:none;background:#fff;color:var(--ink);border-radius:14px;min-width:72px;text-align:center;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.18)}
 .datechip .m{background:#ffc94d;color:#553900;font-size:13px;font-weight:700;padding:2px 8px}
-.datechip .d{font-size:30px;font-weight:700;line-height:34px}.datechip .w{font-size:12.5px;color:var(--ink-muted);padding-bottom:5px}
+.datechip .d{font-size:28px;font-weight:700;line-height:34px;padding:0 6px}.datechip .w{line-height:1.25;padding:0 6px 5px}.datechip .w{font-size:12.5px;color:var(--ink-muted);padding-bottom:5px}
 .psteps{display:flex;gap:6px;list-style:none;margin:0;padding:0}
 .psteps li{flex:1;min-width:0;display:flex;align-items:center;gap:7px;background:#fff;border-radius:99px;padding:6px 8px;font-size:14px;font-weight:600;color:var(--ink-muted);box-shadow:var(--shadow);white-space:nowrap}
 .psteps li i{font-style:normal;width:24px;height:24px;border-radius:50%;background:#e4e9ef;display:grid;place-items:center;font-size:13px;flex:none}
@@ -194,8 +194,15 @@ const errMsg=e=>{const m=String(e&&e.message||e);for(const k in ERR)if(m.include
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
 const parseD=s=>new Date(s+'T12:00');
-function longDate(s){const d=parseD(s);let h='';try{h=new Intl.DateTimeFormat('he-u-ca-hebrew',{day:'numeric',month:'long'}).format(d)}catch(e){}
-  return 'יום '+DAYS[d.getDay()]+', '+d.getDate()+'.'+(d.getMonth()+1)+(h?' · '+h:'')}
+/* תאריך עברי: י״ט בכסלו תשפ״ז */
+function gem(n){const L=[[400,'ת'],[300,'ש'],[200,'ר'],[100,'ק'],[90,'צ'],[80,'פ'],[70,'ע'],[60,'ס'],[50,'נ'],[40,'מ'],[30,'ל'],[20,'כ'],[10,'י'],[9,'ט'],[8,'ח'],[7,'ז'],[6,'ו'],[5,'ה'],[4,'ד'],[3,'ג'],[2,'ב'],[1,'א']];
+  let s='';n=n%1000;while(n>0){if(n===15){s+='טו';break}if(n===16){s+='טז';break}const x=L.find(p=>p[0]<=n);s+=x[1];n-=x[0]}
+  return s.length>1?s.slice(0,-1)+'״'+s.slice(-1):s+'׳'}
+function hebParts(d){try{const P={};new Intl.DateTimeFormat('he-u-ca-hebrew-nu-latn',{day:'numeric',month:'long',year:'numeric'}).formatToParts(d).forEach(p=>P[p.type]=p.value);
+  return {day:gem(+P.day),month:P.month,year:gem(+P.year)}}catch(e){return null}}
+const hebDay=s=>{const h=hebParts(parseD(s));return h?h.day+' ב'+h.month:''};
+// "יום ראשון, י״ט בכסלו (29.11)" — העברי קודם, הלועזי בסוגריים
+function longDate(s){const d=parseD(s),h=hebDay(s);return 'יום '+DAYS[d.getDay()]+', '+(h?h+' ('+d.getDate()+'.'+(d.getMonth()+1)+')':d.getDate()+'.'+(d.getMonth()+1))}
 const todayIso=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const hm=t=>String(t||'').slice(0,5);
 const mins=t=>{const [h,m]=hm(t).split(':').map(Number);return h*60+m};
@@ -256,11 +263,10 @@ const av=n=>'<span class="av '+avc(n)+'" aria-hidden="true">'+esc(String(n).repl
 const isDemoP=()=>!!window.KR_DEMO&&(P.tok===KR_DEMO.yhTok||/^demo-/.test(P.ptok||''));
 const DEMO_NOTE='מצב הדגמה: הכיתה, התלמידים וההורים בדויים. שום דבר לא נשלח לבית הספר.';
 const demoBar=()=>'<div class="warn" role="status"><b>'+DEMO_NOTE+'</b> <button class="link" data-act="demoreset">איפוס ההדגמה</button></div>';
-function parentShell(inner){const ev=P.data?P.data.event:(P.mine&&P.mine.ev)||null,d=ev?parseD(ev.day):null;let heb='';
-  if(d)try{heb=new Intl.DateTimeFormat('he-u-ca-hebrew',{day:'numeric',month:'long'}).format(d)}catch(e){}
+function parentShell(inner){const ev=P.data?P.data.event:(P.mine&&P.mine.ev)||null,d=ev?parseD(ev.day):null,hp=d?hebParts(d):null;
   return '<div class="ppbg"><div class="pp"><header class="phero"><span class="lg">'+LOGO+'</span><div><h1>'+esc(ev?ev.title:'יום הורים')+'</h1><div class="sub">כנפי רוח'+
-  (P.data?' · כיתה '+esc(P.data.cls):'')+(heb?' · '+esc(heb):'')+'</div></div>'+
-  (d?'<div class="datechip" role="img" aria-label="'+esc(longDate(ev.day))+'"><div class="m">'+MONTHS[d.getMonth()]+'</div><div class="d">'+d.getDate()+'</div><div class="w">יום '+DAYS[d.getDay()]+'</div></div>':'')+
+  (P.data?' · כיתה '+esc(P.data.cls):'')+(hp?' · '+hp.year:'')+'</div></div>'+
+  (d?'<div class="datechip" role="img" aria-label="'+esc(longDate(ev.day))+'"><div class="m">'+(hp?hp.month:MONTHS[d.getMonth()])+'</div><div class="d">'+(hp?hp.day:d.getDate())+'</div><div class="w">יום '+DAYS[d.getDay()]+'<br><span style="font-size:11px">'+d.getDate()+'.'+(d.getMonth()+1)+'</span></div></div>':'')+
   '</header>'+(isDemoP()?demoBar():'')+inner+CREDIT+'</div></div>'}
 
 async function parentStart(){
@@ -447,7 +453,7 @@ const eventLine=()=>{const e=S.d.event;return esc(longDate(e.day))+' · '+hm(e.t
 
 /* ----- היומן שלי ----- */
 function reminderText(s,b){const e=S.d.event,t=S.d.P[s.tid];
-  return 'שלום '+b.parent+',\nתזכורת: נפגשים ביום ההורים, '+longDate(e.day).split(' · ')[0]+', בשעה '+s.t+' עם '+tName(t.name)+' על '+b.stu+'.'+(t.room?'\nמקום: '+t.room+'.':'')+'\nביום עצמו אפשר לראות כאן את המקום בתור:\n'+myLink(b.ptoken)+'\nנתראה!'}
+  return 'שלום '+b.parent+',\nתזכורת: נפגשים ביום ההורים, '+longDate(e.day)+', בשעה '+s.t+' עם '+tName(t.name)+' על '+b.stu+'.'+(t.room?'\nמקום: '+t.room+'.':'')+'\nביום עצמו אפשר לראות כאן את המקום בתור:\n'+myLink(b.ptoken)+'\nנתראה!'}
 function viewDiary(){
   const d=S.d,tid=S.tid,p=d.P[tid];
   if(!p)return '<header class="card topbar"><h1>היומן שלי</h1>'+tsel()+'</header><div class="card box">'+(d.admin?'בחרו מורה.':'את/ה לא ברשימת המורים שנפגשים עם הורים. אם צריך, בקשו מההנהלה להוסיף אותך.')+'</div>';
@@ -504,7 +510,7 @@ function viewLive(){
 }
 
 /* ----- הכיתה שלי / כיתות ----- */
-function classMsg(c){const e=S.d.event;return 'הורים יקרים,\nיום ההורים יתקיים '+longDate(e.day).split(' · ')[0]+', בין '+hm(e.t_start)+' ל־'+hm(e.t_end)+'.\nכדי שלא נחכה בתור, כל הורה קובע לעצמו שעה בקישור:\n'+classLink(c.token)+'\nבוחרים את שם הילד ושעה פנויה. אחרי הקביעה תקבלו קישור אישי שבו תראו את המקום בתור ביום עצמו.\nתודה!'}
+function classMsg(c){const e=S.d.event;return 'הורים יקרים,\nיום ההורים יתקיים ב'+longDate(e.day)+', בין '+hm(e.t_start)+' ל־'+hm(e.t_end)+'.\nכדי שלא נחכה בתור, כל הורה קובע לעצמו שעה בקישור:\n'+classLink(c.token)+'\nבוחרים את שם הילד ושעה פנויה. אחרי הקביעה תקבלו קישור אישי שבו תראו את המקום בתור ביום עצמו.\nתודה!'}
 function viewClass(){
   const d=S.d,c=d.C[S.cls];
   const sel=d.classes.length>1?'<select data-act="csel" style="width:auto;min-height:44px">'+d.classes.map(x=>'<option'+(x.name===S.cls?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select>':'';
@@ -542,9 +548,9 @@ function viewOverview(){
 function viewSettings(){
   const d=S.d,e=d.event||{day:'2026-11-29',t_start:'16:00',t_end:'20:00',slot_min:10,gap_min:0,reg_open:false,reg_close:'',note:'',title:'יום הורים'};
   let h='<header class="card topbar"><div><h1>הגדרות יום ההורים</h1><div class="muted">רק למנהל ולמנהל המערכת</div></div></header>';
-  h+='<section class="card box"><h2>האירוע</h2><div class="grid4"><label class="f">תאריך<input type="date" id="e_day" value="'+esc(e.day)+'"></label><label class="f">משעה<input type="time" id="e_ts" value="'+hm(e.t_start)+'"></label><label class="f">עד שעה<input type="time" id="e_te" value="'+hm(e.t_end)+'"></label>'+
+  h+='<section class="card box"><h2>האירוע</h2><div class="grid4"><label class="f">תאריך<input type="date" id="e_day" value="'+esc(e.day)+'"><span class="small muted" id="e_day_h">'+(e.day?esc(hebDay(e.day)):'')+'</span></label><label class="f">משעה<input type="time" id="e_ts" value="'+hm(e.t_start)+'"></label><label class="f">עד שעה<input type="time" id="e_te" value="'+hm(e.t_end)+'"></label>'+
     '<label class="f">דקות לפגישה<input type="number" id="e_sm" min="3" max="60" value="'+e.slot_min+'"></label><label class="f">מרווח בין פגישות (דק׳)<input type="number" id="e_gm" min="0" max="30" value="'+e.gap_min+'"></label>'+
-    '<label class="f">ההרשמה נסגרת בסוף יום<input type="date" id="e_rc" value="'+esc(e.reg_close||'')+'"></label></div>'+
+    '<label class="f">ההרשמה נסגרת בסוף יום<input type="date" id="e_rc" value="'+esc(e.reg_close||'')+'"><span class="small muted" id="e_rc_h">'+(e.reg_close?esc(hebDay(e.reg_close)):'')+'</span></label></div>'+
     '<label class="f">הערה להורים (מופיעה בראש דף הקביעה)<textarea id="e_note" placeholder="למשל: הפגישות בכיתות. נא להגיע 5 דקות לפני.">'+esc(e.note||'')+'</textarea></label>'+
     '<label class="check"><input type="checkbox" id="e_open"'+(e.reg_open?' checked':'')+'> <span><b>ההרשמה להורים פתוחה</b><br><span class="small muted">כשמסומן, הורים יכולים לקבוע שעה בקישור הכיתתי.</span></span></label>'+
     '<div class="row"><button class="btn" data-act="saveev">שמירה'+(d.event?'':' ויצירת האירוע')+'</button></div></section>';
@@ -639,6 +645,7 @@ function staffClick(e){
     S.busy=true;(async()=>{try{await rpc('yh_admin_save_event',{p_phone:S.phone,p_ev:ev});const r=await rpc('yh_admin_build',{p_phone:S.phone});toast('נשמר'+(r.added||r.removed?' · הלוח עודכן':''));await load()}catch(x){toast(errMsg(x))}S.busy=false;S.keepScroll=true;render()})();return}
 }
 function staffChange(e){const t=e.target;
+  if(t.id==='e_day'||t.id==='e_rc'){const o=document.getElementById(t.id+'_h');if(o)o.textContent=t.value?hebDay(t.value):''}
   if(t.id==='lnote'){S.lnote={id:+t.dataset.id,v:t.value};return}
   if(t.dataset.act==='tsel'){S.tid=+t.value;render()}
   else if(t.dataset.act==='csel'){S.cls=t.value;render()}
