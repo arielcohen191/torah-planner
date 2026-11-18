@@ -128,6 +128,69 @@
   /* תקלות ותחזוקה */
   let MID=2;const MAINT=[{id:2,created_at:add(TODAY,-1)+'T09:10:00Z',by:ME,place:'כיתה '+CLS.replace("' ",'׳'),descr:'המזגן לא מקרר',urgency:1,status:'doing',status_at:add(TODAY,-1)+'T12:00:00Z',status_by:'אב הבית',note:'הוזמן טכנאי',thanked_at:null,mine:true},
     {id:1,created_at:add(TODAY,-6)+'T08:00:00Z',by:ME,place:'חצר',descr:'ברז דולף ליד המגרש',urgency:2,status:'done',status_at:add(TODAY,-4)+'T10:00:00Z',status_by:'אב הבית',note:null,thanked_at:null,mine:true}];
+
+  /* ---------- יום הורים (/horim): כיתה ה׳7 מלאה ----------
+     המצב נשמר בדפדפן (localStorage), כדי שהורה שקובע בקישור ההדגמה יופיע ביומן של נועם גם בלשונית אחרת.
+     מתאפס כל יום, או בכפתור "איפוס ההדגמה". הקישור הכיתתי: /horim/?k=demo */
+  const YH_TOK='demo',YH_TID=1,YH_KEY='kr_demo_yh';
+  function yhFresh(){
+    const ev={id:1,title:'יום הורים',day:TODAY,t_start:'16:00',t_end:'20:00',slot_min:10,gap_min:0,reg_open:true,reg_close:null,note:'אפשר לקבוע עד יום לפני. ביום עצמו תראו בקישור האישי כמה לפניכם בתור.'};
+    const slots=[];for(let i=0;i<24;i++){const m=16*60+i*10;slots.push({id:i+1,t:pad(Math.floor(m/60))+':'+pad(m%60),brk:i===12})}
+    const DADS=['יוסף','משה','אברהם','דוד','שמעון','יעקב','אליהו','מאיר','חיים','בנימין','שלמה','אהרון'],MOMS=['רחל','שרה','מיכל','אסתר','חנה','רבקה','נעמה','תמר'];
+    const NOTES={0:'קורא יפה. סוכם על ספר קריאה לחופשה.',1:'ביקשו לעקוב אחרי הכנת שיעורי הבית. נשוחח שוב בעוד חודש.',2:'הוצע להצטרף לחוג המתמטיקה.'};
+    const bk=[],free=new Set([9,19]);let k=0,id=0;
+    slots.forEach((x,i)=>{if(x.brk||free.has(i)||k>=21)return;const n=NAMES[k],last=n.split(' ').slice(1).join(' '),par=(k%3===1?MOMS[k%MOMS.length]:DADS[k%DADS.length])+' '+last;
+      const b={id:++id,slot:x.id,cls:CLS,stu:n,parent:par,phone:'05'+(20000101+k),consent:k%7!==4,ptoken:'demo-p'+k,by_staff:k===6?ME:null,started:null,ended:null,no_show:false,note:NOTES[k]||null};
+      if(k<3){const st=new Date(TODAY+'T'+x.t+':00');st.setMinutes(st.getMinutes()+k*2+1);const en=new Date(st);en.setMinutes(en.getMinutes()+10);b.started=st.toISOString();b.ended=en.toISOString()}
+      bk.push(b);k++});
+    return {v:TODAY,ev,slots,bk,nid:id,ntok:100}}
+  function yh(){let o=null;try{o=JSON.parse(localStorage.getItem(YH_KEY)||'null')}catch(e){}if(!o||o.v!==TODAY){o=yhFresh();yhSave(o)}return o}
+  function yhSave(o){try{localStorage.setItem(YH_KEY,JSON.stringify(o))}catch(e){}}
+  const yhErr=c=>{throw new Error(c)};
+  const yhB=(o,sid)=>o.bk.find(b=>b.slot===sid);
+  const yhQueue=o=>o.slots.map(x=>({x,b:yhB(o,x.id)})).filter(z=>z.b).map(z=>({t:z.x.t,s:z.b.started,e:z.b.ended,n:z.b.no_show}));
+  const yhRoom='כיתה '+CLS.replace("' ",'׳');
+  function yhCheck(o,x,stu,ph,skip){if(!x)yhErr('no_slot');if(x.brk||yhB(o,x.id))yhErr('taken');if(!NAMES.includes(stu))yhErr('no_student');
+    if(o.bk.some(b=>b.stu===stu&&b!==skip))yhErr('already');
+    const tm=s=>{const p=s.split(':');return +p[0]*60+ +p[1]};
+    if(ph&&o.bk.some(b=>b!==skip&&b.phone===ph&&Math.abs(tm(o.slots.find(y=>y.id===b.slot).t)-tm(x.t))<o.ev.slot_min))yhErr('overlap')}
+  function yhRpc(fn,a){const o=yh(),ev=o.ev;
+    switch(fn){
+      case 'yh_my':{const mine=o.bk;return {event:{day:ev.day,t_start:ev.t_start,t_end:ev.t_end,reg_open:ev.reg_open,slot_min:ev.slot_min},part:true,booked:mine.length,
+        free:o.slots.filter(x=>!x.brk&&!yhB(o,x.id)).length,next:(o.slots.find(x=>{const b=yhB(o,x.id);return b&&!b.ended&&!b.no_show})||{}).t||null,
+        classes:[{name:CLS,token:YH_TOK,students:NAMES.length,booked:new Set(mine.map(b=>b.stu)).size}]}}
+      case 'yh_summary':return null;
+      case 'yh_staff_load':return {me:ME,admin:false,tid:YH_TID,now:new Date().toISOString(),event:ev,
+        participants:[{tid:YH_TID,name:ME,classes:[CLS],t_start:null,t_end:null,room:yhRoom}],
+        classes:[{name:CLS,token:YH_TOK,students:NAMES,teachers:[YH_TID],homeroom:YH_TID}],
+        slots:o.slots.map(x=>{const b=yhB(o,x.id);return {id:x.id,tid:YH_TID,t:x.t,brk:x.brk,b:b?{id:b.id,cls:b.cls,stu:b.stu,parent:b.parent,phone:b.phone,consent:b.consent,ptoken:b.ptoken,by_staff:b.by_staff,started:b.started,ended:b.ended,no_show:b.no_show,note:b.note}:null}})}
+      case 'yh_slot_break':{const x=o.slots.find(y=>y.id===a.p_slot);if(!x)yhErr('no_slot');if(a.p_break&&yhB(o,x.id))yhErr('taken');x.brk=!!a.p_break;yhSave(o);return null}
+      case 'yh_staff_book':{const x=o.slots.find(y=>y.id===a.p_slot),ph=digits(a.p_pphone);yhCheck(o,x,a.p_student,ph);
+        const tok=(o.bk.find(b=>ph&&b.phone===ph)||{}).ptoken||'demo-n'+(++o.ntok);
+        o.bk.push({id:++o.nid,slot:x.id,cls:CLS,stu:a.p_student,parent:(a.p_parent||'').trim()||'הורה',phone:ph,consent:false,ptoken:tok,by_staff:ME,started:null,ended:null,no_show:false,note:null});yhSave(o);return {ptoken:tok}}
+      case 'yh_staff_move':{const b=o.bk.find(y=>y.id===a.p_booking),x=o.slots.find(y=>y.id===a.p_slot);if(!b)yhErr('no_booking');if(!x)yhErr('no_slot');if(x.brk||yhB(o,x.id))yhErr('taken');b.slot=x.id;yhSave(o);return null}
+      case 'yh_staff_cancel':{const i=o.bk.findIndex(y=>y.id===a.p_booking);if(i>=0)o.bk.splice(i,1);yhSave(o);return null}
+      case 'yh_note_set':{const b=o.bk.find(y=>y.id===a.p_booking);if(!b)yhErr('no_booking');b.note=String(a.p_note||'').trim().slice(0,2000)||null;yhSave(o);return null}
+      case 'yh_live':{const b=o.bk.find(y=>y.id===a.p_booking);if(!b)yhErr('no_booking');const now=new Date().toISOString();
+        if(a.p_action==='start'){o.bk.forEach(y=>{if(y!==b&&y.started&&!y.ended)y.ended=now});b.started=now;b.ended=null;b.no_show=false}
+        else if(a.p_action==='end'){b.ended=now;b.started=b.started||now}
+        else if(a.p_action==='noshow'){b.no_show=true;b.started=null;b.ended=null}
+        else if(a.p_action==='reset'){b.no_show=false;b.started=null;b.ended=null}
+        yhSave(o);return null}
+      case 'yh_class':if(a.p_token!==YH_TOK)yhErr('bad_link');
+        return {event:{title:ev.title,day:ev.day,slot_min:ev.slot_min,reg_open:ev.reg_open,reg_close:ev.reg_close,note:ev.note},cls:CLS,
+          students:NAMES.map(n=>({n,done:o.bk.some(b=>b.stu===n)?[YH_TID]:[]})),
+          teachers:[{tid:YH_TID,name:ME,gender:'m',room:yhRoom,homeroom:true,slots:o.slots.map(x=>({id:x.id,t:x.t,free:!x.brk&&!yhB(o,x.id)}))}]};
+      case 'yh_book':{if(a.p_token!==YH_TOK)yhErr('bad_link');const ph=digits(a.p_pphone);if(!/^05\d{8}$/.test(ph))yhErr('bad_phone');if(!String(a.p_parent||'').trim())yhErr('no_parent');
+        const picks=a.p_picks||[];if(!picks.length)yhErr('no_picks');if(picks.length>1)yhErr('two_same_teacher');
+        const x=o.slots.find(y=>y.id===picks[0]);yhCheck(o,x,a.p_student,ph);
+        const tok=(o.bk.find(b=>b.phone===ph)||{}).ptoken||'demo-n'+(++o.ntok);
+        o.bk.push({id:++o.nid,slot:x.id,cls:CLS,stu:a.p_student,parent:String(a.p_parent).trim(),phone:ph,consent:!!a.p_consent,ptoken:tok,by_staff:null,started:null,ended:null,no_show:false,note:null});yhSave(o);return {ptoken:tok}}
+      case 'yh_mine':{const it=o.bk.filter(b=>b.ptoken===a.p_ptoken);if(!it.length)return {items:[]};const q=yhQueue(o);
+        return {event:{title:ev.title,day:ev.day,slot_min:ev.slot_min,note:ev.note,can_cancel:true},now:new Date().toISOString(),
+          items:it.map(b=>({id:b.id,cls:b.cls,stu:b.stu,parent:b.parent,t:o.slots.find(x=>x.id===b.slot).t,tid:YH_TID,teacher:ME,gender:'m',room:yhRoom,started:b.started,ended:b.ended,no_show:b.no_show,queue:q})).sort((p,r)=>p.t<r.t?-1:1)}}
+      case 'yh_cancel':{const i=o.bk.findIndex(b=>b.id===a.p_booking&&b.ptoken===a.p_ptoken);if(i>=0)o.bk.splice(i,1);yhSave(o);return null}
+      default:yhErr('forbidden')}}
   const DPH={};
   function rpc(fn,a){
     a=a||{};
@@ -167,8 +230,8 @@
       case 'mk_my_q':return Q||{};
       case 'mk_save_q':Q={part_a:a.p_part_a,part_b:a.p_part_b};return {ok:true};
       case 'mk_change_pin':return {error:'forbidden'};
-      default:return {error:'forbidden'};
+      default:if(/^yh_/.test(fn))return yhRpc(fn,a);return {error:'forbidden'};
     }
   }
-  window.KR_DEMO={phone:PHONE,pin:PIN,isDemo,rpc,note:'מצב הדגמה: המשתמש, הכיתה, המורים והתלמידים בדויים. שום שינוי לא נשמר.'};
+  window.KR_DEMO={phone:PHONE,pin:PIN,isDemo,rpc,yhTok:YH_TOK,isYhDemo:a=>!!a&&(isDemo(a.p_phone)||a.p_token===YH_TOK||/^demo-/.test(a.p_ptoken||'')),yhReset:()=>{try{localStorage.removeItem(YH_KEY)}catch(e){}},note:'מצב הדגמה: המשתמש, הכיתה, המורים והתלמידים בדויים. שום שינוי לא נשמר.'};
 })();

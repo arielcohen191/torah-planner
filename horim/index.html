@@ -175,10 +175,12 @@ td:first-child{border-radius:0 var(--r-sm) var(--r-sm) 0}td:last-child{border-ra
 <body>
 <div id="root"><div class="loading">טוען…</div></div>
 <script src="/as/as.js"></script>
+<script src="/demo/demo.js"></script>
 <script>
 'use strict';
 const CFG={url:'https://onocjgbtensczpdbeanf.supabase.co',key:'sb_publishable_JpV-E-qPnV9ZdnRnY9Kv8Q_TaRzCnyc'};
 async function rpc(fn,args){
+  if(window.KR_DEMO&&KR_DEMO.isYhDemo&&KR_DEMO.isYhDemo(args))return JSON.parse(JSON.stringify(KR_DEMO.rpc(fn,args)??null));
   const r=await fetch(CFG.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:CFG.key,Authorization:'Bearer '+CFG.key,'Content-Type':'application/json'},body:JSON.stringify(args||{})});
   const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
   if(!r.ok){const m=(j&&j.message)||t;throw new Error(m)}
@@ -245,18 +247,21 @@ function liveInfo(q,slotMin,now){
 const P={tok:Q.get('k'),ptok:Q.get('p'),data:null,stu:null,picks:{},parent:ls('yh_parent')||'',phone:ls('yh_pphone')||'',consent:true,done:null,mine:null,q:'',busy:false,timer:null};
 function myTokens(){try{return JSON.parse(ls('yh_ptokens')||'[]')}catch(e){return[]}}
 function addMyToken(t){const a=myTokens();if(!a.includes(t)){a.push(t);lsSet('yh_ptokens',JSON.stringify(a))}}
-async function loadMine(){const toks=[...new Set([...(P.ptok?[P.ptok]:[]),...myTokens()])];const all=[];let ev=null;
+async function loadMine(){const dm=isDemoP(),toks=[...new Set([...(P.ptok?[P.ptok]:[]),...myTokens()])].filter(t=>/^demo-/.test(t)===dm);const all=[];let ev=null;
   for(const t of toks){try{const m=await rpc('yh_mine',{p_ptoken:t});if(m&&m.items&&m.items.length){ev=m.event;m.items.forEach(i=>{i.ptoken=t;i.link=myLink(t);all.push(i)})}}catch(e){}}
   all.sort((a,b)=>mins(a.t)-mins(b.t));P.mine={ev,items:all};}
 const MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 const avc=n=>'c'+([...String(n)].reduce((a,c)=>a+c.charCodeAt(0),0)%5);
 const av=n=>'<span class="av '+avc(n)+'" aria-hidden="true">'+esc(String(n).replace(/^הרב\s+/,'').trim().charAt(0))+'</span>';
+const isDemoP=()=>!!window.KR_DEMO&&(P.tok===KR_DEMO.yhTok||/^demo-/.test(P.ptok||''));
+const DEMO_NOTE='מצב הדגמה: הכיתה, התלמידים וההורים בדויים. שום דבר לא נשלח לבית הספר.';
+const demoBar=()=>'<div class="warn" role="status"><b>'+DEMO_NOTE+'</b> <button class="link" data-act="demoreset">איפוס ההדגמה</button></div>';
 function parentShell(inner){const ev=P.data?P.data.event:(P.mine&&P.mine.ev)||null,d=ev?parseD(ev.day):null;let heb='';
   if(d)try{heb=new Intl.DateTimeFormat('he-u-ca-hebrew',{day:'numeric',month:'long'}).format(d)}catch(e){}
   return '<div class="ppbg"><div class="pp"><header class="phero"><span class="lg">'+LOGO+'</span><div><h1>'+esc(ev?ev.title:'יום הורים')+'</h1><div class="sub">כנפי רוח'+
   (P.data?' · כיתה '+esc(P.data.cls):'')+(heb?' · '+esc(heb):'')+'</div></div>'+
   (d?'<div class="datechip" role="img" aria-label="'+esc(longDate(ev.day))+'"><div class="m">'+MONTHS[d.getMonth()]+'</div><div class="d">'+d.getDate()+'</div><div class="w">יום '+DAYS[d.getDay()]+'</div></div>':'')+
-  '</header>'+inner+CREDIT+'</div></div>'}
+  '</header>'+(isDemoP()?demoBar():'')+inner+CREDIT+'</div></div>'}
 
 async function parentStart(){
   try{
@@ -370,8 +375,10 @@ async function parentBook(){
   }catch(e){el.textContent=errMsg(e);try{P.data=await rpc('yh_class',{p_token:P.tok})}catch(x){}const keep=el.textContent;P.picks={};renderParent();const e2=document.getElementById('perr');if(e2)e2.textContent=keep}
   P.busy=false;
 }
+function demoReset(){if(!confirm('לאפס את ההדגמה לנתוני ההתחלה?'))return;KR_DEMO.yhReset();try{const a=JSON.parse(localStorage.getItem('yh_ptokens')||'[]').filter(t=>!/^demo-/.test(t));localStorage.setItem('yh_ptokens',JSON.stringify(a))}catch(x){}location.reload()}
 function parentClick(e){
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='demoreset')return demoReset();
   const keep=()=>{const n=document.getElementById('pname'),p=document.getElementById('pphone'),c=document.getElementById('pcons');if(n)P.parent=n.value;if(p)P.phone=p.value;if(c)P.consent=c.checked};
   if(a==='stu'){P.stu=b.dataset.n;P.picks={};renderParent();window.scrollTo({top:0,behavior:'smooth'})}
   else if(a==='unstu'){keep();P.stu=null;P.picks={};renderParent()}
@@ -417,12 +424,12 @@ function shell(inner){
     /* כפתור "ראשי": חזרה ללוח הראשי מכל מסך, גם בטלפון (שם הלוגו מוסתר) */
     '<button type="button" title="לדף הראשי" onclick="location.href=\'/hanhala/\'"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>ראשי</button>'+
     nav.map(([k,l])=>'<button data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>').join('')+
-    '<div class="spacer"></div><div class="who">'+esc(d.me||'')+'<br><a class="link" style="color:#c9d3de;font-size:13px" href="/hanhala/">ללוח ההנהלה</a><br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+CREDIT+'</main></div>'+(S.modal?modalHtml():'');
+    '<div class="spacer"></div><div class="who">'+esc(d.me||'')+'<br><a class="link" style="color:#c9d3de;font-size:13px" href="/hanhala/">ללוח ההנהלה</a><br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+(window.KR_DEMO&&KR_DEMO.isDemo(S.phone)?demoBar():'')+inner+CREDIT+'</main></div>'+(S.modal?modalHtml():'');
 }
 function renderLogin(err){
   root.innerHTML='<div class="login"><form class="card" id="loginForm"><div style="text-align:center">'+LOGO.replace('>',' style="height:64px">')+'</div><h1>יום הורים</h1><div class="muted">כנפי רוח · כניסת צוות</div>'+
    '<label for="ph" style="font-weight:600">מספר טלפון</label><input id="ph" type="tel" inputmode="tel" autocomplete="tel" required autofocus>'+
-   (err?'<div class="err">'+esc(err)+'</div>':'')+'<button class="btn wide" type="submit">כניסה</button><div class="small muted">הורים? הקישור לקביעת פגישה נשלח בקבוצת הכיתה.</div></form></div>';
+   (err?'<div class="err">'+esc(err)+'</div>':'')+'<button class="btn wide" type="submit">כניסה</button>'+(window.KR_DEMO?'<div class="small muted">להדגמה לצוות: 050-0000000</div>':'')+'<div class="small muted">הורים? הקישור לקביעת פגישה נשלח בקבוצת הכיתה.</div></form></div>';
   root.querySelector('#ph').focus();
 }
 function render(){
@@ -591,6 +598,7 @@ async function act(fn,args,msg){if(S.busy)return;S.busy=true;try{await rpc(fn,ar
 function staffClick(e){
   const g=e.target.closest('[data-go]');if(g){S.view=g.dataset.go;S.filter=null;render();window.scrollTo(0,0);return}
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='demoreset')return demoReset();
   if(a==='close'){if(e.target===b||b.tagName==='BUTTON'){S.modal=null;render()}return}
   if(a==='logout'){lsSet('hanhala_phone',null);S.phone=null;S.d=null;return renderLogin()}
   if(a==='print')return print();
