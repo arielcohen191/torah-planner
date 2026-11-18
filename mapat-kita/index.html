@@ -1130,7 +1130,7 @@ async function loadMyQ(){MYQ_DONE=false;
   Q=blankQ();Q.who=USER.name;
   try{const r=await rpc("mk_my_q",{p_phone:SES.phone,p_pin:SES.pin});
     if(r&&!r.error){const a=r.part_a||{};Q.cls.worries=a.worries||[];Q.cls.discuss=a.discuss||[];Q.cls.bright=a.bright||"";Q.cls.needs=a.needs||"";
-      Q.who=a.who||USER.name;Q.date=a.date||Q.date;if(r.part_b)Q.me=Object.assign(Q.me,r.part_b);
+      Q.who=a.who||USER.name;Q.date=a.date||Q.date;if(r.part_b)Q.me=Object.assign(Q.me,r.part_b);window._meHidden=!!r.part_b_hidden;
       MYQ_DONE=!!(r.updated_at||Object.keys(a).length||(r.part_b&&Object.keys(r.part_b).length));}
   }catch(e){}
   renderQForm();myQTag();
@@ -1227,7 +1227,7 @@ renderQForm=function(){
   </fieldset>
 
   <fieldset class="me"><legend>חלק ב' · אני בתפקיד <span class="tagm s">🔒 גלוי רק לך ולמנהל</span></legend>
-   ${!window._meOpen?`<p>החלק הזה נועד לשיחה אישית עם המנהל, ולא לישיבה עצמה. <button class="chip" onclick="window._meOpen=1;renderQForm()">פתיחת החלק האישי</button></p>`:`
+   ${window._meHidden?`<p class="hint">החלק האישי לא מוצג במצב "בנעליים של".</p>`:!window._meOpen?`<p>החלק הזה נועד לשיחה אישית עם המנהל, ולא לישיבה עצמה. <button class="chip" onclick="window._meOpen=1;renderQForm()">פתיחת החלק האישי</button></p>`:`
    <h3>5. באילו תפקידים אני משמש השנה?</h3>
    ${OFFICIAL()?`<h5 style="margin:4px 0 6px">התפקידים הרשמיים שלי</h5>
    <div class="chips">${OFFICIAL().length?OFFICIAL().map(r=>`<span class="ch on lock" title="נקבע על ידי ההנהלה">🔒 ${esc(r)}</span>`).join(""):'<span class="hint">לא הוגדר לך תפקיד רשמי.</span>'}</div>
