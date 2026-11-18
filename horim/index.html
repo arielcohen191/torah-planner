@@ -322,6 +322,7 @@ function renderParent(){
   const d=P.data,ev=d.event;
   if(P.done)return renderDone();
   let h=mineHtml();
+  if(P.tok&&!d.teachers.length&&!(d.subject||[]).length){root.innerHTML=parentShell(h+'<div class="card box"><h2>האסיפה של כיתה '+esc(d.cls)+' תתקיים במועד אחר</h2><div class="muted">המחנך/ת יעדכנו אתכם בהמשך.</div></div>');return}
   if(!ev.reg_open){root.innerHTML=parentShell(h+'<div class="card box"><h2>ההרשמה סגורה כרגע</h2><div class="muted">אם צריך לקבוע או לשנות פגישה, פנו למחנך/ת הכיתה.</div></div>');return}
   if(ev.note)h+='<div class="info">'+esc(ev.note)+'</div>';
   const nPick=Object.values(P.picks).filter(Boolean).length,cur=!P.stu?1:!pOk()?2:3;
@@ -577,13 +578,14 @@ function viewClass(){
 /* ----- קישורי כיתות (מנהלי מערכת: כל הכיתות; מנהלות בתים: השכבות שלהן) ----- */
 function viewLinks(){
   const d=S.d,L=d.classes.filter(c=>c.token);
-  const all='קישורים ליום ההורים ('+longDate(d.event.day)+'):\n'+L.map(c=>'כיתה '+c.name+': '+classLink(c.token)).join('\n');
+  const all='קישורים ליום ההורים ('+longDate(d.event.day)+'):\n'+L.filter(c=>c.teachers.length).map(c=>'כיתה '+c.name+': '+classLink(c.token)).join('\n');
   let h='<header class="card topbar"><div><h1>קישורי כיתות</h1><div class="muted">'+eventLine()+'</div></div><button class="btn sm" data-act="copytxt" data-t="'+esc(all)+'">העתקת כל הקישורים</button></header>';
   if(!d.event.reg_open)h+='<div class="warn">ההרשמה עוד סגורה: הורים שייכנסו עכשיו יראו "ההרשמה סגורה".</div>';
   const tot=d.classes.reduce((a,c)=>a+c.students.length,0),bk=d.classes.reduce((a,c)=>a+(c.booked||0),0);
   h+='<section class="kpis">'+kpi('k-blue','כיתות','עם קישור',L.length,'l-t')+kpi('k-green','נרשמו',tot?Math.round(bk*100/tot)+'% מהתלמידים':'תלמידים',bk,'l-t')+kpi('k-red','עוד לא','תלמידים',tot-bk,'l-t')+'</section>';
   h+='<section class="card box" id="ltab"><div class="tablewrap"><table><thead><tr><th>כיתה</th><th>מחנך/ת</th><th>נרשמו</th><th>שליחה להורים</th></tr></thead><tbody>'+
     d.classes.map(c=>{const t=c.students.length,n=c.booked||0;
+      if(!c.teachers.length)return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.hr_name?tName(c.hr_name):'—')+'</td><td>—</td><td><span class="tag o">מועד אחר</span></td></tr>';
       return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.hr_name?tName(c.hr_name):'—')+'</td><td>'+n+' / '+t+'</td><td>'+(c.token?
         '<div class="row"><a class="btn wa xs" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(classMsg(c))+'">וואטסאפ</a><button class="btn sec xs" data-act="copytxt" data-t="'+esc(classMsg(c))+'">העתקת ההודעה</button><button class="btn sec xs" data-act="copytxt" data-t="'+esc(classLink(c.token))+'">העתקת הקישור</button><button class="link" data-act="gocls" data-c="'+esc(c.name)+'">פירוט</button></div>'
         :'<span class="muted small">אין קישור עדיין</span>')+'</td></tr>'}).join('')+'</tbody></table></div></section>';
