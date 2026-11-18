@@ -153,6 +153,11 @@ td:first-child{border-radius:0 var(--r-sm) var(--r-sm) 0}td:last-child{border-ra
 .pdone{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .pdone .ck{width:72px;height:72px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-size:40px;box-shadow:0 8px 20px rgba(79,154,42,.35);animation:pop .4s ease-out}
 @keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+.clsgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.tbanner{display:flex;align-items:center;gap:12px;background:#fff;border-radius:16px;padding:12px 16px;box-shadow:var(--shadow)}.tbanner b{font-size:18px}
+.subj{border:2px dashed #b9d2ee}.bubs{display:flex;flex-wrap:wrap;gap:10px}
+.bub{display:inline-flex;align-items:center;gap:10px;background:#eef5fc;border:1.5px solid #b9d2ee;border-radius:999px;padding:6px 16px 6px 8px;text-decoration:none;color:var(--ink);min-height:52px;transition:transform .1s,box-shadow .1s}
+.bub:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(47,127,214,.18)}.bub>span{display:flex;flex-direction:column;line-height:1.25}
 .tkt{display:flex;align-items:center;gap:14px;background:var(--card-muted);border-radius:14px;padding:12px 16px;border-right:6px solid var(--green);text-align:right}
 .tkt .tm{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
 .pp .meet{border-radius:16px}
@@ -251,7 +256,7 @@ function liveInfo(q,slotMin,now){
 /* =================================================================== */
 /* ========================  מצב הורה  ================================ */
 /* =================================================================== */
-const P={tok:Q.get('k'),ptok:Q.get('p'),data:null,stu:null,picks:{},parent:ls('yh_parent')||'',phone:ls('yh_pphone')||'',consent:true,done:null,mine:null,q:'',busy:false,timer:null};
+const P={tok:Q.get('k'),ptok:Q.get('p'),ttok:Q.get('t'),tdata:null,data:null,stu:null,picks:{},parent:ls('yh_parent')||'',phone:ls('yh_pphone')||'',consent:true,done:null,mine:null,q:'',busy:false,timer:null};
 function myTokens(){try{return JSON.parse(ls('yh_ptokens')||'[]')}catch(e){return[]}}
 function addMyToken(t){const a=myTokens();if(!a.includes(t)){a.push(t);lsSet('yh_ptokens',JSON.stringify(a))}}
 async function loadMine(){const dm=isDemoP(),toks=[...new Set([...(P.ptok?[P.ptok]:[]),...myTokens()])].filter(t=>/^demo-/.test(t)===dm);const all=[];let ev=null;
@@ -263,16 +268,24 @@ const av=n=>'<span class="av '+avc(n)+'" aria-hidden="true">'+esc(String(n).repl
 const isDemoP=()=>!!window.KR_DEMO&&(P.tok===KR_DEMO.yhTok||/^demo-/.test(P.ptok||''));
 const DEMO_NOTE='מצב הדגמה: הכיתה, התלמידים וההורים בדויים. שום דבר לא נשלח לבית הספר.';
 const demoBar=()=>'<div class="warn" role="status"><b>'+DEMO_NOTE+'</b> <button class="link" data-act="demoreset">איפוס ההדגמה</button></div>';
-function parentShell(inner){const ev=P.data?P.data.event:(P.mine&&P.mine.ev)||null,d=ev?parseD(ev.day):null,hp=d?hebParts(d):null;
+function parentShell(inner){const ev=P.data?P.data.event:P.tdata?P.tdata.event:(P.mine&&P.mine.ev)||null,d=ev?parseD(ev.day):null,hp=d?hebParts(d):null;
   return '<div class="ppbg"><div class="pp"><header class="phero"><span class="lg">'+LOGO+'</span><div><h1>'+esc(ev?ev.title:'יום הורים')+'</h1><div class="sub">כנפי רוח'+
-  (P.data?' · כיתה '+esc(P.data.cls):'')+(hp?' · '+hp.year:'')+'</div></div>'+
+  (P.ttok&&P.tdata?' · '+esc(tName(P.tdata.teacher.name)):P.data?' · כיתה '+esc(P.data.cls):'')+(hp?' · '+hp.year:'')+'</div></div>'+
   (d?'<div class="datechip" role="img" aria-label="'+esc(longDate(ev.day))+'"><div class="m">'+(hp?hp.month:MONTHS[d.getMonth()])+'</div><div class="d">'+(hp?hp.day:d.getDate())+'</div><div class="w">יום '+DAYS[d.getDay()]+'<br><span style="font-size:11px">'+d.getDate()+'.'+(d.getMonth()+1)+'</span></div></div>':'')+
   '</header>'+(isDemoP()?demoBar():'')+inner+CREDIT+'</div></div>'}
 
+// קישור של מורה מקצועי: אותו מבנה נתונים כמו בקישור הכיתתי, לכיתה שנבחרה
+const tData=cl=>({event:P.tdata.event,cls:cl.name,students:cl.students,teachers:[P.tdata.teacher],subject:[]});
+const bookTok=()=>P.tok||P.ttok;
+async function reloadData(){if(P.tok)P.data=await rpc('yh_class',{p_token:P.tok});else if(P.ttok){P.tdata=await rpc('yh_teacher',{p_token:P.ttok});const cl=P.tdata.classes.find(c=>c.name===P.tcls);P.data=cl?tData(cl):null}}
 async function parentStart(){
   try{
     await loadMine();
     if(P.tok){P.data=await rpc('yh_class',{p_token:P.tok})}
+    else if(P.ttok){P.tdata=await rpc('yh_teacher',{p_token:P.ttok});
+      const want=P.tcls||Q.get('c'),cl=P.tdata.classes.find(c=>c.name===want)||(P.tdata.classes.length===1?P.tdata.classes[0]:null);
+      P.tcls=cl?cl.name:null;P.data=cl?tData(cl):null;
+      const s0=Q.get('s');if(cl&&s0&&!P.stu&&cl.students.some(x=>x.n===s0))P.stu=s0}
   }catch(e){root.innerHTML=parentShell('<div class="card box"><div class="err">'+esc(errMsg(e))+'</div></div>');return}
   renderParent();
   if(P.mine&&P.mine.items.length){clearInterval(P.timer);P.timer=setInterval(async()=>{if(P.busy||document.hidden)return;await loadMine();if(!P.stu||P.done)renderParent()},30000)}
@@ -297,14 +310,22 @@ function mineHtml(){
       (!it.started&&!it.ended&&ev.can_cancel?'<div class="row noprint"><a class="link" href="'+esc(gcalLink(it,ev))+'" target="_blank" rel="noopener">ליומן גוגל</a><button class="link" data-act="ics" data-id="'+it.id+'">ליומן בטלפון</button><button class="link" style="color:var(--red)" data-act="pcancel" data-id="'+it.id+'" data-tok="'+esc(it.ptoken)+'">ביטול הפגישה</button></div>':'')+'</div>'});
   return '<section style="display:flex;flex-direction:column;gap:10px"><h2>הפגישות שלי</h2>'+(isDay?'<div class="small muted">הדף מתעדכן לבד כל חצי דקה.</div>':'')+cards.join('')+'</section>';
 }
+function bubbles(){const d=P.data;if(!d||!d.subject||!d.subject.length)return '';
+  return '<section class="card box subj"><h2 style="font-size:19px">רוצים להיפגש גם עם המורים המקצועיים?</h2><div class="small muted">לחצו על מורה כדי לקבוע אצלו/ה. הפרטים שכתבתם יישמרו.</div><div class="bubs">'+
+    d.subject.map(t=>'<a class="bub" href="'+esc(location.pathname+'?t='+t.token+'&c='+encodeURIComponent(d.cls)+(P.stu?'&s='+encodeURIComponent(P.stu):''))+'">'+av(tName(t.name))+'<span><b>'+esc(tName(t.name))+'</b><span class="small muted">'+(t.free?t.free+' שעות פנויות':'אין שעות פנויות')+'</span></span></a>').join('')+'</div></section>'}
 function renderParent(){
-  if(!P.tok){root.innerHTML=parentShell(P.mine&&P.mine.items.length?mineHtml():'<div class="card box">לא נמצאו פגישות בקישור הזה.</div>');return}
+  if(!P.tok&&!P.ttok){root.innerHTML=parentShell(P.mine&&P.mine.items.length?mineHtml():'<div class="card box">לא נמצאו פגישות בקישור הזה.</div>');return}
+  if(P.ttok&&!P.data){const td=P.tdata;
+    root.innerHTML=parentShell(mineHtml()+(td.event.reg_open?'<section class="card box"><div class="step"><span class="n">1</span>באיזו כיתה לומד בנכם?</div><div class="small muted">'+esc(tName(td.teacher.name))+' מלמד/ת בכיתות האלה:</div><div class="clsgrid">'+
+      td.classes.map(c=>'<button class="pick" data-act="tcls" data-c="'+esc(c.name)+'"><b class="nm">כיתה '+esc(c.name)+'</b></button>').join('')+'</div></section>'
+      :'<div class="card box"><h2>ההרשמה סגורה כרגע</h2></div>'));return}
   const d=P.data,ev=d.event;
   if(P.done)return renderDone();
   let h=mineHtml();
   if(!ev.reg_open){root.innerHTML=parentShell(h+'<div class="card box"><h2>ההרשמה סגורה כרגע</h2><div class="muted">אם צריך לקבוע או לשנות פגישה, פנו למחנך/ת הכיתה.</div></div>');return}
   if(ev.note)h+='<div class="info">'+esc(ev.note)+'</div>';
   const nPick=Object.values(P.picks).filter(Boolean).length,cur=!P.stu?1:!pOk()?2:3;
+  if(P.ttok)h+='<div class="tbanner">'+av(tName(d.teachers[0].name))+'<div><div class="small muted">פגישה עם</div><b>'+esc(tName(d.teachers[0].name))+'</b></div>'+(P.tdata.classes.length>1?'<button class="link" data-act="untcls" style="margin-inline-start:auto">כיתה '+esc(d.cls)+' · החלפה</button>':'<span class="tag" style="margin-inline-start:auto">כיתה '+esc(d.cls)+'</span>')+'</div>';
   h+='<ol class="psteps" id="psteps" aria-label="שלבי הקביעה">'+pSteps(cur,nPick)+'</ol>';
   // שלב 1: הילד
   h+='<section class="card box"><div class="step'+(P.stu?' dn':'')+'"><span class="n">'+(P.stu?'✓':'1')+'</span>מהו שמו של בנכם?</div>';
@@ -321,7 +342,7 @@ function renderParent(){
     // שלב 2: פרטי ההורה
     h+='<section class="card box"><div class="step'+(pOk()?' dn':'')+'" id="pst2"><span class="n">'+(pOk()?'✓':'2')+'</span>פרטי ההורה</div><div class="grid2"><label class="f">שם ההורה<input type="text" id="pname" autocomplete="name" value="'+esc(P.parent)+'"></label>'+
       '<label class="f">טלפון נייד<input type="tel" id="pphone" inputmode="tel" autocomplete="tel" value="'+esc(P.phone)+'"></label></div>'+
-      '<label class="check"><input type="checkbox" id="pcons"'+(P.consent?' checked':'')+'> מסכימים שהמחנך/ת ישלחו תזכורת בוואטסאפ למספר הזה</label></section>';
+      '<label class="check"><input type="checkbox" id="pcons"'+(P.consent?' checked':'')+'> מסכימים ש'+(P.ttok?'המורה':'המחנך/ת')+' ישלחו תזכורת בוואטסאפ למספר הזה</label></section>';
     // שלב 3: שעות
     h+='<section class="card box"><div class="step'+(nPick?' dn':'')+'"><span class="n">'+(nPick?'✓':'3')+'</span>בחירת שעה'+(d.teachers.length>1?' אצל כל מורה':'')+'</div>';
     if(P.sep)h+='<div class="note">פגישה נפרדת להורה השני: כותבים את השם ואת הטלפון <b>של ההורה השני</b>. <button class="link" data-act="nosep">ביטול</button></div>';
@@ -344,6 +365,7 @@ function renderParent(){
       (n?'<div class="sum"><b>'+esc(P.stu)+'</b> · '+left.filter(t=>P.picks[t.tid]).map(t=>'<b>'+esc(P.picks[t.tid].t)+'</b> אצל '+esc(tName(t.name))).join(' · ')+'</div>':'')+
       '<button class="btn wide ok" data-act="pbook"'+(n?'':' disabled')+'>'+(n?'קביעת '+(n===1?'הפגישה':n+' פגישות'):'בחרו שעה')+'</button></div>';
   }
+  h+=bubbles();
   root.innerHTML=parentShell(h);
   ['pname','pphone'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('input',()=>{P.parent=document.getElementById('pname').value;P.phone=document.getElementById('pphone').value;
     const ok=pOk(),st=document.getElementById('pst2'),ps=document.getElementById('psteps');if(st){st.classList.toggle('dn',ok);st.querySelector('.n').textContent=ok?'✓':'2'}
@@ -365,7 +387,7 @@ function renderDone(){
     '<div>שמרו את הקישור האישי. בו תראו את המקום בתור ביום עצמו, ומשם אפשר גם לבטל:</div>'+
     '<div class="row"><a class="btn sm" href="'+esc(myLink(r.ptoken))+'">לקישור האישי</a><button class="btn sec sm" data-act="copylink" data-l="'+esc(myLink(r.ptoken))+'">העתקת הקישור</button></div>'+
     '<div class="row"><button class="btn sec sm" data-act="icsall">הוספה ליומן בטלפון (עם תזכורת שעה לפני)</button>'+items.map(i=>'<a class="link" target="_blank" rel="noopener" href="'+esc(gcalLink(i,ev))+'">ליומן גוגל · '+esc(i.t)+'</a>').join('')+'</div>'+
-    '<button class="btn sec wide" data-act="another">קביעת פגישה לילד נוסף</button></section>';
+    '<button class="btn sec wide" data-act="another">קביעת פגישה לילד נוסף</button></section>'+bubbles();
   root.innerHTML=parentShell(h);
 }
 async function parentBook(){
@@ -377,12 +399,12 @@ async function parentBook(){
   P.busy=true;el.textContent='';
   try{
     const prev=myTokens()[0]||null;
-    const r=await rpc('yh_book',{p_token:P.tok,p_student:P.stu,p_parent:P.parent,p_pphone:P.phone,p_consent:P.consent,p_picks:picks.map(p=>p.id),p_ptoken:prev});
+    const r=await rpc('yh_book',{p_token:bookTok(),p_student:P.stu,p_parent:P.parent,p_pphone:P.phone,p_consent:P.consent,p_picks:picks.map(p=>p.id),p_ptoken:prev,p_class:P.ttok?d.cls:null});
     addMyToken(r.ptoken);
     const items=picks.map(p=>{const t=d.teachers.find(x=>x.tid===p.tid);return {id:p.id,t:p.t,teacher:t.name,room:t.room,stu:P.stu,link:myLink(r.ptoken)}}).sort((a,b)=>mins(a.t)-mins(b.t));
     P.done={ptoken:r.ptoken,items};
     renderDone();
-  }catch(e){el.textContent=errMsg(e);try{P.data=await rpc('yh_class',{p_token:P.tok})}catch(x){}const keep=el.textContent;P.picks={};renderParent();const e2=document.getElementById('perr');if(e2)e2.textContent=keep}
+  }catch(e){el.textContent=errMsg(e);try{await reloadData()}catch(x){}const keep=el.textContent;P.picks={};renderParent();const e2=document.getElementById('perr');if(e2)e2.textContent=keep}
   P.busy=false;
 }
 function demoReset(){if(!confirm('לאפס את ההדגמה לנתוני ההתחלה?'))return;KR_DEMO.yhReset();try{const a=JSON.parse(localStorage.getItem('yh_ptokens')||'[]').filter(t=>!/^demo-/.test(t));localStorage.setItem('yh_ptokens',JSON.stringify(a))}catch(x){}location.reload()}
@@ -394,6 +416,8 @@ function parentClick(e){
   else if(a==='unstu'){keep();P.stu=null;P.sep=false;P.picks={};renderParent()}
   else if(a==='ptime'){keep();const tid=+b.dataset.tid;P.picks[tid]=b.dataset.id?{id:+b.dataset.id,t:b.dataset.t,tid}:null;renderParent()}
   else if(a==='pbook')parentBook();
+  else if(a==='tcls'){P.tcls=b.dataset.c;P.data=tData(P.tdata.classes.find(c=>c.name===P.tcls));P.stu=null;P.picks={};renderParent();window.scrollTo(0,0)}
+  else if(a==='untcls'){keep();P.tcls=null;P.data=null;P.stu=null;P.picks={};renderParent()}
   else if(a==='copylink')copy(b.dataset.l);
   else if(a==='icsall')downloadIcs(P.done.items,P.data.event);
   else if(a==='ics'){const it=P.mine.items.find(i=>i.id===+b.dataset.id);if(it)downloadIcs([it],P.mine.ev)}
@@ -552,6 +576,11 @@ function viewLinks(){
       return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.hr_name?tName(c.hr_name):'—')+'</td><td>'+n+' / '+t+'</td><td>'+(c.token?
         '<div class="row"><a class="btn wa xs" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(classMsg(c))+'">וואטסאפ</a><button class="btn sec xs" data-act="copytxt" data-t="'+esc(classMsg(c))+'">העתקת ההודעה</button><button class="btn sec xs" data-act="copytxt" data-t="'+esc(classLink(c.token))+'">העתקת הקישור</button><button class="link" data-act="gocls" data-c="'+esc(c.name)+'">פירוט</button></div>'
         :'<span class="muted small">אין קישור עדיין</span>')+'</td></tr>'}).join('')+'</tbody></table></div></section>';
+  const mine=new Set(d.classes.map(c=>c.name));
+  const subj=(d.participants||[]).filter(p=>!p.hr&&p.token&&p.classes.some(c=>mine.has(c)));
+  if(subj.length)h+='<section class="card box"><h2>מורים מקצועיים</h2><div class="small muted">ההורים מגיעים אליהם מה"בועות" שבקישור הכיתתי. אפשר גם לשלוח את הקישור האישי של מורה ישירות.</div><div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>נקבעו</th><th></th></tr></thead><tbody>'+
+    subj.map(p=>{const sl=d.byT[p.tid]||[],u=location.origin+'/horim/?t='+p.token;
+      return '<tr><td><b>'+esc(tName(p.name))+'</b></td><td class="small">'+esc(p.classes.join(', '))+'</td><td>'+(sl.length?sl.filter(s=>s.b).length+' / '+sl.filter(s=>!s.brk).length:'—')+'</td><td><div class="row"><button class="btn sec xs" data-act="copytxt" data-t="'+esc(u)+'">העתקת הקישור</button><a class="link" href="'+esc(u)+'" target="_blank" rel="noopener">לראות כמו הורה</a></div></td></tr>'}).join('')+'</tbody></table></div></section>';
   return h;
 }
 
@@ -593,6 +622,7 @@ function viewSettings(){
       '<td><div class="chips">'+p.classes.map(c=>d.C[c]&&d.C[c].token?'<button data-act="copytxt" data-t="'+esc(classMsg(d.C[c]))+'" title="העתקת ההודעה עם הקישור להורי '+esc(c)+'">'+esc(c)+' 📋</button>':'').join('')+'</div></td>'+
       '<td><button class="link" style="color:var(--red)" data-act="prem">הסרה</button></td></tr>').join('')+'</tbody></table></div>'+
     '<div class="row"><select id="addt" style="width:auto;min-width:240px"><option value="">הוספת איש צוות…</option>'+d.teachers.filter(t=>!d.P[t.id]).map(t=>'<option value="'+t.id+'">'+esc(tName(t.name))+'</option>').join('')+'</select><button class="btn sec sm" data-act="padd">הוספה</button></div>'+
+    '<div class="row"><button class="btn sec sm" data-act="addsubj">הוספת כל המורים המקצועיים מהמערכת</button><span class="small muted">מורים שאינם מחנכים, עם הכיתות שהם מלמדים לפי מערכת השעות. אפשר להסיר אחר כך.</span></div>'+
     '<div class="row"><button class="btn ok" data-act="saveparts">שמירה ובניית הלוח</button><span class="small muted">פגישות שכבר נקבעו לא נמחקות לעולם.</span></div></section>';
   return h;
 }
@@ -630,6 +660,8 @@ async function act(fn,args,msg){if(S.busy)return;S.busy=true;try{await rpc(fn,ar
 function staffClick(e){
   const g=e.target.closest('[data-go]');if(g){S.view=g.dataset.go;S.filter=null;render();window.scrollTo(0,0);return}
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='addsubj'){if(!confirm('להוסיף את כל המורים המקצועיים (שאינם מחנכים) עם הכיתות שלהם, ולבנות להם משבצות?'))return;if(S.busy)return;S.busy=true;
+    (async()=>{try{const r=await rpc('yh_admin_add_subject',{p_phone:S.phone});const r2=await rpc('yh_admin_build',{p_phone:S.phone});toast('נוספו '+r.added+' מורים מקצועיים · '+r2.added+' משבצות');await load()}catch(x){toast(errMsg(x))}S.busy=false;S.keepScroll=true;render()})();return}
   if(a==='demoreset')return demoReset();
   if(a==='close'){if(e.target===b||b.tagName==='BUTTON'){S.modal=null;render()}return}
   if(a==='logout'){lsSet('hanhala_phone',null);S.phone=null;S.d=null;return renderLogin()}
@@ -689,7 +721,7 @@ async function staffStart(){
   const s=document.createElement('script');s.src='/feedback/badge.js';s.defer=true;document.body.appendChild(s);
 }
 
-if(P.tok||P.ptok){root.addEventListener('click',parentClick);parentStart()}else staffStart();
+if(P.tok||P.ptok||P.ttok){root.addEventListener('click',parentClick);parentStart()}else staffStart();
 </script>
 </body>
 </html>
