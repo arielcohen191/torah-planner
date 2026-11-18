@@ -40,7 +40,7 @@ body{margin:0;background:var(--canvas);color:var(--ink);font-family:var(--f-ui);
 .rail-foot{margin-top:auto;padding:14px 16px;font-size:12px;color:var(--rail-dim);border-top:1px solid var(--rail-2)}
 .main{min-width:0;display:flex;flex-direction:column}
 .topbar{background:color-mix(in srgb,var(--canvas) 70%,var(--card));backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;position:sticky;top:0;z-index:5;flex-wrap:wrap}
-.topbar h1{margin:0;font-size:19px;font-weight:700}.crumb{font-size:12px;color:var(--faint)}
+.topbar h1{margin:0;font-size:19px;font-weight:700}.crumb{font-size:12px;color:var(--faint)}.crumb a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .topacts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .btn{font:inherit;font-weight:600;font-size:13px;border-radius:10px;padding:7px 13px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);display:inline-flex;align-items:center;gap:6px;box-shadow:var(--shadow)}
 .btn:hover{border-color:var(--primary)}
@@ -260,7 +260,7 @@ body.loading-class .view{opacity:.35;pointer-events:none;transition:opacity .15s
   </aside>
   <div class="main">
     <header class="topbar">
-      <div><div class="crumb" id="crumb">מפת כיתה / תמונת כיתה</div><h1 id="pageTitle">תמונת כיתה</h1></div>
+      <div><div class="crumb" id="crumb"><a href="/hanhala/" title="לדף הראשי">דף ראשי</a> / <span id="crumbT">מפת כיתה / תמונת כיתה</span></div><h1 id="pageTitle">תמונת כיתה</h1></div>
       <div class="topacts">
         <button class="btn" id="sensBtn" title="נתוני רקע משפחתי, רווחה וכו' — מוסתרים כברירת מחדל להקרנה">🔒 נתוני רקע רגישים: מוסתרים</button>
         <button class="btn" id="syncNowBtn" hidden onclick="syncNowFromTool(this)" title="מושך עכשיו את הנתונים העדכניים מגוגל שיטס">🔄 עדכון מהגיליון</button>
@@ -502,7 +502,7 @@ function list(){return STATE.rows.filter(s=>!STATE.filter||FILTERS[STATE.filter]
 function go(view,filter){
   if(filter!==undefined)STATE.filter=filter;
   document.querySelector(".hero").hidden=view!="overview";
-  document.querySelectorAll("#nav button").forEach(b=>{b.classList.toggle("on",b.dataset.v==view);if(b.dataset.v==view){const t=b.textContent.trim();document.getElementById("pageTitle").textContent=t;document.getElementById("crumb").textContent="מפת כיתה / "+t}});
+  document.querySelectorAll("#nav button").forEach(b=>{b.classList.toggle("on",b.dataset.v==view);if(b.dataset.v==view){const t=b.textContent.trim();document.getElementById("pageTitle").textContent=t;document.getElementById("crumbT").textContent="מפת כיתה / "+t}});
   document.querySelectorAll(".view").forEach(x=>x.classList.toggle("on",x.id=="v-"+view));
   if(view=="map")renderMap();if(view=="manage")renderManage();if(view=="q")renderQForm();if(view=="me")renderMeView();window.scrollTo(0,0);
 }

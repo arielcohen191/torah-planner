@@ -275,6 +275,8 @@ function shell(inner){
   const nav=[['board','לוח היום'],['absence','היעדרויות'],['pay','התחשבנות'],['teachers','מורים']];
   const cur=S.view==='cand'?'board':S.view;
   return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand" role="link" tabindex="0" title="לדף הראשי" style="cursor:pointer" onclick="location.href=\'/hanhala/\'" onkeydown="if(event.key===\'Enter\')location.href=\'/hanhala/\'">מילוי מקום</div>'+
+    /* כפתור "ראשי": חזרה ללוח הראשי מכל מסך, גם בטלפון (שם הלוגו מוסתר) */
+    '<button type="button" title="לדף הראשי" onclick="location.href=\'/hanhala/\'"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>ראשי</button>'+
    nav.map(([k,l])=>'<button data-go="'+k+'"'+(cur===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>').join('')+
    '<div class="spacer"></div><div class="who">'+esc(S.me||'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+'</main></div>'+(S.modal?modalHtml():'');
 }

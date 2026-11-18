@@ -60,7 +60,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .main{min-width:0;display:flex;flex-direction:column}
 .topbar{background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:20px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
 .topbar h1{margin:0;font-size:19px;font-weight:700}
-.crumb{font-size:12px;color:var(--faint)}
+.crumb{font-size:12px;color:var(--faint)}.crumb a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .today{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);background:var(--sunk);border:1px solid var(--line);border-radius:99px;padding:5px 12px;white-space:nowrap}
 .content{padding-block:20px 48px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:20px}
 @media (max-width:900px){
@@ -395,7 +395,7 @@ table.wk input[type=checkbox]{width:20px;height:20px}
 
 <div class="app">
   <aside class="rail">
-    <div class="brand"><div class="mark"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח"></div><div><b>מתכנן הספק</b><small>כנפי רוח · תשפ״ז</small></div></div>
+    <div class="brand" role="link" tabindex="0" title="לדף הראשי" style="cursor:pointer" onclick="location.href='/hanhala/'" onkeydown="if(event.key==='Enter')location.href='/hanhala/'"><div class="mark"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח"></div><div><b>מתכנן הספק</b><small>כנפי רוח · תשפ״ז</small></div></div>
     <div class="me" id="me"><img id="meAv" alt=""><div><b id="meName">מורה</b><small id="meRole">מחובר</small></div></div>
     <h6>ניווט</h6>
     <nav class="nav" role="tablist" id="tabs">
@@ -411,7 +411,7 @@ table.wk input[type=checkbox]{width:20px;height:20px}
 
   <div class="main">
     <header class="topbar">
-      <div><div class="crumb" id="crumb">מתכנן הספק / תוכנית חדשה</div><h1 id="pageTitle">תוכנית חדשה</h1></div>
+      <div><div class="crumb" id="crumb"><a href="/hanhala/" title="לדף הראשי">דף ראשי</a> / מתכנן הספק / תוכנית חדשה</div><h1 id="pageTitle">תוכנית חדשה</h1></div>
       <div class="today" id="today"></div>
     </header>
 
@@ -1564,7 +1564,7 @@ document.addEventListener('click',e=>{const d=e.target.closest('[data-hdel]');if
 
 /* ---------- tabs ---------- */
 const TITLES={new:'תוכנית חדשה',mine:'התוכניות שלי',team:'לוח בקרה – צוות',curr:'תוכניות לימודים',roles:'הרשאות',cal:'לוח חופשות תשפ״ז'};
-function showView(v){$$('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v));['new','mine','team','curr','roles','cal'].forEach(k=>$('#v-'+k).hidden=k!==v);$('#pageTitle').textContent=TITLES[v];$('#crumb').textContent='מתכנן הספק / '+TITLES[v];if(v==='mine')renderMine();if(v==='team')renderTeam();if(v==='cal')renderHol();if(v==='curr')renderCurr();if(v==='roles')renderRoles()}
+function showView(v){$$('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v));['new','mine','team','curr','roles','cal'].forEach(k=>$('#v-'+k).hidden=k!==v);$('#pageTitle').textContent=TITLES[v];$('#crumb').innerHTML='<a href="/hanhala/" title="לדף הראשי">דף ראשי</a> / מתכנן הספק / '+TITLES[v];if(v==='mine')renderMine();if(v==='team')renderTeam();if(v==='cal')renderHol();if(v==='curr')renderCurr();if(v==='roles')renderRoles()}
 $$('#tabs button').forEach(b=>b.onclick=()=>showView(b.dataset.v));
 
 /* ---------- boot ---------- */
