@@ -1422,6 +1422,7 @@ function shell(inner){
    (canRoles()?'<button type="button" data-go="perms"'+(S.view==='perms'?' aria-current="page"':'')+'>'+ICON.perms+'הרשאות</button>':'')+
    (canAs()?'<button type="button" data-go="viewas"'+(S.view==='viewas'?' aria-current="page"':'')+'>'+ICON.my+'בנעליים של</button>':'')+
    (isDev()?'<button type="button" data-go="feedback"'+(S.view==='feedback'?' aria-current="page"':'')+'>'+ICON.fb+'משובים'+(S.fbOpen?'<span class="cnt" aria-label="'+S.fbOpen+' חדשים">'+S.fbOpen+'</span>':'')+'</button>':'')+
+   '<button type="button" onclick="window.KFB&&KFB.mine()">'+ICON.fb+'פניות המשוב שלי</button>'+
    '<div class="who">'+esc(S.user?S.user.name:'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+trailHtml()+inner+'</main></div>'+tabbarHtml();
 }
 function render(){

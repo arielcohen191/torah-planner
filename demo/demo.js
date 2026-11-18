@@ -162,7 +162,7 @@
       case 'yh_summary':return null;
       case 'yh_staff_load':return {me:ME,admin:false,tid:YH_TID,now:new Date().toISOString(),event:ev,
         participants:[{tid:YH_TID,name:ME,classes:[CLS],t_start:null,t_end:null,room:yhRoom}],
-        classes:[{name:CLS,token:YH_TOK,students:NAMES,teachers:[YH_TID],homeroom:YH_TID}],
+        house:[],classes:[{name:CLS,token:YH_TOK,students:NAMES,teachers:[YH_TID],homeroom:YH_TID,hr_name:ME,booked:new Set(o.bk.map(b=>b.stu)).size}],
         slots:o.slots.map(x=>{const b=yhB(o,x.id);return {id:x.id,tid:YH_TID,t:x.t,brk:x.brk,b:b?{id:b.id,cls:b.cls,stu:b.stu,parent:b.parent,phone:b.phone,consent:b.consent,ptoken:b.ptoken,by_staff:b.by_staff,started:b.started,ended:b.ended,no_show:b.no_show,note:b.note}:null}})}
       case 'yh_slot_break':{const x=o.slots.find(y=>y.id===a.p_slot);if(!x)yhErr('no_slot');if(a.p_break&&yhB(o,x.id))yhErr('taken');x.brk=!!a.p_break;yhSave(o);return null}
       case 'yh_staff_book':{const x=o.slots.find(y=>y.id===a.p_slot),ph=digits(a.p_pphone);yhCheck(o,x,a.p_student,ph);

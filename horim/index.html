@@ -418,25 +418,28 @@ async function load(){
   S.d=d;
   if(S.tid==null)S.tid=d.P[d.tid]?d.tid:(d.participants&&d.participants[0]?d.participants[0].tid:null);
   if(!S.cls){const mine=(d.classes||[]).find(c=>c.homeroom===d.tid);S.cls=mine?mine.name:(d.classes[0]&&d.classes[0].name)}
-  if(!S.view)S.view=d.P[d.tid]?'diary':d.admin?'overview':'myclass';
+  if(!S.view)S.view=d.P[d.tid]?'diary':d.admin?'overview':(d.house&&d.house.length)?'links':'myclass';
 }
 const ICON={
  diary:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
  live:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>',
  myclass:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M15 15c3 0 6 1.6 6 4.5"/></svg>',
  overview:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+ links:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
  settings:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>'
 };
 function shell(inner){
   const d=S.d,nav=[];
   if(d.event&&(d.P[d.tid]||d.admin))nav.push(['diary','היומן שלי'],['live','היום עצמו']);
-  if(d.event&&d.classes.length)nav.push(['myclass',d.admin?'כיתות':'הכיתה שלי']);
+  const mgr=d.admin||(d.house&&d.house.length>0);
+  if(d.event&&mgr&&d.classes.length)nav.push(['links','קישורי כיתות']);
+  if(d.event&&d.classes.length)nav.push(['myclass',mgr?'כיתות':'הכיתה שלי']);
   if(d.admin)nav.push(['overview','סקירה'],['settings','הגדרות']);
   return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand" role="link" tabindex="0" title="לדף הראשי" style="cursor:pointer" onclick="location.href=\'/hanhala/\'" onkeydown="if(event.key===\'Enter\')location.href=\'/hanhala/\'">יום הורים</div>'+
     /* כפתור "ראשי": חזרה ללוח הראשי מכל מסך, גם בטלפון (שם הלוגו מוסתר) */
     '<button type="button" title="לדף הראשי" onclick="location.href=\'/hanhala/\'"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>ראשי</button>'+
     nav.map(([k,l])=>'<button data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>').join('')+
-    '<div class="spacer"></div><div class="who">'+esc(d.me||'')+'<br><a class="link" style="color:#c9d3de;font-size:13px" href="/hanhala/">ללוח ההנהלה</a><br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+(window.KR_DEMO&&KR_DEMO.isDemo(S.phone)?demoBar():'')+inner+CREDIT+'</main></div>'+(S.modal?modalHtml():'');
+    '<div class="spacer"></div><button type="button" onclick="window.KFB&&KFB.mine()"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>פניות המשוב שלי</button><div class="who">'+esc(d.me||'')+'<br><a class="link" style="color:#c9d3de;font-size:13px" href="/hanhala/">ללוח ההנהלה</a><br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+(window.KR_DEMO&&KR_DEMO.isDemo(S.phone)?demoBar():'')+inner+CREDIT+'</main></div>'+(S.modal?modalHtml():'');
 }
 function renderLogin(err){
   root.innerHTML='<div class="login"><form class="card" id="loginForm"><div style="text-align:center">'+LOGO.replace('>',' style="height:64px">')+'</div><h1>יום הורים</h1><div class="muted">כנפי רוח · כניסת צוות</div>'+
@@ -448,7 +451,7 @@ function render(){
   if(!S.phone)return renderLogin();
   if(!S.d){root.innerHTML='<div class="loading">טוען…</div>';return}
   if(!S.d.event)S.view=S.d.admin?'settings':'none';
-  const v={diary:viewDiary,live:viewLive,myclass:viewClass,overview:viewOverview,settings:viewSettings,none:()=>'<div class="card box"><h2>עדיין לא נקבע יום הורים</h2><div class="muted">ההנהלה תפתח אותו בקרוב.</div></div>'}[S.view]||viewDiary;
+  const v={diary:viewDiary,live:viewLive,myclass:viewClass,links:viewLinks,overview:viewOverview,settings:viewSettings,none:()=>'<div class="card box"><h2>עדיין לא נקבע יום הורים</h2><div class="muted">ההנהלה תפתח אותו בקרוב.</div></div>'}[S.view]||viewDiary;
   const y=window.scrollY;root.innerHTML=shell(v());if(S.keepScroll)window.scrollTo(0,y);S.keepScroll=false;
   const f=root.querySelector('[autofocus]');if(f)f.focus();
 }
@@ -532,7 +535,23 @@ function viewClass(){
     '<div class="row"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(classMsg(c))+'">שליחה לקבוצת הכיתה בוואטסאפ</a><button class="btn sec sm" data-act="copytxt" data-t="'+esc(classMsg(c))+'">העתקת ההודעה</button><button class="btn sec sm" data-act="copytxt" data-t="'+esc(classLink(c.token))+'">העתקת הקישור בלבד</button><a class="link" href="'+esc(classLink(c.token))+'" target="_blank" rel="noopener">לראות כמו הורה</a></div></section>';
   h+='<section class="card box" id="ctab"><h2>מי קבע</h2><div class="tablewrap"><table><thead><tr><th>תלמיד</th>'+ts.map(t=>'<th>'+esc(tName(t.name))+'</th>').join('')+'<th></th></tr></thead><tbody>'+
     c.students.map(n=>{const bb=bookedBy[n]||{};return '<tr><td><b>'+esc(n)+'</b></td>'+ts.map(t=>{const s=bb[t.tid];return '<td>'+(s?'<span class="tag g">'+s.t+'</span> <span class="small muted">'+esc(s.b.parent)+'</span>':'<span class="tag r">—</span>')+'</td>'}).join('')+
-      '<td>'+(ts.some(t=>!bb[t.tid])?'<button class="btn sec xs" data-act="cbook" data-n="'+esc(n)+'">שיבוץ ידני</button>':'')+'</td></tr>'}).join('')+'</tbody></table></div></section>';
+      '<td>'+((d.admin||c.homeroom===d.tid||d.P[d.tid])&&ts.some(t=>!bb[t.tid])?'<button class="btn sec xs" data-act="cbook" data-n="'+esc(n)+'">שיבוץ ידני</button>':'')+'</td></tr>'}).join('')+'</tbody></table></div></section>';
+  return h;
+}
+
+/* ----- קישורי כיתות (מנהלי מערכת: כל הכיתות; מנהלות בתים: השכבות שלהן) ----- */
+function viewLinks(){
+  const d=S.d,L=d.classes.filter(c=>c.token);
+  const all='קישורים ליום ההורים ('+longDate(d.event.day)+'):\n'+L.map(c=>'כיתה '+c.name+': '+classLink(c.token)).join('\n');
+  let h='<header class="card topbar"><div><h1>קישורי כיתות</h1><div class="muted">'+eventLine()+'</div></div><button class="btn sm" data-act="copytxt" data-t="'+esc(all)+'">העתקת כל הקישורים</button></header>';
+  if(!d.event.reg_open)h+='<div class="warn">ההרשמה עוד סגורה: הורים שייכנסו עכשיו יראו "ההרשמה סגורה".</div>';
+  const tot=d.classes.reduce((a,c)=>a+c.students.length,0),bk=d.classes.reduce((a,c)=>a+(c.booked||0),0);
+  h+='<section class="kpis">'+kpi('k-blue','כיתות','עם קישור',L.length,'l-t')+kpi('k-green','נרשמו',tot?Math.round(bk*100/tot)+'% מהתלמידים':'תלמידים',bk,'l-t')+kpi('k-red','עוד לא','תלמידים',tot-bk,'l-t')+'</section>';
+  h+='<section class="card box" id="ltab"><div class="tablewrap"><table><thead><tr><th>כיתה</th><th>מחנך/ת</th><th>נרשמו</th><th>שליחה להורים</th></tr></thead><tbody>'+
+    d.classes.map(c=>{const t=c.students.length,n=c.booked||0;
+      return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.hr_name?tName(c.hr_name):'—')+'</td><td>'+n+' / '+t+'</td><td>'+(c.token?
+        '<div class="row"><a class="btn wa xs" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(classMsg(c))+'">וואטסאפ</a><button class="btn sec xs" data-act="copytxt" data-t="'+esc(classMsg(c))+'">העתקת ההודעה</button><button class="btn sec xs" data-act="copytxt" data-t="'+esc(classLink(c.token))+'">העתקת הקישור</button><button class="link" data-act="gocls" data-c="'+esc(c.name)+'">פירוט</button></div>'
+        :'<span class="muted small">אין קישור עדיין</span>')+'</td></tr>'}).join('')+'</tbody></table></div></section>';
   return h;
 }
 
@@ -618,7 +637,7 @@ function staffClick(e){
   if(a==='filter'){S.filter=b.dataset.f;S.keepScroll=true;return render()}
   if(a==='kpi'){const k=b.dataset.k;
     if(['f-taken','f-free','f-brk'].includes(k)){S.filter=k;S.keepScroll=true;render()}
-    const id={'f-nb':'nb','c-full':'ctab','c-none':'ctab','o-cls':'ocls','o-t':'ot'}[k];if(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth'})}
+    const id={'f-nb':'nb','c-full':'ctab','c-none':'ctab','o-cls':'ocls','o-t':'ot','l-t':'ltab'}[k];if(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth'})}
     if(k==='c-reg'&&S.d.admin){S.view='settings';render()}
     if(k==='c-t'){S.view='overview';render()}
     return}

@@ -92,6 +92,7 @@
       var st=d.querySelector('p');
       call('feedback_mine',{phone:myPhone(),token:token()}).then(function(list){
         if(!list||!list.length){st.textContent='עוד לא נשלחו פניות מהמכשיר הזה.';return}
+        markSeen(list);
         st.textContent=list.length===1?'פנייה אחת':list.length+' פניות';
         var ul=document.createElement('ul');ul.className='kfb-list';
         ul.innerHTML=list.map(function(x){var s=STAT[x.status]||STAT.new,dt=new Date(x.created_at);
@@ -102,8 +103,24 @@
       }).catch(function(){st.textContent='הפניות לא נטענו. בדקו את החיבור ונסו שוב.'});
     }
     b.addEventListener('click',function(){form();d.showModal();d.querySelector('textarea').focus()});
+    /* תשובה חדשה מהמפתח: קופצת פעם אחת בכניסה הבאה, ואחרי "קראתי" לא חוזרת (נשמר בשרת, בכל המכשירים) */
+    function unseen(list){var out=[];(list||[]).forEach(function(x){var ms=(x.msgs||[]).filter(function(m){return m.dev&&!m.seen});if(ms.length)out.push({f:x,ms:ms})});return out}
+    function markSeen(list){var ids=[];unseen(list).forEach(function(u){u.ms.forEach(function(m){if(m.id)ids.push(m.id)})});
+      if(ids.length)call('feedback_seen',{phone:myPhone(),token:token(),ids:ids}).catch(function(){})}
+    function popReplies(){
+      if(d.open||/[?&](k|p)=/.test(location.search))return;
+      call('feedback_mine',{phone:myPhone(),token:token()}).then(function(list){var u=unseen(list);if(!u.length||d.open)return;
+        d.innerHTML='<form method="dialog"><h2 id="kfb-t">'+(u.length===1?'יש תשובה לפנייה שלך':'יש תשובות ל־'+u.length+' פניות שלך')+'</h2><ul class="kfb-list">'+
+          u.map(function(x){var dt=new Date(x.f.created_at);return '<li><div class="h"><span>'+esc(KIND[x.f.kind]||'')+' · '+esc(x.f.tool)+' · '+dt.getDate()+'.'+(dt.getMonth()+1)+'</span></div><div class="b" style="color:#5b6878">'+esc(String(x.f.body).slice(0,160))+(String(x.f.body).length>160?'…':'')+'</div>'+
+            x.ms.map(function(m){return '<div class="kfb-m dev"><b>תשובה:</b> '+esc(m.body)+'</div>'}).join('')+'</li>'}).join('')+
+          '</ul><div class="kfb-act"><button type="button" data-seen>קראתי</button><button type="button" class="sec" data-seenmine>להמשך התכתבות</button></div></form>';
+        d.showModal();d.querySelector('[data-seen]').focus();
+        d.querySelector('[data-seen]').onclick=function(){markSeen(list);d.close()};
+        d.querySelector('[data-seenmine]').onclick=function(){markSeen(list);mine()};
+      }).catch(function(){})}
+    setTimeout(popReplies,1500);
     /* פתיחה מבחוץ עם טיוטה מוכנה (רוחי) */
-    window.KFB={open:function(o){o=o||{};form();var k=d.querySelector('[name=kind][value="'+(o.kind||'bug')+'"]');if(k)k.checked=true;
+    window.KFB={mine:function(){mine();if(!d.open)d.showModal()},open:function(o){o=o||{};form();var k=d.querySelector('[name=kind][value="'+(o.kind||'bug')+'"]');if(k)k.checked=true;
       var t=d.querySelector('textarea[name=body]');if(t&&o.body)t.value=o.body;d.showModal();if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length)}}};
     d.addEventListener('click',function(e){if(e.target.closest('[data-unshot]')){SHOT=null;var i=d.querySelector('[name=shot]');if(i)i.value='';var pv=d.querySelector('.kfb-prev');pv.hidden=true;pv.innerHTML='';return}if(e.target.closest('[data-rep]'))return repBox(e.target.closest('.kfb-rep'));if(e.target.closest('[data-repsend]'))return repSend(e.target.closest('.kfb-rep'));if(e.target.closest('[data-mine]'))return mine();if(e.target.closest('[data-new]')){form();d.querySelector('textarea').focus();return}if(e.target.closest('[data-close]')||e.target===d)d.close()});
     d.addEventListener('submit',function(e){
