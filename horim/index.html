@@ -69,6 +69,7 @@ label.f{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:16p
 .slot .who{flex:1 1 220px;display:flex;flex-direction:column}
 .slot .who b{font-size:17px}
 .slot .acts{display:flex;flex-wrap:wrap;gap:6px}
+.slot .nt{flex:1 1 100%;background:#fff8e1;border-radius:var(--r-sm);padding:6px 10px;font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere}
 .slot.free{border-right-color:#b9c4d0}.slot.taken{border-right-color:var(--brand)}.slot.brk{border-right-color:#8a96a4;opacity:.7}
 .slot.now{border-right-color:var(--orange);background:#fdf3e2}.slot.done{border-right-color:var(--green);opacity:.75}.slot.ns{border-right-color:var(--red);opacity:.75}
 .tag{font-size:14px;font-weight:600;border-radius:99px;padding:2px 10px;background:#e8edf3;color:var(--ink-muted)}
@@ -457,6 +458,9 @@ function viewDiary(){
 function notBookedFor(tid){const d=S.d,p=d.P[tid];if(!p)return[];const have=new Set((d.byT[tid]||[]).filter(s=>s.b).map(s=>s.b.cls+'|'+s.b.stu));const out=[];
   p.classes.forEach(c=>{const C=d.C[c];if(C)C.students.forEach(n=>{if(!have.has(c+'|'+n))out.push({cls:c,stu:n})})});return out}
 function kpi(cls,title,sub,n,go){return '<button type="button" class="kpi '+cls+'" data-act="kpi" data-k="'+go+'"><div><b>'+title+'</b><span>'+sub+'</span><span class="go">הצג ←</span></div><span class="n">'+n+'</span></button>'}
+const canNote=s=>S.d.admin||s.tid===S.d.tid;
+const noteLine=b=>b.note?'<div class="nt"><b>הערה:</b> '+esc(b.note)+'</div>':'';
+const noteBtn=(s,b)=>canNote(s)?'<button class="btn sec xs noprint" data-act="note" data-id="'+b.id+'">'+(b.note?'עריכת הערה':'הערה')+'</button>':'';
 function slotRow(s){
   const b=s.b;
   if(s.brk)return '<div class="slot brk"><span class="tm">'+s.t+'</span><div class="who"><b>הפסקה</b></div><div class="acts"><button class="btn sec xs" data-act="brk" data-id="'+s.id+'" data-v="0">ביטול ההפסקה</button></div></div>';
@@ -465,7 +469,7 @@ function slotRow(s){
   const wa=b.phone?'https://wa.me/'+intlPhone(b.phone)+'?text='+encodeURIComponent(reminderText(s,b)):null;
   return '<div class="slot taken"><span class="tm">'+s.t+'</span><div class="who"><b>'+esc(b.stu)+' <span class="small muted">· '+esc(b.cls)+'</span></b><span class="small muted">'+esc(b.parent)+(b.phone?' · <a href="tel:'+esc(b.phone)+'">'+esc(b.phone)+'</a>':'')+(b.by_staff?' · שובץ ע"י '+esc(b.by_staff):'')+'</span></div>'+st+
     '<div class="acts">'+(wa?'<a class="btn wa xs" target="_blank" rel="noopener" href="'+esc(wa)+'"'+(b.consent?'':' title="ההורה לא אישר תזכורות"')+'>תזכורת בוואטסאפ</a>':'')+
-    '<button class="btn sec xs" data-act="move" data-id="'+b.id+'" data-tid="'+s.tid+'">הזזה</button><button class="btn bad xs" data-act="scancel" data-id="'+b.id+'">ביטול</button></div></div>';
+    noteBtn(s,b)+'<button class="btn sec xs" data-act="move" data-id="'+b.id+'" data-tid="'+s.tid+'">הזזה</button><button class="btn bad xs" data-act="scancel" data-id="'+b.id+'">ביטול</button></div>'+noteLine(b)+'</div>';
 }
 
 /* ----- היום עצמו ----- */
@@ -480,14 +484,15 @@ function viewLive(){
   let h='<header class="card topbar"><div><h1>היום עצמו</h1><div class="muted">'+esc(tName(p.name))+' · '+eventLine()+'</div></div>'+tsel()+'</header>';
   if(!isDay)h+='<div class="info">המסך הזה נועד ליום ההורים עצמו ('+esc(longDate(d.event.day))+'). אפשר לנסות אותו כבר עכשיו. ההורים רואים את העדכונים בקישור האישי שלהם.</div>';
   h+='<div class="'+(li.delay>=5?'warn':'info')+'">'+(li.delay>=3?'את/ה מאחר/ת בכ־<b>'+li.delay+' דקות</b>. ההורים רואים זמן כניסה משוער מעודכן.':'את/ה בזמן.')+'</div>';
-  if(cur)h+='<section class="card box" style="border-right:6px solid var(--orange)"><div class="muted">עכשיו בפגישה</div><h2 style="font-size:26px">'+esc(cur.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(cur.b.cls)+' · '+cur.t+'</span></h2><div>'+esc(cur.b.parent)+'</div><button class="btn ok wide" data-act="live" data-id="'+cur.b.id+'" data-a="end">סיימתי</button></section>';
+  if(cur)h+='<section class="card box" style="border-right:6px solid var(--orange)"><div class="muted">עכשיו בפגישה</div><h2 style="font-size:26px">'+esc(cur.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(cur.b.cls)+' · '+cur.t+'</span></h2><div>'+esc(cur.b.parent)+'</div>'+(canNote(cur)?'<label class="f">הערות מהפגישה<textarea id="lnote" data-id="'+cur.b.id+'" maxlength="2000" placeholder="מה סוכם, מה חשוב לזכור. ההורים לא רואים את זה.">'+esc(S.lnote&&S.lnote.id===cur.b.id?S.lnote.v:cur.b.note||'')+'</textarea></label>':'')+
+    '<button class="btn ok wide" data-act="live" data-id="'+cur.b.id+'" data-a="end">'+(canNote(cur)?'סיימתי · שמירת ההערות':'סיימתי')+'</button></section>';
   if(next.length){const n=next[0];h+='<section class="card box"><div class="muted">'+(cur?'הבא בתור':'הראשון בתור')+'</div><h2 style="font-size:24px">'+esc(n.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(n.b.cls)+' · '+n.t+'</span></h2><div>'+esc(n.b.parent)+'</div>'+
     '<div class="grid2"><button class="btn wide" data-act="live" data-id="'+n.b.id+'" data-a="start">ההורה נכנס · התחלתי</button><button class="btn sec wide" data-act="live" data-id="'+n.b.id+'" data-a="noshow">לא הגיע</button></div></section>'}
   if(!cur&&!next.length)h+='<div class="okbox">'+(sl.length?'סיימת את כל הפגישות. תודה!':'אין פגישות שנקבעו.')+'</div>';
   h+='<section class="card box"><h2>כל הפגישות</h2><div class="slots">'+sl.map(s=>{const b=s.b;const c=b.no_show?'ns':b.ended?'done':b.started?'now':'taken';
     return '<div class="slot '+c+'"><span class="tm">'+s.t+'</span><div class="who"><b>'+esc(b.stu)+'</b><span class="small muted">'+esc(b.cls)+' · '+esc(b.parent)+'</span></div><div class="acts">'+
-      (b.ended||b.no_show?'<span class="tag '+(b.no_show?'r':'g')+'">'+(b.no_show?'לא הגיע':'הסתיים')+'</span><button class="link" data-act="live" data-id="'+b.id+'" data-a="reset">החזרה לתור</button>':b.started?'<button class="btn ok xs" data-act="live" data-id="'+b.id+'" data-a="end">סיימתי</button>':'<button class="btn sec xs" data-act="live" data-id="'+b.id+'" data-a="start">התחלתי</button>')+
-      '</div></div>'}).join('')+'</div></section>';
+      (b.ended||b.no_show?'<span class="tag '+(b.no_show?'r':'g')+'">'+(b.no_show?'לא הגיע':'הסתיים')+'</span><button class="link" data-act="live" data-id="'+b.id+'" data-a="reset">החזרה לתור</button>':b.started?'<button class="btn ok xs" data-act="live" data-id="'+b.id+'" data-a="end">סיימתי</button>':'<button class="btn sec xs" data-act="live" data-id="'+b.id+'" data-a="start">התחלתי</button>')+noteBtn(s,b)+
+      '</div>'+noteLine(b)+'</div>'}).join('')+'</div></section>';
   return h;
 }
 
@@ -569,6 +574,11 @@ function modalHtml(){const m=S.modal,d=S.d;
       (slot?'':'<label class="f">מורה ושעה<select id="m_slot">'+tids.map(t=>{const p=d.P[t];if(!p)return '';const tk=takenFor(t);return '<optgroup label="'+esc(tName(p.name))+'">'+(d.byT[t]||[]).filter(s=>!s.b&&!s.brk).map(s=>'<option value="'+s.id+'">'+s.t+' · '+esc(tName(p.name))+'</option>').join('')+'</optgroup>'}).join('')+'</select></label>')+
       '<div class="grid2"><label class="f">שם ההורה<input type="text" id="m_par"></label><label class="f">טלפון (לתזכורת)<input type="tel" id="m_ph" inputmode="tel"></label></div><div id="m_err" class="err" role="alert"></div></div>'+
       '<div class="mfoot"><button class="btn ok" data-act="mdo">שיבוץ</button><button class="btn sec" data-act="close">ביטול</button></div></div></div>'}
+  if(m.kind==='note'){const s0=d.slots.find(s=>s.b&&s.b.id===m.bid);if(!s0)return '';
+    return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">הערה לפגישה · '+esc(s0.b.stu)+' · '+s0.t+'</div><div class="mbody">'+
+      '<label class="f">הערות<textarea id="m_note" maxlength="2000" rows="6" placeholder="מה סוכם, מה חשוב לזכור">'+esc(s0.b.note||'')+'</textarea></label>'+
+      '<div class="small muted">רואים את ההערה: המורה של הפגישה, מחנך/ת הכיתה וההנהלה. ההורים לא רואים אותה.</div></div>'+
+      '<div class="mfoot"><button class="btn ok" data-act="notesave">שמירה</button><button class="btn sec" data-act="close">ביטול</button></div></div></div>'}
   if(m.kind==='move'){
     const s0=d.slots.find(s=>s.b&&s.b.id===m.bid);const fr=(d.byT[s0.tid]||[]).filter(s=>!s.b&&!s.brk);
     return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">הזזת הפגישה של '+esc(s0.b.stu)+'</div><div class="mbody"><div>עכשיו: <b>'+s0.t+'</b>. לאיזו שעה?</div>'+
@@ -601,7 +611,12 @@ function staffClick(e){
     if(!slot){document.getElementById('m_err').textContent='אין שעה פנויה.';return}
     S.busy=true;rpc('yh_staff_book',{p_phone:S.phone,p_slot:slot,p_class:cls,p_student:document.getElementById('m_stu').value,p_parent:document.getElementById('m_par').value,p_pphone:document.getElementById('m_ph').value})
       .then(async()=>{S.modal=null;toast('שובץ');await load();S.busy=false;S.keepScroll=true;render()}).catch(x=>{S.busy=false;document.getElementById('m_err').textContent=errMsg(x)});return}
-  if(a==='live')return act('yh_live',{p_phone:S.phone,p_booking:+b.dataset.id,p_action:b.dataset.a});
+  if(a==='note'){S.modal={kind:'note',bid:+b.dataset.id};render();const t=document.getElementById('m_note');if(t)t.focus();return}
+  if(a==='notesave')return act('yh_note_set',{p_phone:S.phone,p_booking:S.modal.bid,p_note:document.getElementById('m_note').value},'ההערה נשמרה');
+  if(a==='live'){const id=+b.dataset.id,ln=document.getElementById('lnote');
+    if(ln&&+ln.dataset.id===id&&b.dataset.a==='end'){if(S.busy)return;S.busy=true;
+      (async()=>{try{await rpc('yh_note_set',{p_phone:S.phone,p_booking:id,p_note:ln.value});S.lnote=null;await rpc('yh_live',{p_phone:S.phone,p_booking:id,p_action:'end'});await load()}catch(x){toast(errMsg(x))}S.busy=false;S.keepScroll=true;render()})();return}
+    return act('yh_live',{p_phone:S.phone,p_booking:id,p_action:b.dataset.a})}
   if(a==='copytxt')return copy(b.dataset.t);
   if(a==='gocls'){S.cls=b.dataset.c;S.view='myclass';render();return window.scrollTo(0,0)}
   if(a==='gotid'){S.tid=+b.dataset.t;S.view='diary';render();return window.scrollTo(0,0)}
@@ -616,12 +631,13 @@ function staffClick(e){
     S.busy=true;(async()=>{try{await rpc('yh_admin_save_event',{p_phone:S.phone,p_ev:ev});const r=await rpc('yh_admin_build',{p_phone:S.phone});toast('נשמר'+(r.added||r.removed?' · הלוח עודכן':''));await load()}catch(x){toast(errMsg(x))}S.busy=false;S.keepScroll=true;render()})();return}
 }
 function staffChange(e){const t=e.target;
+  if(t.id==='lnote'){S.lnote={id:+t.dataset.id,v:t.value};return}
   if(t.dataset.act==='tsel'){S.tid=+t.value;render()}
   else if(t.dataset.act==='csel'){S.cls=t.value;render()}
   else if(t.id==='m_cls'){S.modal.cls=t.value;S.modal.stu=null;render()}
 }
 async function staffStart(){
-  root.addEventListener('click',staffClick);root.addEventListener('change',staffChange);
+  root.addEventListener('click',staffClick);root.addEventListener('change',staffChange);root.addEventListener('input',e=>{if(e.target.id==='lnote')S.lnote={id:+e.target.dataset.id,v:e.target.value}});
   root.addEventListener('submit',async e=>{if(e.target.id!=='loginForm')return;e.preventDefault();const ph=document.getElementById('ph').value;
     try{await rpc('yh_staff_load',{p_phone:ph});S.phone=ph;lsSet('hanhala_phone',ph);await refresh()}catch(x){renderLogin(/no_access/.test(x.message)?'המספר הזה לא מורשה להיכנס.':errMsg(x))}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.modal){S.modal=null;render()}});
