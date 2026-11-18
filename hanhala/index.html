@@ -25,6 +25,11 @@ nav.rail{flex:0 0 112px;background:var(--rail);display:flex;flex-direction:colum
 .rail .brand{color:#fff;font-weight:700;font-size:15px;text-align:center;padding-bottom:16px;border-bottom:1px solid #3a4756;margin-bottom:4px;line-height:1.3}
 .rail button.brand{display:block;color:#fff;font-weight:700;font-size:15px;padding:0 0 16px;border-radius:0;cursor:pointer}.rail button.brand:hover{background:none;color:#cfe6fb}
 .rail .brand small{display:block;font-weight:400;color:var(--rail-ink);font-size:13px}
+/* לוגו כנפי רוח: בסרגל (מחשב), בכותרת העמוד (טלפון, שם הסרגל מוסתר) ובמסך הכניסה */
+.rail .brand img{display:block;width:72px;height:72px;margin:0 auto 8px;background:#fff;border-radius:16px;padding:4px;box-sizing:border-box;object-fit:contain}
+.tlogo{display:none;float:right;width:46px;height:46px;margin-left:10px;object-fit:contain}
+.llogo{display:block;width:96px;height:96px;margin:0 auto 4px;object-fit:contain}
+@media (max-width:760px){.tlogo{display:block}}
 .rail button{background:none;border:0;font:inherit;width:100%}
 .rail a,.rail button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 4px;border-radius:var(--r-md);color:var(--rail-ink);font-size:14px;text-decoration:none;text-align:center;line-height:1.25}
 .rail a:hover,.rail button:hover{background:#31404f;color:#fff}
@@ -1400,7 +1405,7 @@ function tabbarHtml(){const F=navFlat(),top=F.slice(0,4),curIn=top.some(x=>x.k==
     '<div class="sh-f">הגדרות</div><div class="sh-grid">'+extraBtns()+'<button type="button" data-act="logout">'+ICON.out+'יציאה</button></div></div>'}
   return h}
 function shell(inner){
-  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><button type="button" class="brand" data-go="'+(isStaff()?'home':'my')+'" title="לדף הראשי">כנפי רוח<small>'+(isStaff()?'הנהלה':'צוות')+'</small></button>'+
+  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><button type="button" class="brand" data-go="'+(isStaff()?'home':'my')+'" title="לדף הראשי"><img src="/icons/kanfei-ruach-logo.png" alt="" class="blogo">כנפי רוח<small>'+(isStaff()?'הנהלה':'צוות')+'</small></button>'+
    navHtml()+
    '<div class="spacer"></div>'+
    (isStaff()?'<button type="button" data-go="prefs"'+(S.view==='prefs'?' aria-current="page"':'')+'>'+ICON.prefs+'התאמה אישית</button>':'')+
@@ -1416,7 +1421,7 @@ function render(){
   const title=S.view==='home'||S.view==='my'?(S.user.staff?greet(S.user.name):greetT(S.user.name)):S.view==='prefs'?'התאמה אישית':S.view==='perms'?'ניהול הרשאות':S.view==='feedback'?'משובים מהצוות':S.view==='viewas'?'כניסה בנעליים של איש צוות':v[1];
   let h=S.realPhone?'<div class="card banner asbar" role="status"><span>את/ה בנעליים של <b>'+esc(S.asName||S.user.name)+'</b> · צפייה בלבד · פעיל בכל הכלים עד שתצאו</span><button class="btn sm" data-act="as-stop">חזרה אליי</button></div>':'';
   if(window.KR_DEMO&&KR_DEMO.isDemo(S.phone))h+='<div class="card banner" role="status">'+esc(KR_DEMO.note)+'</div>';
-  h+='<header class="card topbar"><div><h1>'+esc(title)+'</h1><div class="muted">'+(setv?esc(S.user.role_label):(S.view==='home'?esc(S.user.role_label)+' · ':S.view==='my'?'הדף שלי · ':'תמונת מצב · ')+fmtFull(S.date)+(isToday?' · היום':'')+(S.loadedAt?' · עודכן '+pad(S.loadedAt.getHours())+':'+pad(S.loadedAt.getMinutes()):''))+'</div></div>'+
+  h+='<header class="card topbar"><div><img src="/icons/kanfei-ruach-logo.png" alt="" class="tlogo"><h1>'+esc(title)+'</h1><div class="muted">'+(setv?esc(S.user.role_label):(S.view==='home'?esc(S.user.role_label)+' · ':S.view==='my'?'הדף שלי · ':'תמונת מצב · ')+fmtFull(S.date)+(isToday?' · היום':'')+(S.loadedAt?' · עודכן '+pad(S.loadedAt.getHours())+':'+pad(S.loadedAt.getMinutes()):''))+'</div></div>'+
     (setv?'':'<div class="chips"><button class="btn sec" data-act="day" data-n="-1">יום קודם</button><button class="btn sec" data-act="today" aria-pressed="'+isToday+'">היום</button><button class="btn sec" data-act="day" data-n="1">יום הבא</button><button class="btn" data-act="refresh">'+(S.busy?'מרענן…':'רענון')+'</button></div>')+'</header>';
   if(!setv&&S.view==='my'){if(hol)h+='<div class="card banner">'+esc(hol)+' — אין לימודים ביום הזה.</div>'}
   else if(!setv){
@@ -1431,7 +1436,7 @@ function render(){
   root.innerHTML=shell(h);
 }
 function renderLogin(err){
-  root.innerHTML='<div class="login"><form class="card" id="loginForm"><h1>כנפי רוח</h1><div class="muted">הדף האישי של אנשי הצוות ולוח ההנהלה · כניסה עם מספר הטלפון שלך</div>'+
+  root.innerHTML='<div class="login"><form class="card" id="loginForm"><img src="/icons/kanfei-ruach-logo.png" alt="" class="llogo"><h1>כנפי רוח</h1><div class="muted">הדף האישי של אנשי הצוות ולוח ההנהלה · כניסה עם מספר הטלפון שלך</div>'+
    '<label for="ph" style="font-weight:600">מספר טלפון</label><input id="ph" name="tel" type="tel" inputmode="tel" autocomplete="tel" required autofocus>'+
    (err?'<div class="err" role="alert">'+esc(err)+'</div>':'')+'<button class="btn wide" type="submit">כניסה</button></form></div>';
   root.querySelector('#ph').focus();
