@@ -312,7 +312,7 @@ function mineHtml(){
 }
 function bubbles(){const d=P.data;if(!d||!d.subject||!d.subject.length)return '';
   return '<section class="card box subj"><h2 style="font-size:19px">רוצים להיפגש גם עם המורים המקצועיים?</h2><div class="small muted">לחצו על מורה כדי לקבוע אצלו/ה. הפרטים שכתבתם יישמרו.</div><div class="bubs">'+
-    d.subject.map(t=>'<a class="bub" href="'+esc(location.pathname+'?t='+t.token+'&c='+encodeURIComponent(d.cls)+(P.stu?'&s='+encodeURIComponent(P.stu):''))+'">'+av(tName(t.name))+'<span><b>'+esc(tName(t.name))+'</b><span class="small muted">'+(t.free?t.free+' שעות פנויות':'אין שעות פנויות')+'</span></span></a>').join('')+'</div></section>'}
+    d.subject.map(t=>'<a class="bub" data-act="bub" href="'+esc(location.pathname+'?t='+t.token+'&c='+encodeURIComponent(d.cls)+(P.stu?'&s='+encodeURIComponent(P.stu):''))+'">'+av(tName(t.name))+'<span><b>'+esc(tName(t.name))+'</b><span class="small muted">'+(t.free?t.free+' שעות פנויות':'אין שעות פנויות')+'</span></span></a>').join('')+'</div></section>'}
 function renderParent(){
   if(!P.tok&&!P.ttok){root.innerHTML=parentShell(P.mine&&P.mine.items.length?mineHtml():'<div class="card box">לא נמצאו פגישות בקישור הזה.</div>');return}
   if(P.ttok&&!P.data){const td=P.tdata;
@@ -415,6 +415,7 @@ function parentClick(e){
   if(a==='stu'){P.stu=b.dataset.n;P.picks={};renderParent();window.scrollTo({top:0,behavior:'smooth'})}
   else if(a==='unstu'){keep();P.stu=null;P.sep=false;P.picks={};renderParent()}
   else if(a==='ptime'){keep();const tid=+b.dataset.tid;P.picks[tid]=b.dataset.id?{id:+b.dataset.id,t:b.dataset.t,tid}:null;renderParent()}
+  else if(a==='bub'){keep();if(P.parent)lsSet('yh_parent',P.parent);if(P.phone)lsSet('yh_pphone',P.phone)}
   else if(a==='pbook')parentBook();
   else if(a==='tcls'){P.tcls=b.dataset.c;P.data=tData(P.tdata.classes.find(c=>c.name===P.tcls));P.stu=null;P.picks={};renderParent();window.scrollTo(0,0)}
   else if(a==='untcls'){keep();P.tcls=null;P.data=null;P.stu=null;P.picks={};renderParent()}
