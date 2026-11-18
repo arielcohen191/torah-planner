@@ -265,7 +265,7 @@ async function loadMine(){const dm=isDemoP(),toks=[...new Set([...(P.ptok?[P.pto
 const MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 const avc=n=>'c'+([...String(n)].reduce((a,c)=>a+c.charCodeAt(0),0)%5);
 const av=n=>'<span class="av '+avc(n)+'" aria-hidden="true">'+esc(String(n).replace(/^הרב\s+/,'').trim().charAt(0))+'</span>';
-const isDemoP=()=>!!window.KR_DEMO&&(P.tok===KR_DEMO.yhTok||/^demo-/.test(P.ptok||''));
+const isDemoP=()=>!!window.KR_DEMO&&(P.tok===KR_DEMO.yhTok||(KR_DEMO.yhTTok||[]).includes(P.ttok)||/^demo-/.test(P.ptok||''));
 const DEMO_NOTE='מצב הדגמה: הכיתה, התלמידים וההורים בדויים. שום דבר לא נשלח לבית הספר.';
 const demoBar=()=>'<div class="warn" role="status"><b>'+DEMO_NOTE+'</b> <button class="link" data-act="demoreset">איפוס ההדגמה</button></div>';
 function parentShell(inner){const ev=P.data?P.data.event:P.tdata?P.tdata.event:(P.mine&&P.mine.ev)||null,d=ev?parseD(ev.day):null,hp=d?hebParts(d):null;
@@ -551,9 +551,11 @@ function viewClass(){
   if(!c)return '<header class="card topbar"><h1>כיתות</h1>'+sel+'</header>';
   const ts=c.teachers.map(t=>d.P[t]).filter(Boolean);
   const bookedBy={};(d.slots||[]).forEach(s=>{if(s.b&&s.b.cls===c.name)(bookedBy[s.b.stu]=bookedBy[s.b.stu]||{})[s.tid]=s});
-  const full=c.students.filter(n=>ts.length&&ts.every(t=>bookedBy[n]&&bookedBy[n][t.tid])).length;
+  /* עם מורים מקצועיים "קבעו" = קבעו אצל המחנך; הפגישות אצל המקצועיים רשות */
+  const hrIn=ts.some(t=>t.tid===c.homeroom),need=hrIn?ts.filter(t=>t.tid===c.homeroom):ts;
+  const full=c.students.filter(n=>need.length&&need.every(t=>bookedBy[n]&&bookedBy[n][t.tid])).length;
   let h='<header class="card topbar"><div><h1>כיתה '+esc(c.name)+'</h1><div class="muted">'+eventLine()+'</div></div>'+sel+'</header>';
-  h+='<section class="kpis">'+kpi('k-green','קבעו הכול','תלמידים',full,'c-full')+kpi('k-red','עוד לא','תלמידים',c.students.length-full,'c-none')+kpi('k-blue','מורים','נפגשים עם הכיתה',ts.length,'c-t')+kpi(d.event.reg_open?'k-green':'k-orange','הרשמה',d.event.reg_open?'פתוחה':'סגורה',d.event.reg_open?'✓':'—','c-reg')+'</section>';
+  h+='<section class="kpis">'+kpi('k-green',hrIn&&ts.length>1?'קבעו אצל המחנך':'קבעו הכול','תלמידים',full,'c-full')+kpi('k-red','עוד לא','תלמידים',c.students.length-full,'c-none')+kpi('k-blue','מורים','נפגשים עם הכיתה',ts.length,'c-t')+kpi(d.event.reg_open?'k-green':'k-orange','הרשמה',d.event.reg_open?'פתוחה':'סגורה',d.event.reg_open?'✓':'—','c-reg')+'</section>';
   if(!c.token)h+='<div class="warn">אין עדיין קישור לכיתה הזו. שמרו את הגדרות האירוע כדי ליצור אותו.</div>';
   else h+='<section class="card box"><h2>הקישור להורי הכיתה</h2>'+(d.event.reg_open?'':'<div class="warn small">ההרשמה עוד סגורה: הורים שייכנסו יראו "ההרשמה סגורה". אפשר לשלוח אחרי שההנהלה תפתח.</div>')+
     '<div class="row"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(classMsg(c))+'">שליחה לקבוצת הכיתה בוואטסאפ</a><button class="btn sec sm" data-act="copytxt" data-t="'+esc(classMsg(c))+'">העתקת ההודעה</button><button class="btn sec sm" data-act="copytxt" data-t="'+esc(classLink(c.token))+'">העתקת הקישור בלבד</button><a class="link" href="'+esc(classLink(c.token))+'" target="_blank" rel="noopener">לראות כמו הורה</a></div></section>';
