@@ -177,6 +177,7 @@
         participants:YH_T.map(t=>({tid:t.tid,name:t.name,classes:[CLS],t_start:null,t_end:null,room:t.room,hr:t.hr,token:t.tok})),
         classes:[{name:CLS,token:YH_TOK,students:NAMES,teachers:YH_T.map(t=>t.tid),homeroom:YH_TID,hr_name:ME,booked:new Set(o.bk.map(b=>b.stu)).size}],
         slots:o.slots.map(x=>{const b=yhB(o,x.id);return {id:x.id,tid:x.tid,t:x.t,brk:x.brk,b:b?{id:b.id,cls:b.cls,stu:b.stu,parent:b.parent,phone:b.phone,consent:b.consent,ptoken:b.ptoken,by_staff:b.by_staff,started:b.started,ended:b.ended,no_show:b.no_show,note:x.tid===YH_TID?b.note:null}:null}})}
+      case 'yh_my_settings':yhErr('reg_open');
       case 'yh_slot_break':{const x=o.slots.find(y=>y.id===a.p_slot);if(!x)yhErr('no_slot');if(x.tid!==YH_TID)yhErr('forbidden');if(a.p_break&&yhB(o,x.id))yhErr('taken');x.brk=!!a.p_break;yhSave(o);return null}
       case 'yh_staff_book':{const x=o.slots.find(y=>y.id===a.p_slot),ph=digits(a.p_pphone);yhCheck(o,x,a.p_student,ph);
         const tok=(o.bk.find(b=>ph&&b.phone===ph)||{}).ptoken||'demo-n'+(++o.ntok);

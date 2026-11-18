@@ -191,7 +191,7 @@ async function rpc(fn,args){
   if(!r.ok){const m=(j&&j.message)||t;throw new Error(m)}
   return j;
 }
-const ERR={taken:'השעה הזו נתפסה הרגע. בחרו שעה אחרת.',already:'כבר נקבעו לתלמיד הזה שתי פגישות אצל המורה הזה.',same_parent:'כבר יש פגישה אצל המורה הזה מהמספר הזה. לפגישה נפרדת צריך את שם ההורה השני ואת הטלפון שלו.',overlap:'יש לכם כבר פגישה אחרת באותה שעה (אולי עם ילד נוסף). בחרו שעה אחרת.',
+const ERR={reg_open:'ההרשמה להורים כבר נפתחה. לשינוי השעות פנו להנהלה.',bad_hours:'שעת הסיום צריכה להיות אחרי שעת ההתחלה.',bad_len:'אורך פגישה צריך להיות בין 5 ל־60 דקות.',taken:'השעה הזו נתפסה הרגע. בחרו שעה אחרת.',already:'כבר נקבעו לתלמיד הזה שתי פגישות אצל המורה הזה.',same_parent:'כבר יש פגישה אצל המורה הזה מהמספר הזה. לפגישה נפרדת צריך את שם ההורה השני ואת הטלפון שלו.',overlap:'יש לכם כבר פגישה אחרת באותה שעה (אולי עם ילד נוסף). בחרו שעה אחרת.',
   closed:'ההרשמה סגורה כרגע.',bad_phone:'מספר הטלפון לא תקין.',no_parent:'נא לכתוב שם.',no_picks:'לא נבחרה אף שעה.',no_student:'התלמיד לא נמצא ברשימת הכיתה.',
   wrong_teacher:'המורה הזה לא נפגש עם הורי הכיתה.',bad_link:'הקישור לא תקין. בקשו מהמחנך קישור חדש.',forbidden:'אין לך הרשאה לפעולה הזו.',no_access:'המספר הזה לא מורשה להיכנס.',
   view_only:'מצב צפייה בלבד',two_same_teacher:'אפשר לבחור שעה אחת בלבד אצל כל מורה.'};
@@ -232,7 +232,7 @@ const Q=new URLSearchParams(location.search);
 function icsFor(items,ev){
   const z=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
   const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//kanfei-ruach//yom-horim//HE','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
-  items.forEach(it=>{const s=new Date(ev.day+'T'+hm(it.t)+':00'),e=new Date(s.getTime()+ev.slot_min*60000);
+  items.forEach(it=>{const s=new Date(ev.day+'T'+hm(it.t)+':00'),e=new Date(s.getTime()+(it.slot_min||ev.slot_min)*60000);
     lines.push('BEGIN:VEVENT','UID:yh-'+it.id+'@kanfei-ruach','DTSTAMP:'+z(new Date()),'DTSTART:'+z(s),'DTEND:'+z(e),
       'SUMMARY:'+('יום הורים · '+tName(it.teacher)+' · '+it.stu).replace(/[,;]/g,' '),
       'LOCATION:'+('כנפי רוח'+(it.room?' · '+it.room:'')).replace(/[,;]/g,' '),
@@ -241,7 +241,7 @@ function icsFor(items,ev){
   lines.push('END:VCALENDAR');return lines.join('\r\n');
 }
 function downloadIcs(items,ev){const b=new Blob([icsFor(items,ev)],{type:'text/calendar'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='yom-horim.ics';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
-function gcalLink(it,ev){const z=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');const s=new Date(ev.day+'T'+hm(it.t)+':00'),e=new Date(s.getTime()+ev.slot_min*60000);
+function gcalLink(it,ev){const z=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');const s=new Date(ev.day+'T'+hm(it.t)+':00'),e=new Date(s.getTime()+(it.slot_min||ev.slot_min)*60000);
   return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('יום הורים · '+tName(it.teacher)+' · '+it.stu)+'&dates='+z(s)+'/'+z(e)+'&location='+encodeURIComponent('כנפי רוח'+(it.room?' · '+it.room:''))+'&details='+encodeURIComponent('המקום בתור: '+(it.link||''))}
 
 /* ---------- תור חי: זמן משוער ---------- */
@@ -294,7 +294,7 @@ function mineHtml(){
   const m=P.mine;if(!m||!m.items.length)return '';
   const ev=m.ev,isDay=ev.day===todayIso(),now=new Date();
   const cards=m.items.map(it=>{
-    const li=liveInfo(it.queue,ev.slot_min,now);const me=it.queue.find(x=>x.t===it.t)||{};
+    const li=liveInfo(it.queue,it.slot_min||ev.slot_min,now);const me=it.queue.find(x=>x.t===it.t)||{};
     let cls='',status='';
     if(it.no_show){cls='done';status='<span class="tag r">סומן שלא הגעתם. דברו עם המורה.</span>'}
     else if(it.ended){cls='done';status='<span class="tag g">הפגישה הסתיימה</span>'}
@@ -348,10 +348,12 @@ function renderParent(){
     if(P.sep)h+='<div class="note">פגישה נפרדת להורה השני: כותבים את השם ואת הטלפון <b>של ההורה השני</b>. <button class="link" data-act="nosep">ביטול</button></div>';
     else if(!left.length)h+='<div class="okbox">כבר נקבעו כל הפגישות של '+esc(P.stu)+'. '+(P.mine&&P.mine.items.some(i=>i.stu===P.stu)?'הן מופיעות למעלה.':'אם קבע אותן הורה אחר במשפחה, הקישור האישי נמצא אצלו.')+'</div>';
     if(canSep)h+='<div class="small muted">ההורים נפגשים עם המורה בנפרד? <button class="link" data-act="sep">קביעת פגישה נפרדת להורה השני</button></div>';
-    const busy=(P.mine&&P.mine.items||[]).map(i=>mins(i.t));
+    const busy=(P.mine&&P.mine.items||[]).map(i=>[mins(i.t),i.slot_min||ev.slot_min]);
+    const lenOf=tid=>((d.teachers.find(x=>x.tid===tid)||{}).slot_min)||ev.slot_min;
+    const ov=(a,la,b,lb)=>a<b+lb&&b<a+la;
     left.forEach(t=>{const sel=P.picks[t.tid];
       const free=t.slots.filter(x=>x.free);
-      const btn=x=>{const clash=busy.some(b=>Math.abs(b-mins(x.t))<ev.slot_min)||Object.entries(P.picks).some(([k,v])=>+k!==t.tid&&v&&Math.abs(mins(v.t)-mins(x.t))<ev.slot_min);
+      const btn=x=>{const L=lenOf(t.tid),clash=busy.some(b=>ov(b[0],b[1],mins(x.t),L))||Object.entries(P.picks).some(([k,v])=>+k!==t.tid&&v&&ov(mins(v.t),lenOf(+k),mins(x.t),L));
         return '<button type="button" data-act="ptime" data-tid="'+t.tid+'" data-id="'+x.id+'" data-t="'+x.t+'" aria-pressed="'+(sel&&sel.id===x.id)+'"'+(clash?' disabled title="יש לכם פגישה אחרת בשעה הזו"':'')+'>'+x.t+'</button>'};
       const hours=[...new Set(free.map(x=>x.t.slice(0,2)))];
       h+='<div class="tcard'+(sel?' picked':'')+'"><div class="thd">'+av(tName(t.name))+'<b>'+esc(tName(t.name))+'</b>'+(t.homeroom?'<span class="tag b">מחנך/ת</span>':'')+(t.room?'<span class="tag">'+esc(t.room)+'</span>':'')+
@@ -401,7 +403,7 @@ async function parentBook(){
     const prev=myTokens()[0]||null;
     const r=await rpc('yh_book',{p_token:bookTok(),p_student:P.stu,p_parent:P.parent,p_pphone:P.phone,p_consent:P.consent,p_picks:picks.map(p=>p.id),p_ptoken:prev,p_class:P.ttok?d.cls:null});
     addMyToken(r.ptoken);
-    const items=picks.map(p=>{const t=d.teachers.find(x=>x.tid===p.tid);return {id:p.id,t:p.t,teacher:t.name,room:t.room,stu:P.stu,link:myLink(r.ptoken)}}).sort((a,b)=>mins(a.t)-mins(b.t));
+    const items=picks.map(p=>{const t=d.teachers.find(x=>x.tid===p.tid);return {id:p.id,t:p.t,teacher:t.name,room:t.room,slot_min:t.slot_min,stu:P.stu,link:myLink(r.ptoken)}}).sort((a,b)=>mins(a.t)-mins(b.t));
     P.done={ptoken:r.ptoken,items};
     renderDone();
   }catch(e){el.textContent=errMsg(e);try{await reloadData()}catch(x){}const keep=el.textContent;P.picks={};renderParent();const e2=document.getElementById('perr');if(e2)e2.textContent=keep}
@@ -484,6 +486,9 @@ async function refresh(keep){S.keepScroll=keep;try{await load()}catch(e){if(/no_
 const tsel=()=>{const d=S.d;if(!d.admin)return '';
   return '<label class="row small" style="gap:8px">מורה:<select data-act="tsel" style="width:auto;min-height:44px">'+d.participants.map(p=>'<option value="'+p.tid+'"'+(p.tid===S.tid?' selected':'')+'>'+esc(tName(p.name))+'</option>').join('')+'</select></label>'};
 const eventLine=()=>{const e=S.d.event;return esc(longDate(e.day))+' · '+hm(e.t_start)+'–'+hm(e.t_end)+' · '+e.slot_min+' דקות לפגישה'};
+/* השעות של מורה מסוים (אם שינה לעצמו), אחרת הכלליות */
+const tLine=p=>{const e=S.d.event;return esc(longDate(e.day))+' · '+hm(p.t_start||e.t_start)+'–'+hm(p.t_end||e.t_end)+' · '+(p.slot_min||e.slot_min)+' דקות לפגישה'};
+const tCustom=p=>!!(p.t_start||p.t_end||p.slot_min);
 
 /* ----- היומן שלי ----- */
 function reminderText(s,b){const e=S.d.event,t=S.d.P[s.tid];
@@ -492,9 +497,12 @@ function viewDiary(){
   const d=S.d,tid=S.tid,p=d.P[tid];
   if(!p)return '<header class="card topbar"><h1>היומן שלי</h1>'+tsel()+'</header><div class="card box">'+(d.admin?'בחרו מורה.':'את/ה לא ברשימת המורים שנפגשים עם הורים. אם צריך, בקשו מההנהלה להוסיף אותך.')+'</div>';
   const sl=d.byT[tid]||[];const booked=sl.filter(s=>s.b).length,free=sl.filter(s=>!s.b&&!s.brk).length;
-  let h='<header class="card topbar"><div><h1>היומן של '+esc(tName(p.name))+'</h1><div class="muted">'+eventLine()+(p.room?' · '+esc(p.room):'')+'</div><div class="small muted">כיתות: '+esc(p.classes.join(', ')||'—')+'</div></div><div class="row">'+tsel()+'<button class="btn sec sm noprint" data-act="print">הדפסה</button></div></header>';
+  const mine=tid===d.tid,canEdit=mine&&(!d.event.reg_open||d.admin);
+  let h='<header class="card topbar"><div><h1>היומן של '+esc(tName(p.name))+'</h1><div class="muted">'+tLine(p)+(p.room?' · '+esc(p.room):'')+(tCustom(p)?' <span class="tag b">שעות אישיות</span>':'')+'</div><div class="small muted">כיתות: '+esc(p.classes.join(', ')||'—')+'</div></div><div class="row">'+tsel()+'<button class="btn sec sm noprint" data-act="print">הדפסה</button></div></header>';
   h+='<section class="kpis">'+kpi('k-blue','נקבעו','פגישות',booked,'f-taken')+kpi('k-green','פנויות','משבצות',free,'f-free')+kpi('k-orange','הפסקות','משבצות',sl.filter(s=>s.brk).length,'f-brk')+kpi('k-red','עוד לא קבעו','תלמידים',notBookedFor(tid).length,'f-nb')+'</section>';
-  if(!d.event.reg_open)h+='<div class="warn">ההרשמה להורים עוד סגורה. אפשר כבר לסמן הפסקות ולשבץ ידנית.</div>';
+  if(!d.event.reg_open)h+='<div class="warn">ההרשמה להורים עוד סגורה. אפשר כבר לסמן הפסקות ולשבץ ידנית'+(mine?', ולשנות את השעות ואת אורך הפגישה שלך.':'.')+'</div>';
+  if(mine)h+='<section class="card box noprint"><div class="row" style="justify-content:space-between"><div><b>השעות שלי</b> · '+hm(p.t_start||d.event.t_start)+'–'+hm(p.t_end||d.event.t_end)+' · '+(p.slot_min||d.event.slot_min)+' דקות לפגישה'+(tCustom(p)?'':' <span class="small muted">(כמו כולם)</span>')+'</div>'+
+    (canEdit?'<button class="btn sec sm" data-act="myhours">שינוי</button>':'<span class="small muted">ההרשמה כבר נפתחה. לשינוי פנו להנהלה.</span>')+'</div></section>';
   const F=S.filter||'all';
   h+='<section class="card box"><div class="row" style="justify-content:space-between"><h2>המשבצות</h2><div class="chips">'+[['all','הכול'],['f-taken','נקבעו'],['f-free','פנויות'],['f-brk','הפסקות']].map(([k,l])=>'<button data-act="filter" data-f="'+k+'" aria-pressed="'+(F===k)+'">'+l+'</button>').join('')+'</div></div><div class="slots">'+
     sl.filter(s=>F==='all'||(F==='f-taken'&&s.b)||(F==='f-free'&&!s.b&&!s.brk)||(F==='f-brk'&&s.brk)).map(s=>slotRow(s)).join('')+'</div></section>';
@@ -526,10 +534,10 @@ function viewLive(){
   if(!p)return '<header class="card topbar"><h1>היום עצמו</h1>'+tsel()+'</header><div class="card box">אין לך משבצות ביום ההורים.</div>';
   const sl=(d.byT[tid]||[]).filter(s=>s.b);const isDay=d.event.day===todayIso();
   const q=sl.map(s=>({t:s.t,s:s.b.started,e:s.b.ended,n:s.b.no_show}));
-  const li=liveInfo(q,d.event.slot_min);
+  const li=liveInfo(q,(p&&p.slot_min)||d.event.slot_min);
   const cur=sl.find(s=>s.b.started&&!s.b.ended);
   const next=sl.filter(s=>!s.b.started&&!s.b.ended&&!s.b.no_show);
-  let h='<header class="card topbar"><div><h1>היום עצמו</h1><div class="muted">'+esc(tName(p.name))+' · '+eventLine()+'</div></div>'+tsel()+'</header>';
+  let h='<header class="card topbar"><div><h1>היום עצמו</h1><div class="muted">'+esc(tName(p.name))+' · '+tLine(p)+'</div></div>'+tsel()+'</header>';
   if(!isDay)h+='<div class="info">המסך הזה נועד ליום ההורים עצמו ('+esc(longDate(d.event.day))+'). אפשר לנסות אותו כבר עכשיו. ההורים רואים את העדכונים בקישור האישי שלהם.</div>';
   h+='<div class="'+(li.delay>=5?'warn':'info')+'">'+(li.delay>=3?'את/ה מאחר/ת בכ־<b>'+li.delay+' דקות</b>. ההורים רואים זמן כניסה משוער מעודכן.':'את/ה בזמן.')+'</div>';
   if(cur)h+='<section class="card box" style="border-right:6px solid var(--orange)"><div class="muted">עכשיו בפגישה</div><h2 style="font-size:26px">'+esc(cur.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(cur.b.cls)+' · '+cur.t+'</span></h2><div>'+esc(cur.b.parent)+'</div>'+(canNote(cur)?'<label class="f">הערות מהפגישה<textarea id="lnote" data-id="'+cur.b.id+'" maxlength="2000" placeholder="מה סוכם, מה חשוב לזכור. ההורים לא רואים את זה.">'+esc(S.lnote&&S.lnote.id===cur.b.id?S.lnote.v:cur.b.note||'')+'</textarea></label>':'')+
@@ -619,9 +627,9 @@ function viewSettings(){
   h+='<section class="card box"><div class="row" style="justify-content:space-between"><h2>מי נפגש עם ההורים</h2><span class="small muted">'+d.participants.length+' מורים · '+nSlots+' משבצות לכל מורה</span></div>'+
     (tight.length?'<div class="warn">בכיתות האלה יש יותר תלמידים ממשבצות: '+tight.map(c=>esc(c.name)+' ('+c.students.length+')').join(', ')+'. אפשר להאריך את השעות, לקצר את הפגישה, או לתת למורה שעות משלו.</div>':'')+
     '<div class="small muted">ברירת המחדל: כל מחנך עם הכיתה שלו. אפשר להוסיף מורים מקצועיים, שילוב או יועצות ולבחור להם כיתות. שעות ומקום — רק אם שונים מהאירוע.</div>'+
-    '<div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>משעה</th><th>עד</th><th>מקום</th><th>קישור להורים</th><th></th></tr></thead><tbody id="ptab">'+
+    '<div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>משעה</th><th>עד</th><th>דקות</th><th>מקום</th><th>קישור להורים</th><th></th></tr></thead><tbody id="ptab">'+
     d.participants.map(p=>'<tr data-tid="'+p.tid+'"><td><b>'+esc(tName(p.name))+'</b></td><td><div class="chips">'+d.classes.map(c=>'<button data-act="pcls" data-c="'+esc(c.name)+'" aria-pressed="'+p.classes.includes(c.name)+'">'+esc(c.name)+'</button>').join('')+'</div></td>'+
-      '<td><input type="time" class="pts" value="'+hm(p.t_start||'')+'" style="min-height:44px"></td><td><input type="time" class="pte" value="'+hm(p.t_end||'')+'" style="min-height:44px"></td><td><input type="text" class="prm" value="'+esc(p.room||'')+'" placeholder="כיתה/חדר" style="min-height:44px"></td>'+
+      '<td><input type="time" class="pts" value="'+hm(p.t_start||'')+'" style="min-height:44px"></td><td><input type="time" class="pte" value="'+hm(p.t_end||'')+'" style="min-height:44px"></td><td><input type="number" class="psm" min="5" max="60" value="'+(p.slot_min||'')+'" placeholder="'+d.event.slot_min+'" style="min-height:44px;width:70px"></td><td><input type="text" class="prm" value="'+esc(p.room||'')+'" placeholder="כיתה/חדר" style="min-height:44px"></td>'+
       '<td><div class="chips">'+p.classes.map(c=>d.C[c]&&d.C[c].token?'<button data-act="copytxt" data-t="'+esc(classMsg(d.C[c]))+'" title="העתקת ההודעה עם הקישור להורי '+esc(c)+'">'+esc(c)+' 📋</button>':'').join('')+'</div></td>'+
       '<td><button class="link" style="color:var(--red)" data-act="prem">הסרה</button></td></tr>').join('')+'</tbody></table></div>'+
     '<div class="row"><select id="addt" style="width:auto;min-width:240px"><option value="">הוספת איש צוות…</option>'+d.teachers.filter(t=>!d.P[t.id]).map(t=>'<option value="'+t.id+'">'+esc(tName(t.name))+'</option>').join('')+'</select><button class="btn sec sm" data-act="padd">הוספה</button></div>'+
@@ -630,7 +638,7 @@ function viewSettings(){
   return h;
 }
 function collectParts(){return [...document.querySelectorAll('#ptab tr')].map(tr=>({tid:+tr.dataset.tid,classes:[...tr.querySelectorAll('[data-act="pcls"][aria-pressed="true"]')].map(b=>b.dataset.c),
-  t_start:tr.querySelector('.pts').value,t_end:tr.querySelector('.pte').value,room:tr.querySelector('.prm').value.trim()}))}
+  t_start:tr.querySelector('.pts').value,t_end:tr.querySelector('.pte').value,slot_min:tr.querySelector('.psm').value,room:tr.querySelector('.prm').value.trim()}))}
 
 /* ----- חלונות ----- */
 function modalHtml(){const m=S.modal,d=S.d;
@@ -646,6 +654,12 @@ function modalHtml(){const m=S.modal,d=S.d;
       (slot?'':'<label class="f">מורה ושעה<select id="m_slot">'+tids.map(t=>{const p=d.P[t];if(!p)return '';const tk=takenFor(t);return '<optgroup label="'+esc(tName(p.name))+'">'+(d.byT[t]||[]).filter(s=>!s.b&&!s.brk).map(s=>'<option value="'+s.id+'">'+s.t+' · '+esc(tName(p.name))+'</option>').join('')+'</optgroup>'}).join('')+'</select></label>')+
       '<div class="grid2"><label class="f">שם ההורה<input type="text" id="m_par"></label><label class="f">טלפון (לתזכורת)<input type="tel" id="m_ph" inputmode="tel"></label></div><div id="m_err" class="err" role="alert"></div></div>'+
       '<div class="mfoot"><button class="btn ok" data-act="mdo">שיבוץ</button><button class="btn sec" data-act="close">ביטול</button></div></div></div>'}
+  if(m.kind==='hours'){const p=d.P[d.tid],e=d.event,cur=p.slot_min||e.slot_min,opts=[5,8,10,12,15,20,25,30];if(!opts.includes(cur))opts.push(cur);
+    return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">השעות שלי ביום ההורים</div><div class="mbody">'+
+      '<div class="row"><label class="f">משעה<input type="time" id="h_ts" value="'+hm(p.t_start||e.t_start)+'"></label><label class="f">עד<input type="time" id="h_te" value="'+hm(p.t_end||e.t_end)+'"></label>'+
+      '<label class="f">דקות לפגישה<select id="h_sm">'+opts.sort((a,b)=>a-b).map(n=>'<option'+(n===cur?' selected':'')+'>'+n+'</option>').join('')+'</select></label></div>'+
+      '<div class="small muted" id="h_cnt"></div><div class="small muted">ברירת המחדל לכולם: '+hm(e.t_start)+'–'+hm(e.t_end)+', '+e.slot_min+' דקות. <button class="link" data-act="hoursreset">חזרה לברירת המחדל</button></div></div>'+
+      '<div class="mfoot"><button class="btn ok" data-act="hourssave">שמירה ובניית היומן</button><button class="btn sec" data-act="close">ביטול</button></div></div></div>'}
   if(m.kind==='note'){const s0=d.slots.find(s=>s.b&&s.b.id===m.bid);if(!s0)return '';
     return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">הערה לפגישה · '+esc(s0.b.stu)+' · '+s0.t+'</div><div class="mbody">'+
       '<label class="f">הערות<textarea id="m_note" maxlength="2000" rows="6" placeholder="מה סוכם, מה חשוב לזכור">'+esc(s0.b.note||'')+'</textarea></label>'+
@@ -686,6 +700,11 @@ function staffClick(e){
     if(!slot){document.getElementById('m_err').textContent='אין שעה פנויה.';return}
     S.busy=true;rpc('yh_staff_book',{p_phone:S.phone,p_slot:slot,p_class:cls,p_student:document.getElementById('m_stu').value,p_parent:document.getElementById('m_par').value,p_pphone:document.getElementById('m_ph').value})
       .then(async()=>{S.modal=null;toast('שובץ');await load();S.busy=false;S.keepScroll=true;render()}).catch(x=>{S.busy=false;document.getElementById('m_err').textContent=errMsg(x)});return}
+  if(a==='myhours'){S.modal={kind:'hours'};render();hoursCount();return}
+  if(a==='hoursreset'){const e=S.d.event;document.getElementById('h_ts').value=hm(e.t_start);document.getElementById('h_te').value=hm(e.t_end);document.getElementById('h_sm').value=String(e.slot_min);hoursCount();return}
+  if(a==='hourssave'){const ts=document.getElementById('h_ts').value,te=document.getElementById('h_te').value,sm=+document.getElementById('h_sm').value;
+    if(!ts||!te||mins(ts)>=mins(te)){toast('שעת הסיום צריכה להיות אחרי שעת ההתחלה');return}
+    return act('yh_my_settings',{p_phone:S.phone,p_start:ts,p_end:te,p_slot:sm},'נשמר. היומן נבנה מחדש')}
   if(a==='note'){S.modal={kind:'note',bid:+b.dataset.id};render();const t=document.getElementById('m_note');if(t)t.focus();return}
   if(a==='notesave')return act('yh_note_set',{p_phone:S.phone,p_booking:S.modal.bid,p_note:document.getElementById('m_note').value},'ההערה נשמרה');
   if(a==='live'){const id=+b.dataset.id,ln=document.getElementById('lnote');
@@ -705,7 +724,10 @@ function staffClick(e){
     if(!ev.day||!ev.t_start||!ev.t_end||ev.t_end<=ev.t_start){toast('בדקו את התאריך והשעות');return}
     S.busy=true;(async()=>{try{await rpc('yh_admin_save_event',{p_phone:S.phone,p_ev:ev});const r=await rpc('yh_admin_build',{p_phone:S.phone});toast('נשמר'+(r.added||r.removed?' · הלוח עודכן':''));await load()}catch(x){toast(errMsg(x))}S.busy=false;S.keepScroll=true;render()})();return}
 }
+function hoursCount(){const o=document.getElementById('h_cnt');if(!o)return;const ts=document.getElementById('h_ts').value,te=document.getElementById('h_te').value,sm=+document.getElementById('h_sm').value,g=S.d.event.gap_min||0;
+  const n=ts&&te&&mins(te)>mins(ts)?Math.floor((mins(te)-mins(ts)+g)/(sm+g)):0;o.textContent=n?'יהיו לך '+n+' משבצות':'שעות לא תקינות'}
 function staffChange(e){const t=e.target;
+  if(t.id==='h_ts'||t.id==='h_te'||t.id==='h_sm')return hoursCount();
   if(t.id==='e_day'||t.id==='e_rc'){const o=document.getElementById(t.id+'_h');if(o)o.textContent=t.value?hebDay(t.value):''}
   if(t.id==='lnote'){S.lnote={id:+t.dataset.id,v:t.value};return}
   if(t.dataset.act==='tsel'){S.tid=+t.value;render()}
