@@ -116,6 +116,47 @@ td:first-child{border-radius:0 var(--r-sm) var(--r-sm) 0}td:last-child{border-ra
 .meet{display:flex;flex-direction:column;gap:8px;padding:16px 18px;border-right:6px solid var(--brand)}
 .meet .tm{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
 .meet.now{border-right-color:var(--orange);background:#fdf3e2}.meet.done{border-right-color:var(--green)}
+/* דף ההורה: עיצוב */
+.ppbg{min-height:100vh;background:radial-gradient(900px 420px at 85% -80px,#cfe3fa 0,transparent 70%),radial-gradient(700px 380px at 0 0,#fff1cf 0,transparent 65%),var(--ground)}
+.pp .card{border-radius:18px;box-shadow:0 1px 2px rgba(31,42,55,.06),0 8px 24px rgba(31,42,55,.07)}
+.phero{position:relative;overflow:hidden;border-radius:22px;padding:20px;color:#fff;background:linear-gradient(135deg,#17497f 0,#2f7fd6 62%,#5aaef0 100%);display:flex;align-items:center;gap:14px;box-shadow:0 12px 28px rgba(31,95,166,.30)}
+.phero:before,.phero:after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.10);pointer-events:none}
+.phero:before{width:220px;height:220px;left:-70px;top:-110px}.phero:after{width:150px;height:150px;left:70px;bottom:-100px}
+.phero>*{position:relative}
+.phero .lg{background:#fff;border-radius:16px;padding:8px 10px;display:grid;place-items:center;flex:none;box-shadow:0 2px 8px rgba(0,0,0,.15)}.phero .lg img{height:40px;display:block}
+.phero h1{font-size:24px;line-height:30px;color:#fff}.phero .sub{font-size:15px;opacity:.92}
+.datechip{margin-inline-start:auto;flex:none;background:#fff;color:var(--ink);border-radius:14px;min-width:72px;text-align:center;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.18)}
+.datechip .m{background:#ffc94d;color:#553900;font-size:13px;font-weight:700;padding:2px 8px}
+.datechip .d{font-size:30px;font-weight:700;line-height:34px}.datechip .w{font-size:12.5px;color:var(--ink-muted);padding-bottom:5px}
+.psteps{display:flex;gap:6px;list-style:none;margin:0;padding:0}
+.psteps li{flex:1;min-width:0;display:flex;align-items:center;gap:7px;background:#fff;border-radius:99px;padding:6px 8px;font-size:14px;font-weight:600;color:var(--ink-muted);box-shadow:var(--shadow);white-space:nowrap}
+.psteps li i{font-style:normal;width:24px;height:24px;border-radius:50%;background:#e4e9ef;display:grid;place-items:center;font-size:13px;flex:none}
+.psteps li.on{color:var(--brand-dark);box-shadow:0 0 0 2px var(--brand)}.psteps li.on i{background:var(--brand);color:#fff}
+.psteps li.dn{color:var(--green-ink)}.psteps li.dn i{background:var(--green);color:#fff}
+.pp .step .n{width:32px;height:32px;box-shadow:0 3px 8px rgba(47,127,214,.35)}.pp .step.dn .n{background:var(--green);box-shadow:0 3px 8px rgba(79,154,42,.35)}
+.av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:17px;flex:none;color:#fff}
+.av.c0{background:#4a8ec9}.av.c1{background:#c77700}.av.c2{background:#4f9a2a}.av.c3{background:#7a5cc0}.av.c4{background:#c2477a}
+.pp .pick{border-radius:14px;min-height:58px;gap:12px;justify-content:flex-start;transition:transform .1s,border-color .1s,box-shadow .1s}
+.pp .pick>.nm{flex:1;min-width:0}.pp .pick:hover{border-color:var(--brand);box-shadow:0 4px 12px rgba(47,127,214,.15);transform:translateY(-1px)}
+.pp .tcard{border-radius:16px;gap:12px;transition:border-color .15s,background .15s}.pp .tcard.picked{border-color:var(--green);background:#f4faf0}
+.thd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.thd b{font-size:18px}
+.hrs{display:flex;flex-direction:column;gap:10px}
+.hr{display:grid;grid-template-columns:42px minmax(0,1fr);gap:8px;align-items:start}
+.hr .hl{font-size:26px;font-weight:200;line-height:48px;text-align:center;color:var(--ink-muted);font-variant-numeric:tabular-nums}
+.pp .times{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px}
+.pp .times button{min-width:0;border-radius:12px;transition:transform .1s,box-shadow .1s,border-color .1s}
+.pp .times button:not([disabled]):hover{border-color:var(--brand);transform:translateY(-1px);box-shadow:0 4px 10px rgba(47,127,214,.18)}
+.pp .times button[aria-pressed="true"]{background:linear-gradient(135deg,#1f5fa6,#2f7fd6);border-color:#1f5fa6;box-shadow:0 6px 14px rgba(47,127,214,.40);transform:scale(1.05)}
+.pcta{position:sticky;bottom:10px;z-index:5;background:#fff;border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 30px rgba(31,42,55,.24)}
+.pcta .sum{font-size:15px;text-align:center}.pcta .btn{border-radius:14px;min-height:56px;font-size:19px}
+.pdone{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.pdone .ck{width:72px;height:72px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-size:40px;box-shadow:0 8px 20px rgba(79,154,42,.35);animation:pop .4s ease-out}
+@keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+.tkt{display:flex;align-items:center;gap:14px;background:var(--card-muted);border-radius:14px;padding:12px 16px;border-right:6px solid var(--green);text-align:right}
+.tkt .tm{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.pp .meet{border-radius:16px}
+@media (prefers-reduced-motion:reduce){.pdone .ck{animation:none}.pp .times button,.pp .pick{transition:none}}
+@media (max-width:480px){.phero{padding:16px 14px;gap:10px}.phero h1{font-size:21px}.phero .lg img{height:32px}.psteps li{font-size:13px;padding:5px 6px;gap:5px}}
 @media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:760px){
  .app{flex-direction:column}
@@ -206,8 +247,15 @@ function addMyToken(t){const a=myTokens();if(!a.includes(t)){a.push(t);lsSet('yh
 async function loadMine(){const toks=[...new Set([...(P.ptok?[P.ptok]:[]),...myTokens()])];const all=[];let ev=null;
   for(const t of toks){try{const m=await rpc('yh_mine',{p_ptoken:t});if(m&&m.items&&m.items.length){ev=m.event;m.items.forEach(i=>{i.ptoken=t;i.link=myLink(t);all.push(i)})}}catch(e){}}
   all.sort((a,b)=>mins(a.t)-mins(b.t));P.mine={ev,items:all};}
-function parentShell(inner){return '<div class="pp"><header class="card phead">'+LOGO+'<div><h1 style="font-size:22px;line-height:28px">'+esc(P.data?P.data.event.title:(P.mine&&P.mine.ev?P.mine.ev.title:'יום הורים'))+'</h1><div class="muted small">כנפי רוח'+
-  (P.data?' · כיתה '+esc(P.data.cls)+' · '+esc(longDate(P.data.event.day)):P.mine&&P.mine.ev?' · '+esc(longDate(P.mine.ev.day)):'')+'</div></div></header>'+inner+CREDIT+'</div>'}
+const MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const avc=n=>'c'+([...String(n)].reduce((a,c)=>a+c.charCodeAt(0),0)%5);
+const av=n=>'<span class="av '+avc(n)+'" aria-hidden="true">'+esc(String(n).replace(/^הרב\s+/,'').trim().charAt(0))+'</span>';
+function parentShell(inner){const ev=P.data?P.data.event:(P.mine&&P.mine.ev)||null,d=ev?parseD(ev.day):null;let heb='';
+  if(d)try{heb=new Intl.DateTimeFormat('he-u-ca-hebrew',{day:'numeric',month:'long'}).format(d)}catch(e){}
+  return '<div class="ppbg"><div class="pp"><header class="phero"><span class="lg">'+LOGO+'</span><div><h1>'+esc(ev?ev.title:'יום הורים')+'</h1><div class="sub">כנפי רוח'+
+  (P.data?' · כיתה '+esc(P.data.cls):'')+(heb?' · '+esc(heb):'')+'</div></div>'+
+  (d?'<div class="datechip" role="img" aria-label="'+esc(longDate(ev.day))+'"><div class="m">'+MONTHS[d.getMonth()]+'</div><div class="d">'+d.getDate()+'</div><div class="w">יום '+DAYS[d.getDay()]+'</div></div>':'')+
+  '</header>'+inner+CREDIT+'</div></div>'}
 
 async function parentStart(){
   try{
@@ -244,9 +292,11 @@ function renderParent(){
   let h=mineHtml();
   if(!ev.reg_open){root.innerHTML=parentShell(h+'<div class="card box"><h2>ההרשמה סגורה כרגע</h2><div class="muted">אם צריך לקבוע או לשנות פגישה, פנו למחנך/ת הכיתה.</div></div>');return}
   if(ev.note)h+='<div class="info">'+esc(ev.note)+'</div>';
+  const nPick=Object.values(P.picks).filter(Boolean).length,cur=!P.stu?1:!pOk()?2:3;
+  h+='<ol class="psteps" id="psteps" aria-label="שלבי הקביעה">'+pSteps(cur,nPick)+'</ol>';
   // שלב 1: הילד
-  h+='<section class="card box"><div class="step"><span class="n">1</span>על איזה ילד הפגישה?</div>';
-  if(P.stu){const s=d.students.find(x=>x.n===P.stu);h+='<button class="pick" aria-pressed="true" data-act="unstu"><b>'+esc(P.stu)+'</b><span class="link">החלפה</span></button>'}
+  h+='<section class="card box"><div class="step'+(P.stu?' dn':'')+'"><span class="n">'+(P.stu?'✓':'1')+'</span>על איזה ילד הפגישה?</div>';
+  if(P.stu){const s=d.students.find(x=>x.n===P.stu);h+='<button class="pick" aria-pressed="true" data-act="unstu">'+av(P.stu)+'<b class="nm">'+esc(P.stu)+'</b><span class="link">החלפה</span></button>'}
   else{
     h+='<input type="search" id="sq" placeholder="חיפוש לפי שם" value="'+esc(P.q)+'" autocomplete="off"><div class="picklist" id="slist">'+stuList()+'</div>';
   }
@@ -255,36 +305,47 @@ function renderParent(){
     const s=d.students.find(x=>x.n===P.stu)||{done:[]};
     const left=d.teachers.filter(t=>!s.done.includes(t.tid));
     // שלב 2: פרטי ההורה
-    h+='<section class="card box"><div class="step"><span class="n">2</span>פרטי ההורה</div><div class="grid2"><label class="f">שם ההורה<input type="text" id="pname" autocomplete="name" value="'+esc(P.parent)+'"></label>'+
+    h+='<section class="card box"><div class="step'+(pOk()?' dn':'')+'" id="pst2"><span class="n">'+(pOk()?'✓':'2')+'</span>פרטי ההורה</div><div class="grid2"><label class="f">שם ההורה<input type="text" id="pname" autocomplete="name" value="'+esc(P.parent)+'"></label>'+
       '<label class="f">טלפון נייד<input type="tel" id="pphone" inputmode="tel" autocomplete="tel" value="'+esc(P.phone)+'"></label></div>'+
       '<label class="check"><input type="checkbox" id="pcons"'+(P.consent?' checked':'')+'> מסכימים שהמחנך/ת ישלחו תזכורת בוואטסאפ למספר הזה</label></section>';
     // שלב 3: שעות
-    h+='<section class="card box"><div class="step"><span class="n">3</span>בחירת שעה'+(d.teachers.length>1?' אצל כל מורה':'')+'</div>';
+    h+='<section class="card box"><div class="step'+(nPick?' dn':'')+'"><span class="n">'+(nPick?'✓':'3')+'</span>בחירת שעה'+(d.teachers.length>1?' אצל כל מורה':'')+'</div>';
     if(!left.length)h+='<div class="okbox">כבר נקבעו כל הפגישות של '+esc(P.stu)+'. '+(P.mine&&P.mine.items.some(i=>i.stu===P.stu)?'הן מופיעות למעלה.':'אם קבע אותן הורה אחר במשפחה, הקישור האישי נמצא אצלו.')+'</div>';
     const busy=(P.mine&&P.mine.items||[]).map(i=>mins(i.t));
     left.forEach(t=>{const sel=P.picks[t.tid];
       const free=t.slots.filter(x=>x.free);
-      h+='<div class="tcard'+(sel?' picked':'')+'"><div><b>'+esc(tName(t.name))+'</b>'+(t.homeroom?' <span class="tag b">מחנך/ת</span>':'')+(t.room?' <span class="tag">'+esc(t.room)+'</span>':'')+'</div>'+
-        (free.length?'<div class="times" role="group" aria-label="שעות פנויות אצל '+esc(tName(t.name))+'">'+t.slots.map(x=>{
-          const clash=busy.some(b=>Math.abs(b-mins(x.t))<ev.slot_min)||Object.entries(P.picks).some(([k,v])=>+k!==t.tid&&v&&Math.abs(mins(v.t)-mins(x.t))<ev.slot_min);
-          return x.free?'<button type="button" data-act="ptime" data-tid="'+t.tid+'" data-id="'+x.id+'" data-t="'+x.t+'" aria-pressed="'+(sel&&sel.id===x.id)+'"'+(clash?' disabled title="יש לכם פגישה אחרת בשעה הזו"':'')+'>'+x.t+'</button>':''}).join('')+'</div>'
+      const btn=x=>{const clash=busy.some(b=>Math.abs(b-mins(x.t))<ev.slot_min)||Object.entries(P.picks).some(([k,v])=>+k!==t.tid&&v&&Math.abs(mins(v.t)-mins(x.t))<ev.slot_min);
+        return '<button type="button" data-act="ptime" data-tid="'+t.tid+'" data-id="'+x.id+'" data-t="'+x.t+'" aria-pressed="'+(sel&&sel.id===x.id)+'"'+(clash?' disabled title="יש לכם פגישה אחרת בשעה הזו"':'')+'>'+x.t+'</button>'};
+      const hours=[...new Set(free.map(x=>x.t.slice(0,2)))];
+      h+='<div class="tcard'+(sel?' picked':'')+'"><div class="thd">'+av(tName(t.name))+'<b>'+esc(tName(t.name))+'</b>'+(t.homeroom?'<span class="tag b">מחנך/ת</span>':'')+(t.room?'<span class="tag">'+esc(t.room)+'</span>':'')+
+        (sel?'<span class="tag g" style="margin-inline-start:auto">נבחרה '+esc(sel.t)+'</span>':'<span class="small muted" style="margin-inline-start:auto">'+free.length+' שעות פנויות</span>')+'</div>'+
+        (free.length?'<div class="hrs" role="group" aria-label="שעות פנויות אצל '+esc(tName(t.name))+'">'+hours.map(hh=>'<div class="hr"><div class="hl" aria-hidden="true">'+hh+'</div><div class="times">'+free.filter(x=>x.t.slice(0,2)===hh).map(btn).join('')+'</div></div>').join('')+'</div>'
         :'<div class="warn small">אין יותר שעות פנויות אצל המורה הזה. פנו למחנך/ת.</div>')+
         (sel?'<button class="link" data-act="ptime" data-tid="'+t.tid+'" data-id="">בלי פגישה אצל המורה הזה</button>':'')+'</div>'});
     h+='</section>';
     const n=Object.values(P.picks).filter(Boolean).length;
-    if(left.length)h+='<div id="perr" class="err" role="alert"></div><button class="btn wide ok" data-act="pbook"'+(n?'':' disabled')+'>'+(n?'קביעת '+(n===1?'הפגישה':n+' פגישות'):'בחרו שעה')+'</button>';
+    if(left.length)h+='<div class="pcta"><div id="perr" class="err" role="alert"></div>'+
+      (n?'<div class="sum"><b>'+esc(P.stu)+'</b> · '+left.filter(t=>P.picks[t.tid]).map(t=>'<b>'+esc(P.picks[t.tid].t)+'</b> אצל '+esc(tName(t.name))).join(' · ')+'</div>':'')+
+      '<button class="btn wide ok" data-act="pbook"'+(n?'':' disabled')+'>'+(n?'קביעת '+(n===1?'הפגישה':n+' פגישות'):'בחרו שעה')+'</button></div>';
   }
   root.innerHTML=parentShell(h);
+  ['pname','pphone'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('input',()=>{P.parent=document.getElementById('pname').value;P.phone=document.getElementById('pphone').value;
+    const ok=pOk(),st=document.getElementById('pst2'),ps=document.getElementById('psteps');if(st){st.classList.toggle('dn',ok);st.querySelector('.n').textContent=ok?'✓':'2'}
+    if(ps)ps.innerHTML=pSteps(ok?3:2,Object.values(P.picks).filter(Boolean).length)})});
   const sq=document.getElementById('sq');if(sq){sq.addEventListener('input',()=>{P.q=sq.value;document.getElementById('slist').innerHTML=stuList()})}
 }
+const pOk=()=>!!String(P.parent||'').trim()&&/^0?5\d{8}$/.test(String(P.phone||'').replace(/\D/g,'').replace(/^972/,'0'));
+function pSteps(cur,nPick){const dn=[!!P.stu,!!P.stu&&pOk(),nPick>0];
+  return ['הילד','פרטי ההורה','שעה'].map((l,i)=>'<li class="'+(dn[i]?'dn':i+1===cur?'on':'')+'"'+(i+1===cur?' aria-current="step"':'')+'><i>'+(dn[i]?'✓':i+1)+'</i>'+l+'</li>').join('')}
 function stuList(){const d=P.data,f=fold(P.q);const L=d.students.filter(s=>!f||fold(s.n).split(' ').some(w=>w.startsWith(f))||fold(s.n).includes(f));
   if(!L.length)return '<div class="muted">לא נמצא. נסו רק שם פרטי או רק שם משפחה.</div>';
   return L.map(s=>{const all=d.teachers.length&&d.teachers.every(t=>s.done.includes(t.tid));
-    return '<button class="pick" data-act="stu" data-n="'+esc(s.n)+'"><span>'+esc(s.n)+'</span>'+(all?'<span class="tag g">נקבע</span>':s.done.length?'<span class="tag o">נקבע חלקית</span>':'')+'</button>'}).join('')}
+    return '<button class="pick" data-act="stu" data-n="'+esc(s.n)+'">'+av(s.n)+'<span class="nm">'+esc(s.n)+'</span>'+(all?'<span class="tag g">נקבע</span>':s.done.length?'<span class="tag o">נקבע חלקית</span>':'')+'</button>'}).join('')}
 function renderDone(){
   const r=P.done,ev=P.data.event;
   const items=r.items;
-  let h='<section class="card box"><div class="okbox"><h2>נקבע!</h2><div>'+items.map(i=>'<div><b>'+esc(i.t)+'</b> · '+esc(tName(i.teacher))+' · על '+esc(i.stu)+'</div>').join('')+'</div></div>'+
+  let h='<section class="card box"><div class="pdone"><div class="ck" aria-hidden="true">✓</div><h2 style="font-size:26px">נקבע!</h2><div class="muted">'+esc(longDate(ev.day))+'</div></div>'+
+    items.map(i=>'<div class="tkt"><span class="tm">'+esc(i.t)+'</span><span><b>'+esc(tName(i.teacher))+'</b>'+(i.room?' · '+esc(i.room):'')+'<div class="small muted">על '+esc(i.stu)+'</div></span></div>').join('')+
     '<div>שמרו את הקישור האישי. בו תראו את המקום בתור ביום עצמו, ומשם אפשר גם לבטל:</div>'+
     '<div class="row"><a class="btn sm" href="'+esc(myLink(r.ptoken))+'">לקישור האישי</a><button class="btn sec sm" data-act="copylink" data-l="'+esc(myLink(r.ptoken))+'">העתקת הקישור</button></div>'+
     '<div class="row"><button class="btn sec sm" data-act="icsall">הוספה ליומן בטלפון (עם תזכורת שעה לפני)</button>'+items.map(i=>'<a class="link" target="_blank" rel="noopener" href="'+esc(gcalLink(i,ev))+'">ליומן גוגל · '+esc(i.t)+'</a>').join('')+'</div>'+
