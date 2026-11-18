@@ -27,7 +27,7 @@ gate_css = """<style>
 </style>"""
 shim = '<script>window.PLANNER_CFG=' + json.dumps(cfg) + ';</script>\n<script>\n' + (root / 'src/shim.js').read_text() + '</script>\n'
 body = body.replace('<script>\nconst DATA', shim + '<script>\nconst DATA', 1)
-fav = '<link rel="icon" href="/favicon.ico" sizes="any">\n<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">\n<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">'
+fav = '<link rel="icon" href="/favicon.ico" sizes="any">\n<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">\n<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">\n<link rel="manifest" href="/manifest.webmanifest">'
 out = ('<!doctype html>\n<html lang="he" dir="rtl">\n<head>\n<meta charset="utf-8">\n'
        '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
        + fav + '\n' + head + gate_css + '\n</head>\n<body>\n' + body + '\n<script src="/feedback/badge.js" defer></script>\n</body>\n</html>\n')
