@@ -1302,7 +1302,7 @@ renderMeView=async function(){
   el.innerHTML='<p class="hint">טוען…</p>';
   const r=await rpc("mk_staff_map",{p_phone:SES.phone,p_pin:SES.pin});
   if(r.error){el.innerHTML=`<p class="hint">${ERR[r.error]||r.error}</p>`;return}
-  STAFFQ=r.staff;
+  STAFFQ=r.staff;window._bHidden=!!r.part_b_hidden;
   const S=r.staff.filter(s=>s.part_b&&((s.part_b.drains||[]).some(d=>d.t)||(s.part_b.fuel||[]).length||s.part_b.oneThing||(s.part_b.rd||[]).some(x=>x.desc||x.load||x.power)||s.part_b.personal));
   const all=S.flatMap(s=>(s.part_b.drains||[]).filter(d=>d.t).map(d=>({...d,by:s.name})));
   const bySrc={};all.forEach(d=>(bySrc[d.src]=bySrc[d.src]||[]).push(d));
@@ -1314,7 +1314,7 @@ renderMeView=async function(){
      <div class="tile" style="cursor:default"><div class="v">${S.filter(s=>s.part_b.personal).length}</div><div class="l">ציינו עומס אישי</div></div></div>
    <div class="box" style="margin-bottom:16px"><h2>השאלונים המלאים · לחיצה על שם פותחת את כל מה שמילא/ה</h2>
      ${r.staff.length?`<div class="sqlist">${r.staff.map((s,i)=>`<button type="button" class="sqbtn" onclick="openStaffQ(${i})"><b>${esc(s.name)}</b><small>${ROLE_HE[s.role]||""}${s.class_name?" · "+esc(s.class_name):""}${s.updated_at?" · עודכן "+sqDate(s.updated_at):""}</small></button>`).join("")}</div>`:'<p class="empty">עוד אף אחד לא מילא שאלון.</p>'}</div>
-   ${!S.length?'<p class="empty">עוד אף אחד לא מילא את החלק האישי.</p>':`<div class="sgrid">
+   ${!S.length?'<p class="empty">'+(window._bHidden?'החלק האישי לא מוצג במצב "בנעליים של".':'עוד אף אחד לא מילא את החלק האישי.')+'</p>':`<div class="sgrid">
     <div class="box"><h2>מה מוציא את הצוות מאיזון, לפי מקור</h2>
      ${Object.entries(bySrc).sort((a,b)=>b[1].reduce((s,x)=>s+x.lvl,0)-a[1].reduce((s,x)=>s+x.lvl,0)).map(([k,a])=>`<div class="srow" style="cursor:default"><div class="lab">${esc(k)}</div><div class="tr"><span style="width:${Math.min(100,a.reduce((s,x)=>s+x.lvl,0)*6)}%;background:var(--bad)"></span></div><div class="num" style="color:var(--bad)">${a.length}</div></div>`).join("")}
      <h2 style="margin-top:18px">מקורות הכוח של הצוות</h2>
@@ -1350,7 +1350,7 @@ function staffQHtml(s){
     <h3>4. מה צריך מהצוות או מההנהלה</h3>${sqTxt(a.needs)}
    </fieldset>
    <fieldset class="me"><legend>חלק ב' · אני בתפקיד <span class="tagm s">🔒 גלוי רק למנהל</span></legend>
-    ${!anyB?'<p class="empty">החלק האישי לא מולא.</p>':`
+    ${!anyB?'<p class="empty">'+(window._bHidden?'החלק האישי לא מוצג במצב "בנעליים של".':'החלק האישי לא מולא.')+'</p>':`
     ${rd.map(r=>`<div class="rolecard"><h4>${esc(r.role)}</h4>
       ${r.desc?`<p class="sqp">״${esc(r.desc)}״</p>`:""}
       <p class="sqp"><b>התפקיד בשבילו/ה:</b> ${scTxt(r.load,SC_LOAD)} · <b>מבחינת כוח:</b> ${scTxt(r.power,SC_POW)}</p>
