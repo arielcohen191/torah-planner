@@ -186,7 +186,7 @@ async function rpc(fn,args){
   if(!r.ok){const m=(j&&j.message)||t;throw new Error(m)}
   return j;
 }
-const ERR={taken:'השעה הזו נתפסה הרגע. בחרו שעה אחרת.',already:'כבר נקבעה פגישה לתלמיד הזה אצל המורה הזה.',overlap:'יש לכם כבר פגישה אחרת באותה שעה (אולי עם ילד נוסף). בחרו שעה אחרת.',
+const ERR={taken:'השעה הזו נתפסה הרגע. בחרו שעה אחרת.',already:'כבר נקבעו לתלמיד הזה שתי פגישות אצל המורה הזה.',same_parent:'כבר יש פגישה אצל המורה הזה מהמספר הזה. לפגישה נפרדת צריך את שם ההורה השני ואת הטלפון שלו.',overlap:'יש לכם כבר פגישה אחרת באותה שעה (אולי עם ילד נוסף). בחרו שעה אחרת.',
   closed:'ההרשמה סגורה כרגע.',bad_phone:'מספר הטלפון לא תקין.',no_parent:'נא לכתוב שם.',no_picks:'לא נבחרה אף שעה.',no_student:'התלמיד לא נמצא ברשימת הכיתה.',
   wrong_teacher:'המורה הזה לא נפגש עם הורי הכיתה.',bad_link:'הקישור לא תקין. בקשו מהמחנך קישור חדש.',forbidden:'אין לך הרשאה לפעולה הזו.',no_access:'המספר הזה לא מורשה להיכנס.',
   view_only:'מצב צפייה בלבד',two_same_teacher:'אפשר לבחור שעה אחת בלבד אצל כל מורה.'};
@@ -307,7 +307,7 @@ function renderParent(){
   const nPick=Object.values(P.picks).filter(Boolean).length,cur=!P.stu?1:!pOk()?2:3;
   h+='<ol class="psteps" id="psteps" aria-label="שלבי הקביעה">'+pSteps(cur,nPick)+'</ol>';
   // שלב 1: הילד
-  h+='<section class="card box"><div class="step'+(P.stu?' dn':'')+'"><span class="n">'+(P.stu?'✓':'1')+'</span>על איזה ילד הפגישה?</div>';
+  h+='<section class="card box"><div class="step'+(P.stu?' dn':'')+'"><span class="n">'+(P.stu?'✓':'1')+'</span>מהו שמו של בנכם?</div>';
   if(P.stu){const s=d.students.find(x=>x.n===P.stu);h+='<button class="pick" aria-pressed="true" data-act="unstu">'+av(P.stu)+'<b class="nm">'+esc(P.stu)+'</b><span class="link">החלפה</span></button>'}
   else{
     h+='<input type="search" id="sq" placeholder="חיפוש לפי שם" value="'+esc(P.q)+'" autocomplete="off"><div class="picklist" id="slist">'+stuList()+'</div>';
@@ -315,14 +315,18 @@ function renderParent(){
   h+='</section>';
   if(P.stu){
     const s=d.students.find(x=>x.n===P.stu)||{done:[]};
-    const left=d.teachers.filter(t=>!s.done.includes(t.tid));
+    const cnt=tid=>s.done.filter(x=>x===tid).length;
+    const left=d.teachers.filter(t=>P.sep?cnt(t.tid)<2:!cnt(t.tid));
+    const canSep=!P.sep&&d.teachers.some(t=>cnt(t.tid)===1);
     // שלב 2: פרטי ההורה
     h+='<section class="card box"><div class="step'+(pOk()?' dn':'')+'" id="pst2"><span class="n">'+(pOk()?'✓':'2')+'</span>פרטי ההורה</div><div class="grid2"><label class="f">שם ההורה<input type="text" id="pname" autocomplete="name" value="'+esc(P.parent)+'"></label>'+
       '<label class="f">טלפון נייד<input type="tel" id="pphone" inputmode="tel" autocomplete="tel" value="'+esc(P.phone)+'"></label></div>'+
       '<label class="check"><input type="checkbox" id="pcons"'+(P.consent?' checked':'')+'> מסכימים שהמחנך/ת ישלחו תזכורת בוואטסאפ למספר הזה</label></section>';
     // שלב 3: שעות
     h+='<section class="card box"><div class="step'+(nPick?' dn':'')+'"><span class="n">'+(nPick?'✓':'3')+'</span>בחירת שעה'+(d.teachers.length>1?' אצל כל מורה':'')+'</div>';
-    if(!left.length)h+='<div class="okbox">כבר נקבעו כל הפגישות של '+esc(P.stu)+'. '+(P.mine&&P.mine.items.some(i=>i.stu===P.stu)?'הן מופיעות למעלה.':'אם קבע אותן הורה אחר במשפחה, הקישור האישי נמצא אצלו.')+'</div>';
+    if(P.sep)h+='<div class="note">פגישה נפרדת להורה השני: כותבים את השם ואת הטלפון <b>של ההורה השני</b>. <button class="link" data-act="nosep">ביטול</button></div>';
+    else if(!left.length)h+='<div class="okbox">כבר נקבעו כל הפגישות של '+esc(P.stu)+'. '+(P.mine&&P.mine.items.some(i=>i.stu===P.stu)?'הן מופיעות למעלה.':'אם קבע אותן הורה אחר במשפחה, הקישור האישי נמצא אצלו.')+'</div>';
+    if(canSep)h+='<div class="small muted">ההורים נפגשים עם המורה בנפרד? <button class="link" data-act="sep">קביעת פגישה נפרדת להורה השני</button></div>';
     const busy=(P.mine&&P.mine.items||[]).map(i=>mins(i.t));
     left.forEach(t=>{const sel=P.picks[t.tid];
       const free=t.slots.filter(x=>x.free);
@@ -387,13 +391,15 @@ function parentClick(e){
   if(a==='demoreset')return demoReset();
   const keep=()=>{const n=document.getElementById('pname'),p=document.getElementById('pphone'),c=document.getElementById('pcons');if(n)P.parent=n.value;if(p)P.phone=p.value;if(c)P.consent=c.checked};
   if(a==='stu'){P.stu=b.dataset.n;P.picks={};renderParent();window.scrollTo({top:0,behavior:'smooth'})}
-  else if(a==='unstu'){keep();P.stu=null;P.picks={};renderParent()}
+  else if(a==='unstu'){keep();P.stu=null;P.sep=false;P.picks={};renderParent()}
   else if(a==='ptime'){keep();const tid=+b.dataset.tid;P.picks[tid]=b.dataset.id?{id:+b.dataset.id,t:b.dataset.t,tid}:null;renderParent()}
   else if(a==='pbook')parentBook();
   else if(a==='copylink')copy(b.dataset.l);
   else if(a==='icsall')downloadIcs(P.done.items,P.data.event);
   else if(a==='ics'){const it=P.mine.items.find(i=>i.id===+b.dataset.id);if(it)downloadIcs([it],P.mine.ev)}
-  else if(a==='another'){P.done=null;P.stu=null;P.picks={};P.q='';parentStart()}
+  else if(a==='another'){P.done=null;P.stu=null;P.sep=false;P.picks={};P.q='';parentStart()}
+  else if(a==='sep'){P.sep=true;P.picks={};P.parent='';P.phone='';renderParent()}
+  else if(a==='nosep'){P.sep=false;P.picks={};renderParent()}
   else if(a==='pcancel'){if(!confirm('לבטל את הפגישה?'))return;rpc('yh_cancel',{p_ptoken:b.dataset.tok,p_booking:+b.dataset.id}).then(()=>{toast('הפגישה בוטלה');parentStart()}).catch(x=>toast(errMsg(x)))}
 }
 
@@ -480,7 +486,8 @@ function slotRow(s){
   if(!b)return '<div class="slot free"><span class="tm">'+s.t+'</span><div class="who"><span class="muted">פנוי</span></div><div class="acts"><button class="btn sec xs" data-act="mbook" data-id="'+s.id+'">שיבוץ ידני</button><button class="btn sec xs" data-act="brk" data-id="'+s.id+'" data-v="1">הפסקה</button></div></div>';
   const st=b.no_show?'<span class="tag r">לא הגיע</span>':b.ended?'<span class="tag g">הסתיים</span>':b.started?'<span class="tag o">בפגישה</span>':'';
   const wa=b.phone?'https://wa.me/'+intlPhone(b.phone)+'?text='+encodeURIComponent(reminderText(s,b)):null;
-  return '<div class="slot taken"><span class="tm">'+s.t+'</span><div class="who"><b>'+esc(b.stu)+' <span class="small muted">· '+esc(b.cls)+'</span></b><span class="small muted">'+esc(b.parent)+(b.phone?' · <a href="tel:'+esc(b.phone)+'">'+esc(b.phone)+'</a>':'')+(b.by_staff?' · שובץ ע"י '+esc(b.by_staff):'')+'</span></div>'+st+
+  const sepN=S.d.slots.filter(y=>y.b&&y.tid===s.tid&&y.b.stu===b.stu&&y.b.cls===b.cls).length;
+  return '<div class="slot taken"><span class="tm">'+s.t+'</span><div class="who"><b>'+esc(b.stu)+' <span class="small muted">· '+esc(b.cls)+'</span></b><span class="small muted">'+esc(b.parent)+(b.phone?' · <a href="tel:'+esc(b.phone)+'">'+esc(b.phone)+'</a>':'')+(b.by_staff?' · שובץ ע"י '+esc(b.by_staff):'')+'</span></div>'+(sepN>1?'<span class="tag b" title="לתלמיד הזה שתי פגישות אצלך: כל הורה בנפרד">פגישה נפרדת</span>':'')+st+
     '<div class="acts">'+(wa?'<a class="btn wa xs" target="_blank" rel="noopener" href="'+esc(wa)+'"'+(b.consent?'':' title="ההורה לא אישר תזכורות"')+'>תזכורת בוואטסאפ</a>':'')+
     noteBtn(s,b)+'<button class="btn sec xs" data-act="move" data-id="'+b.id+'" data-tid="'+s.tid+'">הזזה</button><button class="btn bad xs" data-act="scancel" data-id="'+b.id+'">ביטול</button></div>'+noteLine(b)+'</div>';
 }

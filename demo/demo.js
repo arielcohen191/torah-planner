@@ -151,7 +151,7 @@
   const yhQueue=o=>o.slots.map(x=>({x,b:yhB(o,x.id)})).filter(z=>z.b).map(z=>({t:z.x.t,s:z.b.started,e:z.b.ended,n:z.b.no_show}));
   const yhRoom='כיתה '+CLS.replace("' ",'׳');
   function yhCheck(o,x,stu,ph,skip){if(!x)yhErr('no_slot');if(x.brk||yhB(o,x.id))yhErr('taken');if(!NAMES.includes(stu))yhErr('no_student');
-    if(o.bk.some(b=>b.stu===stu&&b!==skip))yhErr('already');
+    const prev=o.bk.filter(b=>b.stu===stu&&b!==skip);if(prev.length>=2)yhErr('already');if(prev.length===1&&(!ph||prev.some(b=>!b.phone||b.phone===ph)))yhErr('same_parent');
     const tm=s=>{const p=s.split(':');return +p[0]*60+ +p[1]};
     if(ph&&o.bk.some(b=>b!==skip&&b.phone===ph&&Math.abs(tm(o.slots.find(y=>y.id===b.slot).t)-tm(x.t))<o.ev.slot_min))yhErr('overlap')}
   function yhRpc(fn,a){const o=yh(),ev=o.ev;
@@ -179,7 +179,7 @@
         yhSave(o);return null}
       case 'yh_class':if(a.p_token!==YH_TOK)yhErr('bad_link');
         return {event:{title:ev.title,day:ev.day,slot_min:ev.slot_min,reg_open:ev.reg_open,reg_close:ev.reg_close,note:ev.note},cls:CLS,
-          students:NAMES.map(n=>({n,done:o.bk.some(b=>b.stu===n)?[YH_TID]:[]})),
+          students:NAMES.map(n=>({n,done:o.bk.filter(b=>b.stu===n).map(()=>YH_TID)})),
           teachers:[{tid:YH_TID,name:ME,gender:'m',room:yhRoom,homeroom:true,slots:o.slots.map(x=>({id:x.id,t:x.t,free:!x.brk&&!yhB(o,x.id)}))}]};
       case 'yh_book':{if(a.p_token!==YH_TOK)yhErr('bad_link');const ph=digits(a.p_pphone);if(!/^05\d{8}$/.test(ph))yhErr('bad_phone');if(!String(a.p_parent||'').trim())yhErr('no_parent');
         const picks=a.p_picks||[];if(!picks.length)yhErr('no_picks');if(picks.length>1)yhErr('two_same_teacher');
