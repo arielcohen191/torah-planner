@@ -23,7 +23,7 @@
     pending=of(url.replace(/\/rpc\/[A-Za-z0-9_]+/,'/rpc/mk_as_start'),Object.assign({},init,{body:JSON.stringify({p_phone:b.p_phone,p_pin:b.p_pin,p_target:a.phone})}))
       .then(function(r){return r.json()}).then(function(j){pending=null;
         if(j&&j.token){var c=get();if(c&&c.phone===a.phone){c.mk=j.token;set(c)}note='';bar();return j.token}
-        note=j&&j.error==='no_target'?'אין לו/לה גישה למפת הכיתה, ולכן מוצגת התצוגה שלך':j&&j.error==='forbidden'?'במפת הכיתה המצב פתוח רק למנהל המערכת, ולכן מוצגת התצוגה שלך':'';bar();return null})
+        note=j&&j.error==='no_target'?'אין לו/לה גישה למפת הכיתה, ולכן מוצגת התצוגה שלך':j&&j.error==='forbidden'?'במפת הכיתה המצב פתוח רק למנהל בית הספר ולמנהל המערכת, ולכן מוצגת התצוגה שלך':'';bar();return null})
       .catch(function(){pending=null;return null});
     return pending;
   }

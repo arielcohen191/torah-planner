@@ -956,7 +956,7 @@ function afterLogin(){
   document.getElementById("gate").hidden=true;
   document.getElementById("who").innerHTML=`<b>${esc(USER.name)}</b><small>${ROLE_HE[USER.role]||""}${USER.class_name?" · "+esc(USER.class_name):""}</small>`;
   document.querySelector('#nav [data-v="manage"]').hidden=!USER.can_manage;
-  {const b=document.getElementById("asBtn");if(b)b.hidden=!(USER.is_dev&&!(window.KR_AS&&KR_AS.get()))}
+  {const b=document.getElementById("asBtn");if(b)b.hidden=!((USER.is_dev||USER.role==="principal")&&!(window.KR_AS&&KR_AS.get()))}
   const meBtn=document.querySelector('#nav [data-v="me"]');meBtn.hidden=USER.role!=="principal";
   loadMyQ();
   const isMgmt=USER.role!=="teacher";

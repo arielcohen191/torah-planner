@@ -298,13 +298,14 @@ const H=()=>S.house==='mine'?{id:'mine',label:'השכבות שלי',layers:S.use
 const hid=k=>!!(S.user&&(S.user.hidden||[]).includes(k));
 const allowed=k=>!!(S.user&&S.user.tools.includes(k))&&!hid(k);
 const isDev=()=>!!(S.user&&(S.user.roles||[]).some(r=>r.id==='sysadmin'));
+const canAs=()=>!!(S.user&&(S.user.roles||[]).some(r=>r.id==='sysadmin'||r.id==='principal')); /* "בנעליים של": מנהל המערכת ומנהל בית הספר */
 const isStaff=()=>!!(S.user&&(S.user.staff||S.user.tools.length));
 /* שינוי תפקידים: מנהל הרשאות, וגם המנהל ומנהלות הבתים (רק תפקידים של אנשי צוות קיימים) */
 const ROLE_EDITORS=['principal','house_ab','house_gd','house_hv'];
 const canRoles=()=>!!(S.user&&(S.user.can_manage||(S.user.roles||[]).some(r=>ROLE_EDITORS.includes(r.id))));
 const rolesOnly=()=>!!(S.user&&!S.user.can_manage&&canRoles());
 const canSee=v=>!hid(v)&&canSee0(v);
-const canSee0=v=>v==='my'||v==='todo'||v==='maint'||v==='horim'||(v==='ped'&&(pedOk()||allowed('ped')))||(v==='pedm'&&pedCanMeet())||(v==='viewas'&&isDev())||(v==='home'||v==='prefs'?isStaff():false)||(v==='perms'?canRoles():v==='feedback'?isDev():allowed(v));
+const canSee0=v=>v==='my'||v==='todo'||v==='maint'||v==='horim'||(v==='ped'&&(pedOk()||allowed('ped')))||(v==='pedm'&&pedCanMeet())||(v==='viewas'&&canAs())||(v==='home'||v==='prefs'?isStaff():false)||(v==='perms'?canRoles():v==='feedback'?isDev():allowed(v));
 const clsIn=c=>{const h=H();return !h||h.layers.includes(String(c).trim()[0])};
 const layerLetters=t=>{t=String(t||'');const m=t.match(/\(([^)]+)\)/);return ((m?m[1]:t).match(/[א-ו]/g))||[]};
 const SUBJ={torah:'חומש',navi:'נביא',mishna:'משנה',gemara:'גמרא',halacha:'הלכה',math:'מתמטיקה',hebrew:'עברית',science:'מדעים',other:'אחר'};
@@ -383,7 +384,7 @@ async function loadAll(force){
   if(!allowed('sayarot'))S.say=null;if(!allowed('hespek'))S.plans=null;
   if(S.user&&!canSee(S.view))S.view=isStaff()?'home':'my';
   if(S.view==='perms'&&canRoles()&&!S.admin)await loadAdmin();
-  if(S.view==='viewas'&&isDev()&&!S.people)await loadPeople();
+  if(S.view==='viewas'&&canAs()&&!S.people)await loadPeople();
   if(isDev())await loadFb();
   S.loadedAt=new Date();
 }
@@ -1301,14 +1302,14 @@ function viewPerms(){
   r+='<details class="item ritem"'+(S.openRole==='new'?' open':'')+' data-role="new"><summary><span class="tx"><b>+ תפקיד חדש</b></span></summary>'+(S.openRole==='new'?roleForm({tools:[],layers:[]}):'')+'</details>';
   return h+panel('תפקידים: מה כל תפקיד רואה ומי ממלא אותו',r);
 }
-/* ---------- בנעליים של (מנהל מערכת בלבד) ---------- */
+/* ---------- בנעליים של (מנהל מערכת ומנהל בית הספר) ---------- */
 async function loadPeople(){try{S.people=await rpc('hanhala_dev_people',{p_phone:S.phone});S.peopleErr=null}catch(e){S.people=null;S.peopleErr='הרשימה לא נטענה. נסו לרענן.'}}
 function peopleList(){const q=(S.asQ||'').trim(),L=(S.people||[]).filter(p=>!q||p.name.includes(q)||(p.label||'').includes(q));
   const row=p=>'<button type="button" class="item task" data-act="as" data-v="'+esc(p.phone)+'"><span class="tx"><b>'+esc(p.name)+'</b><span class="small muted">'+esc(p.label||(p.staff?'בלי תפקיד':'מורה · הדף שלי בלבד'))+'</span></span><span class="tag grey">כניסה ←</span></button>';
   const st=L.filter(p=>p.staff),te=L.filter(p=>!p.staff);
   return (L.length?'':'<div class="empty">לא נמצא.</div>')+(st.length?'<div class="ghead k-purple">הנהלה ובעלי תפקידים<span>'+st.length+'</span></div>'+st.map(row).join(''):'')+(te.length?'<div class="ghead k-blue">מורים<span>'+te.length+'</span></div>'+te.map(row).join(''):'')}
 function viewAs(){
-  if(!isDev())return '<div class="note bad">המסך הזה פתוח רק למנהל המערכת.</div>';
+  if(!canAs())return '<div class="note bad">המסך הזה פתוח רק למנהל בית הספר ולמנהל המערכת.</div>';
   if(!S.people)return S.peopleErr?'<div class="note bad">'+esc(S.peopleErr)+'</div>':panel('אנשי צוות',skel);
   return panel('במי לצפות?','<p class="muted small" style="margin:0">הלוח ייפתח בדיוק כמו אצל איש הצוות: אותם מסכים, אותם נתונים ואותן הרשאות. במצב הזה לא נשמר שום שינוי. הוא נשאר פעיל בלוח, במילוי מקום, בתורנויות ובמפת הכיתה, גם אחרי רענון או סגירת הלשונית, עד שתלחצו "חזרה אליי".</p>'+
     '<div class="frow"><label>חיפוש לפי שם או תפקיד<input type="search" id="asQ" value="'+esc(S.asQ||'')+'" placeholder="למשל: גילה, מחנכת, רכזת" autocomplete="off"></label></div><div class="plist" id="asList">'+peopleList()+'</div>');
@@ -1397,7 +1398,7 @@ function trailHtml(){const T=trailPush().filter(k=>k==='home'||k.startsWith('w:'
   return '<nav class="trail" aria-label="דפים אחרונים"><span class="muted small">אחרונים:</span>'+T.map((k,i)=>i===T.length-1?'<b aria-current="page">'+esc(keyLabel(k))+'</b>':'<button type="button" data-act="trail" data-v="'+k+'">'+esc(keyLabel(k))+'</button><span class="sep" aria-hidden="true">‹</span>').join('')+'</nav>'}
 /* טלפון: סרגל תחתון עם 4 הכלים הראשונים לפי הסדר האישי, ו"עוד" */
 function navFlat(){const o=[];navModel().forEach(e=>e.f?e.items.forEach(x=>o.push(x)):o.push(e));return o}
-function extraBtns(){return (isStaff()?navBtn('prefs','התאמה אישית'):'')+(canRoles()?navBtn('perms','הרשאות'):'')+(isDev()?'<button type="button" data-go="viewas">'+ICON.my+'בנעליים של</button>':'')+(isDev()?'<button type="button" data-go="feedback">'+ICON.fb+'משובים'+(S.fbOpen?' ('+S.fbOpen+')':'')+'</button>':'')}
+function extraBtns(){return (isStaff()?navBtn('prefs','התאמה אישית'):'')+(canRoles()?navBtn('perms','הרשאות'):'')+(canAs()?'<button type="button" data-go="viewas">'+ICON.my+'בנעליים של</button>':'')+(isDev()?'<button type="button" data-go="feedback">'+ICON.fb+'משובים'+(S.fbOpen?' ('+S.fbOpen+')':'')+'</button>':'')}
 function tabbarHtml(){const F=navFlat(),top=F.slice(0,4),curIn=top.some(x=>x.k===S.view);
   let h='<nav class="tabbar" aria-label="תפריט מהיר">'+top.map(x=>navBtn(x.k,x.l)).join('')+'<button type="button" data-act="more"'+(!curIn?' aria-current="page"':'')+'>'+ICON.more+'עוד</button></nav>';
   if(S.more){const M=navModel();h+='<div class="sheet-bg" data-act="more-x"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="כל הכלים"><div class="sh-head"><b>כל הכלים</b><button type="button" class="btn sec sm" data-act="more-x">סגירה ✕</button></div>'+
@@ -1411,7 +1412,7 @@ function shell(inner){
    '<div class="spacer"></div>'+
    (isStaff()?'<button type="button" data-go="prefs"'+(S.view==='prefs'?' aria-current="page"':'')+'>'+ICON.prefs+'התאמה אישית</button>':'')+
    (canRoles()?'<button type="button" data-go="perms"'+(S.view==='perms'?' aria-current="page"':'')+'>'+ICON.perms+'הרשאות</button>':'')+
-   (isDev()?'<button type="button" data-go="viewas"'+(S.view==='viewas'?' aria-current="page"':'')+'>'+ICON.my+'בנעליים של</button>':'')+
+   (canAs()?'<button type="button" data-go="viewas"'+(S.view==='viewas'?' aria-current="page"':'')+'>'+ICON.my+'בנעליים של</button>':'')+
    (isDev()?'<button type="button" data-go="feedback"'+(S.view==='feedback'?' aria-current="page"':'')+'>'+ICON.fb+'משובים'+(S.fbOpen?'<span class="cnt" aria-label="'+S.fbOpen+' חדשים">'+S.fbOpen+'</span>':'')+'</button>':'')+
    '<div class="who">'+esc(S.user?S.user.name:'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+trailHtml()+inner+'</main></div>'+tabbarHtml();
 }
@@ -1518,7 +1519,7 @@ root.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');if(g){
     /* מהסרגל (או מהתפריט בטלפון) נכנסים ישר לכלי עצמו; מסך תמונת המצב נשאר נגיש מהאריחים */
     if(g.closest('nav.rail,.tabbar,.sheet')){const u=(VIEWS.find(v=>v[0]===g.dataset.go)||[])[2];if(u&&u[0]==='/'){location.href=u;return}}
-    S.focus=null;S.more=false;S.view=g.dataset.go;S.filter=0;S.saved=null;S.edit=null;S.confirmDel=null;S.adminErr=null;if(S.view==='perms'&&canRoles()){loadAdmin().then(render)}if(S.view==='feedback'&&isDev()){loadFb().then(render)}if(S.view==='viewas'&&isDev()&&!S.people){loadPeople().then(render)}history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
+    S.focus=null;S.more=false;S.view=g.dataset.go;S.filter=0;S.saved=null;S.edit=null;S.confirmDel=null;S.adminErr=null;if(S.view==='perms'&&canRoles()){loadAdmin().then(render)}if(S.view==='feedback'&&isDev()){loadFb().then(render)}if(S.view==='viewas'&&canAs()&&!S.people){loadPeople().then(render)}history.pushState(null,'',S.view==='home'?location.pathname:'#'+S.view);render();window.scrollTo(0,0);return}
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   if(a==='wfocus'){const v=b.dataset.v,off=S.view==='home'&&S.focus===v;S.view='home';S.focus=off?null:v;history.pushState(null,'',off?location.pathname:'#w-'+v);render();window.scrollTo(0,0);return}
   if(a==='trail'){const k=b.dataset.v;if(k.startsWith('w:')){S.view='home';S.focus=k.slice(2);history.pushState(null,'','#w-'+S.focus);render();window.scrollTo(0,0)}else{const x=document.createElement('button');x.dataset.go=k;x.hidden=true;root.appendChild(x);x.click()}return}
