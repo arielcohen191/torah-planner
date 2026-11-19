@@ -1065,15 +1065,32 @@ function pedRow(r){r=r||{};const nat=r.nature||'לימודי',own=r.owner||'מח
 function pedReadRows(){return [...document.querySelectorAll('#pedRows tr[data-row]')].map(tr=>{const g=n=>{const x=tr.querySelector('[name="'+n+'"]');return x?x.value.trim():''};
   const pend=tr.querySelector('.stuin').value.trim(),st=[...tr.querySelectorAll('.stuchip')].map(x=>x.dataset.n).concat(pend?[pend]:[]);
   return {nature:g('nature'),nature_other:g('nature_other'),students:st,answer:g('answer'),owner:g('owner'),owner_name:g('owner_name'),metric:g('metric'),due:g('due')}})}
+/* טיוטה אוטומטית לטופס ההחלטות: כל הקלדה נשמרת במכשיר (לכל משתמש בנפרד), והטופס נבנה ממנה גם אחרי רענון, מעבר מסך או חזרה ללשונית.
+   נמחקת רק כשכל השורות נשמרו בשרת, או בלחיצה על "מחיקת הטיוטה". לא נשמרת במצב "בנעליים של". */
+const pedDraftKey=()=>'hh_ped_draft_'+S.phone;
+function pedDraftGet(){try{const d=JSON.parse(localStorage.getItem(pedDraftKey())||'null');return d&&Array.isArray(d.rows)&&d.rows.some(r=>r.answer||r.metric||r.nature_other||r.owner_name||(r.students||[]).length)?d:null}catch(e){return null}}
+function pedDraftClear(){try{localStorage.removeItem(pedDraftKey())}catch(e){}}
+let pedDraftT=null;
+function pedDraftSave(){clearTimeout(pedDraftT);pedDraftT=setTimeout(pedDraftNow,400)}
+function pedDraftNow(){clearTimeout(pedDraftT);{if(S.realPhone||S.pedNoDraft)return;const f=root.querySelector('form[data-form="ped-dec"]');if(!f)return;
+  const rows=pedReadRows().map(r=>{delete r.err;return r}),d={cls:(f.querySelector('#pedCls')||{}).value||'',mo:(f.querySelector('#pedMeetOn')||{}).value||'',rows,at:Date.now()};
+  try{if(rows.some(r=>r.answer||r.metric||r.nature_other||r.owner_name||r.students.length))localStorage.setItem(pedDraftKey(),JSON.stringify(d));else localStorage.removeItem(pedDraftKey())}catch(e){}
+  const n=f.querySelector('#pedDraftSt');if(n)n.textContent='✓ הטיוטה נשמרה במכשיר '+pad(new Date().getHours())+':'+pad(new Date().getMinutes())}}
 function pedDecForm(){
+  /* הטופס כבר פתוח (רענון/חזרה ללשונית): קודם שומרים מה שמוקלד, ואז בונים ממנו. פתיחה חדשה: ממשיכים מהטיוטה ומציגים הודעה */
+  const after=S.pedNoDraft,live=!!root.querySelector('form[data-form="ped-dec"]')&&!after;if(live)pedDraftNow();S.pedNoDraft=false;
+  const d=S.realPhone?null:pedDraftGet(),errs=(S.pedKeep||[]).some(r=>r.err);
+  if(d&&!live&&!after){if(d.cls)S.pedCls=d.cls;if(d.mo)S.pedMeetOn=d.mo;S.pedDraftAt=d.at}
   const P=S.ped,c=S.pedCls&&P.classes.includes(S.pedCls)?S.pedCls:(P.me.homeroom[0]||P.classes[0]||'');
-  const rows=S.pedKeep&&S.pedKeep.length?S.pedKeep:[{},{},{}];
+  const rows=errs?S.pedKeep:d?d.rows:S.pedKeep&&S.pedKeep.length?S.pedKeep:[{},{},{}];
   return '<form class="card" data-form="ped-dec" style="padding:20px;display:flex;flex-direction:column;gap:14px;border:2px solid var(--brand)">'+
     '<h3 style="margin:0;font-size:19px">החלטות מהישיבה · שורה לכל החלטה</h3>'+
+    (S.pedDraftAt?'<div class="note" role="status" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between"><span>המשכת מטיוטה שנשמרה '+(()=>{const t=new Date(S.pedDraftAt);return t.getDate()+'.'+(t.getMonth()+1)+' '+pad(t.getHours())+':'+pad(t.getMinutes())})()+'. ההחלטות עוד לא נשמרו בשרת.</span><button type="button" class="btn sec sm" data-act="ped-draft-x">מחיקת הטיוטה</button></div>':'')+
     '<div class="frow" style="max-width:560px"><label>שם הכיתה<select name="class" id="pedCls">'+P.classes.map(x=>'<option value="'+esc(x)+'"'+(x===c?' selected':'')+'>'+esc(cls(x))+'</option>').join('')+'</select></label><label>תאריך הישיבה<input type="date" id="pedMeetOn" value="'+(S.pedMeetOn||today())+'" max="'+today()+'"></label></div>'+
     '<div id="pedDLs">'+pedClassDL(c)+'</div>'+
     '<div class="ttwrap"><table class="pt"><thead><tr><th>מהות הצורך</th><th>תלמידים <span class="muted">(ריק = כיתתי)</span></th><th>מענה מוצע</th><th>גורם אחראי</th><th>מדד הצלחה</th><th>יעד לבקרה</th><th></th></tr></thead><tbody id="pedRows">'+rows.map(pedRow).join('')+'</tbody></table></div>'+
-    '<p class="small muted" style="margin:0">שורה בלי מענה לא נשמרת. לכל תלמיד: מקלידים, בוחרים מהרשימה, ואפשר להוסיף עוד.</p>'+
+    '<p class="small muted" style="margin:0">שורה בלי מענה לא נשמרת. לכל תלמיד: מקלידים, בוחרים מהרשימה, ואפשר להוסיף עוד. מה שמוקלד נשמר אוטומטית כטיוטה במכשיר הזה, עד שלוחצים "שמירת ההחלטות".</p>'+
+    '<div class="small muted" id="pedDraftSt" aria-live="polite"></div>'+
     (S.pedErr?'<div class="note bad" role="alert">'+esc(S.pedErr)+'</div>':'')+
     '<div class="chips"><button type="button" class="btn sec" data-act="ped-addrow">＋ שורה</button><button class="btn"'+(S.pedBusy?' disabled':'')+'>'+(S.pedBusy?'שומר…':'שמירת ההחלטות')+'</button><button type="button" class="btn sec" data-act="ped-new" data-v="0">סגירה</button></div></form>';
 }
@@ -1087,7 +1104,8 @@ async function pedSaveRows(f){
   const failed=[];let ok=0;
   for(const r of rows){try{await rpc('ped_save_decision',{p_phone:S.phone,p:{class:c,nature:r.nature,nature_other:r.nature_other,scope:r.students.length?'student':'class',students:r.students,answer:r.answer,owner:r.owner,owner_name:r.owner_name,metric:r.metric,meeting_on:mo,due:r.due}});ok++}
     catch(e){failed.push(Object.assign({},r,{err:PED_ERR[e.message]||'לא נשמרה'}))}}
-  await loadPed();S.pedBusy=false;S.pedKeep=failed;
+  await loadPed();S.pedBusy=false;S.pedKeep=failed;S.pedDraftAt=null;S.pedNoDraft=true;
+  if(failed.length){try{localStorage.setItem(pedDraftKey(),JSON.stringify({cls:c,mo,rows:failed.map(r=>{const x=Object.assign({},r);delete x.err;return x}),at:Date.now()}))}catch(e){}}else pedDraftClear();
   S.pedMsg=ok?plural(ok,'החלטה אחת נשמרה','החלטות נשמרו')+' ל'+cls(c)+'.':null;S.pedErr=failed.length?plural(failed.length,'שורה אחת לא נשמרה','שורות לא נשמרו')+'. אפשר לתקן ולשמור שוב.':null;
   render();
 }
@@ -1502,6 +1520,10 @@ root.addEventListener('click',e=>{
 },true);
 root.addEventListener('keydown',e=>{const T=e.target;if(e.key==='Enter'&&T.classList&&T.classList.contains('stuin')){e.preventDefault();const v=T.value.trim();if(v){const box=T.parentNode.querySelector('.stuchips');if(![...box.children].some(c=>c.dataset.n===v))box.insertAdjacentHTML('beforeend',stuChip(v));T.value=''}}});
 root.addEventListener('input',e=>{const T=e.target;if(T.classList&&T.classList.contains('stuin')){const v=T.value.trim(),L=(S.ped.students||{})[S.pedCls||(document.getElementById('pedCls')||{}).value]||[];if(v&&L.includes(v)){const box=T.parentNode.querySelector('.stuchips');if(![...box.children].some(c=>c.dataset.n===v))box.insertAdjacentHTML('beforeend',stuChip(v));T.value=''}return}if(T.id==='pedQ'){S.pedQ=T.value;return pedFilterDom(T,'pedList')}if(T.id==='pedMQ')return pedFilterDom(T,'pedMList');if(T.id==='pedPQ')return pedFilterDom(T,'pedPList');if(e.target.id==='asQ'){S.asQ=e.target.value;const l=document.getElementById('asList');if(l)l.innerHTML=peopleList()}});
+window.addEventListener('pagehide',()=>pedDraftNow());document.addEventListener('visibilitychange',()=>{if(document.hidden)pedDraftNow()});
+['input','change'].forEach(ev=>root.addEventListener(ev,e=>{if(e.target.closest&&e.target.closest('form[data-form="ped-dec"]'))pedDraftSave()}));
+root.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-act]');if(b&&/^ped-(addrow|delrow|unstu)$/.test(b.dataset.act))setTimeout(pedDraftSave,0)});
+root.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('stuin'))setTimeout(pedDraftSave,0)});
 document.addEventListener('toggle',e=>{const d=e.target;if(d.classList&&d.classList.contains('navf')){try{localStorage.setItem('hh_nav_'+d.dataset.f,d.open?'1':'0')}catch(x){}}},true);
 root.addEventListener('change',e=>{
   const t=e.target;
@@ -1579,7 +1601,8 @@ root.addEventListener('click',e=>{
   if(a==='ped-del-yes'){S.pedDel=null;return pedDo('ped_update_decision',{p_id:+b.dataset.id,p:{delete:true}},'ההחלטה נמחקה.')}
   if(a==='ped-delrow'){const tr=b.closest('tr'),body=tr.parentNode;tr.remove();if(!body.children.length)body.insertAdjacentHTML('beforeend',pedRow({}));return}
   if(a==='ped-unstu'){b.closest('.stuchip').remove();return}
-  if(a==='ped-new'){S.pedNew=b.dataset.v==='0'?null:b.dataset.v;S.pedMsg=null;S.pedErr=null;S.pedKeep=null;return render()}
+  if(a==='ped-new'){if(b.dataset.v==='0')pedDraftNow();S.pedNew=b.dataset.v==='0'?null:b.dataset.v;S.pedMsg=null;S.pedErr=null;S.pedKeep=null;S.pedDraftAt=null;return render()}
+  if(a==='ped-draft-x'){pedDraftClear();clearTimeout(pedDraftT);S.pedNoDraft=true;S.pedKeep=null;S.pedDraftAt=null;S.pedCls=null;S.pedMeetOn=null;return render()}
   if(a==='ped-f'){S.pedF=Object.assign({},S.pedF,{q:(S.pedF||{}).q===b.dataset.v?'':b.dataset.v});return render()}
   if(a==='ped-seen'){pedDo('ped_meeting_seen',{p_id:+b.dataset.id},'סומן שראית.');return}
   if(a==='todo-done'){const t=(S.todo||[]).find(x=>x.id===+b.dataset.id);if(!t)return;
