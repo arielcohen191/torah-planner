@@ -516,6 +516,9 @@ function dailyText(){
   L.push('','תודה לכל המורים שנענו בשמחה לסייע.');return L.join('\n')}
 function modalHtml(){
   const M=S.modal;
+  if(M.kind==='notice'){const n=M.n,fmt=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+    return '<div class="overlay"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">'+esc(n.title)+'</div><div class="mbody" style="font-size:18px;line-height:1.6">'+
+     n.body.map(p=>'<p style="margin:0">'+fmt(p)+'</p>').join('')+'</div><div class="mfoot"><button class="btn ok" data-act="noticeok" autofocus>הבנתי, תודה</button></div></div></div>'}
   if(M.kind==='daily'){const pend=openItems(S.date).filter(i=>i.status==='open'||i.status==='asking').length;
     return '<div class="overlay" data-act="mclose"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">הודעה לקבוצת הצוות</div><div class="mbody">'+
      (pend?'<div class="warn">שימו לב: עוד <b>'+pend+'</b> שיעורים בלי מחליף. בהודעה הם יופיעו כ"טרם שובץ".</div>':'')+
@@ -587,6 +590,7 @@ function logout(msg){S.phone=null;S.data=null;try{localStorage.removeItem('milui
 async function saveTeacher(id){const g=f=>{const el=root.querySelector('[data-f="'+f+'"][data-id="'+id+'"]');return el?(el.value.trim()||null):null};
   const t=S.data.T[id];t.phone=g('phone');t.email=g('email');t.nick=g('nick');
   try{await rpc('milui_save_teacher',{p_phone:S.phone,p:{id,phone:t.phone,email:t.email,channel:t.channel,gender:t.gender||'',nick:t.nick||''}});toast('נשמר: '+t.name)}catch(e){handleErr(e)}}
+async function checkNotices(){try{const l=await rpc('milui_notices_get',{p_phone:S.phone});S.notices=l||[];if(S.notices.length&&!S.modal){S.modal={kind:'notice',n:S.notices[0]};render()}}catch(e){}}
 async function setSlot(p){await rpc('milui_set_slot',{p_phone:S.phone,p})}
 function absFor(slotId){const it=openItems(S.date).find(i=>i.slot.id===slotId);return it?it.abs.id:null}
 
@@ -595,7 +599,7 @@ root.addEventListener('submit',async e=>{
   if(e.target.id==='loginForm'){
     const ph=e.target.querySelector('#ph').value;
     try{const n=await rpc('milui_login',{p_phone:ph});if(!n){renderLogin('המספר הזה לא מורשה להיכנס.');return}
-      S.phone=ph;try{localStorage.setItem('milui_phone',ph)}catch(x){};await load(true);render()}catch(x){renderLogin('אין חיבור לשרת. נסו שוב.')}
+      S.phone=ph;try{localStorage.setItem('milui_phone',ph)}catch(x){};await load(true);render();checkNotices()}catch(x){renderLogin('אין חיבור לשרת. נסו שוב.')}
   }
   if(e.target.id==='extForm'){
     const f=new FormData(e.target),name=(f.get('name')||'').trim();if(!name)return;
@@ -641,6 +645,8 @@ root.addEventListener('click',async e=>{
    case 'mpick':S.modal.date=b.dataset.d;render();break;
    case 'mclose':if(e.target!==b)return;S.modal=null;render();break;
    case 'mcancel':S.modal=null;render();break;
+   case 'noticeok':{const id=S.modal.n.id;S.notices=(S.notices||[]).filter(x=>x.id!==id);S.modal=S.notices.length?{kind:'notice',n:S.notices[0]}:null;render();
+     rpc('milui_notice_seen',{p_phone:S.phone,p_id:id}).catch(()=>{});break}
    case 'daily':S.modal={kind:'daily',text:dailyText()};render();break;
    case 'dailywa':{const t=root.querySelector('#dailyTxt');if(t){S.modal.text=t.value;b.href='https://wa.me/?text='+encodeURIComponent(t.value)}toast('בוואטסאפ: בחרו את קבוצת הצוות ושלחו');break}
    case 'dailycopy':{const t=root.querySelector('#dailyTxt');try{await navigator.clipboard.writeText(t.value);toast('ההודעה הועתקה. הדביקו בקבוצת הצוות')}catch(x){t.select();toast('סמנו והעתיקו ידנית')}break}
@@ -696,7 +702,7 @@ root.addEventListener('change',async e=>{const t=e.target,a=t.dataset.act;
     try{await rpc('milui_set_comp',{p_phone:S.phone,p_id:r.id,p_type:r.comp_type,p_note:r.comp_note,p_done:r.comp_done});toast('נשמר')}catch(x){handleErr(x)}}
 });
 
-(async()=>{if(!S.phone){renderLogin();return}try{await load(true);render()}catch(e){if(e.message==='no_access')logout('המספר הזה לא מורשה להיכנס.');else root.innerHTML='<div class="loading">אין חיבור לשרת. רעננו את הדף.</div>'}})();
+(async()=>{if(!S.phone){renderLogin();return}try{await load(true);render();checkNotices()}catch(e){if(e.message==='no_access')logout('המספר הזה לא מורשה להיכנס.');else root.innerHTML='<div class="loading">אין חיבור לשרת. רעננו את הדף.</div>'}})();
 </script>
 <script src="/feedback/badge.js" defer></script>
 </body>
