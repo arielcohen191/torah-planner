@@ -140,8 +140,10 @@
   const YH_TTOK=YH_T.filter(t=>t.tok).map(t=>t.tok);
   const yhT=tid=>YH_T.find(t=>t.tid===tid);
   function yhFresh(){
-    const ev={id:1,title:'יום הורים',day:TODAY,t_start:'16:00',t_end:'20:00',slot_min:10,gap_min:0,reg_open:true,reg_close:null,note:'אפשר לקבוע עד יום לפני. ביום עצמו תראו בקישור האישי כמה לפניכם בתור.'};
-    const slots=[];YH_T.forEach(t=>{for(let i=0;i<24;i++){const m=16*60+i*10;slots.push({id:(t.tid-1)*100+i+1,tid:t.tid,t:pad(Math.floor(m/60))+':'+pad(m%60),brk:t.tid===1&&i===12})}});
+    /* ההדגמה מתחילה כ־40 דקות לפני עכשיו, כדי שהתור החי ייראה אמיתי בכל שעה */
+    const nw=new Date(),S0=Math.min(19*60+50,Math.max(8*60,Math.floor((nw.getHours()*60+nw.getMinutes()-40)/10)*10)),hhmm=m=>pad(Math.floor(m/60))+':'+pad(m%60);
+    const ev={id:1,title:'יום הורים',day:TODAY,t_start:hhmm(S0),t_end:hhmm(S0+240),slot_min:10,gap_min:0,reg_open:true,reg_close:null,note:'אפשר לקבוע עד יום לפני. ביום עצמו תראו בקישור האישי כמה לפניכם בתור.'};
+    const slots=[];YH_T.forEach(t=>{for(let i=0;i<24;i++){const m=S0+i*10;slots.push({id:(t.tid-1)*100+i+1,tid:t.tid,t:pad(Math.floor(m/60))+':'+pad(m%60),brk:t.tid===1&&i===12})}});
     const DADS=['יוסף','משה','אברהם','דוד','שמעון','יעקב','אליהו','מאיר','חיים','בנימין','שלמה','אהרון'],MOMS=['רחל','שרה','מיכל','אסתר','חנה','רבקה','נעמה','תמר'];
     const NOTES={0:'קורא יפה. סוכם על ספר קריאה לחופשה.',1:'ביקשו לעקוב אחרי הכנת שיעורי הבית. נשוחח שוב בעוד חודש.',2:'הוצע להצטרף לחוג המתמטיקה.'};
     const bk=[],free=new Set([9,19]);let k=0,id=0;const par=[];
@@ -154,8 +156,8 @@
     const sub=(tid,ks,from)=>ks.forEach((kk,j)=>{const x=slots.find(y=>y.tid===tid&&y.id===(tid-1)*100+from+j*2+1);
       bk.push({id:++id,slot:x.id,cls:CLS,stu:NAMES[kk],parent:par[kk],phone:'05'+(20000101+kk),consent:true,ptoken:'demo-p'+kk,by_staff:null,started:null,ended:null,no_show:false,note:null})});
     sub(2,[0,1,2,4,5,8,11,14],8);sub(3,[3,6,7,10,13,15],0);
-    return {v:TODAY+'.2',ev,slots,bk,nid:id,ntok:100}}
-  function yh(){let o=null;try{o=JSON.parse(localStorage.getItem(YH_KEY)||'null')}catch(e){}if(!o||o.v!==TODAY+'.2'){o=yhFresh();yhSave(o)}return o}
+    return {v:TODAY+'.2',at:Date.now(),ev,slots,bk,nid:id,ntok:100}}
+  function yh(){let o=null;try{o=JSON.parse(localStorage.getItem(YH_KEY)||'null')}catch(e){}if(!o||o.v!==TODAY+'.2'||!(Date.now()-o.at<3*3600e3)){o=yhFresh();yhSave(o)}return o}
   function yhSave(o){try{localStorage.setItem(YH_KEY,JSON.stringify(o))}catch(e){}}
   const yhErr=c=>{throw new Error(c)};
   const yhB=(o,sid)=>o.bk.find(b=>b.slot===sid);
