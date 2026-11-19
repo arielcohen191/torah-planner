@@ -148,13 +148,14 @@
     slots.filter(x=>x.tid===1).forEach((x,i)=>{if(x.brk||free.has(i)||k>=21)return;const n=NAMES[k],last=n.split(' ').slice(1).join(' ');par[k]=(k%3===1?MOMS[k%MOMS.length]:DADS[k%DADS.length])+' '+last;
       const b={id:++id,slot:x.id,cls:CLS,stu:n,parent:par[k],phone:'05'+(20000101+k),consent:k%7!==4,ptoken:'demo-p'+k,by_staff:k===6?ME:null,started:null,ended:null,no_show:false,note:NOTES[k]||null};
       if(k<3){const st=new Date(TODAY+'T'+x.t+':00');st.setMinutes(st.getMinutes()+k*2+1);const en=new Date(st);en.setMinutes(en.getMinutes()+10);b.started=st.toISOString();b.ended=en.toISOString()}
+      if(k===3){const st=new Date(TODAY+'T'+x.t+':00');st.setMinutes(st.getMinutes()+7);b.started=st.toISOString()} // בפנים עכשיו
       bk.push(b);k++});
     // מורים מקצועיים: חלק מההורים קבעו גם אצלם, בשעות שלא מתנגשות עם המחנך
     const sub=(tid,ks,from)=>ks.forEach((kk,j)=>{const x=slots.find(y=>y.tid===tid&&y.id===(tid-1)*100+from+j*2+1);
       bk.push({id:++id,slot:x.id,cls:CLS,stu:NAMES[kk],parent:par[kk],phone:'05'+(20000101+kk),consent:true,ptoken:'demo-p'+kk,by_staff:null,started:null,ended:null,no_show:false,note:null})});
     sub(2,[0,1,2,4,5,8,11,14],8);sub(3,[3,6,7,10,13,15],0);
-    return {v:TODAY,ev,slots,bk,nid:id,ntok:100}}
-  function yh(){let o=null;try{o=JSON.parse(localStorage.getItem(YH_KEY)||'null')}catch(e){}if(!o||o.v!==TODAY){o=yhFresh();yhSave(o)}return o}
+    return {v:TODAY+'.2',ev,slots,bk,nid:id,ntok:100}}
+  function yh(){let o=null;try{o=JSON.parse(localStorage.getItem(YH_KEY)||'null')}catch(e){}if(!o||o.v!==TODAY+'.2'){o=yhFresh();yhSave(o)}return o}
   function yhSave(o){try{localStorage.setItem(YH_KEY,JSON.stringify(o))}catch(e){}}
   const yhErr=c=>{throw new Error(c)};
   const yhB=(o,sid)=>o.bk.find(b=>b.slot===sid);
