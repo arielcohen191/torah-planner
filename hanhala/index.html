@@ -1112,7 +1112,7 @@ async function pedSaveRows(f){
 const PED_WITH=['מנהלת','יועצת','מחנכ/ת','אחר'];
 function pedMeetForm(){
   const P=S.ped,hr=P.homerooms||[];
-  return '<form class="card" data-form="ped-meet" style="padding:20px;display:flex;flex-direction:column;gap:14px;border:2px solid var(--brand)">'+
+  return '<form class="card" data-form="ped-meet" data-keep style="padding:20px;display:flex;flex-direction:column;gap:14px;border:2px solid var(--brand)">'+
     '<h3 style="margin:0;font-size:19px">תיעוד פגישה עם מחנך/ת · דקה וחצי</h3>'+
     '<datalist id="pedHrDL">'+hr.map(h=>'<option value="'+esc(h.teacher+' · '+cls(h.class))+'">').join('')+'</datalist>'+
     '<div class="frow"><label>תאריך המפגש<input type="date" name="met_on" required value="'+today()+'" max="'+today()+'"></label>'+
@@ -1446,7 +1446,14 @@ function shell(inner){
    '<button type="button" onclick="window.KFB&&KFB.mine()">'+ICON.fb+'פניות המשוב שלי</button>'+
    '<div class="who">'+esc(S.user?S.user.name:'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+'</main></div>'+tabbarHtml();
 }
-function render(){
+/* טפסים עם data-keep שומרים את מה שהוקלד כשהמסך נבנה מחדש (שמירה, שגיאה, רענון אוטומטי). משוב #48: שגיאת שמירה מחקה את כל הטופס */
+function formsSnap(){return [...root.querySelectorAll('form[data-keep]')].map(f=>({k:f.dataset.form,v:[...f.elements].filter(e=>e.name).map(e=>e.type==='checkbox'||e.type==='radio'?[e.name,e.value,e.checked]:[e.name,null,e.value])}))}
+function formsRestore(snap){snap.forEach(x=>{const f=root.querySelector('form[data-keep][data-form="'+x.k+'"]');if(!f)return;const used={};
+  x.v.forEach(([n,val,st])=>{const L=[...f.elements].filter(e=>e.name===n);
+    if(val!==null){const e=L.find(e=>e.value===val);if(e&&e.checked!==st){e.checked=st;e.dispatchEvent(new Event('change',{bubbles:true}))}}
+    else{const i=used[n]||0;used[n]=i+1;const e=L.filter(e=>e.type!=='checkbox'&&e.type!=='radio')[i];if(e&&st!=='')e.value=st}})})}
+function render(){const snap=formsSnap();render0();if(snap.length)formsRestore(snap)}
+function render0(){
   if(!S.phone)return renderLogin();
   if(!S.user){root.innerHTML=S.err.data?'<div class="login"><div class="card"><h1>לוח הנהלה</h1><div class="err">אין חיבור לשרת כרגע.</div><button class="btn wide" data-act="refresh">ניסיון נוסף</button></div></div>':'<div class="loading">טוען…</div>';return}
   const isToday=S.date===schoolDay(today()),hol=holiday(S.date),v=viewOf(S.view),setv=S.view==='prefs'||S.view==='perms'||S.view==='feedback'||S.view==='viewas'||S.view==='ped'||S.view==='pedm'||S.view==='todo'||S.view==='tasks'||S.view==='maint';
