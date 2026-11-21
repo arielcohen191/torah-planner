@@ -1356,8 +1356,8 @@ const fbOpenList=()=>(S.fb||[]).filter(x=>x.status!=='done');
 const fbDate=x=>{const dt=new Date(x.created_at);return dt.getDate()+'.'+(dt.getMonth()+1)+' '+pad(dt.getHours())+':'+pad(dt.getMinutes())};
 /* דוח משובים פתוחים, מסודר לפי דחיפות ובתוכה לפי כלי. Markdown, להעלאה לקלוד. */
 function fbReport(){
-  const list=fbOpenList(),d=new Date(),L=[];
-  L.push('# דוח משובים · כנפי רוח','','הופק: '+d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes())+' · '+list.length+' משובים פתוחים','');
+  const tool=S.fbTool&&fbOpenList().some(x=>x.tool===S.fbTool)?S.fbTool:null,list=fbOpenList().filter(x=>!tool||x.tool===tool),d=new Date(),L=[];
+  L.push('# דוח משובים · כנפי רוח'+(tool?' · '+tool:''),'','הופק: '+d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes())+' · '+list.length+' משובים פתוחים','');
   L.push('| דחיפות | כמות |','|---|---|');
   [1,2,3,0].forEach(u=>L.push('| '+(u?FBU[u][0]:'לא דורג')+' | '+list.filter(x=>(x.urgency||0)===u).length+' |'));
   L.push('','| גודל | כמות |','|---|---|');[1,2,3,0].forEach(z=>L.push('| '+(z?FBZ[z]:'לא הוגדר')+' | '+list.filter(x=>(x.size||0)===z).length+' |'));
@@ -1385,6 +1385,10 @@ function viewFeedback(){
   if(S.fbErr)h+='<div class="note bad" role="alert">'+esc(S.fbErr)+'</div>';
   h+='<section class="card tool"><div class="thead"><h2>דוח משובים</h2></div><div class="tbody"><div class="small muted">'+
     (open.length?open.length+' משובים פתוחים'+(unr?', מתוכם '+unr+' עוד לא דורגו':', כולם דורגו')+'. הדוח מסודר לפי דחיפות ואז לפי כלי, ובכל כלי הקטנים קודם.':'אין משובים פתוחים, אין מה להפיק.')+'</div>'+
+    (()=>{const tools=[...new Set(open.map(x=>x.tool))].sort((a,b)=>a.localeCompare(b,'he'));if(tools.length<2){S.fbTool=null;return ''}if(S.fbTool&&!tools.includes(S.fbTool))S.fbTool=null;
+      return '<div class="chips" role="group" aria-label="דוח לכלי" style="margin-top:10px"><span class="small muted">דוח עבור:</span>'+
+        '<button class="btn sec sm" data-act="fb-tool" data-v="" aria-pressed="'+!S.fbTool+'">כל הכלים ('+open.length+')</button>'+
+        tools.map(t=>'<button class="btn sec sm" data-act="fb-tool" data-v="'+esc(t)+'" aria-pressed="'+(S.fbTool===t)+'">'+esc(t)+' ('+open.filter(x=>x.tool===t).length+')</button>').join('')+'</div>'})()+
     '<div class="chips" style="margin-top:10px"><button class="btn sm" data-act="fb-report" data-v="file"'+(open.length?'':' disabled')+'>הורדת דוח</button>'+
     '<button class="btn sec sm" data-act="fb-report" data-v="copy"'+(open.length?'':' disabled')+'>העתקת הדוח</button>'+
     (S.fbMsg?'<span class="small" role="status">'+esc(S.fbMsg)+'</span>':'')+'</div></div></section>';
@@ -1597,9 +1601,10 @@ root.addEventListener('click',e=>{
   if((a==='fb-set'||a==='fb-urg'||a==='fb-size')&&S.realPhone){S.fbErr=VIEWONLY;return render()}
   if(a==='fb-urg'){const f=(S.fb||[]).find(x=>x.id===+b.dataset.id),v=+b.dataset.v;if(f){const was={urgency:f.urgency,dev_note:f.dev_note,size:f.size};f.urgency=f.urgency===v?null:v;S.fbErr=null;S.fbMsg=null;render();fbSave(f,was)}return}
   if(a==='fb-size'){const f=(S.fb||[]).find(x=>x.id===+b.dataset.id),v=+b.dataset.v;if(f){const was={urgency:f.urgency,dev_note:f.dev_note,size:f.size};f.size=f.size===v?null:v;S.fbErr=null;S.fbMsg=null;render();fbSave(f,was)}return}
+  if(a==='fb-tool'){S.fbTool=b.dataset.v||null;S.fbMsg=null;return render()}
   if(a==='fb-report'){const txt=fbReport();
-    if(b.dataset.v==='copy'){navigator.clipboard.writeText(txt).then(()=>{S.fbMsg='הדוח הועתק.';render()},()=>{S.fbMsg='ההעתקה נכשלה. אפשר להוריד את הדוח כקובץ.';render()});return}
-    const u=URL.createObjectURL(new Blob([txt],{type:'text/markdown;charset=utf-8'})),l=document.createElement('a');l.href=u;l.download='mashov-kanfei-ruach-'+today()+'.md';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);
+    if(b.dataset.v==='copy'){navigator.clipboard.writeText(txt).then(()=>{S.fbMsg='הדוח'+(S.fbTool?' של '+S.fbTool:'')+' הועתק.';render()},()=>{S.fbMsg='ההעתקה נכשלה. אפשר להוריד את הדוח כקובץ.';render()});return}
+    const u=URL.createObjectURL(new Blob([txt],{type:'text/markdown;charset=utf-8'})),l=document.createElement('a');l.href=u;l.download='mashov-kanfei-ruach-'+(S.fbTool?S.fbTool.replace(/\s+/g,'-')+'-':'')+today()+'.md';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);
     S.fbMsg='הדוח ירד כקובץ.';return render()}
   if(a==='fb-set'){const id=+b.dataset.id,st=b.dataset.v,f=(S.fb||[]).find(x=>x.id===id);if(f){const was=f.status;f.status=st;S.fbErr=null;S.fbOpen=(S.fb||[]).filter(x=>x.status==='new').length;render();
     rpc('hanhala_feedback_set',{p_phone:S.phone,p_id:id,p_status:st}).catch(e=>{console.error(e);f.status=was;S.fbOpen=(S.fb||[]).filter(x=>x.status==='new').length;S.fbErr='העדכון לא נשמר. נסו שוב.';render()})}return}
