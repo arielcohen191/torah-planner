@@ -1447,8 +1447,12 @@ function shell(inner){
    '<div class="who">'+esc(S.user?S.user.name:'')+'<br><button class="link" style="color:#c9d3de;font-size:13px" data-act="logout">יציאה</button></div></nav><main>'+inner+'</main></div>'+tabbarHtml();
 }
 /* טפסים עם data-keep שומרים את מה שהוקלד כשהמסך נבנה מחדש (שמירה, שגיאה, רענון אוטומטי). משוב #48: שגיאת שמירה מחקה את כל הטופס */
-function formsSnap(){return [...root.querySelectorAll('form[data-keep]')].map(f=>({k:f.dataset.form,v:[...f.elements].filter(e=>e.name).map(e=>e.type==='checkbox'||e.type==='radio'?[e.name,e.value,e.checked]:[e.name,null,e.value])}))}
-function formsRestore(snap){snap.forEach(x=>{const f=root.querySelector('form[data-keep][data-form="'+x.k+'"]');if(!f)return;const used={};
+/* כל טופס פתוח שומר את מה שהוקלד כשהמסך נבנה מחדש (רענון אוטומטי). אחרי שליחה — רק טפסים עם data-keep (שנסגרים בהצלחה) משוחזרים, כדי שטופס שנשאר פתוח לא יתמלא שוב בערכים שכבר נשמרו */
+const KEEP_SEL='form[data-form]:not([data-form="ped-dec"])',sentForms=new Set();
+root.addEventListener('submit',e=>{const k=e.target.dataset&&e.target.dataset.form;if(k&&!e.target.hasAttribute('data-keep'))sentForms.add(k)},true);
+root.addEventListener('input',e=>{const f=e.target.closest&&e.target.closest('form[data-form]');if(f)sentForms.delete(f.dataset.form)},true);
+function formsSnap(){return [...root.querySelectorAll(KEEP_SEL)].filter(f=>!sentForms.has(f.dataset.form)).map(f=>({k:f.dataset.form,v:[...f.elements].filter(e=>e.name&&e.type!=='file'&&e.type!=='hidden').map(e=>e.type==='checkbox'||e.type==='radio'?[e.name,e.value,e.checked]:[e.name,null,e.value])}))}
+function formsRestore(snap){snap.forEach(x=>{const f=root.querySelector('form[data-form="'+x.k+'"]');if(!f)return;const used={};
   x.v.forEach(([n,val,st])=>{const L=[...f.elements].filter(e=>e.name===n);
     if(val!==null){const e=L.find(e=>e.value===val);if(e&&e.checked!==st){e.checked=st;e.dispatchEvent(new Event('change',{bubbles:true}))}}
     else{const i=used[n]||0;used[n]=i+1;const e=L.filter(e=>e.type!=='checkbox'&&e.type!=='radio')[i];if(e&&st!=='')e.value=st}})})}
@@ -1652,7 +1656,8 @@ root.addEventListener('input',e=>{const T=e.target;if(!T.classList||!T.classList
 /* יציאה מ"בנעליים של" (או כניסה) בלשונית אחרת או בכלי אחר: מתעדכנים גם כאן */
 window.addEventListener('storage',e=>{if(e.key==='kr_as')location.reload()});
 /* רענון אוטומטי כשחוזרים ללשונית אחרי יותר מ־5 דקות */
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.phone&&S.loadedAt&&Date.now()-S.loadedAt>3e5)refresh(true)});
+/* #49: רענון כבר אחרי 30 שניות מחוץ ללשונית (היה 5 דקות) — אחרת שיבוצים שכבר טופלו בכלי מילוי המקום הופיעו שוב כ'לטיפול מיידי'. הטפסים שומרים את מה שהוקלד (data-keep, טיוטה) */
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.phone&&S.loadedAt&&Date.now()-S.loadedAt>3e4)refresh(true)});
 window.addEventListener('popstate',()=>{S.view=hashView();S.focus=hashFocus();S.more=false;if(S.user&&!canSee(S.view))S.view='home';if(S.view==='feedback'&&S.user&&isDev())loadFb().then(render);if(S.phone){if(S.view==='perms'&&canRoles()&&!S.admin)loadAdmin().then(render);render()}});
 if(S.phone)refresh(true);else renderLogin();
 </script>

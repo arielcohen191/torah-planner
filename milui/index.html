@@ -702,6 +702,10 @@ root.addEventListener('change',async e=>{const t=e.target,a=t.dataset.act;
     try{await rpc('milui_set_comp',{p_phone:S.phone,p_id:r.id,p_type:r.comp_type,p_note:r.comp_note,p_done:r.comp_done});toast('נשמר')}catch(x){handleErr(x)}}
 });
 
+/* #49: כשחוזרים ללשונית (למשל אחרי עבודה בלשונית אחרת או במכשיר אחר), הלוח נטען מחדש מהשרת, כדי שלא יוצגו שיבוצים ישנים */
+let lastLoad=Date.now();
+document.addEventListener('visibilitychange',async()=>{if(document.hidden||!S.phone||!S.data||S.busy||S.modal||!['board','cand','pay'].includes(S.view)||Date.now()-lastLoad<2e4)return;
+  lastLoad=Date.now();try{await load(true);render()}catch(e){}});
 (async()=>{if(!S.phone){renderLogin();return}try{await load(true);render();checkNotices()}catch(e){if(e.message==='no_access')logout('המספר הזה לא מורשה להיכנס.');else root.innerHTML='<div class="loading">אין חיבור לשרת. רעננו את הדף.</div>'}})();
 </script>
 <script src="/feedback/badge.js" defer></script>
