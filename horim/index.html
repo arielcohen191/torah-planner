@@ -618,16 +618,31 @@ function viewLinks(){
 
 /* ----- סקירה (הנהלה) ----- */
 function viewOverview(){
-  const d=S.d;const by={};(d.slots||[]).forEach(s=>{if(s.b)(by[s.b.cls]=by[s.b.cls]||new Set()).add(s.b.stu)});
-  const tot=d.classes.reduce((a,c)=>a+c.students.length,0),bk=d.classes.reduce((a,c)=>a+(by[c.name]?by[c.name].size:0),0);
-  const meet=(d.slots||[]).filter(s=>s.b).length,free=(d.slots||[]).filter(s=>!s.b&&!s.brk).length;
+  const d=S.d,F=S.of=S.of||{cls:'',tid:'',k:''};
+  const isHr=p=>d.classes.some(c=>c.homeroom===p.tid),teaches=(p,c)=>c.homeroom===p.tid||p.classes.includes(c.name);
+  const cAll=d.classes.slice().sort((a,b)=>a.name.localeCompare(b.name,'he'));
+  const pk=d.participants.filter(p=>!F.k||(F.k==='hr')===isHr(p)).filter(p=>!F.cls||teaches(p,d.classes.find(c=>c.name===F.cls)||{}));
+  if(F.tid&&!pk.some(p=>p.tid===+F.tid))F.tid='';
+  const ps=F.tid?pk.filter(p=>p.tid===+F.tid):pk,tids=new Set(ps.map(p=>p.tid)),filt=!!(F.cls||F.tid||F.k);
+  const cs=cAll.filter(c=>(!F.cls||c.name===F.cls)&&(!filt||ps.some(p=>teaches(p,c))));
+  const sl=(d.slots||[]).filter(s=>tids.has(s.tid)),mt=sl.filter(s=>s.b&&(!F.cls||s.b.cls===F.cls));
+  const by={};mt.forEach(s=>(by[s.b.cls]=by[s.b.cls]||new Set()).add(s.b.stu));
+  const tot=cs.reduce((a,c)=>a+c.students.length,0),bk=cs.reduce((a,c)=>a+(by[c.name]?by[c.name].size:0),0);
+  const free=sl.filter(s=>!s.b&&!s.brk).length;
+  const sel=(id,lbl,cur,opts)=>'<label class="f">'+lbl+'<select id="'+id+'" style="min-height:44px">'+opts.map(([v,l])=>'<option value="'+esc(v)+'"'+(String(v)===String(cur)?' selected':'')+'>'+esc(l)+'</option>').join('')+'</select></label>';
   let h='<header class="card topbar"><div><h1>סקירה</h1><div class="muted">'+eventLine()+'</div></div><span class="tag '+(d.event.reg_open?'g':'o')+'">ההרשמה '+(d.event.reg_open?'פתוחה':'סגורה')+'</span></header>';
-  h+='<section class="kpis">'+kpi('k-green','שובצו',tot?Math.round(bk*100/tot)+'% מהתלמידים':'תלמידים',bk,'o-cls')+kpi('k-red','עוד לא','תלמידים',tot-bk,'o-cls')+kpi('k-blue','פגישות','נקבעו',meet,'o-t')+kpi('k-orange','פנויות','משבצות',free,'o-t')+'</section>';
-  h+='<section class="card box" id="ocls"><h2>לפי כיתה</h2><div class="tablewrap"><table><thead><tr><th>כיתה</th><th>שובצו</th><th style="width:40%"></th><th></th></tr></thead><tbody>'+
-    d.classes.map(c=>{const n=by[c.name]?by[c.name].size:0,t=c.students.length,pc=t?Math.round(n*100/t):0;
-      return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+n+' / '+t+'</td><td><div class="bar"><i style="width:'+pc+'%;background:'+(pc>=80?'var(--green)':pc>=40?'var(--orange)':'var(--red)')+'"></i></div></td><td><button class="link" data-act="gocls" data-c="'+esc(c.name)+'">לכיתה</button></td></tr>'}).join('')+'</tbody></table></div></section>';
-  h+='<section class="card box" id="ot"><h2>לפי מורה</h2><div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>נקבעו</th><th>פנויות</th><th></th></tr></thead><tbody>'+
-    d.participants.map(p=>{const sl=d.byT[p.tid]||[];return '<tr><td><b>'+esc(tName(p.name))+'</b></td><td class="small">'+esc(p.classes.join(', '))+'</td><td>'+sl.filter(s=>s.b).length+'</td><td>'+sl.filter(s=>!s.b&&!s.brk).length+'</td><td><button class="link" data-act="gotid" data-t="'+p.tid+'">ליומן</button></td></tr>'}).join('')+'</tbody></table></div></section>';
+  h+='<section class="card box noprint"><div class="row" style="align-items:flex-end">'+
+    sel('of_cls','כיתה',F.cls,[['','כל הכיתות']].concat(cAll.map(c=>[c.name,c.name])))+
+    sel('of_k','סוג מורה',F.k,[['','כולם'],['hr','מחנכים'],['sub','מורים מקצועיים']])+
+    sel('of_t','מורה',F.tid,[['','כל המורים']].concat(pk.slice().sort((a,b)=>tName(a.name).localeCompare(tName(b.name),'he')).map(p=>[p.tid,tName(p.name)+(isHr(p)?'':' · מקצועי')])))+
+    (filt?'<button class="btn sec sm" data-act="ofclear">ניקוי סינון</button>':'')+'</div></section>';
+  h+='<section class="kpis">'+kpi('k-green','שובצו',tot?Math.round(bk*100/tot)+'% מהתלמידים':'תלמידים',bk,'o-cls')+kpi('k-red','עוד לא','תלמידים',tot-bk,'o-cls')+kpi('k-blue','פגישות','נקבעו',mt.length,'o-t')+kpi('k-orange','פנויות','משבצות',free,'o-t')+'</section>';
+  if(filt&&(F.tid||F.k))h+='<div class="small muted">"שובצו" ו"עוד לא" נספרים לפי פגישות אצל '+(F.tid?'המורה שנבחר/ה':F.k==='hr'?'המחנכים':'המורים המקצועיים')+' בלבד.</div>';
+  h+='<section class="card box" id="ocls"><h2>לפי כיתה</h2>'+(cs.length?'<div class="tablewrap"><table><thead><tr><th>כיתה</th><th>שובצו</th><th style="width:40%"></th><th></th></tr></thead><tbody>'+
+    cs.map(c=>{const n=by[c.name]?by[c.name].size:0,t=c.students.length,pc=t?Math.round(n*100/t):0;
+      return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+n+' / '+t+'</td><td><div class="bar"><i style="width:'+pc+'%;background:'+(pc>=80?'var(--green)':pc>=40?'var(--orange)':'var(--red)')+'"></i></div></td><td><button class="link" data-act="gocls" data-c="'+esc(c.name)+'">לכיתה</button></td></tr>'}).join('')+'</tbody></table></div>':'<div class="muted">אין כיתות בסינון הזה.</div>')+'</section>';
+  h+='<section class="card box" id="ot"><h2>לפי מורה</h2>'+(ps.length?'<div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>נקבעו</th><th>פנויות</th><th></th></tr></thead><tbody>'+
+    ps.map(p=>{const x=d.byT[p.tid]||[];return '<tr><td><b>'+esc(tName(p.name))+'</b>'+(isHr(p)?'':' <span class="tag">מקצועי</span>')+'</td><td class="small">'+esc(p.classes.join(', '))+'</td><td>'+x.filter(s=>s.b&&(!F.cls||s.b.cls===F.cls)).length+'</td><td>'+x.filter(s=>!s.b&&!s.brk).length+'</td><td><button class="link" data-act="gotid" data-t="'+p.tid+'">ליומן</button></td></tr>'}).join('')+'</tbody></table></div>':'<div class="muted">אין מורים בסינון הזה.</div>')+'</section>';
   return h;
 }
 
@@ -737,6 +752,7 @@ function staffClick(e){
       list.push({tid,t_start:q('hts')||null,t_end:q('hte')||null,slot_min:+q('hsm')||null,days:same?[]:days,pending:false})});
     if(bad){toast(bad);return}
     S.busy=true;(async()=>{try{const r=await rpc('yh_house_set',{p_phone:S.phone,p_list:list});toast('נשמר'+(r&&(r.added||r.removed)?' · הלוח עודכן':''));await load()}catch(x){toast(errMsg(x))}S.busy=false;S.keepScroll=true;render()})();return}
+  if(a==='ofclear'){S.of={cls:'',tid:'',k:''};S.keepScroll=true;return render()}
   if(a==='dday'){S.dday=b.dataset.d;S.keepScroll=true;return render()}
   if(a==='kpi'){const k=b.dataset.k;
     if(['f-taken','f-free','f-brk'].includes(k)){S.filter=k;S.keepScroll=true;render()}
@@ -783,6 +799,7 @@ function hoursCount(){const o=document.getElementById('h_cnt');if(!o)return;cons
 function staffChange(e){const t=e.target;
   if(t.id==='h_ts'||t.id==='h_te'||t.id==='h_sm')return hoursCount();
   if(t.id==='e_day'||t.id==='e_rc'){const o=document.getElementById(t.id+'_h');if(o)o.textContent=t.value?hebDay(t.value):''}
+  if(t.id==='of_cls'||t.id==='of_t'||t.id==='of_k'){S.of=S.of||{};S.of[{of_cls:'cls',of_t:'tid',of_k:'k'}[t.id]]=t.value;S.keepScroll=true;render();return}
   if(t.classList&&t.classList.contains('hday')){const a=t.parentNode.querySelector('.halt');a.style.display=t.value==='alt'?'':'none';if(t.value==='alt')a.focus();return}
   if(t.id==='lnote'){S.lnote={id:+t.dataset.id,v:t.value};return}
   if(t.dataset.act==='tsel'){S.tid=+t.value;render()}
