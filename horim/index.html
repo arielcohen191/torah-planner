@@ -555,27 +555,42 @@ function slotRow(s){
 }
 
 /* ----- היום עצמו ----- */
+/* ----- טיימר לפגישה: כמה זמן נשאר, וצפצוף לפני הסוף (משוב #50) ----- */
+const BEEP=(()=>{try{return Object.assign({on:true,min:2},JSON.parse(localStorage.getItem('yh_beep')||'{}'))}catch(e){return {on:true,min:2}}})();
+const saveBeep=()=>{try{localStorage.setItem('yh_beep',JSON.stringify(BEEP))}catch(e){}};
+let ACX=null;const BEEPED={};
+function beep(n){try{ACX=ACX||new (window.AudioContext||window.webkitAudioContext)();if(ACX.state==='suspended')ACX.resume();
+  for(let i=0;i<(n||2);i++){const o=ACX.createOscillator(),g=ACX.createGain(),t=ACX.currentTime+i*0.35;o.type='sine';o.frequency.value=880;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.5,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+0.25);o.connect(g);g.connect(ACX.destination);o.start(t);o.stop(t+0.3)}}catch(e){}
+  try{navigator.vibrate&&navigator.vibrate([200,120,200])}catch(e){}}
+function lvTimer(id,start,len){return '<span class="lvt" id="lvt" data-id="'+id+'" data-s="'+start+'" data-l="'+len+'" style="font-size:22px;font-weight:800;font-variant-numeric:tabular-nums"></span>'}
+setInterval(()=>{const el=document.getElementById('lvt');if(!el)return;const end=+el.dataset.s+(+el.dataset.l)*60000,left=Math.round((end-Date.now())/1000),id=el.dataset.id;
+  const a=Math.abs(left),txt=(left<0?'+':'')+Math.floor(a/60)+':'+String(a%60).padStart(2,'0');
+  el.textContent=left>=0?'נשארו '+txt:'חריגה '+txt;el.style.color=left<0?'var(--red)':left<=BEEP.min*60?'var(--orange)':'';
+  if(!BEEP.on)return;
+  if(left<=BEEP.min*60&&left>BEEP.min*60-5&&!BEEPED[id+'w']){BEEPED[id+'w']=1;beep(2)}
+  if(left<=0&&left>-5&&!BEEPED[id+'e']){BEEPED[id+'e']=1;beep(3)}},1000);
 function viewLive(){
   const d=S.d,tid=S.tid,p=d.P[tid];
   if(!p)return '<header class="card topbar"><h1>היום עצמו</h1>'+tsel()+'</header><div class="card box">אין לך משבצות ביום ההורים.</div>';
   const dp=dayPick(p),sl=(d.byT[tid]||[]).filter(s=>s.b&&(!s.d||s.d===S.dday));const isDay=S.dday===todayIso();
   const q=sl.map(s=>({t:s.t,s:s.b.started,e:s.b.ended,n:s.b.no_show}));
   const li=liveInfo(q,(p&&p.slot_min)||d.event.slot_min);
-  const cur=sl.find(s=>s.b.started&&!s.b.ended);
+  const cur=sl.find(s=>s.b.started&&!s.b.ended),L=(p.slot_min||d.event.slot_min);
   const next=sl.filter(s=>!s.b.started&&!s.b.ended&&!s.b.no_show);
   let h='<header class="card topbar"><div><h1>היום עצמו</h1><div class="muted">'+esc(tName(p.name))+' · '+tLine(p)+'</div></div>'+tsel()+'</header>';
   if(dp)h+='<section class="card box noprint"><div class="row"><b>איזה יום?</b>'+dp+'</div></section>';
-  h+='<section class="card box noprint"><label class="check"><input type="checkbox" data-act="nolive"'+(p.no_live?' checked':'')+(tid===d.tid||d.admin?'':' disabled')+'> <span><b>בלי לחיצות: אני לא מעדכן/ת כניסה ויציאה</b><br><span class="small muted">'+(p.no_live?'ההורים רואים רק את השעה שנקבעה, בלי תור ובלי איחורים. המסך הזה מתקדם לפי השעון.':'כשמסומן, ההורים יראו רק את השעה שנקבעה ולא זמן משוער. מתאים למי שלא רוצה ללחוץ "התחלתי" ו"סיימתי".')+'</span></span></label></section>';
+  h+='<section class="card box noprint"><label class="check"><input type="checkbox" data-act="nolive"'+(p.no_live?' checked':'')+(tid===d.tid||d.admin?'':' disabled')+'> <span><b>בלי לחיצות: אני לא מעדכן/ת כניסה ויציאה</b><br><span class="small muted">'+(p.no_live?'ההורים רואים רק את השעה שנקבעה, בלי תור ובלי איחורים. המסך הזה מתקדם לפי השעון.':'כשמסומן, ההורים יראו רק את השעה שנקבעה ולא זמן משוער. מתאים למי שלא רוצה ללחוץ "התחלתי" ו"סיימתי".')+'</span></span></label>'+
+    '<div class="row" style="margin-top:8px"><label class="check"><input type="checkbox" id="bp_on"'+(BEEP.on?' checked':'')+'> <span><b>צפצוף לפני סוף הפגישה</b></span></label><select id="bp_min" style="min-height:40px;width:auto">'+[1,2,3].map(m=>'<option value="'+m+'"'+(BEEP.min===m?' selected':'')+'>'+(m===1?'דקה':m===2?'שתי דקות':'3 דקות')+' לפני</option>').join('')+'</select><button class="btn sec xs" data-act="bptest">בדיקת צליל</button></div></section>';
   if(!isDay)h+='<div class="info">המסך הזה נועד ליום ההורים עצמו ('+esc(longDate(S.dday))+'). אפשר לנסות אותו כבר עכשיו. ההורים רואים את העדכונים בקישור האישי שלהם.</div>';
-  if(p.no_live){const nm=new Date(),nowM=nm.getHours()*60+nm.getMinutes(),L=(p.slot_min||d.event.slot_min);
+  if(p.no_live){const nm=new Date(),nowM=nm.getHours()*60+nm.getMinutes();
     const live=sl.filter(s=>!s.b.no_show),curC=isDay?live.find(s=>mins(s.t)<=nowM&&nowM<mins(s.t)+L):null,nxt=live.filter(s=>!isDay||mins(s.t)>nowM);
-    h+='<section class="card box" style="border-right:6px solid var(--orange)"><div class="muted">לפי השעון</div>'+(curC?'<h2 style="font-size:26px">עכשיו: '+esc(curC.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(curC.b.cls)+' · '+curC.t+'</span></h2><div>'+esc(curC.b.parent)+'</div>':'<div>אין פגישה בשעה הזו.</div>')+
+    h+='<section class="card box" style="border-right:6px solid var(--orange)"><div class="row" style="justify-content:space-between"><div class="muted">לפי השעון</div>'+(curC?lvTimer(curC.b.id,new Date((S.dday||d.event.day)+'T'+curC.t+':00').getTime(),L):'')+'</div>'+(curC?'<h2 style="font-size:26px">עכשיו: '+esc(curC.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(curC.b.cls)+' · '+curC.t+'</span></h2><div>'+esc(curC.b.parent)+'</div>':'<div>אין פגישה בשעה הזו.</div>')+
       (nxt.length?'<div class="small" style="margin-top:8px">הבא: <b>'+esc(nxt[0].b.stu)+'</b> ב־'+nxt[0].t+'</div>':'')+
       (curC&&canNote(curC)?'<button class="btn sec sm" data-act="note" data-id="'+curC.b.id+'" style="margin-top:8px">הערה לפגישה</button>':'')+'</section>';
     h+='<section class="card box"><h2>כל הפגישות</h2><div class="slots">'+sl.map(s=>{const b=s.b;return '<div class="slot taken"><span class="tm">'+s.t+'</span><div class="who"><b>'+esc(b.stu)+'</b><span class="small muted">'+esc(b.cls)+' · '+esc(b.parent)+'</span></div><div class="acts">'+noteBtn(s,b)+'</div>'+noteLine(b)+'</div>'}).join('')+'</div></section>';
     return h}
   h+='<div class="'+(li.delay>=5?'warn':'info')+'">'+(li.delay>=3?'את/ה מאחר/ת בכ־<b>'+li.delay+' דקות</b>. ההורים רואים זמן כניסה משוער מעודכן.':'את/ה בזמן.')+'</div>';
-  if(cur)h+='<section class="card box" style="border-right:6px solid var(--orange)"><div class="muted">עכשיו בפגישה</div><h2 style="font-size:26px">'+esc(cur.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(cur.b.cls)+' · '+cur.t+'</span></h2><div>'+esc(cur.b.parent)+'</div>'+(canNote(cur)?'<label class="f">הערות מהפגישה<textarea id="lnote" data-id="'+cur.b.id+'" maxlength="2000" placeholder="מה סוכם, מה חשוב לזכור. ההורים לא רואים את זה.">'+esc(S.lnote&&S.lnote.id===cur.b.id?S.lnote.v:cur.b.note||'')+'</textarea></label>':'')+
+  if(cur)h+='<section class="card box" style="border-right:6px solid var(--orange)"><div class="row" style="justify-content:space-between"><div class="muted">עכשיו בפגישה</div>'+lvTimer(cur.b.id,new Date(cur.b.started).getTime(),L)+'</div><h2 style="font-size:26px">'+esc(cur.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(cur.b.cls)+' · '+cur.t+'</span></h2><div>'+esc(cur.b.parent)+'</div>'+(canNote(cur)?'<label class="f">הערות מהפגישה<textarea id="lnote" data-id="'+cur.b.id+'" maxlength="2000" placeholder="מה סוכם, מה חשוב לזכור. ההורים לא רואים את זה.">'+esc(S.lnote&&S.lnote.id===cur.b.id?S.lnote.v:cur.b.note||'')+'</textarea></label>':'')+
     '<button class="btn ok wide" data-act="live" data-id="'+cur.b.id+'" data-a="end">'+(canNote(cur)?'סיימתי · שמירת ההערות':'סיימתי')+'</button></section>';
   if(next.length){const n=next[0];h+='<section class="card box"><div class="muted">'+(cur?'הבא בתור':'הראשון בתור')+'</div><h2 style="font-size:24px">'+esc(n.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(n.b.cls)+' · '+n.t+'</span></h2><div>'+esc(n.b.parent)+'</div>'+
     '<div class="grid2"><button class="btn wide" data-act="live" data-id="'+n.b.id+'" data-a="start">ההורה נכנס · התחלתי</button><button class="btn sec wide" data-act="live" data-id="'+n.b.id+'" data-a="noshow">לא הגיע</button></div></section>'}
@@ -800,6 +815,7 @@ function staffClick(e){
     const ba=document.getElementById('h_ba').value,bm=+document.getElementById('h_bm').value||0;
     if(bm&&(!ba||mins(ba)<=mins(ts)||mins(ba)>=mins(te))){toast('שעת ההפסקה צריכה להיות בתוך השעות שלך');return}
     return act('yh_my_settings',{p_phone:S.phone,p_start:ts,p_end:te,p_slot:sm,p_brk_at:bm?ba:null,p_brk_min:bm||null},'נשמר. היומן נבנה מחדש')}
+  if(a==='bptest'){beep(2);return}
   if(a==='ousave'){const v=document.getElementById('ou_t').value;if(!v){toast('בחרו שעה');return}return act('yh_set_open_until',{p_phone:S.phone,p_tid:S.tid,p_until:v},'ההורים יכולים לקבוע עד '+v)}
   if(a==='ouclear')return act('yh_set_open_until',{p_phone:S.phone,p_tid:S.tid,p_until:null},'כל השעות פתוחות להורים');
   if(a==='nolive'){return act('yh_set_live',{p_phone:S.phone,p_tid:S.tid,p_no_live:b.checked},b.checked?'ההורים יראו רק את השעה שנקבעה':'התור החי הופעל')}
@@ -832,6 +848,8 @@ function staffChange(e){const t=e.target;
   if(t.id==='h_ts'||t.id==='h_te'||t.id==='h_sm'||t.id==='h_ba'||t.id==='h_bm')return hoursCount();
   if(t.id==='e_day'||t.id==='e_rc'){const o=document.getElementById(t.id+'_h');if(o)o.textContent=t.value?hebDay(t.value):''}
   if(t.id==='of_cls'||t.id==='of_t'||t.id==='of_k'){S.of=S.of||{};S.of[{of_cls:'cls',of_t:'tid',of_k:'k'}[t.id]]=t.value;S.keepScroll=true;render();return}
+  if(t.id==='bp_on'){BEEP.on=t.checked;saveBeep();if(t.checked)beep(1);return}
+  if(t.id==='bp_min'){BEEP.min=+t.value;saveBeep();return}
   if(t.classList&&t.classList.contains('hday')){const a=t.parentNode.querySelector('.halt');a.style.display=t.value==='alt'?'':'none';if(t.value==='alt')a.focus();return}
   if(t.id==='lnote'){S.lnote={id:+t.dataset.id,v:t.value};return}
   if(t.dataset.act==='tsel'){S.tid=+t.value;render()}
