@@ -1,0 +1,4 @@
+-- 052: פתיחה בהדרגה — המורה פותח/ת להורים רק עד שעה מסוימת (open_until), ופותח/ת עוד כשמתמלא.
+-- הוחל במסד דרך apply_migration; התוכן כאן הוא תיעוד: עמודה yh_participants.open_until,
+-- yh_book דוחה משבצת שאחרי open_until ('taken'), yh_class/yh_teacher מסמנים אותה לא פנויה,
+-- yh_staff_load מחזיר open_until, ופונקציה חדשה yh_set_open_until(p_phone, p_tid, p_until).
