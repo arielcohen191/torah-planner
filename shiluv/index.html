@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>כלי השילוב · כנפי רוח</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<style>
+:root{
+  --bg:#f6f4ef; --card:#fff; --ink:#1f2a37; --mute:#6b7280; --line:#e6e1d6;
+  --pri:#2f6f73; --pri2:#e3f0ef; --ok:#2e7d4f; --okb:#e3f3e8; --warn:#b7791f; --warnb:#fbf0dc;
+  --bad:#b4413c; --badb:#f8e3e1; --info:#3b5ba5; --infob:#e5ebf8;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Assistant","Rubik","Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+nav{display:flex;gap:4px;padding:10px 20px 0}
+nav button{border:0;background:transparent;padding:9px 16px;border-radius:10px 10px 0 0;font:inherit;cursor:pointer;color:var(--mute)}
+nav button.on{background:var(--card);color:var(--ink);font-weight:700;box-shadow:0 -1px 0 var(--line) inset}
+main{padding:18px 20px 60px;max-width:1300px;margin:auto}
+.grid{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;transition:.15s}
+.kpi:hover{border-color:var(--pri);transform:translateY(-1px)}
+.kpi b{font-size:28px;display:block}
+.kpi span{color:var(--mute);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+h2{font-size:17px;margin:22px 0 10px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:right;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:13px;color:var(--mute);font-weight:600}
+tr.click{cursor:pointer} tr.click:hover{background:#faf8f3}
+.bar{height:8px;background:#eee8dc;border-radius:6px;overflow:hidden;min-width:90px}
+.bar i{display:block;height:100%;background:var(--pri)}
+.bar i.over{background:var(--bad)}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:12.5px;margin:2px;white-space:nowrap;border:1px solid transparent}
+.c-ok{background:var(--okb);color:var(--ok)} .c-part{background:var(--warnb);color:var(--warn)} .c-none{background:var(--badb);color:var(--bad)} .c-info{background:var(--infob);color:var(--info)} .c-mute{background:#efece6;color:var(--mute)}
+.chip.btn{cursor:pointer;border-color:var(--line);background:#fff;color:var(--ink)}
+.chip.btn.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+input[type=search],select,input[type=text]{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.btnp{font:inherit;background:var(--pri);color:#fff;border:0;border-radius:10px;padding:8px 14px;cursor:pointer}
+.btng{font:inherit;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer}
+.btnd{font:inherit;background:var(--badb);color:var(--bad);border:0;border-radius:10px;padding:8px 14px;cursor:pointer}
+.ther{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.tcard{cursor:pointer}
+.tcard:hover{border-color:var(--pri)}
+.tcard h3{margin:0 0 2px;font-size:16px}
+.meta{color:var(--mute);font-size:13px;margin:4px 0}
+.note{background:var(--warnb);color:var(--warn);font-size:12.5px;padding:4px 8px;border-radius:8px;margin-top:6px}
+/* schedule */
+.sched{display:grid;grid-template-columns:70px repeat(6,1fr);gap:6px}
+.sched .hd{font-weight:700;text-align:center;padding:6px;font-size:14px}
+.sched .hd.off{color:#b9b2a3}
+.sched .hr{display:grid;place-items:center;color:var(--mute);font-size:13px;background:#efece6;border-radius:10px}
+.slot{min-height:74px;border:1.5px dashed var(--line);border-radius:10px;padding:6px;cursor:pointer;background:#fff;font-size:13px;position:relative}
+.slot:hover{border-color:var(--pri)}
+.slot.off{background:repeating-linear-gradient(45deg,#f3f0ea,#f3f0ea 6px,#ece8e0 6px,#ece8e0 12px);border-style:solid}
+.slot.full{border-style:solid;border-color:var(--pri);background:var(--pri2)}
+.slot .mode{font-size:11px;color:var(--pri);font-weight:700}
+.slot .warn{position:absolute;top:4px;left:6px;color:var(--bad);font-weight:700}
+.plus{color:#c6bfb0;font-size:20px;display:grid;place-items:center;height:100%}
+.tray{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.tray .slot{min-height:auto;min-width:180px;border-style:solid}
+/* drawer & modal */
+.ov{position:fixed;inset:0;background:rgba(20,25,35,.35);display:none;z-index:20}
+.ov.show{display:block}
+.drawer{position:fixed;top:0;bottom:0;left:0;width:min(460px,95vw);background:var(--card);padding:20px;overflow:auto;box-shadow:4px 0 30px rgba(0,0,0,.15)}
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(560px,95vw);max-height:90vh;overflow:auto;background:var(--card);border-radius:16px;padding:20px}
+.x{float:left;border:0;background:#efece6;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.row label{min-width:70px;color:var(--mute);font-size:14px}
+.plist{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.plist label{display:flex;gap:8px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--line);cursor:pointer}
+.plist label:hover{background:#faf8f3}
+.plist .gap{margin-inline-start:auto}
+.alert{background:var(--badb);color:var(--bad);padding:8px 10px;border-radius:10px;font-size:13.5px;margin:8px 0}
+.need{display:grid;grid-template-columns:110px 1fr 160px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.sess{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0;font-size:14px;cursor:pointer}
+.sess:hover{border-color:var(--pri)}
+.legend{font-size:12.5px;color:var(--mute)}
+
+.slot.paused{background:repeating-linear-gradient(45deg,#fbf0dc,#fbf0dc 6px,#f6e6c8 6px,#f6e6c8 12px);border-color:var(--warn)}
+.slot.free{border-style:solid;border-color:#cfe6d6;background:#f3faf5}
+.slot.free .plus{font-size:13px;color:var(--ok)}
+.slot.clash{border-color:var(--bad);background:var(--badb)}
+.slot .fixed{background:#efece6;border-radius:6px;padding:3px 6px;margin-top:3px;color:#4b5563}
+.slot>div+div{margin-top:4px}
+.tcard.away{border-color:#ecd5a8}
+.btng.sm{padding:5px 10px;font-size:13px;margin-top:10px}
+.miss{padding:2px 0}
+input[type=date]{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:10px}
+nav{flex-wrap:wrap}
+.am{font-size:12px;color:var(--mute)} .am.ok{color:var(--ok)} .am.no{color:var(--bad)}
+.slot .tick{position:absolute;top:4px;left:6px;color:var(--ok);font-weight:700} .slot .tick.no{color:var(--bad)}
+.slot .warn+.tick{left:22px}
+.bar.dbl{position:relative;display:inline-block;width:calc(100% - 44px);vertical-align:middle;margin-inline-end:6px}
+.bar.dbl i{position:absolute;top:0;bottom:0;right:0} .bar.dbl i.s{background:#b9d6d4} .bar.dbl i.g{background:var(--pri)}
+tr.tot td{background:#f3f0ea;font-weight:700;border-top:2px solid var(--line)}
+
+header.top{background:var(--card);border-bottom:1px solid var(--line);padding:10px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:5;flex-wrap:wrap}
+header.top .logo img{height:44px;display:block}
+header.top h1{font-size:18px;margin:0} header.top small{color:var(--mute)}
+.topend{margin-inline-start:auto;display:flex;gap:6px;flex-wrap:wrap} .topend .btng.sm{margin:0;text-decoration:none;display:inline-flex;align-items:center}
+.gate{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,#2f6f73,#1f4d50)}
+.gcard{background:#fff;border-radius:20px;padding:28px 24px;width:min(380px,100%);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.gcard img{height:70px} .gcard h1{margin:8px 0 2px;font-size:21px} .gcard p{color:var(--mute);font-size:14px;margin:0 0 16px}
+.gcard form{display:flex;flex-direction:column;gap:10px} .gcard input{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;text-align:right}
+.gcard .btnp{padding:11px} .gmsg{color:var(--bad);font-size:14px;min-height:20px} .gcard a{display:block;margin-top:10px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#1f2a37;color:#fff;padding:10px 18px;border-radius:12px;transition:.25s;z-index:40;opacity:0}
+#toast.on{transform:translateX(-50%);opacity:1}
+.credit{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--mute);font-size:12.5px;margin-top:30px} .credit img{height:24px}
+@media print{header.top,nav,.tools,.credit,.btng{display:none!important} main{padding:0}}
+@media (max-width:700px){main{padding:12px} .sched{grid-template-columns:44px repeat(6,minmax(90px,1fr));overflow-x:auto} .card{overflow-x:auto}}
+</style>
+<script src="/as/as.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<div class="ov" id="ov"></div>
+<script>
+'use strict';
+/* כלי השילוב · כנפי רוח. הנתונים רגישים: כל קריאה לשרת עם טלפון + קוד אישי, והשרת מחזיר רק מה שמותר למשתמש. */
+const CFG={url:'https://onocjgbtensczpdbeanf.supabase.co',key:'sb_publishable_JpV-E-qPnV9ZdnRnY9Kv8Q_TaRzCnyc'};
+async function rpc(fn,args){
+  const r=await fetch(CFG.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:CFG.key,Authorization:'Bearer '+CFG.key,'Content-Type':'application/json'},body:JSON.stringify(args)});
+  const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok){const e=new Error((j&&(j.message||j.error))||'error');throw e}
+  return j;
+}
+const esc=x=>String(x==null?'':x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LOGO='<img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח">';
+const ERR={bad:'הטלפון או הקוד לא נכונים.',locked:'יותר מדי ניסיונות. נסו שוב בעוד רבע שעה.',forbidden:'כלי השילוב עדיין לא פתוח עבורך. אם צריך, פנו לאריאל.',view_only:'במצב "בנעליים של" אי אפשר לשמור.'};
+
+// ===== קבועים =====
+const TYPES={r:{n:'טיפול רגשי'},s:{n:'מיומנויות חברתיות'},b:{n:'ניתוח התנהגות'},k:{n:'כלבנות'},h:{n:'הוראה מותאמת'},m:{n:'שעת מחנך'},t:{n:'קלינאות תקשורת'},g:{n:'נגרות וחקלאות'}};
+const NEED_TYPES=['h','r','s','b','k','m'];
+const DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי'];
+const HOURS=[1,2,3,4,5,6];
+const TAGS=['לימודי','רגשי','התנהגותי','חברתי','תקשורת','קשב וריכוז','רפואי','חושי (ראייה/שמיעה)'];
+const ymd=d=>d.toLocaleDateString('en-CA',{timeZone:'Asia/Jerusalem'});
+const TODAY=ymd(new Date());
+const WEEKS=(()=>{const t=new Date(TODAY+'T12:00:00Z');t.setUTCDate(t.getUTCDate()-t.getUTCDay());const a=[];for(let i=3;i>=0;i--){const d=new Date(t);d.setUTCDate(t.getUTCDate()-7*i);a.push(d.toISOString().slice(0,10))}return a})();
+const DONE=WEEKS.slice(0,-1);
+
+// ===== מצב =====
+let SES=null, ME=null, students=[], therapists=[], rooms=[], fixed=[], sessions=[], SBY={};
+const ses=v=>{try{if(v===undefined)return JSON.parse(localStorage.getItem('shiluv-session')||'null');if(v===null)localStorage.removeItem('shiluv-session');else localStorage.setItem('shiluv-session',JSON.stringify(v))}catch(e){return null}};
+async function load(){
+  const d=await rpc('sh_get',{p_phone:SES.phone,p_pin:SES.pin});
+  if(!d||d.error){if(d&&d.error==='bad'){ses(null)}showGate(d&&d.error);return false}
+  ME=d.me;
+  students=d.students.map(s=>Object.assign(s,{layer:(s.cls.replace(/[^א-ת]/g,'')[0]||''),tags:s.tags||[]}));
+  SBY={};students.forEach(s=>SBY[s.id]=s);
+  therapists=d.providers; rooms=d.rooms; fixed=d.fixed; sessions=d.sessions;
+  return true;
+}
+async function act(fn,args,msg){
+  try{const r=await rpc(fn,Object.assign({p_phone:SES.phone,p_pin:SES.pin},args));if(r&&r.error)throw new Error(r.error);await load();render();if(msg)toast(msg);return r}
+  catch(e){toast('⚠ '+(ERR[e.message]||'לא נשמר. בדקו חיבור ונסו שוב.'));return null}
+}
+function toast(t){let el=document.getElementById('toast');if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el)}el.textContent=t;el.className='on';clearTimeout(toast.t);toast.t=setTimeout(()=>el.className='',2600)}
+
+// ===== חישובים =====
+const T=id=>therapists.find(t=>t.id===id)||{name:'?',type:'',days:[]};
+const RM=id=>rooms.find(r=>r.id===id);
+const nm=id=>SBY[id]?SBY[id].name:'?';
+const roomOf=x=>x.room||T(x.t).room;
+const fmt=v=>Number.isInteger(+v)?+v:(+v).toFixed(1);
+const heb=d=>{try{return new Intl.DateTimeFormat('he-u-ca-hebrew',{day:'numeric',month:'long'}).format(new Date(d+'T12:00:00Z'))}catch(e){return d}};
+function absent(t){const a=t.absence;return !!a&&a.from<=TODAY&&(!a.to||TODAY<=a.to)}
+function held(t){return absent(t)&&!t.absence.sub}
+function counts(x){return !held(T(x.t))}
+const has=(x,id)=>x.stu.includes(id);
+function got(id,type){return sessions.filter(x=>T(x.t).type===type&&has(x,id)&&counts(x)).length}
+function paused(id,type){return sessions.filter(x=>T(x.t).type===type&&has(x,id)&&!counts(x)).length}
+function pausedBy(id,type){return [...new Set(sessions.filter(x=>T(x.t).type===type&&has(x,id)&&!counts(x)).map(x=>T(x.t).name))].join(', ')}
+function needSum(type){return students.reduce((a,s)=>a+(+s.needs[type]||0),0)}
+function gotSum(type){return students.reduce((a,s)=>a+Math.min(got(s.id,type),+s.needs[type]||0),0)}
+function missing(s,t){return Math.max(0,(+s.needs[t]||0)-got(s.id,t))}
+function gapOf(s){return NEED_TYPES.filter(t=>t!=='m').reduce((a,t)=>a+missing(s,t),0)}
+function load_(t){return sessions.filter(x=>x.t===t.id).length}
+function statusChip(s,t){const n=+s.needs[t]||0,g=got(s.id,t),p=paused(s.id,t);if(!n&&!g&&!p)return '';
+  const cls=g>=n?'c-ok':(g>0||p>0)?'c-part':'c-none';return `<span class="chip ${cls}">${TYPES[t].n} ${fmt(g)}/${fmt(n)}${p?' · '+p+' מושהה':''}</span>`}
+function fixedAt(room,d,h){return fixed.filter(f=>f.room===room&&f.days.includes(d)&&f.hours.includes(h))}
+function conflicts(x){
+  if(x.d==null)return [];const out=[],r=roomOf(x);
+  sessions.forEach(o=>{if(o.id===x.id||o.d!==x.d||o.h!==x.h)return;
+    o.stu.filter(n=>x.stu.includes(n)).forEach(n=>out.push(`${nm(n)} כבר משובץ באותה שעה אצל ${T(o.t).name}`));
+    if(r&&roomOf(o)===r&&o.t!==x.t)out.push(`${RM(r)?RM(r).name:'החדר'} תפוס באותה שעה (${T(o.t).name})`)});
+  if(r)fixedAt(r,x.d,x.h).forEach(f=>out.push(`${RM(r).name} תפוס באותה שעה (${f.label})`));
+  const t=T(x.t);if(t.absence&&absent(t))out.push(`${t.name} בהיעדרות עד ${heb(t.absence.to)}${t.absence.sub?' — מחליף/ה: '+t.absence.sub:' — אין מחליף'}`);
+  return out}
+// נוכחות
+function attOf(x,w){return x.att?x.att[w]:undefined}
+function heldIn(id,type,w){return sessions.filter(x=>T(x.t).type===type&&has(x,id)&&attOf(x,w)===true).length}
+function heldVal(id,type){return state.period==='avg'?DONE.reduce((a,w)=>a+heldIn(id,type,w),0)/DONE.length:heldIn(id,type,state.period)}
+function attMark(x,w){const v=attOf(x,w);return v===true?'<span class="am ok">✓ התקיים</span>':v===false?'<span class="am no">✗ לא התקיים</span>':'<span class="am">טרם דווח</span>'}
+const wLabel=w=>w==='avg'?'ממוצע 3 השבועות האחרונים':'שבוע '+heb(w)+(w===WEEKS[WEEKS.length-1]?' (נוכחי)':'');
+
+// ===== ניווט =====
+const state={tab:'home',layer:'',q:'',gapOnly:false,typeF:'',ther:'',room:'',gapBy:'stu',period:WEEKS[2],by:'cls',f:{layer:'',cls:'',type:'',freq:'',tag:''}};
+const TABS=[['home','סקירה'],['cuts','חיתוכים'],['gaps','חוסרים'],['students','תלמידים'],['ther','מטפלים ומורי שילוב'],['sched','מערכת מטפל'],['rooms','מערכת חדרים']];
+function go(tab,extra){Object.assign(state,{tab},extra||{});render();window.scrollTo(0,0)}
+function render(){
+  if(!ME)return;
+  if(!state.ther&&therapists[0])state.ther=therapists[0].id;
+  if(!state.room&&rooms[0])state.room=rooms[0].id;
+  const v={home,cuts:cutsView,gaps:gapsView,students:studentsView,ther:therView,sched:schedView,rooms:roomsView}[state.tab]||home;
+  document.getElementById('app').innerHTML=
+   `<header class="top"><a class="logo" href="/hanhala/" title="ללוח ההנהלה">${LOGO}</a><div><h1>כלי השילוב</h1><small>כנפי רוח · ${esc(ME.name)}${ME.layers.length?' · שכבות '+ME.layers.join(', '):''}</small></div>
+    <div class="topend"><a class="btng sm" href="/hanhala/">ללוח ההנהלה</a><button class="btng sm" onclick="window.KFB&&KFB.mine()">פניות המשוב שלי</button><button class="btng sm" onclick="logout()">יציאה</button></div></header>
+   <nav>${TABS.map(([k,n])=>`<button class="${state.tab===k?'on':''}" onclick="go('${k}')">${n}</button>`).join('')}</nav>
+   <main>${ME.ro?'<div class="note" style="margin-bottom:12px">מצב "בנעליים של" — צפייה בלבד.</div>':''}${v()}<div class="credit">${LOGO}<span>כלי השילוב · כנפי רוח · נבנה על ידי אריאל כהן</span></div></main>`;
+}
+
+function home(){
+  if(!students.length)return `<div class="card">עדיין אין תלמידים בכלי.</div>`;
+  const withGap=students.filter(s=>gapOf(s)>0),abs=therapists.filter(absent),noTime=sessions.filter(x=>x.d==null).length;
+  const totNeed=NEED_TYPES.filter(t=>t!=='m').reduce((a,t)=>a+needSum(t),0),totGot=NEED_TYPES.filter(t=>t!=='m').reduce((a,t)=>a+gotSum(t),0);
+  const lastW=pivot(students,NEED_TYPES.filter(t=>t!=='m'),WEEKS[2]);
+  let h=`<div class="grid kpis">
+    <div class="kpi" onclick="go('students',{gapOnly:false,layer:'',typeF:''})"><b>${students.length}</b><span>תלמידים בשילוב</span></div>
+    <div class="kpi" onclick="go('gaps',{layer:'',typeF:''})"><b style="color:var(--bad)">${withGap.length}</b><span>תלמידים עם חוסר במענה</span></div>
+    <div class="kpi" onclick="go('cuts',{by:'type'})"><b>${fmt(totGot)}/${fmt(totNeed)}</b><span>שעות משובצות מתוך שפולחו</span></div>
+    <div class="kpi" onclick="go('cuts',{by:'type',period:WEEKS[2]})"><b style="color:var(--info)">${fmt(lastW.given)}</b><span>שעות שדווחו "התקיים" בשבוע ${heb(WEEKS[2])}</span></div>
+    <div class="kpi" onclick="go('sched',{ther:(sessions.find(x=>x.d==null)||{}).t||state.ther})"><b style="color:var(--warn)">${noTime}</b><span>מענים בלי שעה במערכת</span></div>
+    <div class="kpi" onclick="go('ther')"><b style="color:${abs.length?'var(--warn)':'inherit'}">${abs.length}</b><span>בהיעדרות ממושכת${abs.length?': '+esc(abs.map(t=>t.name.split(' ')[0]).join(', ')):''}</span></div>
+  </div><h2>כיסוי לפי סוג מענה</h2><div class="card"><table><tr><th>סוג מענה</th><th>פולח</th><th>שובץ</th><th>חוסר</th><th style="width:35%">כיסוי</th></tr>`;
+  NEED_TYPES.forEach(t=>{const n=needSum(t),g=gotSum(t),p=n?Math.round(g/n*100):0;
+    h+=`<tr class="click" onclick="go('gaps',{typeF:'${t}',gapBy:'type',layer:''})"><td><b>${TYPES[t].n}</b>${t==='m'?' <span class="legend">(לא נספר בסה"כ)</span>':''}</td><td>${fmt(n)}</td><td>${fmt(g)}</td><td>${fmt(Math.max(0,n-g))}</td><td><div class="bar"><i style="width:${p}%"></i></div></td></tr>`});
+  return h+`</table></div>`;
+}
+
+// ===== חיתוכים =====
+function pivot(studs,types,period){
+  const keep=state.period;if(period)state.period=period;let need=0,sched=0,given=0;const n=new Set();
+  studs.forEach(s=>types.forEach(t=>{const nd=+s.needs[t]||0;if(!nd)return;n.add(s.id);need+=nd;sched+=Math.min(got(s.id,t),nd);given+=Math.min(heldVal(s.id,t),nd)}));
+  state.period=keep;return {need,sched,given,pending:Math.max(0,need-given),n:n.size}}
+const BY=[['stu','תלמיד'],['cls','כיתה'],['layer','שכבה'],['type','סוג מענה'],['freq','שכיחות'],['tag','אפיון'],['school','בית ספר']];
+const cmpHe=(a,b)=>a.localeCompare(b,'he');
+function cutsView(){
+  const f=state.f,by=state.by;
+  const studs=students.filter(s=>(!f.layer||s.layer===f.layer)&&(!f.cls||s.cls===f.cls)&&(!f.freq||s.freq===f.freq)&&(!f.tag||s.tags.includes(f.tag)));
+  const types=NEED_TYPES.filter(t=>!f.type||t===f.type);let groups=[];
+  if(by==='stu')groups=studs.map(s=>({label:`${esc(s.name)} <span class="meta">${esc(s.cls)}</span>`,studs:[s],types,drill:`openStudent(${s.id})`}));
+  if(by==='cls')[...new Set(studs.map(s=>s.cls))].sort(cmpHe).forEach(c=>groups.push({label:'כיתה '+esc(c),studs:studs.filter(s=>s.cls===c),types,drill:`setF({cls:'${esc(c)}'},'stu')`}));
+  if(by==='layer')[...new Set(studs.map(s=>s.layer))].sort(cmpHe).forEach(l=>groups.push({label:'שכבה '+l,studs:studs.filter(s=>s.layer===l),types,drill:`setF({layer:'${l}'},'cls')`}));
+  if(by==='type')types.forEach(t=>groups.push({label:TYPES[t].n,studs,types:[t],drill:`setF({type:'${t}'},'stu')`}));
+  if(by==='freq')['נמוכה','גבוהה','רפואי'].forEach(q=>groups.push({label:'שכיחות '+q,studs:studs.filter(s=>s.freq===q),types,drill:`setF({freq:'${q}'},'stu')`}));
+  if(by==='tag'){TAGS.forEach(t=>groups.push({label:t,studs:studs.filter(s=>s.tags.includes(t)),types,drill:`setF({tag:'${t}'},'stu')`}));
+    groups.push({label:'<span class="meta">ללא אפיון</span>',studs:studs.filter(s=>!s.tags.length),types,drill:''})}
+  const rowsHtml=groups.map(g=>({g,p:pivot(g.studs,g.types)})).filter(o=>o.p.need>0||by==='tag').map(({g,p})=>row(g.label,p,g.drill)).join('');
+  const tot=pivot(studs,types);
+  const fsel=(key,opts,ph)=>`<select onchange="setF({${key}:this.value})"><option value="">${ph}</option>${opts.map(o=>`<option value="${esc(o[0])}" ${f[key]===o[0]?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
+  const active=Object.values(f).some(v=>v);
+  return `<div class="tools"><span class="legend" style="min-width:70px">שורות לפי</span>${BY.map(([k,n])=>`<span class="chip btn ${by===k?'on':''}" onclick="go('cuts',{by:'${k}'})">${n}</span>`).join('')}</div>
+  <div class="tools"><span class="legend" style="min-width:70px">סינון</span>
+    ${fsel('layer',[...new Set(students.map(s=>s.layer))].sort(cmpHe).map(l=>[l,'שכבה '+l]),'כל השכבות')}
+    ${fsel('cls',[...new Set(students.filter(s=>!f.layer||s.layer===f.layer).map(s=>s.cls))].sort(cmpHe).map(c=>[c,c]),'כל הכיתות')}
+    ${fsel('type',NEED_TYPES.map(t=>[t,TYPES[t].n]),'כל סוגי המענה')}
+    ${fsel('freq',[['נמוכה','נמוכה'],['גבוהה','גבוהה'],['רפואי','רפואי']],'כל השכיחויות')}
+    ${fsel('tag',TAGS.map(t=>[t,t]),'כל האפיונים')}
+    ${active?`<button class="btng sm" style="margin:0" onclick="state.f={layer:'',cls:'',type:'',freq:'',tag:''};render()">ניקוי סינון</button>`:''}
+    <select style="margin-inline-start:auto" onchange="go('cuts',{period:this.value})">${[...WEEKS,'avg'].map(w=>`<option value="${w}" ${state.period===w?'selected':''}>${wLabel(w)}</option>`).join('')}</select>
+    <button class="btng" onclick="window.print()">הדפסה</button></div>
+  <div class="card"><table><tr><th>${BY.find(b=>b[0]===by)[1]}</th><th>תלמידים</th><th>פולח (מגיע)</th><th>שובץ</th><th>ניתן בפועל</th><th>טרם ניתן</th><th style="width:26%">ביצוע</th></tr>
+  ${by==='school'?'':rowsHtml}${row('<b>סה"כ '+(ME.layers.length?'שכבות '+ME.layers.join(', '):'בית ספרי')+'</b>'+(active?' <span class="meta">(לפי הסינון)</span>':''),tot,'',true)}</table></div>
+  <p class="legend">פולח = מה שהוחלט בפילוח (שעות שבועיות). שובץ = מה ששובץ במערכת, בלי מענים מושהים. ניתן בפועל = מענים שסומנו "התקיים" ב${wLabel(state.period)}. בפס: כהה = ניתן, בהיר = שובץ.</p>`;
+}
+function row(label,p,drill,tot){const gp=p.need?p.given/p.need*100:0,sp=p.need?p.sched/p.need*100:0;
+  return `<tr class="${drill?'click':''} ${tot?'tot':''}" ${drill?`onclick="${drill}"`:''}><td>${label}</td><td>${p.n}</td><td>${fmt(p.need)}</td><td>${fmt(p.sched)}</td><td>${fmt(p.given)}</td><td><b style="color:${p.pending?'var(--bad)':'var(--ok)'}">${fmt(p.pending)}</b></td>
+  <td><div class="bar dbl"><i class="s" style="width:${Math.min(100,sp)}%"></i><i class="g" style="width:${Math.min(100,gp)}%"></i></div><span class="legend">${Math.round(gp)}%</span></td></tr>`}
+function setF(o,by){Object.assign(state.f,o);if(o.layer)state.f.cls='';if(by)state.by=by;render()}
+
+// ===== חוסרים =====
+function gapsView(){
+  const layers=[...new Set(students.map(s=>s.layer))].sort(cmpHe);
+  const lst=students.filter(s=>(!state.layer||s.layer===state.layer)&&NEED_TYPES.some(t=>(!state.typeF||t===state.typeF)&&missing(s,t)>0));
+  let h=`<div class="tools"><span class="chip btn ${state.gapBy==='stu'?'on':''}" onclick="go('gaps',{gapBy:'stu'})">לפי תלמיד</span><span class="chip btn ${state.gapBy==='type'?'on':''}" onclick="go('gaps',{gapBy:'type'})">לפי סוג מענה</span><span style="width:14px"></span>
+    ${['',...layers].map(l=>`<span class="chip btn ${state.layer===l?'on':''}" onclick="go('gaps',{layer:'${l}'})">${l?'שכבה '+l:'כל השכבות'}</span>`).join('')}
+    <select onchange="go('gaps',{typeF:this.value})"><option value="">כל סוגי המענה</option>${NEED_TYPES.map(t=>`<option value="${t}" ${state.typeF===t?'selected':''}>${TYPES[t].n}</option>`).join('')}</select>
+    <button class="btng" style="margin-inline-start:auto" onclick="window.print()">הדפסה</button></div>`;
+  if(state.gapBy==='stu'){
+    h+=`<div class="card"><table><tr><th>תלמיד</th><th>כיתה</th><th>מה מגיע לו ולא קיבל</th><th>סה"כ חסר</th></tr>`;
+    lst.forEach(s=>{const items=NEED_TYPES.filter(t=>(!state.typeF||t===state.typeF)&&missing(s,t)>0).map(t=>{const p=paused(s.id,t);
+        return `<div class="miss"><b>${TYPES[t].n}</b> — חסרות ${fmt(missing(s,t))} מתוך ${fmt(+s.needs[t])}${p?` <span class="chip c-part">${p} מושהות: ${esc(pausedBy(s.id,t))}</span>`:''}</div>`}).join('');
+      const tot=NEED_TYPES.filter(t=>!state.typeF||t===state.typeF).reduce((a,t)=>a+missing(s,t),0);
+      h+=`<tr class="click" onclick="openStudent(${s.id})"><td><b>${esc(s.name)}</b></td><td>${esc(s.cls)}</td><td>${items}</td><td><b style="color:var(--bad)">${fmt(tot)}</b></td></tr>`});
+    h+=`</table>${lst.length?'':'<p class="legend">אין חוסרים 🎉</p>'}</div>`;
+  }else{
+    NEED_TYPES.filter(t=>!state.typeF||t===state.typeF).forEach(t=>{const l=students.filter(s=>(!state.layer||s.layer===state.layer)&&missing(s,t)>0);if(!l.length)return;
+      h+=`<h2>${TYPES[t].n} · חסרות ${fmt(l.reduce((a,s)=>a+missing(s,t),0))} שעות ל־${l.length} תלמידים</h2><div class="card">`+
+        l.map(s=>`<span class="chip btn" style="background:var(--badb);color:var(--bad)" onclick="openStudent(${s.id})">${esc(s.name)} (${esc(s.cls)}) · ${fmt(missing(s,t))}${paused(s.id,t)?' · מושהה':''}</span>`).join('')+`</div>`});
+  }
+  return h+`<p class="legend">"מושהה" = המענה משובץ, אבל המטפל/ת בהיעדרות ממושכת בלי מחליף, ולכן הוא נספר כחוסר.</p>`;
+}
+
+function studentsView(){
+  const layers=[...new Set(students.map(s=>s.layer))].sort(cmpHe);
+  const list=students.filter(s=>(!state.layer||s.layer===state.layer)&&(!state.q||s.name.includes(state.q))&&(!state.typeF||(+s.needs[state.typeF]||0)>0)
+    &&(!state.gapOnly||(state.typeF?missing(s,state.typeF)>0:gapOf(s)>0)));
+  let h=`<div class="tools"><input type="search" placeholder="חיפוש תלמיד" value="${esc(state.q)}" oninput="state.q=this.value;render();const i=document.querySelector('main input[type=search]');i.focus();i.setSelectionRange(99,99)">
+    ${['',...layers].map(l=>`<span class="chip btn ${state.layer===l?'on':''}" onclick="go('students',{layer:'${l}'})">${l?'שכבה '+l:'כל השכבות'}</span>`).join('')}
+    <select onchange="go('students',{typeF:this.value})"><option value="">כל סוגי המענה</option>${NEED_TYPES.map(t=>`<option value="${t}" ${state.typeF===t?'selected':''}>${TYPES[t].n}</option>`).join('')}</select>
+    <span class="chip btn ${state.gapOnly?'on':''}" onclick="go('students',{gapOnly:!state.gapOnly})">רק עם חוסר</span>
+    ${ME.ro?'':'<button class="btnp" onclick="editStudent(null)">+ תלמיד</button>'}
+    <span class="legend" style="margin-inline-start:auto">${list.length} תלמידים</span></div>
+  <div class="card"><table><tr><th>תלמיד</th><th>כיתה</th><th>שכיחות</th><th>סיוע</th><th>מענים — שובץ/פולח</th></tr>`;
+  list.forEach(s=>{h+=`<tr class="click" onclick="openStudent(${s.id})"><td><b>${esc(s.name)}</b>${s.pulse==='שנייה'?' <span class="chip c-part">פעימה שנייה</span>':''}</td><td>${esc(s.cls)}</td><td><span class="chip ${s.freq==='גבוהה'?'c-info':'c-mute'}">${esc(s.freq)}</span></td><td>${esc(s.aide)}</td><td>${NEED_TYPES.map(t=>statusChip(s,t)).join('')||'<span class="legend">סיוע בלבד</span>'}</td></tr>`});
+  return h+`</table></div>`;
+}
+
+function absBadge(t){if(!t.absence)return '';const a=t.absence,on=absent(t);
+  return `<div class="note" style="${on?'':'background:#efece6;color:var(--mute)'}">${on?'🕓 ':''}${esc(a.reason)}: ${heb(a.from)} – ${a.to?heb(a.to):'לא ידוע'}<br>${a.sub?'מחליף/ה: <b>'+esc(a.sub)+'</b>':'<b>אין מחליף</b> — המענים מושהים'}</div>`}
+function therView(){
+  return `<div class="grid ther">`+therapists.map(t=>{const l=load_(t),p=t.cap?Math.min(100,l/t.cap*100):0,ov=t.cap&&l>t.cap;
+    return `<div class="card tcard ${absent(t)?'away':''}"><div onclick="go('sched',{ther:'${t.id}'})">
+      <h3>${esc(t.name)}</h3><div class="meta">${esc(t.role||TYPES[t.type].n)} · ${RM(t.room)?esc(RM(t.room).name):'בלי חדר'}</div>
+      <div class="meta">ימים: ${t.days.map(d=>DAYS[d]).join(', ')||'—'}</div>
+      <div class="row" style="margin:8px 0 0"><div class="bar" style="flex:1"><i class="${ov?'over':''}" style="width:${p}%"></i></div><b>${l}/${t.cap?fmt(t.cap):'?'}</b></div>
+      <div class="legend">שעות משובצות מתוך התקן${t.ind?` · ${t.ind} פרטניות`:''}</div>${t.note?`<div class="note">${esc(t.note)}</div>`:''}${absBadge(t)}</div>
+      ${ME.ro?'':`<button class="btng sm" onclick="absModal('${t.id}')">${t.absence?'עריכת היעדרות':'+ היעדרות ממושכת'}</button>`}</div>`}).join('')+`</div>`;
+}
+
+// ===== היעדרות ממושכת =====
+let ab=null;
+function absModal(tid){const t=T(tid);ab=Object.assign({from:TODAY,to:'',reason:'חופשת לידה',sub:''},t.absence||{});ab.tid=tid;
+  const subs=therapists.filter(x=>x.type===t.type&&x.id!==t.id);
+  showOv(`<div class="modal"><button class="x" onclick="closeOv()">✕</button><h2 style="margin-top:0">היעדרות ממושכת · ${esc(t.name)}</h2>
+    <div class="row"><label>סיבה</label>${['חופשת לידה','מחלה','מילואים','היעדרות ממושכת'].map(r=>`<span class="chip btn ${ab.reason===r?'on':''}" onclick="ab.reason='${r}';this.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));this.classList.add('on')">${r}</span>`).join('')}</div>
+    <div class="row"><label>מתאריך</label><input type="date" value="${ab.from}" onchange="ab.from=this.value;this.nextElementSibling.textContent=heb(this.value)"><span class="meta">${heb(ab.from)}</span></div>
+    <div class="row"><label>עד תאריך</label><input type="date" value="${ab.to||''}" onchange="ab.to=this.value;this.nextElementSibling.textContent=this.value?heb(this.value):'לא ידוע'"><span class="meta">${ab.to?heb(ab.to):'לא ידוע'}</span></div>
+    <div class="row"><label>מחליף/ה</label><input type="text" list="subs" value="${esc(ab.sub)}" placeholder="שם ממלא/ת המקום, או ריק" oninput="ab.sub=this.value"><datalist id="subs">${subs.map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist></div>
+    <p class="legend">בלי מחליף — ${load_(t)} המענים יסומנו "מושהים" וייספרו כחוסר. עם מחליף — הם ממשיכים להיספר כמשובצים.</p>
+    <div class="row" style="justify-content:space-between;margin-top:16px"><div>${t.absence?`<button class="btnd" onclick="saveAbs(true)">ביטול ההיעדרות</button>`:''}</div>
+      <div><button class="btng" onclick="closeOv()">ביטול</button> <button class="btnp" onclick="saveAbs()">שמירה</button></div></div></div>`)}
+function saveAbs(clear){const t=T(ab.tid);const a={from:ab.from,to:ab.to||'',reason:ab.reason,sub:(ab.sub||'').trim()};
+  closeOv();act('sh_save_provider',{p:Object.assign({},t,{absence:clear?null:a})},clear?'ההיעדרות בוטלה ✓':'ההיעדרות נשמרה ✓')}
+
+// ===== מערכת מטפל =====
+function grid(cellFn,dayOn){let h=`<div class="sched"><div></div>${DAYS.map((d,i)=>`<div class="hd ${dayOn(i)?'':'off'}">${d}</div>`).join('')}`;
+  HOURS.forEach(hr=>{h+=`<div class="hr">שעה ${hr}</div>`;DAYS.forEach((_,d)=>h+=cellFn(d,hr))});return h+`</div>`}
+function stuLine(x,sep){return x.stu.map(nm).map(esc).concat(x.hidden?[`+${x.hidden} משכבות אחרות`]:[]).join(sep)}
+function sessBox(x,extra){const c=conflicts(x).filter(m=>!m.includes('בהיעדרות')).length,p=!counts(x),v=x.d!=null?attOf(x,WEEKS[3]):undefined;
+  return `<div class="slot full ${p?'paused':''}" onclick="openSession(${x.id})">${c?'<span class="warn" title="התנגשות">⚠</span>':''}${v===true?'<span class="tick">✓</span>':v===false?'<span class="tick no">✗</span>':''}<div class="mode">${esc(x.mode)}${p?' · מושהה':''}</div>${extra||''}${x.label?`<b>${esc(x.label)}</b><br>`:''}${stuLine(x,'<br>')}</div>`}
+function schedView(){const t=T(state.ther);if(!therapists.length)return '<div class="card">אין מטפלים בכלי.</div>';
+  let h=`<div class="tools">${therapists.map(x=>`<span class="chip btn ${x.id===t.id?'on':''}" onclick="go('sched',{ther:'${x.id}'})">${esc(x.name)}${absent(x)?' 🕓':''}</span>`).join('')}</div>
+  <div class="card"><div class="row" style="margin-top:0"><b style="font-size:17px">${esc(t.name)}</b><span class="meta">${esc(t.role||TYPES[t.type].n)} · ${RM(t.room)?esc(RM(t.room).name):'בלי חדר קבוע'} · ${load_(t)}/${t.cap?fmt(t.cap):'?'} שעות</span>${t.note?`<span class="note" style="margin:0">${esc(t.note)}</span>`:''}
+  ${ME.ro?'':`<button class="btng sm" style="margin-inline-start:auto" onclick="absModal('${t.id}')">${t.absence?'עריכת היעדרות':'+ היעדרות ממושכת'}</button>`}</div>${absent(t)?absBadge(t):''}`;
+  h+=grid((d,hr)=>{const x=sessions.find(s=>s.t===t.id&&s.d===d&&s.h===hr);
+    if(x)return sessBox(x,roomOf(x)!==t.room&&RM(roomOf(x))?`<div class="legend">${esc(RM(roomOf(x)).name)}</div>`:'');
+    const off=!t.days.includes(d);return `<div class="slot ${off?'off':''}" onclick="newSession('${t.id}',${d},${hr})">${off?'':'<div class="plus">+</div>'}</div>`},i=>t.days.includes(i));
+  const tray=sessions.filter(s=>s.t===t.id&&s.d==null);
+  return h+`<h2 style="margin-top:18px">מענים שעוד לא קיבלו שעה (${tray.length})</h2><div class="tray">`+tray.map(x=>sessBox(x)).join('')+
+    (ME.ro?'':`<button class="btng" onclick="newSession('${t.id}',null,null)">+ מענה בלי שעה</button>`)+`</div></div>
+    <p class="legend">משבצת מקווקוות = יום שהמטפל לא עובד בו. ⚠ = התנגשות תלמיד או חדר. ✓/✗ = דיווח השבוע. מושהה = המטפל בהיעדרות בלי מחליף.</p>`}
+
+// ===== מערכת חדרים =====
+function roomsView(){const r=RM(state.room);if(!r)return '<div class="card">אין חדרים בכלי.</div>';
+  const occ=rm=>{let n=0;DAYS.forEach((_,d)=>HOURS.forEach(h=>{if(sessions.some(x=>x.d===d&&x.h===h&&roomOf(x)===rm)||fixedAt(rm,d,h).length)n++}));return n};
+  const blds=[...new Set(rooms.map(x=>x.bld.split(' · ')[0]))];
+  let h=`<div class="tools" style="flex-direction:column;align-items:stretch">`+blds.map(b=>`<div class="row" style="margin:2px 0"><span class="legend" style="min-width:70px">${esc(b)}</span>${rooms.filter(x=>x.bld.split(' · ')[0]===b).map(x=>`<span class="chip btn ${x.id===r.id?'on':''}" onclick="go('rooms',{room:'${x.id}'})">${esc(x.name)} <small>${36-occ(x.id)} פנויות</small></span>`).join('')}</div>`).join('')+`</div>
+  <div class="card"><div class="row" style="margin-top:0"><b style="font-size:17px">${esc(r.name)}</b><span class="meta">${esc(r.bld)}${r.use?' · '+esc(r.use):''} · ${36-occ(r.id)} משבצות פנויות מתוך 36</span>
+  <span class="legend" style="margin-inline-start:auto">קבועים בחדר: ${esc(therapists.filter(t=>t.room===r.id).map(t=>t.name).join(', '))||'—'}</span></div>`;
+  h+=grid((d,hr)=>{const xs=sessions.filter(x=>x.d===d&&x.h===hr&&roomOf(x)===r.id),fx=fixedAt(r.id,d,hr);
+    if(!xs.length&&!fx.length)return `<div class="slot free" onclick="${ME.ro?'':`newSession(null,${d},${hr},'${r.id}')`}"><div class="plus">פנוי</div></div>`;
+    const clash=xs.length+fx.length>1;
+    return `<div class="slot full ${clash?'clash':''}">${clash?'<span class="warn">⚠</span>':''}`+xs.map(x=>`<div onclick="openSession(${x.id})" style="cursor:pointer"><b>${esc(T(x.t).name)}</b>${!counts(x)?' <span class="legend">(מושהה)</span>':''}<br><span class="legend">${x.label?esc(x.label):stuLine(x,', ')}</span></div>`).join('')+fx.map(f=>`<div class="fixed">${esc(f.label)}</div>`).join('')+`</div>`},()=>true);
+  return h+`</div><p class="legend">ירוק = פנוי (לחיצה משבצת מענה בחדר). אפור = שימוש קבוע לפי גיליון החדרים. ⚠ = שני שימושים באותה שעה.</p>`}
+
+// ===== תלמיד =====
+function openStudent(id){const s=SBY[id];if(!s)return;
+  let h=`<div class="drawer"><button class="x" onclick="closeOv()">✕</button><h2 style="margin-top:0">${esc(s.name)}</h2>
+    <div class="meta">כיתה ${esc(s.cls)} · שכיחות ${esc(s.freq)} · פעימה ${esc(s.pulse)}${s.aide?' · סיוע '+esc(s.aide):''} ${ME.ro?'':`· <a href="#" onclick="editStudent(${s.id});return false">עריכה</a>`}</div>
+    <div class="row"><label>אפיונים</label><div>${TAGS.map(t=>`<span class="chip btn ${s.tags.includes(t)?'on':''}" ${ME.ro?'':`onclick="toggleTag(${s.id},'${t}')"`}>${t}</span>`).join('')}</div></div>
+    <h2>פולח · שובץ · ניתן בפועל</h2><div class="legend">ניתן בפועל — ${wLabel(state.period)}</div>`;
+  NEED_TYPES.forEach(t=>{const n=+s.needs[t]||0,g=got(s.id,t),p=paused(s.id,t);if(!n&&!g&&!p)return;const ok=g>=n;
+    h+=`<div class="need"><b>${TYPES[t].n}</b><div class="bar"><i style="width:${n?Math.min(100,g/n*100):100}%;background:${ok?'var(--ok)':g?'var(--warn)':'var(--bad)'}"></i></div>
+      <span>${fmt(g)}/${fmt(n)} · ניתן ${fmt(heldVal(s.id,t))} ${!ok&&t!=='m'&&!ME.ro?`<a href="#" onclick="pickTher('${t}',${s.id});return false">שבץ</a>`:''}</span></div>${p?`<div class="legend" style="color:var(--warn)">${p} מושהות — ${esc(pausedBy(s.id,t))} בהיעדרות</div>`:''}`});
+  const my=sessions.filter(x=>has(x,s.id));
+  h+=`<h2>המענים שלו (${my.length})</h2>`+(my.map(x=>`<div class="sess" onclick="openSession(${x.id})"><b>${esc(T(x.t).name)}</b> · ${TYPES[T(x.t).type]?TYPES[T(x.t).type].n:''} · ${esc(x.mode)}${!counts(x)?' · <span style="color:var(--warn)">מושהה</span>':''}<br><span class="meta">${x.d==null?'עוד אין שעה':`יום ${DAYS[x.d]}, שעה ${x.h}${RM(roomOf(x))?' · '+esc(RM(roomOf(x)).name):''}`}${x.stu.length>1?' · עם '+esc(x.stu.filter(n=>n!==s.id).map(nm).join(', ')):''}</span></div>`).join('')||'<p class="legend">אין עדיין מענים</p>')+`</div>`;
+  showOv(h)}
+function toggleTag(id,t){const s=SBY[id];const tags=s.tags.includes(t)?s.tags.filter(x=>x!==t):[...s.tags,t];
+  act('sh_save_student',{p:Object.assign({},s,{tags})}).then(r=>{if(r)openStudent(id)})}
+let ed=null;
+function editStudent(id){const s=id?SBY[id]:{name:'',cls:'',freq:'נמוכה',pulse:'ראשונה',aide:'',needs:{},tags:[]};ed=JSON.parse(JSON.stringify(s));
+  showOv(`<div class="modal"><button class="x" onclick="closeOv()">✕</button><h2 style="margin-top:0">${id?'עריכת תלמיד':'תלמיד חדש'}</h2>
+    <div class="row"><label>שם</label><input type="text" value="${esc(ed.name)}" oninput="ed.name=this.value"></div>
+    <div class="row"><label>כיתה</label><input type="text" value="${esc(ed.cls)}" placeholder="למשל ג2" oninput="ed.cls=this.value" style="width:90px"></div>
+    <div class="row"><label>שכיחות</label>${['נמוכה','גבוהה','רפואי'].map(q=>`<span class="chip btn ${ed.freq===q?'on':''}" onclick="ed.freq='${q}';editRedraw(this)">${q}</span>`).join('')}</div>
+    <div class="row"><label>פעימה</label>${['ראשונה','שנייה'].map(q=>`<span class="chip btn ${ed.pulse===q?'on':''}" onclick="ed.pulse='${q}';editRedraw(this)">${q}</span>`).join('')}</div>
+    <div class="row"><label>סיוע</label><input type="text" value="${esc(ed.aide)}" oninput="ed.aide=this.value"></div>
+    <h2>מה פולח (שעות בשבוע)</h2>${NEED_TYPES.map(t=>`<div class="row" style="margin:4px 0"><label style="min-width:140px">${TYPES[t].n}</label><input type="number" min="0" max="20" step="0.5" value="${+ed.needs[t]||''}" style="width:80px" oninput="if(this.value==='')delete ed.needs['${t}'];else ed.needs['${t}']=+this.value"></div>`).join('')}
+    <div class="row" style="justify-content:space-between;margin-top:16px"><div>${id?`<button class="btnd" onclick="if(confirm('להסיר את התלמיד מהכלי?')){ed.active=false;saveStudent()}">הסרה מהכלי</button>`:''}</div>
+    <div><button class="btng" onclick="closeOv()">ביטול</button> <button class="btnp" onclick="saveStudent()">שמירה</button></div></div></div>`)}
+function editRedraw(el){el.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on')}
+function saveStudent(){if(!ed.name.trim()){toast('חסר שם');return}const p=ed;closeOv();act('sh_save_student',{p},'נשמר ✓')}
+function pickTher(type,id){const opts=therapists.filter(t=>t.type===type);
+  showOv(`<div class="modal"><button class="x" onclick="closeOv()">✕</button><h2 style="margin-top:0">אצל מי לשבץ את ${esc(nm(id))}?</h2>
+    ${opts.map(t=>`<div class="sess" onclick="go('sched',{ther:'${t.id}'});closeOv()"><b>${esc(t.name)}</b>${absent(t)?' 🕓 בהיעדרות':''} · ${load_(t)}/${t.cap?fmt(t.cap):'?'} שעות · ימים ${t.days.map(d=>DAYS[d]).join(', ')}</div>`).join('')||'<p class="legend">אין מטפלים מהסוג הזה בכלי.</p>'}
+    <p class="legend">בוחרים מטפל ← לוחצים על משבצת פנויה במערכת שלו ← מסמנים את התלמיד.</p></div>`)}
+
+// ===== מענה =====
+let draft=null;
+function newSession(tid,d,h,room){if(ME.ro)return;const t=tid||(therapists.find(x=>x.room===room&&!absent(x))||therapists[0]||{}).id;
+  draft={id:null,t,d,h,stu:[],hidden:0,mode:'פרטני',label:'',room:room&&room!==T(t).room?room:''};sessionModal()}
+function openSession(id){draft=JSON.parse(JSON.stringify(sessions.find(x=>x.id===id)));sessionModal()}
+function sessionModal(){
+  const t=T(draft.t),type=t.type,q=draft._q||'',ro=ME.ro;
+  const cand=students.filter(s=>(+s.needs[type]||0)>0||draft.stu.includes(s.id)).filter(s=>!q||s.name.includes(q)).sort((a,b)=>missing(b,type)-missing(a,type));
+  const c=conflicts(draft);
+  showOv(`<div class="modal"><button class="x" onclick="closeOv()">✕</button><h2 style="margin-top:0">${draft.id?'מענה':'מענה חדש'}</h2>
+    <div class="row"><label>מטפל/ת</label><select ${ro?'disabled':''} onchange="draft.t=this.value;sessionModal()">${therapists.map(x=>`<option value="${x.id}" ${x.id===t.id?'selected':''}>${esc(x.name)} · ${TYPES[x.type]?TYPES[x.type].n:''}</option>`).join('')}</select></div>
+    <div class="row"><label>מתי</label><select ${ro?'disabled':''} onchange="draft.d=this.value===''?null:+this.value;if(draft.d!=null&&!draft.h)draft.h=1;sessionModal()"><option value="">בלי שעה עדיין</option>${DAYS.map((x,i)=>`<option value="${i}" ${draft.d===i?'selected':''}>${x}${t.days.includes(i)?'':' (לא עובד/ת)'}</option>`).join('')}</select>
+      <select onchange="draft.h=+this.value;sessionModal()" ${draft.d==null||ro?'disabled':''}>${HOURS.map(x=>`<option ${draft.h===x?'selected':''}>${x}</option>`).join('')}</select></div>
+    <div class="row"><label>חדר</label><select ${ro?'disabled':''} onchange="draft.room=this.value===T(draft.t).room?'':this.value;sessionModal()">${rooms.map(r=>`<option value="${r.id}" ${roomOf(draft)===r.id?'selected':''}>${esc(r.name)}${r.id===t.room?' (הקבוע)':''}${draft.d!=null&&isBusy(r.id,draft)?' — תפוס':''}</option>`).join('')}</select></div>
+    <div class="row"><label>סוג</label>${['פרטני','זוגי','קבוצתי','כיתתי'].map(m=>`<span class="chip btn ${draft.mode===m?'on':''}" ${ro?'':`onclick="draft.mode='${m}';sessionModal()"`}>${m}</span>`).join('')}</div>
+    ${draft.mode==='כיתתי'?`<div class="row"><label>כיתה/מרחב</label><input type="text" ${ro?'disabled':''} value="${esc(draft.label)}" placeholder="למשל מרחב ג" oninput="draft.label=this.value"></div>`:''}
+    <div class="row"><label>תלמידים</label><input type="search" placeholder="חיפוש" value="${esc(q)}" oninput="draft._q=this.value;sessionModal();const i=document.querySelector('.modal input[type=search]');i.focus();i.setSelectionRange(99,99)"><span class="legend">ממוין לפי מי שהכי חסר לו ${TYPES[type]?TYPES[type].n:''}</span></div>
+    <div class="plist">${cand.map(s=>{const n=+s.needs[type]||0,g=got(s.id,type),gap=n-g;
+      return `<label><input type="checkbox" ${ro?'disabled':''} ${draft.stu.includes(s.id)?'checked':''} onchange="toggleStu(${s.id},this.checked)"> ${esc(s.name)} <span class="meta">${esc(s.cls)}</span><span class="gap chip ${gap<=0?'c-ok':g?'c-part':'c-none'}">${fmt(g)}/${fmt(n)}</span></label>`}).join('')||'<p class="legend" style="padding:10px">אין תלמידים שפולח להם '+(TYPES[type]?TYPES[type].n:'')+'</p>'}</div>
+    ${draft.hidden?`<p class="legend">במענה הזה יש עוד ${draft.hidden} תלמידים משכבות שלא פתוחות לך. הם יישארו בו.</p>`:''}
+    ${draft.id&&draft.d!=null?`<div class="row"><label>התקיים?</label><div>${WEEKS.map(w=>`<span class="chip btn" ${ro?'':`onclick="cycleAtt(${draft.id},'${w}')"`}>${heb(w)} · ${attMark(draft,w)}</span>`).join('')}<div class="legend">לחיצה מחליפה: התקיים ← לא התקיים ← טרם דווח</div></div></div>`:''}
+    ${c.map(x=>`<div class="alert">⚠ ${esc(x)}</div>`).join('')}${t.note?`<div class="note">${esc(t.note)}</div>`:''}
+    ${ro?'':`<div class="row" style="justify-content:space-between;margin-top:16px"><div>${draft.id&&!draft.hidden?`<button class="btnd" onclick="delSession()">מחיקה</button>`:''}</div>
+      <div><button class="btng" onclick="closeOv()">ביטול</button> <button class="btnp" onclick="saveSession()">שמירה</button></div></div>`}</div>`)}
+function isBusy(rid,x){return fixedAt(rid,x.d,x.h).length||sessions.some(o=>o.id!==x.id&&o.d===x.d&&o.h===x.h&&roomOf(o)===rid)}
+function toggleStu(id,on){draft.stu=on?[...draft.stu,id]:draft.stu.filter(x=>x!==id);
+  if(draft.mode!=='כיתתי')draft.mode=draft.stu.length>2?'קבוצתי':draft.stu.length===2?'זוגי':'פרטני';sessionModal()}
+async function cycleAtt(id,w){const x=sessions.find(s=>s.id===id),v=attOf(x,w),nv=v===true?false:v===false?null:true;
+  const r=await act('sh_set_att',{p_id:id,p_week:w,p_held:nv});if(r){draft=JSON.parse(JSON.stringify(sessions.find(s=>s.id===id)));draft._q='';sessionModal()}}
+function saveSession(){const d=draft;closeOv();if(state.tab!=='rooms')state.ther=d.t;
+  act('sh_save_session',{p:{id:d.id,t:d.t,d:d.d,h:d.h,mode:d.mode,label:d.label,room:d.room||null,stu:d.stu}},'המענה נשמר ✓')}
+function delSession(){const id=draft.id;if(!confirm('למחוק את המענה?'))return;closeOv();act('sh_delete_session',{p_id:id},'המענה נמחק')}
+function showOv(html){const o=document.getElementById('ov');o.innerHTML=html;o.classList.add('show')}
+function closeOv(){const o=document.getElementById('ov');o.classList.remove('show');o.innerHTML=''}
+document.getElementById('ov').addEventListener('click',e=>{if(e.target.id==='ov')closeOv()});
+
+// ===== כניסה =====
+function showGate(err){ME=null;document.getElementById('app').innerHTML=`<div class="gate"><div class="gcard">${LOGO}<h1>כלי השילוב</h1><p>כניסה בטלפון ובקוד האישי (אותו קוד של מפת הכיתה)</p>
+  <form onsubmit="login(event)"><input name="ph" type="tel" inputmode="tel" placeholder="מספר טלפון" autocomplete="tel" required><input name="pin" type="password" placeholder="קוד אישי" autocomplete="current-password" required>
+  <button class="btnp">כניסה</button><div class="gmsg">${err?esc(ERR[err]||'לא ניתן להיכנס כרגע.'):''}</div></form>
+  <a class="legend" href="/hanhala/">חזרה ללוח ההנהלה</a></div></div>`}
+async function login(e){e.preventDefault();const f=e.target,m=f.querySelector('.gmsg');m.textContent='מתחבר…';
+  const phone=f.ph.value.replace(/\D/g,''),pin=f.pin.value;
+  try{const r=await rpc('sh_login',{p_phone:phone,p_pin:pin});if(!r||r.error){m.textContent=ERR[r&&r.error]||'לא ניתן להיכנס.';return}
+    SES={phone,pin};ses(SES);if(await load())render()}catch(x){m.textContent='אין חיבור לשרת כרגע. נסו שוב בעוד רגע.'}}
+function logout(){ses(null);location.reload()}
+(async function start(){
+  SES=ses();
+  if(!SES){try{const m=JSON.parse(localStorage.getItem('mapat-kita-session')||'null');if(m&&m.phone&&m.pin)SES={phone:m.phone,pin:m.pin}}catch(e){}}
+  if(!SES)return showGate();
+  document.getElementById('app').innerHTML='<div class="gate"><div class="gcard">'+LOGO+'<p>טוען…</p></div></div>';
+  try{if(await load()){ses(SES);render()}}catch(e){showGate();document.querySelector('.gmsg').textContent='אין חיבור לשרת כרגע. נסו שוב בעוד רגע.'}
+})();
+</script>
+<script src="/feedback/badge.js" defer></script>
+</body>
+</html>

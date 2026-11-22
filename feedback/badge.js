@@ -5,7 +5,7 @@
   if(window.__kfb)return;window.__kfb=1;
   var CFG={url:'https://onocjgbtensczpdbeanf.supabase.co',key:'sb_publishable_JpV-E-qPnV9ZdnRnY9Kv8Q_TaRzCnyc'};
   var p=location.pathname;
-  var TOOL=/^\/milui/.test(p)?'מילוי מקום':/^\/toranut/.test(p)?'תורנויות חצר':/^\/sayarot/.test(p)?'סיירות':/^\/mapat-kita/.test(p)?'מפת כיתה':/^\/hanhala/.test(p)?'לוח הנהלה':/^\/horim/.test(p)?'יום הורים':'מתכנן הספק';
+  var TOOL=/^\/milui/.test(p)?'מילוי מקום':/^\/toranut/.test(p)?'תורנויות חצר':/^\/sayarot/.test(p)?'סיירות':/^\/mapat-kita/.test(p)?'מפת כיתה':/^\/hanhala/.test(p)?'לוח הנהלה':/^\/horim/.test(p)?'יום הורים':/^\/shiluv/.test(p)?'כלי השילוב':'מתכנן הספק';
   function ls(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}
   function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
   function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
