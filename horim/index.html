@@ -510,8 +510,14 @@ function render(){
   const f=root.querySelector('[autofocus]');if(f)f.focus();
 }
 async function refresh(keep){S.keepScroll=keep;try{await load()}catch(e){if(/no_access/.test(e.message)){lsSet('hanhala_phone',null);S.phone=null;return renderLogin('המספר הזה לא מורשה להיכנס.')}toast(errMsg(e))}render()}
-const tsel=()=>{const d=S.d;if(!d.admin)return '';
-  return '<label class="row small" style="gap:8px">מורה:<select data-act="tsel" style="width:auto;min-height:44px">'+d.participants.map(p=>'<option value="'+p.tid+'"'+(p.tid===S.tid?' selected':'')+'>'+esc(tName(p.name))+'</option>').join('')+'</select></label>'};
+/* חיפוש בכל רשימה: תיבה שמסננת את שורות הטבלה (או הכרטיסים) לפי הטקסט שבהן */
+const tfind=(target,ph)=>'<input type="search" class="tfind noprint" data-t="'+target+'" placeholder="🔍 '+(ph||'חיפוש')+'" aria-label="'+(ph||'חיפוש')+'" style="min-height:40px;max-width:260px">';
+function applyFind(el){const q=el.value.trim().toLowerCase(),box=document.querySelector(el.dataset.t);if(!box)return;let n=0;
+  box.querySelectorAll('tbody tr, .slot').forEach(r=>{const ok=!q||r.textContent.toLowerCase().includes(q);r.style.display=ok?'':'none';if(ok)n++});
+  let m=box.querySelector('.tfind-none');if(!m){m=document.createElement('div');m.className='tfind-none small muted';m.style.padding='8px';box.appendChild(m)}m.textContent=n?'':'לא נמצא "'+el.value+'"'}
+/* בחירת מורה: תיבה עם חיפוש (כותבים חלק מהשם או כיתה) */
+const tsel=()=>{const d=S.d;if(!d.admin)return '';const ps=d.participants.slice().sort((a,b)=>tName(a.name).localeCompare(tName(b.name),'he')),cur=d.P[S.tid];
+  return '<label class="row small" style="gap:8px">מורה:<input list="tlist" data-act="tsel" id="tsel" value="'+esc(cur?tName(cur.name):'')+'" placeholder="חיפוש מורה…" onfocus="this.select()" style="width:220px;min-height:44px"><datalist id="tlist">'+ps.map(p=>'<option value="'+esc(tName(p.name))+'">'+esc(p.classes.join(', '))+'</option>').join('')+'</datalist></label>'};
 const eventLine=()=>{const e=S.d.event;return esc(longDate(e.day))+' · '+hm(e.t_start)+'–'+hm(e.t_end)+' · '+e.slot_min+' דקות לפגישה'};
 /* השעות של מורה מסוים (אם שינה לעצמו), אחרת הכלליות */
 const pDays=p=>(p&&p.days&&p.days.length?p.days:[S.d.event.day]);
@@ -626,7 +632,7 @@ function viewClass(){
   if(!c.token)h+='<div class="warn">אין עדיין קישור לכיתה הזו. שמרו את הגדרות האירוע כדי ליצור אותו.</div>';
   else h+='<section class="card box"><h2>הקישור להורי הכיתה</h2>'+(d.event.reg_open?'':'<div class="warn small">ההרשמה עוד סגורה: הורים שייכנסו יראו "ההרשמה סגורה". אפשר לשלוח אחרי שההנהלה תפתח.</div>')+
     '<div class="row"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(classMsg(c))+'">שליחה לקבוצת הכיתה בוואטסאפ</a><button class="btn sec sm" data-act="copytxt" data-t="'+esc(classMsg(c))+'">העתקת ההודעה</button><button class="btn sec sm" data-act="copytxt" data-t="'+esc(classLink(c.token))+'">העתקת הקישור בלבד</button><a class="link" href="'+esc(classLink(c.token))+'" target="_blank" rel="noopener">לראות כמו הורה</a></div></section>';
-  h+='<section class="card box" id="ctab"><h2>מי קבע</h2><div class="tablewrap"><table><thead><tr><th>תלמיד</th>'+ts.map(t=>'<th>'+esc(tName(t.name))+'</th>').join('')+'<th></th></tr></thead><tbody>'+
+  h+='<section class="card box" id="ctab"><div class="row" style="justify-content:space-between"><h2>מי קבע</h2>'+tfind('#ctab','חיפוש תלמיד')+'</div><div class="tablewrap"><table><thead><tr><th>תלמיד</th>'+ts.map(t=>'<th>'+esc(tName(t.name))+'</th>').join('')+'<th></th></tr></thead><tbody>'+
     c.students.map(n=>{const bb=bookedBy[n]||{};return '<tr><td><b>'+esc(n)+'</b></td>'+ts.map(t=>{const s=bb[t.tid];return '<td>'+(s?'<span class="tag g">'+esc(sT(s))+'</span> <span class="small muted">'+esc(s.b.parent)+'</span>':'<span class="tag r">—</span>')+'</td>'}).join('')+
       '<td>'+((d.admin||c.homeroom===d.tid||d.P[d.tid])&&ts.some(t=>!bb[t.tid])?'<button class="btn sec xs" data-act="cbook" data-n="'+esc(n)+'">שיבוץ ידני</button>':'')+'</td></tr>'}).join('')+'</tbody></table></div></section>';
   return h;
@@ -642,7 +648,7 @@ function viewLinks(){
     (d.admin?'<div class="row">'+(nOpen<L.length?'<button class="btn ok sm" data-act="regall" data-v="1">פתיחת כל הקישורים</button>':'')+(nOpen?'<button class="btn sec sm" data-act="regall" data-v="0">סגירת כל הקישורים</button>':'')+'</div>':'')+'</div></section>';
   const tot=d.classes.reduce((a,c)=>a+c.students.length,0),bk=d.classes.reduce((a,c)=>a+(c.booked||0),0);
   h+='<section class="kpis">'+kpi('k-blue','כיתות','עם קישור',L.length,'l-t')+kpi('k-green','נרשמו',tot?Math.round(bk*100/tot)+'% מהתלמידים':'תלמידים',bk,'l-t')+kpi('k-red','עוד לא','תלמידים',tot-bk,'l-t')+'</section>';
-  h+='<section class="card box" id="ltab"><div class="tablewrap"><table><thead><tr><th>כיתה</th><th>מחנך/ת</th><th>נרשמו</th><th>הרשמה</th><th>שליחה להורים</th></tr></thead><tbody>'+
+  h+='<section class="card box" id="ltab"><div class="row" style="justify-content:flex-end">'+tfind('#ltab','חיפוש כיתה או מחנך')+'</div><div class="tablewrap"><table><thead><tr><th>כיתה</th><th>מחנך/ת</th><th>נרשמו</th><th>הרשמה</th><th>שליחה להורים</th></tr></thead><tbody>'+
     d.classes.map(c=>{const t=c.students.length,n=c.booked||0;
       if(!c.teachers.length)return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.hr_name?tName(c.hr_name):'—')+'</td><td>—</td><td></td><td><span class="tag o">מועד אחר</span></td></tr>';
       const op=c.reg_open!==false&&d.event.reg_open;
@@ -651,7 +657,7 @@ function viewLinks(){
         :'<span class="muted small">אין קישור עדיין</span>')+'</td></tr>'}).join('')+'</tbody></table></div></section>';
   const mine=new Set(d.classes.map(c=>c.name));
   const subj=(d.participants||[]).filter(p=>!p.hr&&p.token&&p.classes.some(c=>mine.has(c)));
-  if(subj.length)h+='<section class="card box"><h2>מורים מקצועיים</h2><div class="small muted">ההורים מגיעים אליהם מה"בועות" שבקישור הכיתתי. אפשר גם לשלוח את הקישור האישי של מורה ישירות.</div><div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>נקבעו</th><th></th></tr></thead><tbody>'+
+  if(subj.length)h+='<section class="card box" id="lsub"><div class="row" style="justify-content:space-between"><h2>מורים מקצועיים</h2>'+tfind('#lsub','חיפוש מורה')+'</div><div class="small muted">ההורים מגיעים אליהם מה"בועות" שבקישור הכיתתי. אפשר גם לשלוח את הקישור האישי של מורה ישירות.</div><div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>נקבעו</th><th></th></tr></thead><tbody>'+
     subj.map(p=>{const sl=d.byT[p.tid]||[],u=location.origin+'/horim/?t='+p.token;
       return '<tr><td><b>'+esc(tName(p.name))+'</b></td><td class="small">'+esc(p.classes.join(', '))+'</td><td>'+(sl.length?sl.filter(s=>s.b).length+' / '+sl.filter(s=>!s.brk).length:'—')+'</td><td><div class="row"><button class="btn sec xs" data-act="copytxt" data-t="'+esc(u)+'">העתקת הקישור</button><a class="link" href="'+esc(u)+'" target="_blank" rel="noopener">לראות כמו הורה</a></div></td></tr>'}).join('')+'</tbody></table></div></section>';
   return h;
@@ -679,10 +685,10 @@ function viewOverview(){
     (filt?'<button class="btn sec sm" data-act="ofclear">ניקוי סינון</button>':'')+'</div></section>';
   h+='<section class="kpis">'+kpi('k-green','שובצו',tot?Math.round(bk*100/tot)+'% מהתלמידים':'תלמידים',bk,'o-cls')+kpi('k-red','עוד לא','תלמידים',tot-bk,'o-cls')+kpi('k-blue','פגישות','נקבעו',mt.length,'o-t')+kpi('k-orange','פנויות','משבצות',free,'o-t')+'</section>';
   if(filt&&(F.tid||F.k))h+='<div class="small muted">"שובצו" ו"עוד לא" נספרים לפי פגישות אצל '+(F.tid?'המורה שנבחר/ה':F.k==='hr'?'המחנכים':'המורים המקצועיים')+' בלבד.</div>';
-  h+='<section class="card box" id="ocls"><h2>לפי כיתה</h2>'+(cs.length?'<div class="tablewrap"><table><thead><tr><th>כיתה</th><th>שובצו</th><th style="width:40%"></th><th></th></tr></thead><tbody>'+
+  h+='<section class="card box" id="ocls"><div class="row" style="justify-content:space-between"><h2>לפי כיתה</h2>'+tfind('#ocls','חיפוש כיתה')+'</div>'+(cs.length?'<div class="tablewrap"><table><thead><tr><th>כיתה</th><th>שובצו</th><th style="width:40%"></th><th></th></tr></thead><tbody>'+
     cs.map(c=>{const n=by[c.name]?by[c.name].size:0,t=c.students.length,pc=t?Math.round(n*100/t):0;
       return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+n+' / '+t+'</td><td><div class="bar"><i style="width:'+pc+'%;background:'+(pc>=80?'var(--green)':pc>=40?'var(--orange)':'var(--red)')+'"></i></div></td><td><button class="link" data-act="gocls" data-c="'+esc(c.name)+'">לכיתה</button></td></tr>'}).join('')+'</tbody></table></div>':'<div class="muted">אין כיתות בסינון הזה.</div>')+'</section>';
-  h+='<section class="card box" id="ot"><h2>לפי מורה</h2>'+(ps.length?'<div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>נקבעו</th><th>פנויות</th><th></th></tr></thead><tbody>'+
+  h+='<section class="card box" id="ot"><div class="row" style="justify-content:space-between"><h2>לפי מורה</h2>'+tfind('#ot','חיפוש מורה')+'</div>'+(ps.length?'<div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>נקבעו</th><th>פנויות</th><th></th></tr></thead><tbody>'+
     ps.map(p=>{const x=d.byT[p.tid]||[];return '<tr><td><b>'+esc(tName(p.name))+'</b>'+(isHr(p)?'':' <span class="tag">מקצועי</span>')+'</td><td class="small">'+esc(p.classes.join(', '))+'</td><td>'+x.filter(s=>s.b&&(!F.cls||s.b.cls===F.cls)).length+'</td><td>'+x.filter(s=>!s.b&&!s.brk).length+'</td><td><button class="link" data-act="gotid" data-t="'+p.tid+'">ליומן</button></td></tr>'}).join('')+'</tbody></table></div>':'<div class="muted">אין מורים בסינון הזה.</div>')+'</section>';
   return h;
 }
@@ -708,7 +714,7 @@ function viewHours(){
          (subs.length?'<button class="btn sec xs" data-act="subjoff" data-c="'+esc(c.name)+'">סגירה</button>':'<button class="btn ok xs" data-act="subjon" data-c="'+esc(c.name)+'">פתיחת המורים המקצועיים</button>')+'</div></div>'}).join('')+'</div></section>'}
   if(!ps.length)return h+'<div class="card box">אין מורים לעריכה.</div>';
   h+='<section class="card box"><h2>לכל המורים ברשימה</h2><div class="small muted">ממלאים רק את מה שרוצים לשנות, לוחצים "החלה על כולם" ואז שמירה.</div><div class="row" id="hall"><label class="f">משעה<input type="time" class="hts"></label><label class="f">עד<input type="time" class="hte"></label><label class="f">דקות<input type="number" class="hsm" min="5" max="60" style="width:80px"></label><button class="btn sec sm" data-act="hallapply">החלה על כולם</button></div></section>';
-  h+='<section class="card box"><div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>תאריך</th><th>משעה</th><th>עד</th><th>דקות</th><th>פגישות</th><th>פתיחה בהדרגה</th></tr></thead><tbody id="htab">'+
+  h+='<section class="card box" id="hbox"><div class="row" style="justify-content:space-between"><h2>המורים</h2>'+tfind('#hbox','חיפוש מורה או כיתה')+'</div><div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>תאריך</th><th>משעה</th><th>עד</th><th>דקות</th><th>פגישות</th><th>פתיחה בהדרגה</th></tr></thead><tbody id="htab">'+
     ps.map(p=>'<tr data-tid="'+p.tid+'"><td><b>'+esc(tName(p.name))+'</b>'+(cl(p)?' <span class="tag b">מחנך '+esc(cl(p))+'</span>':'')+'</td><td class="small">'+esc(p.classes.join(', '))+'</td><td>'+opt(p)+'</td>'+
       '<td><input type="time" class="hts" value="'+hm(p.t_start||'')+'" style="min-height:44px"></td><td><input type="time" class="hte" value="'+hm(p.t_end||'')+'" style="min-height:44px"></td><td><input type="number" class="hsm" min="5" max="60" value="'+(p.slot_min||'')+'" placeholder="'+e.slot_min+'" style="min-height:44px;width:70px"></td><td>'+(cl(p)?'<input type="number" class="hmn" min="1" max="60" value="'+(p.meet_n||'')+'" placeholder="'+(p.students_n||'')+'" title="ריק = כמספר התלמידים" style="min-height:44px;width:70px">':'<span class="muted small">—</span>')+'</td><td style="text-align:center"><input type="checkbox" class="hgr" aria-label="פתיחה בהדרגה"'+(p.allow_gradual?' checked':'')+'>'+(p.open_until?'<div class="small muted">עד '+esc(p.open_until)+'</div>':'')+'</td></tr>').join('')+'</tbody></table></div>'+
     '<div class="small muted">"פגישות" (למחנכים): ריק = פגישה לכל תלמיד. מספר קטן יותר מקצר את היום, ושעת הסיום מתעדכנת לבד. "פתיחה בהדרגה": המורה יכול/ה לפתוח להורים רק עד שעה מסוימת ולהרחיב כשמתמלא. שדה ריק = כמו האירוע. מורה מקצועי נפגש בתאריך אחד בלבד. פגישות שכבר נקבעו לא נמחקות.</div>'+
@@ -727,7 +733,7 @@ function viewSettings(){
   const cap=c=>{const p=d.participants.filter(x=>x.classes.includes(c.name));return p};
   const nSlots=Math.floor((mins(e.t_end)-mins(e.t_start)+e.gap_min)/(e.slot_min+e.gap_min));
   const tight=d.classes.filter(c=>c.students.length>nSlots);
-  h+='<section class="card box"><div class="row" style="justify-content:space-between"><h2>מי נפגש עם ההורים</h2><span class="small muted">'+d.participants.length+' מורים · '+nSlots+' משבצות לכל מורה</span></div>'+
+  h+='<section class="card box" id="pbox"><div class="row" style="justify-content:space-between"><h2>מי נפגש עם ההורים</h2><span class="small muted">'+d.participants.length+' מורים · '+nSlots+' משבצות לכל מורה</span>'+tfind('#pbox','חיפוש מורה או כיתה')+'</div>'+
     (tight.length?'<div class="warn">בכיתות האלה יש יותר תלמידים ממשבצות: '+tight.map(c=>esc(c.name)+' ('+c.students.length+')').join(', ')+'. אפשר להאריך את השעות, לקצר את הפגישה, או לתת למורה שעות משלו.</div>':'')+
     '<div class="small muted">ברירת המחדל: כל מחנך עם הכיתה שלו. אפשר להוסיף מורים מקצועיים, שילוב או יועצות ולבחור להם כיתות. שעות ומקום — רק אם שונים מהאירוע.</div>'+
     '<div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>משעה</th><th>עד</th><th>דקות</th><th>מקום</th><th>קישור להורים</th><th></th></tr></thead><tbody id="ptab">'+
@@ -884,12 +890,12 @@ function staffChange(e){const t=e.target;
   if(t.id==='bp_min'){BEEP.min=+t.value;saveBeep();return}
   if(t.classList&&t.classList.contains('hday')){const a=t.parentNode.querySelector('.halt');a.style.display=t.value==='alt'?'':'none';if(t.value==='alt')a.focus();return}
   if(t.id==='lnote'){S.lnote={id:+t.dataset.id,v:t.value};return}
-  if(t.dataset.act==='tsel'){S.tid=+t.value;render()}
+  if(t.dataset.act==='tsel'){const v=t.value.trim(),ps=S.d.participants,p=ps.find(x=>tName(x.name)===v)||ps.find(x=>tName(x.name).includes(v)||x.name.includes(v));if(p){if(p.tid!==S.tid){S.tid=p.tid;setTimeout(render,0)}}else toast('לא נמצא מורה בשם הזה')}
   else if(t.dataset.act==='csel'){S.cls=t.value;render()}
   else if(t.id==='m_cls'){S.modal.cls=t.value;S.modal.stu=null;render()}
 }
 async function staffStart(){
-  root.addEventListener('click',staffClick);root.addEventListener('change',staffChange);root.addEventListener('input',e=>{if(e.target.id==='lnote')S.lnote={id:+e.target.dataset.id,v:e.target.value}});
+  root.addEventListener('click',staffClick);root.addEventListener('change',staffChange);root.addEventListener('input',e=>{if(e.target.classList.contains('tfind'))return applyFind(e.target);if(e.target.id==='lnote')S.lnote={id:+e.target.dataset.id,v:e.target.value}});
   root.addEventListener('submit',async e=>{if(e.target.id!=='loginForm')return;e.preventDefault();const ph=document.getElementById('ph').value;
     try{await rpc('yh_staff_load',{p_phone:ph});S.phone=ph;lsSet('hanhala_phone',ph);await refresh()}catch(x){renderLogin(/no_access/.test(x.message)?'המספר הזה לא מורשה להיכנס.':errMsg(x))}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.modal){S.modal=null;render()}});
