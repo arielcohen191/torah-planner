@@ -1,0 +1,1 @@
+-- 060: מורה מקצועי במצב pending לא מופיע כבועה בקישור הכיתתי (yh_class: 'subject' ... and not p.pending). הוחל דרך apply_migration.
