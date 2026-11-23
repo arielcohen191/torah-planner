@@ -177,6 +177,10 @@ td:first-child{border-radius:0 var(--r-sm) var(--r-sm) 0}td:last-child{border-ra
  .grid2{grid-template-columns:1fr}
 }
 @media print{nav.rail,.acts,.noprint,.kfb-btn{display:none!important}main{padding:0}}
+
+/* לוגו כנפי רוח בראש הסרגל (ימין למעלה). בטלפון הסרגל מוסתר או זז, ולכן הלוגו מופיע בראש כרטיס הכותרת */
+.rail .brand .klogo{display:block;width:72px;height:72px;object-fit:contain;margin:0 auto 8px;background:#fff;border-radius:16px;padding:4px;box-sizing:border-box}
+@media (max-width:760px){.card.topbar::before{content:"";flex:none;width:44px;height:44px;background:url(/icons/kanfei-ruach-logo.png) center/contain no-repeat}.card.topbar>div:first-child{flex:1 1 160px;min-width:0}}
 </style>
 </head>
 <body>
@@ -481,7 +485,7 @@ function shell(inner){
   if(d.event&&d.classes.length)nav.push(['myclass',mgr?'כיתות':'הכיתה שלי']);
   if(d.event&&mgr)nav.push(['hours','שעות ותאריכים']);
   if(d.admin)nav.push(['overview','סקירה'],['settings','הגדרות']);
-  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand" role="link" tabindex="0" title="לדף הראשי" style="cursor:pointer" onclick="location.href=\'/hanhala/\'" onkeydown="if(event.key===\'Enter\')location.href=\'/hanhala/\'">יום הורים</div>'+
+  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand" role="link" tabindex="0" title="לדף הראשי" style="cursor:pointer" onclick="location.href=\'/hanhala/\'" onkeydown="if(event.key===\'Enter\')location.href=\'/hanhala/\'"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח" class="klogo"><span class="ktxt">יום הורים</span></div>'+
     /* כפתור "ראשי": חזרה ללוח הראשי מכל מסך, גם בטלפון (שם הלוגו מוסתר) */
     '<button type="button" title="לדף הראשי" onclick="location.href=\'/hanhala/\'"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>ראשי</button>'+
     nav.map(([k,l])=>'<button data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>').join('')+

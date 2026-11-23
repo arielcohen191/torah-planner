@@ -170,6 +170,10 @@ td select,td input{min-height:44px;font-size:16px;padding:0 10px}
  .kpi{min-height:96px;padding:16px}.kpi .n{font-size:48px;line-height:48px}
  .grid2{grid-template-columns:1fr}
 }
+
+/* לוגו כנפי רוח בראש הסרגל (ימין למעלה). בטלפון הסרגל מוסתר או זז, ולכן הלוגו מופיע בראש כרטיס הכותרת */
+.rail .brand .klogo{display:block;width:72px;height:72px;object-fit:contain;margin:0 auto 8px;background:#fff;border-radius:16px;padding:4px;box-sizing:border-box}
+@media (max-width:760px){.card.topbar::before{content:"";flex:none;width:44px;height:44px;background:url(/icons/kanfei-ruach-logo.png) center/contain no-repeat}.card.topbar>div:first-child{flex:1 1 160px;min-width:0}}
 </style>
 </head>
 <body>
@@ -275,7 +279,7 @@ const ICON={
 function shell(inner){
   const nav=[['board','לוח היום'],['absence','היעדרויות'],['pay','התחשבנות'],['teachers','מורים']];
   const cur=S.view==='cand'?'board':S.view;
-  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand" role="link" tabindex="0" title="לדף הראשי" style="cursor:pointer" onclick="location.href=\'/hanhala/\'" onkeydown="if(event.key===\'Enter\')location.href=\'/hanhala/\'">מילוי מקום</div>'+
+  return '<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand" role="link" tabindex="0" title="לדף הראשי" style="cursor:pointer" onclick="location.href=\'/hanhala/\'" onkeydown="if(event.key===\'Enter\')location.href=\'/hanhala/\'"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח" class="klogo"><span class="ktxt">מילוי מקום</span></div>'+
     /* כפתור "ראשי": חזרה ללוח הראשי מכל מסך, גם בטלפון (שם הלוגו מוסתר) */
     '<button type="button" title="לדף הראשי" onclick="location.href=\'/hanhala/\'"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>ראשי</button>'+
    nav.map(([k,l])=>'<button data-go="'+k+'"'+(cur===k?' aria-current="page"':'')+'>'+ICON[k]+l+'</button>').join('')+
@@ -289,7 +293,7 @@ function render(){
   const f=root.querySelector('[autofocus]');if(f)f.focus();
 }
 function renderLogin(err){
-  root.innerHTML='<div class="login"><form class="card" id="loginForm"><h1>מילוי מקום</h1><div class="muted">כנפי רוח · כניסה לצוות הניהול</div>'+
+  root.innerHTML='<div class="login"><form class="card" id="loginForm"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח" style="display:block;width:84px;height:84px;object-fit:contain;margin:0 auto 6px"><h1>מילוי מקום</h1><div class="muted">כנפי רוח · כניסה לצוות הניהול</div>'+
    '<label for="ph" style="font-weight:600">מספר טלפון</label><input id="ph" name="tel" type="tel" inputmode="tel" autocomplete="tel" required autofocus>'+
    (err?'<div class="err">'+esc(err)+'</div>':'')+'<button class="btn wide" type="submit">כניסה</button></form></div>';
   root.querySelector('#ph').focus();

@@ -144,6 +144,10 @@ a{color:var(--brand)}
 @media (max-width:760px){.tour{bottom:84px;left:10px;right:10px;width:auto}}
 @media print{.tour{display:none}}
 @media print{nav.rail,.tools,.credit,.btng,.btnp{display:none!important}main{padding:0}}
+
+/* לוגו כנפי רוח בראש הסרגל (ימין למעלה). בטלפון הסרגל מוסתר או זז, ולכן הלוגו מופיע בראש כרטיס הכותרת */
+.rail .brand .klogo{display:block;width:72px;height:72px;object-fit:contain;margin:0 auto 8px;background:#fff;border-radius:16px;padding:4px;box-sizing:border-box}
+@media (max-width:760px){.card.topbar::before{content:"";flex:none;width:44px;height:44px;background:url(/icons/kanfei-ruach-logo.png) center/contain no-repeat}.card.topbar>div:first-child{flex:1 1 160px;min-width:0}}
 </style>
 <script src="/as/as.js"></script>
 </head>
@@ -255,7 +259,7 @@ function render(){
   if(!state.room&&rooms[0])state.room=rooms[0].id;
   const v={home,cuts:cutsView,gaps:gapsView,students:studentsView,ther:therView,sched:schedView,rooms:roomsView}[state.tab]||home;
   document.getElementById('app').innerHTML=
-   `<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand" role="link" tabindex="0" title="לדף הראשי" onclick="location.href='/hanhala/'">כלי השילוב</div>
+   `<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand" role="link" tabindex="0" title="לדף הראשי" onclick="location.href='/hanhala/'"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח" class="klogo"><span class="ktxt">כלי השילוב</span></div>
     <button type="button" title="לדף הראשי" onclick="location.href='/hanhala/'">${ICON.main}ראשי</button>
     ${TABS.map(([k,n])=>`<button type="button" ${state.tab===k?'aria-current="page"':''} onclick="go('${k}')">${ICON[k]}${n}</button>`).join('')}
     <div class="spacer"></div><button type="button" onclick="window.KFB&&KFB.mine()">${ICON.fb}פניות המשוב שלי</button>

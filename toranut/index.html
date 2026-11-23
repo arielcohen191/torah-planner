@@ -140,6 +140,10 @@ html.pfit nav.rail,html.pfit .noprint,html.pfit .toast,.pfit .noprint{display:no
  #ppPrint .pp-h h1{font-size:18px;margin:0 0 4px}#ppPrint .pp-h p{margin:2px 0;font-size:12px}#ppPrint .pp-h ul{margin:4px 0 10px;padding-inline-start:18px;font-size:12px;columns:2}
  #ppPrint .noprint{display:none!important}#ppPrint .card{box-shadow:none;padding:0;margin-bottom:8px;break-inside:avoid}#ppPrint .grid{font-size:10px}
  #ppPrint td.cell.me{background:#fff!important;box-shadow:inset 0 0 0 3px #000!important;font-weight:800;color:#000}#ppPrint td.cell.me::before{content:"★ "}}
+
+/* לוגו כנפי רוח בראש הסרגל (ימין למעלה). בטלפון הסרגל מוסתר או זז, ולכן הלוגו מופיע בראש כרטיס הכותרת */
+.rail .brand .klogo{display:block;width:72px;height:72px;object-fit:contain;margin:0 auto 8px;background:#fff;border-radius:16px;padding:4px;box-sizing:border-box}
+@media (max-width:760px){.card.topbar::before{content:"";flex:none;width:44px;height:44px;background:url(/icons/kanfei-ruach-logo.png) center/contain no-repeat}.card.topbar>div:first-child{flex:1 1 160px;min-width:0}}
 </style>
 </head>
 <body>
@@ -232,7 +236,7 @@ function render(){
   const nav=[['sum','איפה תקוע'],['board','לוח'],['yards','חצרות'],['staff','צוות'],['rules','כללים'],['st','עמדות'],['abs','היעדרויות'],['tt','מערכת'],['hist','גרסאות']];
   const body=previewBar()+alertBar()+{sum:viewSum,board:viewBoard,yards:viewYards,staff:viewStaff,rules:viewRules,st:viewStations,abs:viewAbs,tt:viewTT,hist:viewHist}[S.view]();
   const sy=window.scrollY,my=document.querySelector('.modal .mbody');const mScroll=my?my.scrollTop:0;
-  root.innerHTML='<div class="app"><nav class="rail" aria-label="ניווט"><div class="brand" role="link" tabindex="0" title="לדף הראשי" style="cursor:pointer" onclick="location.href=\'/hanhala/\'" onkeydown="if(event.key===\'Enter\')location.href=\'/hanhala/\'">תורנויות<br>חצר</div>'+
+  root.innerHTML='<div class="app"><nav class="rail" aria-label="ניווט"><div class="brand" role="link" tabindex="0" title="לדף הראשי" style="cursor:pointer" onclick="location.href=\'/hanhala/\'" onkeydown="if(event.key===\'Enter\')location.href=\'/hanhala/\'"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח" class="klogo"><span class="ktxt">תורנויות<br>חצר</span></div>'+
     /* כפתור "ראשי": חזרה ללוח הראשי מכל מסך, גם בטלפון (שם הלוגו מוסתר) */
     '<button type="button" title="לדף הראשי" onclick="location.href=\'/hanhala/\'"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>ראשי</button>'+
     nav.map(n=>'<button type="button" data-act="nav" data-v="'+n[0]+'"'+(S.view===n[0]?' aria-current="page"':'')+'>'+icon(n[0])+n[1]+'</button>').join('')+
@@ -240,7 +244,7 @@ function render(){
   const m2=document.querySelector('.modal .mbody');if(m2&&S.modal&&S.modal.keepScroll)m2.scrollTop=mScroll;
 }
 function renderLogin(err){
-  root.innerHTML='<div class="login"><form class="card" id="loginForm"><h1>תורנויות חצר</h1><div class="muted">כנפי רוח · כניסה לצוות הניהול</div>'+
+  root.innerHTML='<div class="login"><form class="card" id="loginForm"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח" style="display:block;width:84px;height:84px;object-fit:contain;margin:0 auto 6px"><h1>תורנויות חצר</h1><div class="muted">כנפי רוח · כניסה לצוות הניהול</div>'+
    '<label for="ph" style="font-weight:600">מספר טלפון</label><input id="ph" type="tel" inputmode="tel" autocomplete="tel" required autofocus>'+
    (err?'<div class="err">'+esc(err)+'</div>':'')+'<button class="btn" type="submit">כניסה</button></form></div>';
 }
