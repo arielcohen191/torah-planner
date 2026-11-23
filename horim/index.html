@@ -637,13 +637,16 @@ function viewLinks(){
   const d=S.d,L=d.classes.filter(c=>c.token);
   const all='קישורים ליום ההורים ('+longDate(d.event.day)+'):\n'+L.filter(c=>c.teachers.length).map(c=>'כיתה '+c.name+': '+classLink(c.token)).join('\n');
   let h='<header class="card topbar"><div><h1>קישורי כיתות</h1><div class="muted">'+eventLine()+'</div></div><button class="btn sm" data-act="copytxt" data-t="'+esc(all)+'">העתקת כל הקישורים</button></header>';
-  if(!d.event.reg_open)h+='<div class="warn">ההרשמה עוד סגורה: הורים שייכנסו עכשיו יראו "ההרשמה סגורה".</div>';
+  const canReg=c=>d.admin||(d.house||[]).includes(c.name[0]),nOpen=L.filter(c=>c.reg_open!==false&&d.event.reg_open).length;
+  h+='<section class="card box noprint"><div class="row" style="justify-content:space-between"><div><b>הרשמת ההורים</b><div class="small muted">'+(nOpen?'פתוחה ב־'+nOpen+' מתוך '+L.length+' כיתות. ':'סגורה בכל הכיתות. ')+'הורים בכיתה סגורה יראו "ההרשמה סגורה".</div></div>'+
+    (d.admin?'<div class="row">'+(nOpen<L.length?'<button class="btn ok sm" data-act="regall" data-v="1">פתיחת כל הקישורים</button>':'')+(nOpen?'<button class="btn sec sm" data-act="regall" data-v="0">סגירת כל הקישורים</button>':'')+'</div>':'')+'</div></section>';
   const tot=d.classes.reduce((a,c)=>a+c.students.length,0),bk=d.classes.reduce((a,c)=>a+(c.booked||0),0);
   h+='<section class="kpis">'+kpi('k-blue','כיתות','עם קישור',L.length,'l-t')+kpi('k-green','נרשמו',tot?Math.round(bk*100/tot)+'% מהתלמידים':'תלמידים',bk,'l-t')+kpi('k-red','עוד לא','תלמידים',tot-bk,'l-t')+'</section>';
-  h+='<section class="card box" id="ltab"><div class="tablewrap"><table><thead><tr><th>כיתה</th><th>מחנך/ת</th><th>נרשמו</th><th>שליחה להורים</th></tr></thead><tbody>'+
+  h+='<section class="card box" id="ltab"><div class="tablewrap"><table><thead><tr><th>כיתה</th><th>מחנך/ת</th><th>נרשמו</th><th>הרשמה</th><th>שליחה להורים</th></tr></thead><tbody>'+
     d.classes.map(c=>{const t=c.students.length,n=c.booked||0;
-      if(!c.teachers.length)return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.hr_name?tName(c.hr_name):'—')+'</td><td>—</td><td><span class="tag o">מועד אחר</span></td></tr>';
-      return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.hr_name?tName(c.hr_name):'—')+'</td><td>'+n+' / '+t+'</td><td>'+(c.token?
+      if(!c.teachers.length)return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.hr_name?tName(c.hr_name):'—')+'</td><td>—</td><td></td><td><span class="tag o">מועד אחר</span></td></tr>';
+      const op=c.reg_open!==false&&d.event.reg_open;
+      return '<tr><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.hr_name?tName(c.hr_name):'—')+'</td><td>'+n+' / '+t+'</td><td>'+(c.token?'<div class="row" style="gap:6px"><span class="tag '+(op?'g':'o')+'">'+(op?'פתוחה':'סגורה')+'</span>'+(canReg(c)?'<button class="btn sec xs" data-act="regcls" data-c="'+esc(c.name)+'" data-v="'+(op?0:1)+'">'+(op?'סגירה':'פתיחה')+'</button>':'')+'</div>':'')+'</td><td>'+(c.token?
         '<div class="row"><a class="btn wa xs" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(classMsg(c))+'">וואטסאפ</a><button class="btn sec xs" data-act="copytxt" data-t="'+esc(classMsg(c))+'">העתקת ההודעה</button><button class="btn sec xs" data-act="copytxt" data-t="'+esc(classLink(c.token))+'">העתקת הקישור</button><button class="link" data-act="gocls" data-c="'+esc(c.name)+'">פירוט</button></div>'
         :'<span class="muted small">אין קישור עדיין</span>')+'</td></tr>'}).join('')+'</tbody></table></div></section>';
   const mine=new Set(d.classes.map(c=>c.name));
@@ -838,6 +841,8 @@ function staffClick(e){
   if(a==='ousave'){const v=document.getElementById('ou_t').value;if(!v){toast('בחרו שעה');return}return act('yh_set_open_until',{p_phone:S.phone,p_tid:S.tid,p_until:v},'ההורים יכולים לקבוע עד '+v)}
   if(a==='ouclear')return act('yh_set_open_until',{p_phone:S.phone,p_tid:S.tid,p_until:null},'כל השעות פתוחות להורים');
   if(a==='nolive'){return act('yh_set_live',{p_phone:S.phone,p_tid:S.tid,p_no_live:b.checked},b.checked?'ההורים יראו רק את השעה שנקבעה':'התור החי הופעל')}
+  if(a==='regall'){const on=b.dataset.v==='1';if(on&&!confirm('לפתוח את ההרשמה בכל הקישורים הכיתתיים?'))return;return act('yh_admin_reg',{p_phone:S.phone,p_open:on},on?'כל הקישורים נפתחו':'כל הקישורים נסגרו')}
+  if(a==='regcls'){const on=b.dataset.v==='1';return act('yh_class_reg',{p_phone:S.phone,p_class:b.dataset.c,p_open:on},(on?'נפתחה':'נסגרה')+' ההרשמה ב־'+b.dataset.c)}
   if(a==='regtoggle'){const on=!S.d.event.reg_open;if(on&&!confirm('לפתוח את ההרשמה להורים בכל הכיתות?'))return;return act('yh_admin_reg',{p_phone:S.phone,p_open:on},on?'ההרשמה נפתחה לכל הכיתות':'ההרשמה נסגרה')}
   if(a==='subjon'||a==='subjoff'){return act('yh_class_subjects',{p_phone:S.phone,p_class:b.dataset.c,p_on:a==='subjon'},a==='subjon'?'המורים המקצועיים של '+b.dataset.c+' פתוחים להרשמה':'נסגר')}
   if(a==='note'){S.modal={kind:'note',bid:+b.dataset.id};render();const t=document.getElementById('m_note');if(t)t.focus();return}

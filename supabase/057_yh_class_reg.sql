@@ -1,0 +1,4 @@
+-- 057: פתיחת ההרשמה לכל כיתה בנפרד (הוחל במסד דרך apply_migration)
+-- yh_class_links.reg_open; yh_class פתוח רק אם e.reg_open וגם l.reg_open; yh_teacher מציג רק כיתות פתוחות;
+-- yh_book דוחה כיתה סגורה ('closed'); yh_staff_load מחזיר reg_open לכל כיתה;
+-- yh_admin_reg פותח/סוגר את האירוע וכל הקישורים; yh_class_reg(p_phone, p_class, p_open) — מנהל או מנהלת הבית
