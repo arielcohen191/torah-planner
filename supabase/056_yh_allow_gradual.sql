@@ -1,0 +1,3 @@
+-- 056: פתיחה בהדרגה רק למי שההנהלה מאשרת (הוחל במסד דרך apply_migration)
+-- yh_participants.allow_gradual; yh_set_open_until: מורה רק אם allow_gradual, מנהלת בית/מנהל תמיד;
+-- yh_staff_load מחזיר allow_gradual; yh_house_set מקבל 'gradual' (כיבוי מנקה גם open_until)

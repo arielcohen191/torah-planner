@@ -535,8 +535,8 @@ function viewDiary(){
   if(!d.event.reg_open)h+='<div class="warn">ההרשמה להורים עוד סגורה. אפשר כבר לסמן הפסקות ולשבץ ידנית'+(mine?', ולשנות את השעות ואת אורך הפגישה שלך.':'.')+'</div>';
   if(mine)h+='<section class="card box noprint"><div class="row" style="justify-content:space-between"><div><b>השעות שלי</b> · '+hm(p.t_start||d.event.t_start)+'–'+hm(p.t_end||d.event.t_end)+' · '+(p.slot_min||d.event.slot_min)+' דקות לפגישה'+(tCustom(p)?'':' <span class="small muted">(כמו כולם)</span>')+'</div>'+
     (canEdit?'<button class="btn sec sm" data-act="myhours">שינוי</button>':'<span class="small muted">ההרשמה כבר נפתחה. לשינוי פנו להנהלה.</span>')+'</div>'+
-    '<div class="row" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px"><div style="flex:1;min-width:220px"><b>פתיחה בהדרגה</b><div class="small muted">'+(p.open_until?'ההורים יכולים לקבוע רק עד <b>'+esc(p.open_until)+'</b>. כשיתמלא, פותחים עוד שעות.':'אפשר לפתוח להורים רק את השעות הראשונות, ולפתוח עוד כשהן מתמלאות.')+'</div></div>'+
-    '<label class="f" style="margin:0">להורים עד השעה<input type="time" id="ou_t" value="'+esc(p.open_until||'')+'" style="min-height:44px"></label><button class="btn sec sm" data-act="ousave">שמירה</button>'+(p.open_until?'<button class="btn ok sm" data-act="ouclear">פתיחת כל השעות</button>':'')+'</div></section>';
+    (p.allow_gradual?'<div class="row" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px"><div style="flex:1;min-width:220px"><b>פתיחה בהדרגה</b><div class="small muted">'+(p.open_until?'ההורים יכולים לקבוע רק עד <b>'+esc(p.open_until)+'</b>. כשיתמלא, פותחים עוד שעות.':'אפשר לפתוח להורים רק את השעות הראשונות, ולפתוח עוד כשהן מתמלאות.')+'</div></div>'+
+    '<label class="f" style="margin:0">להורים עד השעה<input type="time" id="ou_t" value="'+esc(p.open_until||'')+'" style="min-height:44px"></label><button class="btn sec sm" data-act="ousave">שמירה</button>'+(p.open_until?'<button class="btn ok sm" data-act="ouclear">פתיחת כל השעות</button>':'')+'</div>':'')+'</section>';
   const F=S.filter||'all';
   h+='<section class="card box"><div class="row" style="justify-content:space-between"><h2>המשבצות'+(pDays(p).length>1?' · '+esc(dShort(S.dday)):'')+'</h2>'+dp+'<div class="chips">'+[['all','הכול'],['f-taken','נקבעו'],['f-free','פנויות'],['f-brk','הפסקות']].map(([k,l])=>'<button data-act="filter" data-f="'+k+'" aria-pressed="'+(F===k)+'">'+l+'</button>').join('')+'</div></div><div class="slots">'+
     sl.filter(s=>F==='all'||(F==='f-taken'&&s.b)||(F==='f-free'&&!s.b&&!s.brk)||(F==='f-brk'&&s.brk)).map(s=>slotRow(s)).join('')+'</div></section>';
@@ -705,10 +705,10 @@ function viewHours(){
          (subs.length?'<button class="btn sec xs" data-act="subjoff" data-c="'+esc(c.name)+'">סגירה</button>':'<button class="btn ok xs" data-act="subjon" data-c="'+esc(c.name)+'">פתיחת המורים המקצועיים</button>')+'</div></div>'}).join('')+'</div></section>'}
   if(!ps.length)return h+'<div class="card box">אין מורים לעריכה.</div>';
   h+='<section class="card box"><h2>לכל המורים ברשימה</h2><div class="small muted">ממלאים רק את מה שרוצים לשנות, לוחצים "החלה על כולם" ואז שמירה.</div><div class="row" id="hall"><label class="f">משעה<input type="time" class="hts"></label><label class="f">עד<input type="time" class="hte"></label><label class="f">דקות<input type="number" class="hsm" min="5" max="60" style="width:80px"></label><button class="btn sec sm" data-act="hallapply">החלה על כולם</button></div></section>';
-  h+='<section class="card box"><div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>תאריך</th><th>משעה</th><th>עד</th><th>דקות</th></tr></thead><tbody id="htab">'+
+  h+='<section class="card box"><div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>תאריך</th><th>משעה</th><th>עד</th><th>דקות</th><th>פתיחה בהדרגה</th></tr></thead><tbody id="htab">'+
     ps.map(p=>'<tr data-tid="'+p.tid+'"><td><b>'+esc(tName(p.name))+'</b>'+(cl(p)?' <span class="tag b">מחנך '+esc(cl(p))+'</span>':'')+'</td><td class="small">'+esc(p.classes.join(', '))+'</td><td>'+opt(p)+'</td>'+
-      '<td><input type="time" class="hts" value="'+hm(p.t_start||'')+'" style="min-height:44px"></td><td><input type="time" class="hte" value="'+hm(p.t_end||'')+'" style="min-height:44px"></td><td><input type="number" class="hsm" min="5" max="60" value="'+(p.slot_min||'')+'" placeholder="'+e.slot_min+'" style="min-height:44px;width:70px"></td></tr>').join('')+'</tbody></table></div>'+
-    '<div class="small muted">שדה ריק = כמו האירוע. מורה מקצועי נפגש בתאריך אחד בלבד. פגישות שכבר נקבעו לא נמחקות.</div>'+
+      '<td><input type="time" class="hts" value="'+hm(p.t_start||'')+'" style="min-height:44px"></td><td><input type="time" class="hte" value="'+hm(p.t_end||'')+'" style="min-height:44px"></td><td><input type="number" class="hsm" min="5" max="60" value="'+(p.slot_min||'')+'" placeholder="'+e.slot_min+'" style="min-height:44px;width:70px"></td><td style="text-align:center"><input type="checkbox" class="hgr" aria-label="פתיחה בהדרגה"'+(p.allow_gradual?' checked':'')+'>'+(p.open_until?'<div class="small muted">עד '+esc(p.open_until)+'</div>':'')+'</td></tr>').join('')+'</tbody></table></div>'+
+    '<div class="small muted">"פתיחה בהדרגה": המורה יכול/ה לפתוח להורים רק עד שעה מסוימת ולהרחיב כשמתמלא. שדה ריק = כמו האירוע. מורה מקצועי נפגש בתאריך אחד בלבד. פגישות שכבר נקבעו לא נמחקות.</div>'+
     '<div class="row"><button class="btn ok" data-act="hsave">שמירה ובניית הלוח</button></div></section>';
   return h}
 function viewSettings(){
@@ -795,13 +795,14 @@ function staffClick(e){
   if(a==='hallapply'){const g=c=>document.querySelector('#hall .'+c).value;['hts','hte','hsm'].forEach(c=>{const v=g(c);if(v)document.querySelectorAll('#htab .'+c).forEach(i=>i.value=v)});toast('הוחל. לא לשכוח לשמור');return}
   if(a==='hsave'){const ed=S.d.edays,list=[];let bad='';
     document.querySelectorAll('#htab tr').forEach(tr=>{const q=c=>tr.querySelector('.'+c).value,tid=+tr.dataset.tid,p=S.d.P[tid];const k=q('hday');
-      if(k==='pending'){list.push({tid,t_start:q('hts')||null,t_end:q('hte')||null,slot_min:+q('hsm')||null,pending:true});return}
+      const gr=tr.querySelector('.hgr').checked;
+      if(k==='pending'){list.push({tid,t_start:q('hts')||null,t_end:q('hte')||null,slot_min:+q('hsm')||null,pending:true,gradual:gr});return}
       let days=k==='both'?ed.slice():k==='alt'?[q('halt')]:[k.slice(2)];
       if(k==='alt'&&!q('halt'))bad='בחרו תאריך חלופי ל'+tName(p.name);
       const isHr=S.d.classes.some(c=>c.homeroom===tid);if(!isHr&&days.length>1)bad=tName(p.name)+' מורה מקצועי, נפגש בתאריך אחד בלבד';
       if(q('hts')&&q('hte')&&q('hte')<=q('hts'))bad='בדקו את השעות של '+tName(p.name);
       const same=days.length===1&&days[0]===ed[0];
-      list.push({tid,t_start:q('hts')||null,t_end:q('hte')||null,slot_min:+q('hsm')||null,days:same?[]:days,pending:false})});
+      list.push({tid,t_start:q('hts')||null,t_end:q('hte')||null,slot_min:+q('hsm')||null,days:same?[]:days,pending:false,gradual:gr})});
     if(bad){toast(bad);return}
     S.busy=true;(async()=>{try{const r=await rpc('yh_house_set',{p_phone:S.phone,p_list:list});toast('נשמר'+(r&&(r.added||r.removed)?' · הלוח עודכן':''));await load()}catch(x){toast(errMsg(x))}S.busy=false;S.keepScroll=true;render()})();return}
   if(a==='ofclear'){S.of={cls:'',tid:'',k:''};S.keepScroll=true;return render()}
