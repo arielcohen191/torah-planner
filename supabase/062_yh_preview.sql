@@ -1,0 +1,3 @@
+-- 062: תצוגה מקדימה לפני שינוי לוח (הוחל במסד דרך apply_migration)
+-- _yh_want(e,p): אילו משבצות היו נבנות (אותו חישוב כמו _yh_rebuild, בלי לשנות). לשמור מסונכרן עם _yh_rebuild!
+-- yh_preview(p_phone, p_list): לכל פריט {tid, t_start,t_end,slot_min,days,pending,meet_n,breaks,auto_end} — הפגישות שנקבעו ולא ייכנסו ללוח
