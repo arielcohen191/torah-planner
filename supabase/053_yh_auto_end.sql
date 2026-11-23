@@ -1,0 +1,4 @@
+-- 053: שעת סיום אוטומטית למחנכים (הוחל במסד דרך apply_migration)
+-- yh_participants.auto_end (ברירת מחדל true); _yh_auto_end(e,p) = התחלה + (תלמידים + משבצות הפסקה) × (פגישה + רווח) − רווח + הפסקה ארוכה
+-- _yh_rebuild: למחנך עם auto_end מחשב ושומר t_end לפני בניית המשבצות; yh_staff_load מחזיר auto_end ו-students_n
+-- yh_set_auto_end(p_phone, p_tid, p_on)
