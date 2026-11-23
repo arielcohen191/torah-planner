@@ -771,6 +771,13 @@ function modalHtml(){const m=S.modal,d=S.d;
       (isHrT(p.tid)?'<label class="check"><input type="checkbox" id="h_auto"'+(p.auto_end!==false?' checked':'')+'> <span><b>שעת הסיום מחושבת לבד</b> <span class="small muted">לפי '+(p.meet_n?p.meet_n+' פגישות (נקבע על ידי ההנהלה)':(p.students_n||0)+' תלמידים')+' × אורך הפגישה, ועוד ההפסקות</span></span></label>':'')+
       '<div class="small muted" id="h_cnt"></div><div class="small muted">ברירת המחדל לכולם: '+hm(e.t_start)+'–'+hm(e.t_end)+', '+e.slot_min+' דקות. <button class="link" data-act="hoursreset">חזרה לברירת המחדל</button></div></div>'+
       '<div class="mfoot"><button class="btn ok" data-act="hourssave">שמירה ובניית היומן</button><button class="btn sec" data-act="close">ביטול</button></div></div></div>'}
+  if(m.kind==='haff'||m.kind==='hnotify'){const by={};m.aff.forEach(x=>(by[x.tid]=by[x.tid]||[]).push(x));
+    const rows=Object.keys(by).map(tid=>{const p=d.P[tid]||{};return '<div style="margin-top:8px"><b>'+esc(tName(p.name||''))+'</b> · '+by[tid].length+' פגישות</div>'+by[tid].map(x=>{
+      const msg='שלום '+x.b.parent+',\nהפגישה של '+x.b.stu+' עם '+tName(p.name||'')+' ביום ההורים ('+(x.s.d?dShort(x.s.d)+', ':'')+x.s.t+') בוטלה, כי המורה לא יהיה זמין במועד הזה. נעדכן כשייקבע מועד אחר.\nתודה ובהצלחה.';
+      return '<div class="row small" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:4px 0"><span>'+esc(x.s.t)+' · '+esc(x.b.stu)+' ('+esc(x.b.cls)+') · '+esc(x.b.parent)+'</span>'+(m.kind==='hnotify'&&x.b.phone?'<a class="btn wa xs" target="_blank" rel="noopener" href="https://wa.me/'+intlPhone(x.b.phone)+'?text='+encodeURIComponent(msg)+'">הודעה להורה</a>':'')+'</div>'}).join('')}).join('');
+    return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">'+(m.kind==='haff'?'יש פגישות שכבר נקבעו':'הפגישות בוטלו: לעדכן את ההורים')+'</div><div class="mbody">'+
+      (m.kind==='haff'?'<div>המועד של המורים האלה משתנה, ויש אצלם '+m.aff.length+' פגישות שהורים כבר קבעו. מה לעשות איתן?</div>':'<div>לחיצה על "הודעה להורה" פותחת וואטסאפ עם הודעה מוכנה.</div>')+rows+'</div>'+
+      '<div class="mfoot">'+(m.kind==='haff'?'<button class="btn ok" data-act="haffgo" data-v="cancel">ביטול ועדכון ההורים</button><button class="btn sec" data-act="haffgo" data-v="keep">להשאיר אותן</button><button class="btn sec" data-act="close">חזרה</button>':'<button class="btn sec" data-act="close">סיימתי</button>')+'</div></div></div>'}
   if(m.kind==='brk'){const p=d.P[m.tid]||{},L=p.slot_min||d.event.slot_min,cur=m.min||L,opts=[...new Set([2,5,10,15,20,25,30,45,60,L,cur])].sort((a,b)=>a-b);
     return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">הפסקה ב־'+esc(m.t)+'</div><div class="mbody">'+
       '<label class="f">אורך ההפסקה (דקות)<select id="b_min">'+opts.map(o=>'<option value="'+o+'"'+(o===cur?' selected':'')+'>'+o+' דק׳'+(o===L?' (כמו פגישה)':'')+'</option>').join('')+'<option value="x">אחר…</option></select></label>'+
@@ -813,7 +820,13 @@ function staffClick(e){
       const same=days.length===1&&days[0]===ed[0];
       list.push({tid,t_start:q('hts')||null,t_end:q('hte')||null,slot_min:+q('hsm')||null,days:same?[]:days,pending:false,gradual:gr,...(mn?{meet_n:mnv}:{})})});
     if(bad){toast(bad);return}
-    S.busy=true;(async()=>{try{const r=await rpc('yh_house_set',{p_phone:S.phone,p_list:list});toast('נשמר'+(r&&(r.added||r.removed)?' · הלוח עודכן':''));await load()}catch(x){toast(errMsg(x))}S.busy=false;S.keepScroll=true;render()})();return}
+    /* פגישות שכבר נקבעו אצל מורה שהמועד שלו משתנה (לא נקבע / תאריך אחר): שואלים מה לעשות איתן */
+    const aff=[];list.forEach(it=>{const p0=S.d.P[it.tid]||{},nd=it.pending?[]:(it.days&&it.days.length?it.days:[ed[0]]);
+      if(!!it.pending===!!p0.pending&&nd.join()===(p0.pending?'':pDays(p0).join()))return; /* רק מורה שהמועד שלו משתנה עכשיו */
+      (S.d.byT[it.tid]||[]).filter(x=>x.b&&!x.brk&&!nd.includes(x.d||ed[0])).forEach(x=>aff.push({s:x,b:x.b,tid:it.tid,why:it.pending?'מועד נפרד':'תאריך אחר'}))});
+    if(aff.length){S.modal={kind:'haff',list,aff};return render()}
+    return saveHours(list,false)}
+  if(a==='haffgo'){const m=S.modal;return saveHours(m.list,b.dataset.v==='cancel',m.aff)}
   if(a==='ofclear'){S.of={cls:'',tid:'',k:''};S.keepScroll=true;return render()}
   if(a==='dday'){S.dday=b.dataset.d;S.keepScroll=true;return render()}
   if(a==='kpi'){const k=b.dataset.k;
@@ -878,6 +891,13 @@ function simSlots(ts,te,sm,n){const p=S.d.P[S.tid]||{},g=S.d.event.gap_min||0,st
 const hhmm=m=>String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
 function autoEnd(){const p=S.d.P[S.tid]||{},ts=document.getElementById('h_ts').value,sm=+document.getElementById('h_sm').value;if(!ts||!sm)return '';
   const a=simSlots(ts,null,sm,Math.max(1,p.meet_n||p.students_n||0));return hhmm(a.length?a[a.length-1]+sm:mins(ts)+sm)}
+async function saveHours(list,cancel,aff){S.busy=true;S.modal=null;render();
+  try{const r=await rpc('yh_house_set',{p_phone:S.phone,p_list:list});let n=0;
+    if(cancel&&aff){for(const x of aff){try{await rpc('yh_staff_cancel',{p_phone:S.phone,p_booking:x.b.id});n++}catch(e){}}}
+    if(n)await rpc('yh_house_set',{p_phone:S.phone,p_list:list}); /* בנייה מחדש: המשבצות שהתפנו נמחקות */
+    toast('נשמר'+(n?' · בוטלו '+n+' פגישות':'')+(r&&(r.added||r.removed)?' · הלוח עודכן':''));await load();
+    if(cancel&&aff&&aff.length)S.modal={kind:'hnotify',aff}}catch(x){toast(errMsg(x))}
+  S.busy=false;S.keepScroll=true;render()}
 function hoursCount(){const au=document.getElementById('h_auto'),te0=document.getElementById('h_te');if(au&&te0){te0.disabled=au.checked;if(au.checked){const v=autoEnd();if(v)te0.value=v}}const o=document.getElementById('h_cnt');if(!o)return;const ts=document.getElementById('h_ts').value,te=document.getElementById('h_te').value,sm=+document.getElementById('h_sm').value;
   const n=ts&&te&&sm&&mins(te)>mins(ts)?simSlots(ts,te,sm,null).length:0,nb=((S.d.P[S.tid]||{}).breaks||[]).length;
   o.textContent=n?'יהיו לך '+n+' משבצות'+(nb?' ו־'+nb+' הפסקות':''):'שעות לא תקינות'}
