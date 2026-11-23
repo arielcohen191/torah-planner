@@ -460,7 +460,11 @@ try{const a=JSON.parse(localStorage.getItem('kr_as')||'null');if(a&&a.real===S.p
 async function load(){
   const d=await rpc('yh_staff_load',{p_phone:S.phone});
   d.P={};(d.participants||[]).forEach(p=>d.P[p.tid]=p);
-  d.byT={};(d.slots||[]).forEach(s=>{(d.byT[s.tid]=d.byT[s.tid]||[]).push(s)});
+  d.byT={};(d.slots||[]).filter(s=>!s.brk).forEach(s=>{(d.byT[s.tid]=d.byT[s.tid]||[]).push(s)});
+  /* הפסקות: רשימה לכל מורה ({at,min}), מוצגות כשורות ביומן */
+  (d.participants||[]).forEach(p=>{const br=p.breaks||[];if(!br.length||p.pending)return;const ds=(p.days&&p.days.length?p.days:[d.event&&d.event.day]);
+    ds.forEach(dd=>br.forEach(x=>{(d.byT[p.tid]=d.byT[p.tid]||[]).push({id:'b'+p.tid+'_'+dd+'_'+x.at,tid:p.tid,d:dd,t:x.at,brk:true,bmin:x.min})}));
+    d.byT[p.tid].sort((a,b)=>((a.d||'')+a.t)<((b.d||'')+b.t)?-1:1)});
   d.edays=(d.event&&d.event.days)||(d.event?[d.event.day]:[]);d.multi=d.edays.length>1||(d.slots||[]).some(s=>s.d&&d.event&&s.d!==d.event.day);
   d.C={};(d.classes||[]).forEach(c=>d.C[c.name]=c);
   S.d=d;
@@ -526,7 +530,7 @@ function viewDiary(){
   const dp=dayPick(p),sl=(d.byT[tid]||[]).filter(s=>!s.d||s.d===S.dday);const booked=sl.filter(s=>s.b).length,free=sl.filter(s=>!s.b&&!s.brk).length;
   const mine=tid===d.tid,canEdit=mine&&(!d.event.reg_open||d.admin);
   let h='<header class="card topbar"><div><h1>היומן של '+esc(tName(p.name))+'</h1><div class="muted">'+tLine(p)+(p.room?' · '+esc(p.room):'')+(tCustom(p)?' <span class="tag b">שעות אישיות</span>':'')+'</div><div class="small muted">כיתות: '+esc(p.classes.join(', ')||'—')+'</div></div><div class="row">'+tsel()+'<button class="btn sec sm noprint" data-act="print">הדפסה</button></div></header>';
-  h+='<section class="kpis">'+kpi('k-blue','נקבעו','פגישות',booked,'f-taken')+kpi('k-green','פנויות','משבצות',free,'f-free')+kpi('k-orange','הפסקות','משבצות',sl.filter(s=>s.brk).length,'f-brk')+kpi('k-red','עוד לא קבעו','תלמידים',notBookedFor(tid).length,'f-nb')+'</section>';
+  h+='<section class="kpis">'+kpi('k-blue','נקבעו','פגישות',booked,'f-taken')+kpi('k-green','פנויות','משבצות',free,'f-free')+kpi('k-orange','הפסקות','',sl.filter(s=>s.brk).length,'f-brk')+kpi('k-red','עוד לא קבעו','תלמידים',notBookedFor(tid).length,'f-nb')+'</section>';
   if(p.pending)h+='<div class="info">יום ההורים שלך במועד נפרד, וההנהלה עוד לא קבעה אותו. כשייקבע, המשבצות יופיעו כאן.</div>';
   if(!d.event.reg_open)h+='<div class="warn">ההרשמה להורים עוד סגורה. אפשר כבר לסמן הפסקות ולשבץ ידנית'+(mine?', ולשנות את השעות ואת אורך הפגישה שלך.':'.')+'</div>';
   if(mine)h+='<section class="card box noprint"><div class="row" style="justify-content:space-between"><div><b>השעות שלי</b> · '+hm(p.t_start||d.event.t_start)+'–'+hm(p.t_end||d.event.t_end)+' · '+(p.slot_min||d.event.slot_min)+' דקות לפגישה'+(tCustom(p)?'':' <span class="small muted">(כמו כולם)</span>')+'</div>'+
@@ -548,8 +552,8 @@ const noteLine=b=>b.note?'<div class="nt"><b>הערה:</b> '+esc(b.note)+'</div>
 const noteBtn=(s,b)=>canNote(s)?'<button class="btn sec xs noprint" data-act="note" data-id="'+b.id+'">'+(b.note?'עריכת הערה':'הערה')+'</button>':'';
 function slotRow(s){
   const b=s.b;
-  if(s.brk)return '<div class="slot brk"><span class="tm">'+s.t+'</span><div class="who"><b>הפסקה</b></div><div class="acts"><button class="btn sec xs" data-act="brk" data-id="'+s.id+'" data-v="0">ביטול ההפסקה</button></div></div>';
-  if(!b){const P0=S.d.P[s.tid]||{},held=P0.open_until&&mins(s.t)>=mins(P0.open_until);return '<div class="slot free"><span class="tm">'+s.t+'</span><div class="who"><span class="muted">'+(held?'פנוי · <span class="tag o">סגור להורים בינתיים</span>':'פנוי')+'</span></div><div class="acts"><button class="btn sec xs" data-act="mbook" data-id="'+s.id+'">שיבוץ ידני</button><button class="btn sec xs" data-act="brk" data-id="'+s.id+'" data-v="1">הפסקה</button></div></div>';}
+  if(s.brk)return '<div class="slot brk"><span class="tm">'+s.t+'</span><div class="who"><b>הפסקה · '+s.bmin+' דק׳</b><span class="small muted">עד '+(()=>{const m=mins(s.t)+s.bmin;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')})()+'</span></div><div class="acts"><button class="btn sec xs" data-act="brkedit" data-t="'+s.t+'" data-tid="'+s.tid+'" data-min="'+s.bmin+'">שינוי אורך</button><button class="btn sec xs" data-act="brkdel" data-t="'+s.t+'" data-tid="'+s.tid+'">ביטול ההפסקה</button></div></div>';
+  if(!b){const P0=S.d.P[s.tid]||{},held=P0.open_until&&mins(s.t)>=mins(P0.open_until);return '<div class="slot free"><span class="tm">'+s.t+'</span><div class="who"><span class="muted">'+(held?'פנוי · <span class="tag o">סגור להורים בינתיים</span>':'פנוי')+'</span></div><div class="acts"><button class="btn sec xs" data-act="mbook" data-id="'+s.id+'">שיבוץ ידני</button><button class="btn sec xs" data-act="brkedit" data-t="'+s.t+'" data-tid="'+s.tid+'">הפסקה</button></div></div>';}
   const st=b.no_show?'<span class="tag r">לא הגיע</span>':b.ended?'<span class="tag g">הסתיים</span>':b.started?'<span class="tag o">בפגישה</span>':'';
   const wa=b.phone?'https://wa.me/'+intlPhone(b.phone)+'?text='+encodeURIComponent(reminderText(s,b)):null;
   const sepN=S.d.slots.filter(y=>y.b&&y.tid===s.tid&&y.b.stu===b.stu&&y.b.cls===b.cls).length;
@@ -754,11 +758,16 @@ function modalHtml(){const m=S.modal,d=S.d;
     return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">השעות שלי ביום ההורים</div><div class="mbody">'+
       '<div class="row"><label class="f">משעה<input type="time" id="h_ts" value="'+hm(p.t_start||e.t_start)+'"></label><label class="f">עד<input type="time" id="h_te" value="'+hm(p.t_end||e.t_end)+'"'+(isHrT(p.tid)&&p.auto_end!==false?' disabled':'')+'></label>'+
       '<label class="f">דקות לפגישה<select id="h_sm">'+opts.sort((a,b)=>a-b).map(n=>'<option'+(n===cur?' selected':'')+'>'+n+'</option>').join('')+'</select></label></div>'+
-      '<div class="row"><label class="f">הפסקה משעה<input type="time" id="h_ba" value="'+esc(p.brk_at||'')+'"></label><label class="f">למשך (דקות)<input type="number" id="h_bm" min="5" max="120" step="5" value="'+(p.brk_min||'')+'" placeholder="בלי הפסקה" style="width:120px"></label></div>'+
-      '<div class="small muted">ההפסקה לא חייבת להיות באורך של פגישה. המשבצות נעצרות בתחילתה וממשיכות אחריה.</div>'+
+      (()=>{const br=p.breaks||[];return '<div class="small"><b>הפסקות:</b> '+(br.length?br.map(x=>esc(x.at)+' ('+x.min+' דק׳)').join(' · '):'אין')+'<span class="muted"> · מסמנים ומשנים ביומן, בכפתור "הפסקה" ליד כל משבצת</span></div>'})()+
       (isHrT(p.tid)?'<label class="check"><input type="checkbox" id="h_auto"'+(p.auto_end!==false?' checked':'')+'> <span><b>שעת הסיום מחושבת לבד</b> <span class="small muted">לפי '+(p.students_n||0)+' תלמידים × אורך הפגישה, ועוד ההפסקות</span></span></label>':'')+
       '<div class="small muted" id="h_cnt"></div><div class="small muted">ברירת המחדל לכולם: '+hm(e.t_start)+'–'+hm(e.t_end)+', '+e.slot_min+' דקות. <button class="link" data-act="hoursreset">חזרה לברירת המחדל</button></div></div>'+
       '<div class="mfoot"><button class="btn ok" data-act="hourssave">שמירה ובניית היומן</button><button class="btn sec" data-act="close">ביטול</button></div></div></div>'}
+  if(m.kind==='brk'){const p=d.P[m.tid]||{},L=p.slot_min||d.event.slot_min,cur=m.min||L,opts=[...new Set([2,5,10,15,20,25,30,45,60,L,cur])].sort((a,b)=>a-b);
+    return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">הפסקה ב־'+esc(m.t)+'</div><div class="mbody">'+
+      '<label class="f">אורך ההפסקה (דקות)<select id="b_min">'+opts.map(o=>'<option value="'+o+'"'+(o===cur?' selected':'')+'>'+o+' דק׳'+(o===L?' (כמו פגישה)':'')+'</option>').join('')+'<option value="x">אחר…</option></select></label>'+
+      '<label class="f" id="b_xw" style="display:none">כמה דקות?<input type="number" id="b_x" min="1" max="180" value="'+cur+'"></label>'+
+      '<div class="small muted">הפגישות שאחרי ההפסקה זזות בהתאם'+(isHrT(m.tid)&&p.auto_end!==false?', ושעת הסיום מתעדכנת לבד.':'. שעת הסיום לא משתנה, אז ייתכן שתהיה משבצת אחת פחות.')+' פגישות שכבר נקבעו לא זזות.</div></div>'+
+      '<div class="mfoot"><button class="btn ok" data-act="brksave">שמירה</button><button class="btn sec" data-act="close">ביטול</button></div></div></div>'}
   if(m.kind==='note'){const s0=d.slots.find(s=>s.b&&s.b.id===m.bid);if(!s0)return '';
     return '<div class="overlay" data-act="close"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh"><div class="mhead" id="mh">הערה לפגישה · '+esc(s0.b.stu)+' · '+s0.t+'</div><div class="mbody">'+
       '<label class="f">הערות<textarea id="m_note" maxlength="2000" rows="6" placeholder="מה סוכם, מה חשוב לזכור">'+esc(s0.b.note||'')+'</textarea></label>'+
@@ -803,7 +812,10 @@ function staffClick(e){
     if(k==='c-reg'&&S.d.admin){S.view='settings';render()}
     if(k==='c-t'){S.view='overview';render()}
     return}
-  if(a==='brk')return act('yh_slot_break',{p_phone:S.phone,p_slot:+b.dataset.id,p_break:b.dataset.v==='1'});
+  if(a==='brkedit'){S.modal={kind:'brk',t:b.dataset.t,tid:+b.dataset.tid,min:+b.dataset.min||0};return render()}
+  if(a==='brkdel')return act('yh_break_set',{p_phone:S.phone,p_tid:+b.dataset.tid,p_at:b.dataset.t,p_min:null},'ההפסקה בוטלה');
+  if(a==='brksave'){const m=S.modal,v=document.getElementById('b_min').value,n=v==='x'?+document.getElementById('b_x').value:+v;if(!(n>=1&&n<=180)){toast('אורך בין 1 ל־180 דקות');return}
+    return act('yh_break_set',{p_phone:S.phone,p_tid:m.tid,p_at:m.t,p_min:n},'נשמרה הפסקה של '+n+' דק׳')}
   if(a==='scancel'){if(!confirm('לבטל את הפגישה? כדאי לעדכן את ההורה.'))return;return act('yh_staff_cancel',{p_phone:S.phone,p_booking:+b.dataset.id},'הפגישה בוטלה')}
   if(a==='mbook'){const s=S.d.slots.find(x=>x.id===+b.dataset.id);S.modal={kind:'book',slot:s.id,cls:S.d.P[s.tid].classes[0]};return render()}
   if(a==='cbook'){S.modal={kind:'book',cls:S.cls,stu:b.dataset.n};return render()}
@@ -814,11 +826,10 @@ function staffClick(e){
     S.busy=true;rpc('yh_staff_book',{p_phone:S.phone,p_slot:slot,p_class:cls,p_student:document.getElementById('m_stu').value,p_parent:document.getElementById('m_par').value,p_pphone:document.getElementById('m_ph').value})
       .then(async()=>{S.modal=null;toast('שובץ');await load();S.busy=false;S.keepScroll=true;render()}).catch(x=>{S.busy=false;document.getElementById('m_err').textContent=errMsg(x)});return}
   if(a==='myhours'){S.modal={kind:'hours'};render();hoursCount();return}
-  if(a==='hoursreset'){const x=document.getElementById('h_ba'),y=document.getElementById('h_bm');if(x)x.value='';if(y)y.value='';const e=S.d.event;document.getElementById('h_ts').value=hm(e.t_start);document.getElementById('h_te').value=hm(e.t_end);document.getElementById('h_sm').value=String(e.slot_min);hoursCount();return}
+  if(a==='hoursreset'){const e=S.d.event;document.getElementById('h_ts').value=hm(e.t_start);document.getElementById('h_te').value=hm(e.t_end);document.getElementById('h_sm').value=String(e.slot_min);hoursCount();return}
   if(a==='hourssave'){const ts=document.getElementById('h_ts').value,te=document.getElementById('h_te').value,sm=+document.getElementById('h_sm').value;
     if(!ts||!te||mins(ts)>=mins(te)){toast('שעת הסיום צריכה להיות אחרי שעת ההתחלה');return}
-    const ba=document.getElementById('h_ba').value,bm=+document.getElementById('h_bm').value||0;
-    if(bm&&(!ba||mins(ba)<=mins(ts)||mins(ba)>=mins(te))){toast('שעת ההפסקה צריכה להיות בתוך השעות שלך');return}
+    const ba=null,bm=0;
     const au=document.getElementById('h_auto');
     if(au){(async()=>{try{await rpc('yh_set_auto_end',{p_phone:S.phone,p_tid:S.tid,p_on:au.checked})}catch(e){}act('yh_my_settings',{p_phone:S.phone,p_start:ts,p_end:te,p_slot:sm,p_brk_at:bm?ba:null,p_brk_min:bm||null},'נשמר. היומן נבנה מחדש')})();return}
     return act('yh_my_settings',{p_phone:S.phone,p_start:ts,p_end:te,p_slot:sm,p_brk_at:bm?ba:null,p_brk_min:bm||null},'נשמר. היומן נבנה מחדש')}
@@ -848,17 +859,21 @@ function staffClick(e){
     S.busy=true;(async()=>{try{await rpc('yh_admin_save_event',{p_phone:S.phone,p_ev:ev});const r=await rpc('yh_admin_build',{p_phone:S.phone});toast('נשמר'+(r.added||r.removed?' · הלוח עודכן':''));await load()}catch(x){toast(errMsg(x))}S.busy=false;S.keepScroll=true;render()})();return}
 }
 const isHrT=tid=>!!(S.d&&S.d.classes.some(c=>c.homeroom===tid));
-/* שעת סיום אוטומטית למחנך: התחלה + (תלמידים + משבצות הפסקה) × (פגישה + רווח) − רווח + הפסקה ארוכה */
-function autoEnd(){const p=S.d.P[S.tid]||{},g=S.d.event.gap_min||0,ts=document.getElementById('h_ts').value,sm=+document.getElementById('h_sm').value,bm=+((document.getElementById('h_bm')||{}).value||0),ba=(document.getElementById('h_ba')||{}).value;
-  if(!ts||!sm)return '';const nb=(S.d.byT[S.tid]||[]).filter(x=>x.brk).length,n=Math.max(1,(p.students_n||0)+nb),st=mins(ts);let m=st+n*(sm+g)-g;if(ba&&bm>0){const pre=Math.max(0,Math.floor((mins(ba)-st+g)/(sm+g)));if(pre<n)m=mins(ba)+bm+(n-pre)*(sm+g)-g}return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
-function hoursCount(){const au=document.getElementById('h_auto'),te0=document.getElementById('h_te');if(au&&te0){te0.disabled=au.checked;if(au.checked){const v=autoEnd();if(v)te0.value=v}}const o=document.getElementById('h_cnt');if(!o)return;const ts=document.getElementById('h_ts').value,te=document.getElementById('h_te').value,sm=+document.getElementById('h_sm').value,g=S.d.event.gap_min||0;
-  const ba=(document.getElementById('h_ba')||{}).value,bm=+((document.getElementById('h_bm')||{}).value||0),cnt=(a,b)=>b>a?Math.floor((b-a+g)/(sm+g)):0;
-  let n=0;if(ts&&te&&mins(te)>mins(ts)){n=ba&&bm>0&&mins(ba)>mins(ts)&&mins(ba)<mins(te)?cnt(mins(ts),mins(ba))+cnt(mins(ba)+bm,mins(te)):cnt(mins(ts),mins(te))}
-  o.textContent=n?'יהיו לך '+n+' משבצות'+(ba&&bm>0?', והפסקה של '+bm+' דקות ב־'+ba:''):'שעות לא תקינות'}
+/* המשבצות כמו בשרת: רצף פגישות, וכשפגישה הייתה חוצה תחילת הפסקה היא מתחילה אחריה. n = כמה פגישות (למחנך), או עד שעת הסיום */
+function simSlots(ts,te,sm,n){const p=S.d.P[S.tid]||{},g=S.d.event.gap_min||0,st=mins(ts),br=(p.breaks||[]).map(x=>[mins(x.at),+x.min]).filter(x=>x[1]>0&&x[0]+x[1]>st).sort((a,b)=>a[0]-b[0]);
+  const out=[];let t=st,bi=0;for(;;){while(bi<br.length&&t+sm>br[bi][0]){t=Math.max(t,br[bi][0])+br[bi][1];bi++}
+    if(n!=null&&out.length>=n)break;if(n==null&&t+sm>mins(te))break;if(t+sm>23*60+59||out.length>=300)break;out.push(t);t+=sm+g}return out}
+const hhmm=m=>String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+function autoEnd(){const p=S.d.P[S.tid]||{},ts=document.getElementById('h_ts').value,sm=+document.getElementById('h_sm').value;if(!ts||!sm)return '';
+  const a=simSlots(ts,null,sm,Math.max(1,p.students_n||0));return hhmm(a.length?a[a.length-1]+sm:mins(ts)+sm)}
+function hoursCount(){const au=document.getElementById('h_auto'),te0=document.getElementById('h_te');if(au&&te0){te0.disabled=au.checked;if(au.checked){const v=autoEnd();if(v)te0.value=v}}const o=document.getElementById('h_cnt');if(!o)return;const ts=document.getElementById('h_ts').value,te=document.getElementById('h_te').value,sm=+document.getElementById('h_sm').value;
+  const n=ts&&te&&sm&&mins(te)>mins(ts)?simSlots(ts,te,sm,null).length:0,nb=((S.d.P[S.tid]||{}).breaks||[]).length;
+  o.textContent=n?'יהיו לך '+n+' משבצות'+(nb?' ו־'+nb+' הפסקות':''):'שעות לא תקינות'}
 function staffChange(e){const t=e.target;
   if(t.id==='h_ts'||t.id==='h_te'||t.id==='h_sm'||t.id==='h_ba'||t.id==='h_bm'||t.id==='h_auto')return hoursCount();
   if(t.id==='e_day'||t.id==='e_rc'){const o=document.getElementById(t.id+'_h');if(o)o.textContent=t.value?hebDay(t.value):''}
   if(t.id==='of_cls'||t.id==='of_t'||t.id==='of_k'){S.of=S.of||{};S.of[{of_cls:'cls',of_t:'tid',of_k:'k'}[t.id]]=t.value;S.keepScroll=true;render();return}
+  if(t.id==='b_min'){document.getElementById('b_xw').style.display=t.value==='x'?'':'none';return}
   if(t.id==='bp_on'){BEEP.on=t.checked;saveBeep();if(t.checked)beep(1);return}
   if(t.id==='bp_min'){BEEP.min=+t.value;saveBeep();return}
   if(t.classList&&t.classList.contains('hday')){const a=t.parentNode.querySelector('.halt');a.style.display=t.value==='alt'?'':'none';if(t.value==='alt')a.focus();return}
