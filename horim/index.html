@@ -850,7 +850,7 @@ function staffClick(e){
 const isHrT=tid=>!!(S.d&&S.d.classes.some(c=>c.homeroom===tid));
 /* שעת סיום אוטומטית למחנך: התחלה + (תלמידים + משבצות הפסקה) × (פגישה + רווח) − רווח + הפסקה ארוכה */
 function autoEnd(){const p=S.d.P[S.tid]||{},g=S.d.event.gap_min||0,ts=document.getElementById('h_ts').value,sm=+document.getElementById('h_sm').value,bm=+((document.getElementById('h_bm')||{}).value||0),ba=(document.getElementById('h_ba')||{}).value;
-  if(!ts||!sm)return '';const nb=(S.d.byT[S.tid]||[]).filter(x=>x.brk).length,n=Math.max(1,(p.students_n||0)+nb),m=mins(ts)+n*(sm+g)-g+(ba&&bm>0?bm:0);return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
+  if(!ts||!sm)return '';const nb=(S.d.byT[S.tid]||[]).filter(x=>x.brk).length,n=Math.max(1,(p.students_n||0)+nb),st=mins(ts);let m=st+n*(sm+g)-g;if(ba&&bm>0){const pre=Math.max(0,Math.floor((mins(ba)-st+g)/(sm+g)));if(pre<n)m=mins(ba)+bm+(n-pre)*(sm+g)-g}return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
 function hoursCount(){const au=document.getElementById('h_auto'),te0=document.getElementById('h_te');if(au&&te0){te0.disabled=au.checked;if(au.checked){const v=autoEnd();if(v)te0.value=v}}const o=document.getElementById('h_cnt');if(!o)return;const ts=document.getElementById('h_ts').value,te=document.getElementById('h_te').value,sm=+document.getElementById('h_sm').value,g=S.d.event.gap_min||0;
   const ba=(document.getElementById('h_ba')||{}).value,bm=+((document.getElementById('h_bm')||{}).value||0),cnt=(a,b)=>b>a?Math.floor((b-a+g)/(sm+g)):0;
   let n=0;if(ts&&te&&mins(te)>mins(ts)){n=ba&&bm>0&&mins(ba)>mins(ts)&&mins(ba)<mins(te)?cnt(mins(ts),mins(ba))+cnt(mins(ba)+bm,mins(te)):cnt(mins(ts),mins(te))}
