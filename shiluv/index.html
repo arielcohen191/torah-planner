@@ -290,7 +290,11 @@ function pivot(studs,types,period){
   const keep=state.period;if(period)state.period=period;let need=0,sched=0,given=0;const n=new Set();
   studs.forEach(s=>types.forEach(t=>{const nd=+s.needs[t]||0;if(!nd)return;n.add(s.id);need+=nd;sched+=Math.min(got(s.id,t),nd);given+=Math.min(heldVal(s.id,t),nd)}));
   state.period=keep;return {need,sched,given,pending:Math.max(0,need-given),n:n.size}}
-const BY=[['stu','תלמיד'],['cls','כיתה'],['layer','שכבה'],['type','סוג מענה'],['freq','שכיחות'],['tag','אפיון'],['school','בית ספר']];
+const BY=[['stu','תלמיד'],['cls','כיתה'],['layer','שכבה'],['type','סוג מענה'],['ther','מטפל/ת'],['freq','שכיחות'],['tag','אפיון'],['school','בית ספר']];
+/* #52: חיתוך לפי מטפל/ת — כל שעת תלמיד במפגש של המטפל/ת. "פולח" לא מתחלק בין מטפלים, ולכן בשורות האלה הבסיס הוא מה ששובץ אצלו/ה */
+function pivotT(th,studs){const ids=new Set(studs.map(s=>s.id)),X=sessions.filter(x=>x.t===th.id&&counts(x)),n=new Set();let sched=0,given=0;
+  X.forEach(x=>x.stu.filter(i=>ids.has(i)).forEach(i=>{n.add(i);sched++;given+=state.period==='avg'?DONE.filter(w=>attOf(x,w)===true).length/DONE.length:(attOf(x,state.period)===true?1:0)}));
+  return {need:sched,sched,given,pending:Math.max(0,sched-given),n:n.size,ther:true}}
 const cmpHe=(a,b)=>a.localeCompare(b,'he');
 function cutsView(){
   const f=state.f,by=state.by;
@@ -301,9 +305,10 @@ function cutsView(){
   if(by==='layer')[...new Set(studs.map(s=>s.layer))].sort(cmpHe).forEach(l=>groups.push({label:'שכבה '+l,studs:studs.filter(s=>s.layer===l),types,drill:`setF({layer:'${l}'},'cls')`}));
   if(by==='type')types.forEach(t=>groups.push({label:TYPES[t].n,studs,types:[t],drill:`setF({type:'${t}'},'stu')`}));
   if(by==='freq')['נמוכה','גבוהה','רפואי'].forEach(q=>groups.push({label:'שכיחות '+q,studs:studs.filter(s=>s.freq===q),types,drill:`setF({freq:'${q}'},'stu')`}));
+  if(by==='ther')therapists.filter(t=>types.includes(t.type)).forEach(t=>groups.push({label:esc(t.name)+' <span class="meta">'+esc((TYPES[t.type]||{}).n||'')+(absent(t)?' · בהיעדרות':'')+'</span>',ther:t,drill:`go('sched',{ther:'${t.id}'})`}));
   if(by==='tag'){TAGS.forEach(t=>groups.push({label:t,studs:studs.filter(s=>s.tags.includes(t)),types,drill:`setF({tag:'${t}'},'stu')`}));
     groups.push({label:'<span class="meta">ללא אפיון</span>',studs:studs.filter(s=>!s.tags.length),types,drill:''})}
-  const rowsHtml=groups.map(g=>({g,p:pivot(g.studs,g.types)})).filter(o=>o.p.need>0||by==='tag').map(({g,p})=>row(g.label,p,g.drill)).join('');
+  const rowsHtml=groups.map(g=>({g,p:g.ther?pivotT(g.ther,studs):pivot(g.studs,g.types)})).filter(o=>o.p.need>0||by==='tag'||by==='ther').map(({g,p})=>row(g.label,p,g.drill)).join('');
   const tot=pivot(studs,types);
   const fsel=(key,opts,ph)=>`<select onchange="setF({${key}:this.value})"><option value="">${ph}</option>${opts.map(o=>`<option value="${esc(o[0])}" ${f[key]===o[0]?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
   const active=Object.values(f).some(v=>v);
@@ -319,10 +324,11 @@ function cutsView(){
     </div></div>
   <div class="card"><table><tr><th>${BY.find(b=>b[0]===by)[1]}</th><th>תלמידים</th><th>פולח (מגיע)</th><th>שובץ</th><th>ניתן בפועל</th><th>טרם ניתן</th><th style="width:26%">ביצוע</th></tr>
   ${by==='school'?'':rowsHtml}${row('<b>סה"כ '+(ME.layers.length?'שכבות '+ME.layers.join(', '):'בית ספרי')+'</b>'+(active?' <span class="meta">(לפי הסינון)</span>':''),tot,'',true)}</table></div>
+  ${by==='ther'?'<p class="legend">בחיתוך לפי מטפל/ת: כל תלמיד בכל מפגש = שעה. "פולח" לא מתחלק בין מטפלים, ולכן "טרם ניתן" כאן = שובץ אצל המטפל/ת ועוד לא סומן "התקיים". לחיצה על שורה פותחת את המערכת של המטפל/ת.</p>':''}
   <p class="legend">פולח = מה שהוחלט בפילוח (שעות שבועיות). שובץ = מה ששובץ במערכת, בלי מענים מושהים. ניתן בפועל = מענים שסומנו "התקיים" ב${wLabel(state.period)}. בפס: כהה = ניתן, בהיר = שובץ.</p>`;
 }
 function row(label,p,drill,tot){const gp=p.need?p.given/p.need*100:0,sp=p.need?p.sched/p.need*100:0;
-  return `<tr class="${drill?'click':''} ${tot?'tot':''}" ${drill?`onclick="${drill}"`:''}><td>${label}</td><td>${p.n}</td><td>${fmt(p.need)}</td><td>${fmt(p.sched)}</td><td>${fmt(p.given)}</td><td><b style="color:${p.pending?'var(--bad)':'var(--ok)'}">${fmt(p.pending)}</b></td>
+  return `<tr class="${drill?'click':''} ${tot?'tot':''}" ${drill?`onclick="${drill}"`:''}><td>${label}</td><td>${p.n}</td><td>${p.ther?'<span class="meta">—</span>':fmt(p.need)}</td><td>${fmt(p.sched)}</td><td>${fmt(p.given)}</td><td><b style="color:${p.pending?'var(--bad)':'var(--ok)'}">${fmt(p.pending)}</b></td>
   <td><div class="bar dbl"><i class="s" style="width:${Math.min(100,sp)}%"></i><i class="g" style="width:${Math.min(100,gp)}%"></i></div><span class="legend">${Math.round(gp)}%</span></td></tr>`}
 function setF(o,by){Object.assign(state.f,o);if(o.layer)state.f.cls='';if(by)state.by=by;render()}
 
