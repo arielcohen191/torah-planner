@@ -1,0 +1,3 @@
+-- 059: מספר פגישות למחנך שההנהלה קובעת (הוחל במסד דרך apply_migration)
+-- yh_participants.meet_n (ריק = כמספר התלמידים); _yh_rebuild: target = coalesce(meet_n, תלמידים);
+-- yh_house_set מקבל 'meet_n'; yh_staff_load מחזיר meet_n
