@@ -159,6 +159,7 @@ td:first-child{border-radius:0 var(--r-sm) var(--r-sm) 0}td:last-child{border-ra
 .bub{display:inline-flex;align-items:center;gap:10px;background:#eef5fc;border:1.5px solid #b9d2ee;border-radius:999px;padding:6px 16px 6px 8px;text-decoration:none;color:var(--ink);min-height:52px;transition:transform .1s,box-shadow .1s}
 .bub:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(47,127,214,.18)}.bub>span{display:flex;flex-direction:column;line-height:1.25}
 .nowin{background:var(--soft,#eef4fb);border-radius:10px;padding:8px 12px;font-size:17px;margin:6px 0}
+#htab tr.dirty td{background:#fff6d6}
 .dhd{font-weight:700;color:var(--brand-dark);margin-top:6px;padding-bottom:2px;border-bottom:1.5px solid var(--line)}
 .tkt{display:flex;align-items:center;gap:14px;background:var(--card-muted);border-radius:14px;padding:12px 16px;border-right:6px solid var(--green);text-align:right}
 .tkt .tm{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
@@ -702,8 +703,9 @@ function viewHours(){
   ps.sort((a,b)=>(cl(a)||'ת'+a.classes[0]||'').localeCompare(cl(b)||'ת'+b.classes[0]||'','he'));
   const opt=(p)=>{const cur=pDays(p),alt=cur.find(x=>!ed.includes(x));
     const o=ed.map(x=>['d:'+x,dShort(x)]);if(ed.length>1)o.push(['both','בשני התאריכים']);o.push(['alt','תאריך חלופי…'],['pending','מועד נפרד, עוד לא נקבע']);
-    const v=p.pending?'pending':alt?'alt':cur.length>1?'both':'d:'+cur[0];
-    return '<select class="hday" style="min-height:44px">'+o.map(([k,l])=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+esc(l)+'</option>').join('')+'</select><input type="date" class="halt" value="'+esc(alt||'')+'" style="min-height:44px;'+(alt&&!p.pending?'':'display:none')+'">'};
+    const multiAlt=!p.pending&&cur.length>1&&cur.some(x=>!ed.includes(x));if(multiAlt)o.unshift(['keep','כמו עכשיו: '+cur.map(dShort).join(' + ')]);
+    const v=p.pending?'pending':multiAlt?'keep':alt?'alt':cur.length>1?'both':'d:'+cur[0];
+    return '<select class="hday" style="min-height:44px">'+o.map(([k,l])=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+esc(l)+'</option>').join('')+'</select><input type="date" class="halt" value="'+esc(alt||'')+'" style="min-height:44px;'+(alt&&!p.pending&&!multiAlt?'':'display:none')+'">'};
   let h='<header class="card topbar"><div><h1>שעות ותאריכים</h1><div class="muted">'+(d.admin?'כל הכיתות':'הכיתות בבית שלך')+' · ברירת המחדל: '+ed.map(x=>esc(dShort(x))).join(' / ')+' · '+hm(e.t_start)+'–'+hm(e.t_end)+' · '+e.slot_min+' דק׳</div></div></header>';
   if(e.reg_open)h+='<div class="warn">ההרשמה כבר פתוחה. שינוי עכשיו לא מוחק פגישות שנקבעו, אבל כדאי לעדכן את ההורים.</div>';
   {const hg=d.house||[],isHrT=t=>d.classes.some(c=>c.homeroom===t);
@@ -713,12 +715,12 @@ function viewHours(){
        return '<div class="slot'+(subs.length?' free':'')+'"><span class="tm">'+esc(c.name)+'</span><div class="who"><b>'+(d.P[c.homeroom]?'המחנך/ת: מועד נפרד':'המחנך/ת לא משתתף/ת')+'</b><span class="small muted">'+(subs.length?'פתוחים: '+esc(subs.map(p=>tName(p.name)).join(', ')):'המורים המקצועיים סגורים להרשמה')+'</span></div><div class="acts">'+
          (subs.length?'<button class="btn sec xs" data-act="subjoff" data-c="'+esc(c.name)+'">סגירה</button>':'<button class="btn ok xs" data-act="subjon" data-c="'+esc(c.name)+'">פתיחת המורים המקצועיים</button>')+'</div></div>'}).join('')+'</div></section>'}
   if(!ps.length)return h+'<div class="card box">אין מורים לעריכה.</div>';
-  h+='<section class="card box"><h2>לכל המורים ברשימה</h2><div class="small muted">ממלאים רק את מה שרוצים לשנות, לוחצים "החלה על כולם" ואז שמירה.</div><div class="row" id="hall"><label class="f">משעה<input type="time" class="hts"></label><label class="f">עד<input type="time" class="hte"></label><label class="f">דקות<input type="number" class="hsm" min="5" max="60" style="width:80px"></label><button class="btn sec sm" data-act="hallapply">החלה על כולם</button></div></section>';
-  h+='<section class="card box" id="hbox"><div class="row" style="justify-content:space-between"><h2>המורים</h2>'+tfind('#hbox','חיפוש מורה או כיתה')+'</div><div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>תאריך</th><th>משעה</th><th>עד</th><th>דקות</th><th>פגישות</th><th>פתיחה בהדרגה</th></tr></thead><tbody id="htab">'+
+  h+='<section class="card box"><h2>לכל המורים ברשימה</h2><div class="small muted">ממלאים רק את מה שרוצים לשנות, לוחצים "החלה על כולם" ואז שמירה. ההחלה חלה רק על המורים שמוצגים (אפשר לסנן קודם בחיפוש).</div><div class="row" id="hall"><label class="f">משעה<input type="time" class="hts"></label><label class="f">עד<input type="time" class="hte"></label><label class="f">דקות<input type="number" class="hsm" min="5" max="60" style="width:80px"></label><button class="btn sec sm" data-act="hallapply">החלה על כולם</button></div></section>';
+  h+='<section class="card box" id="hbox"><div class="row" style="justify-content:space-between"><h2>המורים</h2>'+tfind('#hbox','חיפוש מורה או כיתה')+'</div><div class="tablewrap"><table><thead><tr><th>מורה</th><th>כיתות</th><th>תאריך</th><th>משעה</th><th>עד</th><th>דקות</th><th>פגישות</th><th>פתיחה בהדרגה</th><th></th></tr></thead><tbody id="htab">'+
     ps.map(p=>'<tr data-tid="'+p.tid+'"><td><b>'+esc(tName(p.name))+'</b>'+(cl(p)?' <span class="tag b">מחנך '+esc(cl(p))+'</span>':'')+'</td><td class="small">'+esc(p.classes.join(', '))+'</td><td>'+opt(p)+'</td>'+
-      '<td><input type="time" class="hts" value="'+hm(p.t_start||'')+'" style="min-height:44px"></td><td><input type="time" class="hte" value="'+hm(p.t_end||'')+'" style="min-height:44px"></td><td><input type="number" class="hsm" min="5" max="60" value="'+(p.slot_min||'')+'" placeholder="'+e.slot_min+'" style="min-height:44px;width:70px"></td><td>'+(cl(p)?'<input type="number" class="hmn" min="1" max="60" value="'+(p.meet_n||'')+'" placeholder="'+(p.students_n||'')+'" title="ריק = כמספר התלמידים" style="min-height:44px;width:70px">':'<span class="muted small">—</span>')+'</td><td style="text-align:center"><input type="checkbox" class="hgr" aria-label="פתיחה בהדרגה"'+(p.allow_gradual?' checked':'')+'>'+(p.open_until?'<div class="small muted">עד '+esc(p.open_until)+'</div>':'')+'</td></tr>').join('')+'</tbody></table></div>'+
+      '<td><input type="time" class="hts" value="'+hm(p.t_start||'')+'" style="min-height:44px"></td><td><input type="time" class="hte" value="'+hm(p.t_end||'')+'" style="min-height:44px"></td><td><input type="number" class="hsm" min="5" max="60" value="'+(p.slot_min||'')+'" placeholder="'+e.slot_min+'" style="min-height:44px;width:70px"></td><td>'+(cl(p)?'<input type="number" class="hmn" min="1" max="60" value="'+(p.meet_n||'')+'" placeholder="'+(p.students_n||'')+'" title="ריק = כמספר התלמידים" style="min-height:44px;width:70px">':'<span class="muted small">—</span>')+'</td><td style="text-align:center"><input type="checkbox" class="hgr" aria-label="פתיחה בהדרגה"'+(p.allow_gradual?' checked':'')+'>'+(p.open_until?'<div class="small muted">עד '+esc(p.open_until)+'</div>':'')+'</td><td><button class="btn sec xs" data-act="hsave1" data-tid="'+p.tid+'">שמירה</button></td></tr>').join('')+'</tbody></table></div>'+
     '<div class="small muted">"פגישות" (למחנכים): ריק = פגישה לכל תלמיד. מספר קטן יותר מקצר את היום, ושעת הסיום מתעדכנת לבד. "פתיחה בהדרגה": המורה יכול/ה לפתוח להורים רק עד שעה מסוימת ולהרחיב כשמתמלא. שדה ריק = כמו האירוע. מורה מקצועי נפגש בתאריך אחד בלבד. פגישות שכבר נקבעו לא נמחקות.</div>'+
-    '<div class="row"><button class="btn ok" data-act="hsave">שמירה ובניית הלוח</button></div></section>';
+    '<div class="row"><button class="btn ok" data-act="hsave">שמירת השורות ששונו</button><span class="small muted">רק שורות שנגעת בהן (מסומנות בצהוב) נשמרות. אפשר גם "שמירה" בשורה עצמה.</span></div></section>';
   return h}
 function viewSettings(){
   const d=S.d,e=d.event||{day:'2026-11-29',t_start:'16:00',t_end:'20:00',slot_min:10,gap_min:0,reg_open:false,reg_close:'',note:'',title:'יום הורים'};
@@ -808,20 +810,12 @@ function staffClick(e){
   if(a==='logout'){lsSet('hanhala_phone',null);S.phone=null;S.d=null;return renderLogin()}
   if(a==='print')return print();
   if(a==='filter'){S.filter=b.dataset.f;S.keepScroll=true;return render()}
-  if(a==='hallapply'){const g=c=>document.querySelector('#hall .'+c).value;['hts','hte','hsm'].forEach(c=>{const v=g(c);if(v)document.querySelectorAll('#htab .'+c).forEach(i=>i.value=v)});toast('הוחל. לא לשכוח לשמור');return}
-  if(a==='hsave'){const ed=S.d.edays,list=[];let bad='';
-    document.querySelectorAll('#htab tr').forEach(tr=>{const q=c=>tr.querySelector('.'+c).value,tid=+tr.dataset.tid,p=S.d.P[tid];const k=q('hday');
-      const gr=tr.querySelector('.hgr').checked,mn=tr.querySelector('.hmn'),mnv=mn?(mn.value===''||+mn.value===(S.d.P[tid]||{}).students_n?'':String(+mn.value)):undefined;
-      if(k==='pending'){list.push({tid,t_start:q('hts')||null,t_end:q('hte')||null,slot_min:+q('hsm')||null,pending:true,gradual:gr,...(mn?{meet_n:mnv}:{})});return}
-      let days=k==='both'?ed.slice():k==='alt'?[q('halt')]:[k.slice(2)];
-      if(k==='alt'&&!q('halt'))bad='בחרו תאריך חלופי ל'+tName(p.name);
-      const isHr=S.d.classes.some(c=>c.homeroom===tid);if(!isHr&&days.length>1)bad=tName(p.name)+' מורה מקצועי, נפגש בתאריך אחד בלבד';
-      if(q('hts')&&q('hte')&&q('hte')<=q('hts'))bad='בדקו את השעות של '+tName(p.name);
-      const same=days.length===1&&days[0]===ed[0];
-      list.push({tid,t_start:q('hts')||null,t_end:q('hte')||null,slot_min:+q('hsm')||null,days:same?[]:days,pending:false,gradual:gr,...(mn?{meet_n:mnv}:{})})});
+  if(a==='hallapply'){const g=c=>document.querySelector('#hall .'+c).value;['hts','hte','hsm'].forEach(c=>{const v=g(c);if(v)document.querySelectorAll('#htab tr').forEach(tr=>{if(tr.style.display==='none')return;const i=tr.querySelector('.'+c);if(i&&i.value!==v){i.value=v;tr.classList.add('dirty')}})});toast('הוחל. לא לשכוח לשמור');return}
+  if(a==='hsave'||a==='hsave1'){const rows=a==='hsave1'?[b.closest('tr')]:[...document.querySelectorAll('#htab tr.dirty')];
+    if(!rows.length){toast('לא שונה כלום. משנים שורה (היא נצבעת בצהוב) ואז שומרים');return}
+    const list=[];let bad='';rows.forEach(tr=>{const r=hoursRow(tr);if(r.bad)bad=r.bad;else list.push(r.item)});
     if(bad){toast(bad);return}
-    /* פגישות שכבר נקבעו אצל מורה שהמועד שלו משתנה (לא נקבע / תאריך אחר): שואלים מה לעשות איתן */
-    return guarded(list,()=>rpc('yh_house_set',{p_phone:S.phone,p_list:list}),'נשמר')}
+    return guarded(list,()=>rpc('yh_house_set',{p_phone:S.phone,p_list:list}),'נשמר'+(list.length>1?' ('+list.length+' מורים)':' · '+tName((S.d.P[list[0].tid]||{}).name||'')))}
   if(a==='haffgo'){const m=S.modal;return runAff(m.run,b.dataset.v==='cancel'?m.aff:null,m.msg)}
   if(a==='ofclear'){S.of={cls:'',tid:'',k:''};S.keepScroll=true;return render()}
   if(a==='dday'){S.dday=b.dataset.d;S.keepScroll=true;return render()}
@@ -889,6 +883,17 @@ function autoEnd(){const p=S.d.P[S.tid]||{},ts=document.getElementById('h_ts').v
   const a=simSlots(ts,null,sm,Math.max(1,p.meet_n||p.students_n||0));return hhmm(a.length?a[a.length-1]+sm:mins(ts)+sm)}
 /* שינוי שעלול להוציא פגישות שכבר נקבעו מהלוח (שעות, אורך, מספר פגישות, הפסקות, תאריך): קודם בודקים בשרת,
    ואם יש כאלה — שואלים מה לעשות איתן. run = הפעולה ששומרת (מחזירה promise). */
+/* שורה אחת במסך "שעות ותאריכים" → פריט לשמירה */
+function hoursRow(tr){const ed=S.d.edays,q=c=>tr.querySelector('.'+c).value,tid=+tr.dataset.tid,p=S.d.P[tid];const k=q('hday');
+  const gr=tr.querySelector('.hgr').checked,mn=tr.querySelector('.hmn'),mnv=mn?(mn.value===''||+mn.value===(p||{}).students_n?'':String(+mn.value)):undefined;
+  const base={tid,t_start:q('hts')||null,t_end:q('hte')||null,slot_min:+q('hsm')||null,gradual:gr,...(mn?{meet_n:mnv}:{})};
+  if(q('hts')&&q('hte')&&q('hte')<=q('hts'))return {bad:'בדקו את השעות של '+tName(p.name)};
+  if(k==='pending')return {item:{...base,pending:true}};
+  if(k==='keep')return {item:{...base,pending:false}};
+  const days=k==='both'?ed.slice():k==='alt'?[q('halt')]:[k.slice(2)];
+  if(k==='alt'&&!q('halt'))return {bad:'בחרו תאריך חלופי ל'+tName(p.name)};
+  if(!S.d.classes.some(c=>c.homeroom===tid)&&days.length>1)return {bad:tName(p.name)+' מורה מקצועי, נפגש בתאריך אחד בלבד'};
+  const same=days.length===1&&days[0]===ed[0];return {item:{...base,days:same?[]:days,pending:false}}}
 function brkList(tid,at,min){const br=((S.d.P[tid]||{}).breaks||[]).filter(x=>x.at!==at);if(min)br.push({at,min});return br}
 async function guarded(list,run,msg){let aff=[];
   try{aff=(await rpc('yh_preview',{p_phone:S.phone,p_list:list}))||[]}catch(e){}
@@ -918,7 +923,8 @@ function staffChange(e){const t=e.target;
   else if(t.id==='m_cls'){S.modal.cls=t.value;S.modal.stu=null;render()}
 }
 async function staffStart(){
-  root.addEventListener('click',staffClick);root.addEventListener('change',staffChange);root.addEventListener('input',e=>{if(e.target.classList.contains('tfind'))return applyFind(e.target);if(e.target.id==='lnote')S.lnote={id:+e.target.dataset.id,v:e.target.value}});
+  root.addEventListener('click',staffClick);root.addEventListener('change',staffChange);const markDirty=e=>{const tr=e.target.closest&&e.target.closest('#htab tr');if(tr)tr.classList.add('dirty')};root.addEventListener('change',markDirty);
+  root.addEventListener('input',e=>{markDirty(e);if(e.target.classList.contains('tfind'))return applyFind(e.target);if(e.target.id==='lnote')S.lnote={id:+e.target.dataset.id,v:e.target.value}});
   root.addEventListener('submit',async e=>{if(e.target.id!=='loginForm')return;e.preventDefault();const ph=document.getElementById('ph').value;
     try{await rpc('yh_staff_load',{p_phone:ph});S.phone=ph;lsSet('hanhala_phone',ph);await refresh()}catch(x){renderLogin(/no_access/.test(x.message)?'המספר הזה לא מורשה להיכנס.':errMsg(x))}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.modal){S.modal=null;render()}});
