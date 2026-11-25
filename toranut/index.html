@@ -607,7 +607,7 @@ function layCls(txt){const l=T.layerLetters(txt);return !l?'':l.length>1?'L-mult
 function viewYards(){
   const A=curAssign(),P=byId(),Y=S.cfg.yards,rows=T.DEFAULT_CONFIG.yardRows,days=[0,1,2,3,4,5];
   const nm=k=>{if(S.cfg.skip[k])return '<span class="muted">אוחד לפטרול</span>';const id=A[k];return id&&P[id]?holderHtml(k,id,P,true):''};
-  let h='<div class="card" id="yardsCard"><div class="topbar"><div><h1>חלוקת מגרשים וחצרות · כנפי רוח בנים · תשפ"ז</h1><div class="muted small">התורן האחראי נלקח מהשיבוץ'+(S.data.plan.at?' (הרצה '+new Date(S.data.plan.at).toLocaleDateString('he-IL')+')':'')+'<span class="noprint"> · לחיצה על שכבה: עריכה · לחיצה על שם: החלפת תורן</span></div></div>'+
+  let h='<div class="card" id="yardsCard"><div class="topbar"><div><h1>חלוקת מרחבים בהפסקות · כנפי רוח בנים · תשפ"ז</h1><div class="muted small">התורן האחראי נלקח מהשיבוץ'+(S.data.plan.at?' (הרצה '+new Date(S.data.plan.at).toLocaleDateString('he-IL')+')':'')+'<span class="noprint"> · לחיצה על שכבה: עריכה · לחיצה על שם: החלפת תורן</span></div></div>'+
     '<div class="row noprint"><button class="btn sm" data-act="printYards">הדפסה צבעונית (דף אחד)</button><button class="btn sec sm" data-act="yImport">עדכון מהגיליון</button></div></div>';
   h+='<div class="tablewrap" style="margin-top:10px"><table class="yt"><thead><tr><th rowspan="2">הפסקה</th><th rowspan="2">חצר / מגרש</th>'+days.map(d=>'<th colspan="2">'+D[d]+'</th>').join('')+'</tr><tr>'+days.map(()=>'<th>שכבה</th><th>תורן אחראי</th>').join('')+'</tr></thead><tbody>';
   [['b1','הפסקה ראשונה (10)'],['b2','הפסקה שנייה (12)']].forEach(([b,label])=>{
@@ -645,18 +645,20 @@ function setYard(b,key,d,val){
 async function yardsImport(){
   toast('קורא את הגיליון…');
   let values;
-  try{const j=await sheetJSONP(S.data.sheet,'חלוקת מגרשים וחצרות');values=j.table.rows.map(r=>(r.c||[]).map(c=>c?(c.v==null?'':String(c.v)):''))}
+  try{const j=await sheetJSONP(S.data.yardsSheet||'1hF376JicsCMzrsYOlqrlnsqM9syjMotTHKlalHJpLYo',S.data.yardsTab||'גיליון1');values=j.table.rows.map(r=>(r.c||[]).map(c=>c?(c.v==null?'':String(c.v)):''))}
   catch(e){S.modal={kind:'import',err:e.message};render();return}
   // "כניסה למנהלה – צופה על המגרש המשולב" (אספלט: כדורגל+כדורסל) = הספסל של המנהלה; "דשא סינטטי" = מרחב הדשא במרכז בית הספר
-  const KEY=[[/כניסה למנהלה|משולב/,'מגרש משולב'],[/סינטטי/,'דשא סינטטי'],[/פינג/,'פינג פונג + תחתון'],[/כדורסל/,'כדורסל'],[/עליון/,'מגרש עליון'],[/הדשא הגדול|דשא גדול/,'דשא גדול']];
+  // הלוח "חלוקת מרחבים בהפסקות": עמודה ראשונה = מרחב, אחריה ראשון…שישי. (תומך גם בפורמט הישן — ימים בעמודות זוגיות)
+  const KEY=[[/מקורה/,'מגרש מקורה'],[/סינטטי/,'דשא סינטטי'],[/בין המבנים/,'בין המבנים'],[/אחורית א/,'חצר אחורית א'],[/אחורית ב/,'חצר אחורית ב'],[/שביל/,'שביל ראשי'],[/^\s*מגרש דשא|דשא גדול/,'מגרש דשא']];
   const Y={b1:{},b2:{}},dup=[];let b=null,n=0;
-  values.forEach(r=>{const a=String(r[0]||''),y=String(r[1]||'');
-    if(/ראשונה/.test(a))b='b1';else if(/שני/.test(a)&&/הפסקה/.test(a))b='b2';
-    const k=(KEY.find(([re])=>re.test(y))||[])[1];
-    if(b&&k){if(Y[b][k])dup.push(y.replace(/\s+/g,' ').trim());Y[b][k]=[2,4,6,8,10,12].map(i=>String(r[i]||'').trim());n++}});
+  values.forEach(r=>{const a=String(r[0]||'');
+    if(/בקרה|כפילויות/.test(a))b=null;else if(/ראשונה/.test(a)&&!/שכבה/.test(a))b='b1';else if(/שנייה|שניה/.test(a)&&!/שכבה/.test(a))b='b2';
+    const k=(KEY.find(([re])=>re.test(a))||[])[1];
+    const clean=v=>{v=String(v||'').replace(/['׳"]/g,'').trim();return /שבת/.test(v)?'':v};
+    if(b&&k){if(Y[b][k])dup.push(a.replace(/\s+/g,' ').trim());Y[b][k]=[1,2,3,4,5,6].map(i=>clean(r[i]));n++}});
   if(dup.length){toast('לא עודכן: שתי שורות בגיליון מתאימות לאותו מגרש ('+dup.join(', ')+'). כדאי לבדוק את שמות השורות.');return}
   const miss=T.DEFAULT_CONFIG.yardRows.filter(x=>!Y.b1[x.key]).map(x=>x.name);if(miss.length){toast('לא עודכן: חסרה בגיליון שורה של '+miss.join(', '));return}
-  if(n<6){toast('לא זיהיתי את מבנה הגיליון');return}
+  if(n<7){toast('לא זיהיתי את מבנה הגיליון');return}
   S.data.yards=Y;S.data.plan.stale=true;recompute();await save(true);render();toast('חלוקת החצרות עודכנה מהגיליון ('+n+' שורות)');
 }
 function printYards(){
