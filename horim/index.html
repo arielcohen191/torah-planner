@@ -178,6 +178,11 @@ td:first-child{border-radius:0 var(--r-sm) var(--r-sm) 0}td:last-child{border-ra
  .grid2{grid-template-columns:1fr}
 }
 @media print{nav.rail,.acts,.noprint,.kfb-btn{display:none!important}main{padding:0}}
+#psheet{display:none}
+@media print{@page{size:A4;margin:12mm}body.psm>*:not(#psheet){display:none!important}body.psm #psheet{display:block}}
+#psheet h1{font-size:18pt;margin:0 0 2mm}#psheet .ps-sub{font-size:10pt;color:#444;margin-bottom:4mm}
+#psheet table{width:100%;border-collapse:collapse}#psheet td{border-bottom:1px solid #999;padding:0 2mm;vertical-align:middle;line-height:1.15}
+#psheet td.t{width:18mm;font-weight:700;font-variant-numeric:tabular-nums}#psheet tr.brk td{color:#666;font-style:italic}
 
 /* לוגו כנפי רוח בראש הסרגל (ימין למעלה). בטלפון הסרגל מוסתר או זז, ולכן הלוגו מופיע בראש כרטיס הכותרת */
 .rail .brand .klogo{display:block;width:72px;height:72px;object-fit:contain;margin:0 auto 8px;background:#fff;border-radius:16px;padding:4px;box-sizing:border-box}
@@ -551,6 +556,20 @@ function viewDiary(){
   h+='<section class="card box" id="nb"><h2>עוד לא קבעו אצלך ('+nb.length+')</h2>'+(nb.length?'<div class="small muted">אין לנו את הטלפון שלהם עד שיקבעו. אפשר לשלוח שוב את הקישור בקבוצת הכיתה, או לשבץ ידנית.</div><div class="chips">'+nb.map(x=>'<span class="tag">'+esc(x.stu)+' · '+esc(x.cls)+'</span>').join('')+'</div>':'<div class="okbox">כל ההורים קבעו. כל הכבוד!</div>')+'</section>';
   return h;
 }
+function printDiary(){
+  const d=S.d,tid=S.tid,p=d.P[tid];if(!p)return print();
+  const sl=(d.byT[tid]||[]).filter(s=>!s.d||s.d===S.dday).slice().sort((x,y)=>mins(x.t)-mins(y.t));
+  const n=Math.max(sl.length,1),H=245,rh=Math.min(11,(H-18)/n),fs=Math.max(5,Math.min(13,rh*2.2));
+  const rows=sl.map(s=>s.brk?'<tr class="brk"><td class="t">'+s.t+'</td><td colspan="2">הפסקה · '+s.bmin+' דק׳</td></tr>'
+    :s.b?'<tr><td class="t">'+s.t+'</td><td><b>'+esc(s.b.parent||'')+'</b></td><td>'+esc(s.b.stu)+' · '+esc(s.b.cls)+'</td></tr>'
+    :'<tr><td class="t">'+s.t+'</td><td colspan="2"></td></tr>').join('');
+  let el=document.getElementById('psheet');if(!el){el=document.createElement('div');el.id='psheet';el.dir='rtl';document.body.appendChild(el)}
+  el.innerHTML='<h1>יום הורים · '+esc(tName(p.name))+'</h1><div class="ps-sub">'+esc(dShort(S.dday))+' · '+hm(p.t_start||d.event.t_start)+'–'+hm(p.t_end||d.event.t_end)+' · '+(p.slot_min||d.event.slot_min)+' דקות לפגישה'+(p.room?' · '+esc(p.room):'')+'</div>'+
+    '<table style="font-size:'+fs.toFixed(1)+'pt">'+rows.replace(/<tr/g,'<tr style="height:'+rh.toFixed(2)+'mm"')+'</table>';
+  document.body.classList.add('psm');
+  const done=()=>{document.body.classList.remove('psm');window.removeEventListener('afterprint',done)};
+  window.addEventListener('afterprint',done);print();
+}
 function notBookedFor(tid){const d=S.d,p=d.P[tid];if(!p)return[];const have=new Set((d.byT[tid]||[]).filter(s=>s.b).map(s=>s.b.cls+'|'+s.b.stu));const out=[];
   p.classes.forEach(c=>{const C=d.C[c];if(C)C.students.forEach(n=>{if(!have.has(c+'|'+n))out.push({cls:c,stu:n})})});return out}
 function kpi(cls,title,sub,n,go){return '<button type="button" class="kpi '+cls+'" data-act="kpi" data-k="'+go+'"><div><b>'+title+'</b><span>'+sub+'</span><span class="go">הצג ←</span></div><span class="n">'+n+'</span></button>'}
@@ -808,7 +827,7 @@ function staffClick(e){
   if(a==='demoreset')return demoReset();
   if(a==='close'){if(e.target===b||b.tagName==='BUTTON'){S.modal=null;render()}return}
   if(a==='logout'){lsSet('hanhala_phone',null);S.phone=null;S.d=null;return renderLogin()}
-  if(a==='print')return print();
+  if(a==='print')return printDiary();
   if(a==='filter'){S.filter=b.dataset.f;S.keepScroll=true;return render()}
   if(a==='hallapply'){const g=c=>document.querySelector('#hall .'+c).value;['hts','hte','hsm'].forEach(c=>{const v=g(c);if(v)document.querySelectorAll('#htab tr').forEach(tr=>{if(tr.style.display==='none')return;const i=tr.querySelector('.'+c);if(i&&i.value!==v){i.value=v;tr.classList.add('dirty')}})});toast('הוחל. לא לשכוח לשמור');return}
   if(a==='hsave'||a==='hsave1'){const rows=a==='hsave1'?[b.closest('tr')]:[...document.querySelectorAll('#htab tr.dirty')];
