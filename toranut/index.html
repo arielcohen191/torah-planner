@@ -502,7 +502,7 @@ function viewStaff(){
 }
 
 /* ---------- כללים ---------- */
-const GROUPS=[['quota','כמות ומתכונת',['quota','pattern','shift']],['who','מי משובץ ואיפה',['exclude','ahmash','stations','post','slots','endFree']],['soft','שיקולים',['soft']],['note','הנחיות (לא נאכפות)',['note']]];
+const GROUPS=[['quota','כמות ומתכונת',['quota','pattern','shift']],['who','מי משובץ ואיפה',['exclude','ahmash','stations','post','slots','endFree','reserve']],['soft','שיקולים',['soft']],['note','הנחיות (לא נאכפות)',['note']]];
 function viewRules(){
   const rules=S.data.rules||[],st=S.data.staff,f=S.ruleFilter;
   const shown=rules.filter(r=>f==='all'||r.src===f);
@@ -524,7 +524,7 @@ function viewRules(){
 function blankRule(){return {id:T.newId(),type:'quota',n:2,who:{roles:[],dcats:[],options:[],ids:[]},on:true,src:'site',note:''}}
 function defaultsFor(type,r){
   const keep={id:r.id,type,who:r.who,on:true,src:r.src==='sheet'||r.src==='form'||r.src==='sheetR'?r.src:'site',note:r.note||''};
-  return Object.assign(keep,{quota:{n:2},pattern:{v:'day'},shift:{shift:'b1',mode:'max',n:1,hard:false},stations:{v:'noPatrol'},ahmash:{v:'can'},exclude:{v:true},slots:{mode:'never',slots:[]},soft:{factor:'layer',w:3},note:{text:''},endFree:{v:true,shifts:['e1']},post:{stations:[],layers:'',byDay:{},soft:false,shifts:['b1','b2']}}[type]);
+  return Object.assign(keep,{quota:{n:2},pattern:{v:'day'},shift:{shift:'b1',mode:'max',n:1,hard:false},stations:{v:'noPatrol'},ahmash:{v:'can'},exclude:{v:true},slots:{mode:'never',slots:[]},soft:{factor:'layer',w:3},note:{text:''},reserve:{stations:['backUp','backLo'],layer:'ו',shifts:['b1','b2']},endFree:{v:true,shifts:['e1']},post:{stations:[],layers:'',byDay:{},soft:false,shifts:['b1','b2']}}[type]);
 }
 function renderRuleModal(){
   const M=S.modal,r=M.r,st=S.data.staff,w=r.who;
@@ -546,12 +546,15 @@ function renderRuleModal(){
       (r.byDay&&Object.keys(r.byDay).length?'<div class="small muted">חריג לפי יום (מהשאלון): '+esc(Object.keys(r.byDay).map(d=>D[+d]+' — '+r.byDay[d].length+' עמדות').join(' · '))+'</div>':'')+
       '<label class="small"><input type="checkbox" data-rf="psoft"'+(r.soft?' checked':'')+'> רק עדיפות (אם אין מקום שם — אפשר גם בעמדה אחרת)</label>';break;
     case 'endFree':p='<select class="fsel" data-rf="v">'+opt({true:'לשבץ רק מי שאין לו/ה שיעור פרונטלי בשעה שלפני',false:'ביטול (מותר גם למי שמלמד/ת)'},String(r.v!==false))+'</select><div class="chips">'+[['e1','סיום 12:55 — שעה 6 (בשישי 11:55 — שעה 4)'],['e2','סיום 13:35 — שעה 7']].map(x=>'<label class="chip"><input type="checkbox" data-rf="efs" value="'+x[0]+'"'+((r.shifts||[]).includes(x[0])?' checked':'')+'> '+x[1]+'</label>').join('')+'</div><div class="small muted">שיעור פרונטלי = שיעור או שיעור משותף. פרטני, שהייה ותפקיד לא נחשבים. לפי מערכת השעות.</div>';break;
+    case 'reserve':p='<div class="small muted">בהפסקות — כשהעמדה הזו משויכת בלוח המרחבים לשכבה:</div><select class="fsel" data-rf="rlay">'+opt({'א':'שכבה א׳','ב':'שכבה ב׳','ג':'שכבה ג׳','ד':'שכבה ד׳','ה':'שכבה ה׳','ו':'שכבה ו׳','':'תמיד (כל שכבה)'},r.layer||'')+'</select>'+
+      '<div class="chips">'+T.DEFAULT_CONFIG.stations.filter(x=>x.yard).map(x=>'<label class="chip"><input type="checkbox" data-rf="rst" value="'+x.id+'"'+((r.stations||[]).includes(x.id)?' checked':'')+'> '+esc(x.name)+'</label>').join('')+'</div>'+
+      '<div class="small muted">יעמדו שם רק האנשים שמסומנים למטה. אם אף אחד מהם לא פנוי — העמדה תסומן כחסרה.</div>';break;
     case 'note':p='<textarea class="fsel" rows="3" data-rf="text" placeholder="לדוגמה: אפוד זוהר לכל התורנים">'+esc(r.text||'')+'</textarea>';break;
   }
   const people=w.ids&&w.ids.length||M.whoMode==='ids';
   let who='';
   if(r.type!=='note'&&r.type!=='soft'){
-    who='<h3 style="margin-top:8px">למי הכלל חל</h3><div class="tabs"><button type="button" data-act="rwho" data-m="group" aria-pressed="'+!people+'">קבוצה</button><button type="button" data-act="rwho" data-m="ids" aria-pressed="'+people+'">אנשים מסוימים</button></div>';
+    who='<h3 style="margin-top:8px">'+(r.type==='reserve'?'מי מותר/ת לעמוד שם':'למי הכלל חל')+'</h3>'<div class="tabs"><button type="button" data-act="rwho" data-m="group" aria-pressed="'+!people+'">קבוצה</button><button type="button" data-act="rwho" data-m="ids" aria-pressed="'+people+'">אנשים מסוימים</button></div>';
     if(!people)who+='<div class="small muted">בלי סימון = כולם</div><div><b class="small">תפקיד</b><div class="chips">'+chk('roles',T.ROLE)+'</div></div><div><b class="small">ימי עבודה</b><div class="chips">'+chk('dcats',T.DCAT)+'</div></div><div><b class="small">מתכונת שבחרו בשאלון</b><div class="chips">'+chk('options',T.OPT)+'</div></div>';
     else{const q=M.pq||'';who+='<input type="search" id="pq" class="fsel" placeholder="חיפוש שם" value="'+esc(q)+'"><div style="max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px">'+
       st.filter(s=>!q||s.name.includes(q)||(w.ids||[]).includes(s.id)).map(s=>'<label class="row small" style="padding:3px 4px"><input type="checkbox" data-rf="who.ids" value="'+s.id+'"'+((w.ids||[]).includes(s.id)?' checked':'')+'> '+esc(s.name)+' <span class="muted">'+roleName[s.role]+'</span></label>').join('')+'</div>';}
@@ -566,7 +569,7 @@ function renderRuleModal(){
     '<div class="note small"><b>תצוגה מקדימה:</b> '+esc(T.describe(r,st))+(n!=null?' <span class="muted">· חל על '+n+' אנשים</span>':'')+'</div>'+
     (idsMode&&!n?'<div class="small err">סמנו לפחות אדם אחד ברשימה.</div>':'')+
     (everyone&&restrictive?'<div class="small" style="background:#fdecea;border:1px solid #f3b4ae;border-radius:8px;padding:8px 12px;color:var(--red)"><b>שימו לב: הכלל חל על כל הצוות ('+n+' אנשים).</b> אם התכוונתם לאנשים מסוימים — לחצו "אנשים מסוימים" למעלה וסמנו אותם.</div>':'')+
-    '</div><div class="mfoot"><button class="btn sec sm" data-act="close">ביטול</button><button class="btn sm" data-act="rsave"'+(n===0||(r.type==='slots'&&!(r.slots||[]).length)||(r.type==='note'&&!(r.text||'').trim())||(r.type==='post'&&!(r.stations||[]).length&&!r.layers)?' disabled':'')+'>שמירה</button></div></div></div>';
+    '</div><div class="mfoot"><button class="btn sec sm" data-act="close">ביטול</button><button class="btn sm" data-act="rsave"'+(n===0||(r.type==='slots'&&!(r.slots||[]).length)||(r.type==='note'&&!(r.text||'').trim())||(r.type==='post'&&!(r.stations||[]).length&&!r.layers)||(r.type==='reserve'&&!(r.stations||[]).length)?' disabled':'')+'>שמירה</button></div></div></div>';
 }
 const REL={equal:'חל בדיוק על אותם אנשים',sub:'החדש חל על חלק מהאנשים של הכלל הקיים',sup:'החדש רחב יותר מהכלל הקיים',partial:'חלק מהאנשים משותפים'};
 function renderConflictModal(){
@@ -1181,7 +1184,9 @@ function setPersonal(id,type,values){
 }
 function rf(el){
   const M=S.modal,r=M.r,f=el.dataset.rf;M.keepScroll=true;
-  if(f==='type'){M.r=defaultsFor(el.value,r);return}
+  if(f==='type'){M.r=defaultsFor(el.value,r);if(el.value==='reserve')M.whoMode='ids';return}
+  if(f==='rlay'){r.layer=el.value;return}
+  if(f==='rst'){const a=new Set(r.stations||[]);el.checked?a.add(el.value):a.delete(el.value);r.stations=[...a];return}
   if(f.startsWith('who.')){const k=f.slice(4),a=new Set(r.who[k]||[]);el.checked?a.add(el.value):a.delete(el.value);r.who[k]=[...a];return}
   if(f==='slot'){const a=new Set(r.slots||[]);el.checked?a.add(el.value):a.delete(el.value);r.slots=[...a];return}
   if(f==='hard'){r.hard=el.checked;return}

@@ -172,6 +172,7 @@
     slots:   { label: 'הגבלת ימים/משמרות' },
     post:    { label: 'עמדות מותרות בהפסקות' },
     endFree: { label: 'סוף יום — בלי שיעור פרונטלי בשעה שלפני' },
+    reserve: { label: 'עמדה שמורה לאנשים מסוימים' },
     soft:    { label: 'שיקול בשיבוץ' },
     note:    { label: 'הנחיה (לא נאכפת)' }
   };
@@ -183,6 +184,7 @@
     if (r.type === 'note') return 'note:' + r.id;
     if (r.type === 'post') return 'post';
     if (r.type === 'endFree') return 'endFree';
+    if (r.type === 'reserve') return 'reserve:' + r.id;
     return r.type;
   }
   function sig(r) {
@@ -232,6 +234,7 @@
       case 'slots': return (r.mode === 'only' ? 'רק ב: ' : 'לא ב: ') + slotsText(r.slots);
       case 'soft': return 'לשבץ ' + SOFT[r.factor] + ' — חשיבות ' + LEVEL[r.w];
       case 'note': return r.text;
+      case 'reserve': return 'כש' + (r.layer ? 'שכבה ' + r.layer + '׳' : 'כל שכבה') + ' ב' + (r.stations || []).map(id => { const st = DEFAULT_CONFIG.stations.find(x => x.id === id); return st ? st.name.replace(/ \(.*$/, '') : id; }).join(' / ') + ' — רק האנשים שנבחרו';
       case 'endFree': return (r.v === false ? 'בסוף יום — גם מי שמלמד/ת בשעה שלפני' : 'בסוף יום — רק מי שאין לו/ה שיעור פרונטלי בשעה שלפני') + ' (' + (r.shifts || ['e1']).map(x => ({ e1: '12:55 — שעה 6', e2: '13:35 — שעה 7' }[x] || x)).join(', ') + ')';
       case 'post': return (r.soft ? 'בהפסקות — עדיפות ל: ' : 'בהפסקות — רק ב: ') + postText(r);
     }
@@ -312,8 +315,10 @@
   function compile(rules, staff) {
     const P = {};
     staff.forEach(s => {
-      const p = { excluded: false, target: 2, pattern: 'free', stations: 'any', ahmash: 'no', min: {}, max: {}, hardMax: {}, only: [], never: [], why: {}, post: {}, endFree: {}, src: {} };
+      const p = { excluded: false, target: 2, pattern: 'free', stations: 'any', ahmash: 'no', min: {}, max: {}, hardMax: {}, only: [], never: [], why: {}, post: {}, endFree: {}, resBlock: [], src: {} };
       (rules || []).forEach(r => {
+        // עמדה שמורה: מי שלא ברשימה — חסום/ה בעמדות האלה כשהן של השכבה
+        if (r.type === 'reserve') { if (r.on !== false && !((r.who && r.who.ids) || []).includes(s.id)) p.resBlock.push(r); return; }
         if (r.on === false || r.type === 'note' || !matches(r, s)) return;
         switch (r.type) {
           case 'quota': p.target = +r.n; p.src.quota = r.id; break;
@@ -504,6 +509,7 @@
     return false;
   }
   function stationOk(s, p, st, layer, shiftId, day) {
+    if (p.resBlock && p.resBlock.some(r => (r.stations || []).includes(st.id) && (!r.layer || (layer && [...layer].includes(r.layer))) && (!r.shifts || !shiftId || r.shifts.includes(shiftId)))) return false;
     const P = shiftId && p.post && p.post[shiftId];
     if (P && !P.soft) return postMatch(P, st, layer, day) && (!st.ahmash || p.ahmash !== 'no' || (P.stations || []).includes('ahmash'));
     if (p.ahmash === 'only') return !!st.ahmash;
@@ -722,7 +728,7 @@
     const pp = opts && opts.ignoreExcluded ? Object.assign({}, p, { excluded: false, target: Math.max(1, p.target) }) : p;
     const f = formAllows(s, sh, day, pp); if (f) return f;
     const pr = presence(s, sh, day, tt, pp); if (!pr.ok) return pr.why;
-    if (!stationOk(s, pp, st, stationLayer(cfg, st, sh, day), sh.id, day)) return (pp.post && pp.post[sh.id] && !pp.post[sh.id].soft) ? 'לא בעמדה שהמנהל קבע לו/ה (עמודה R)' : 'לא מתאים/ה לעמדה';
+    if (!stationOk(s, pp, st, stationLayer(cfg, st, sh, day), sh.id, day)) return (pp.post && pp.post[sh.id] && !pp.post[sh.id].soft) ? 'לא בעמדה שהמנהל קבע לו/ה (עמודה R)' : (pp.resBlock && pp.resBlock.some(r => (r.stations || []).includes(st.id))) ? 'העמדה שמורה לאנשים מסוימים כשהשכבה שלה ' + (pp.resBlock.find(r => (r.stations || []).includes(st.id)).layer || '') + '׳' : 'לא מתאים/ה לעמדה';
     return null;
   }
   const slotOf = k => { const a = k.split('@'); return a[0] + '@' + a[1]; };
