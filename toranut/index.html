@@ -127,8 +127,11 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 td.cell.merged{background:#eef2f6;color:var(--ink-muted);font-size:12px;cursor:default}
 html.print-yards main>*:not(#yardsCard){display:none!important}
 html.print-yards #yardsCard{padding:0}
+.ymap{margin:14px auto 0;max-width:760px;text-align:center}.ymap img{width:100%;border-radius:10px;border:1px solid var(--line,#ddd)}
 @media print{html.print-yards body{font-size:10px}html.print-yards .yt{font-size:11px;min-width:0}html.print-yards .yt th.yn{min-width:0;width:160px;font-size:11px}html.print-yards .yt td.nm{min-width:0;font-size:11px}html.print-yards .yt td.ly{font-size:12.5px}html.print-yards .yt tr{break-inside:avoid}html.print-yards #yardsCard{break-inside:auto}
  html.print-yards #yardsCard h1{font-size:16px;margin:0 0 4px}html.print-yards .yt th,html.print-yards .yt td{padding:3px 3px}html.print-yards .legend{font-size:12px}
+ html.print-yards .ymap{margin:6px auto 0;max-width:none;break-inside:avoid}html.print-yards .ymap img{width:auto;max-width:100%;max-height:104mm;border-radius:4px}
+ html.print-yards .yt td.nm{font-size:9.5px!important;line-height:1.1}html.print-yards .yt th.yn,html.print-yards .yt td.yn{width:118px!important;font-size:10px!important;line-height:1.15}html.print-yards .yt th,html.print-yards .yt td{padding:1.5px 2px!important}html.print-yards #yardsCard .topbar{margin-bottom:2px}html.print-yards .legend{margin-top:3px!important}html.print-yards .legend span{padding:1px 8px}
  html.print-yards *{-webkit-print-color-adjust:exact;print-color-adjust:exact}html.print-yards .tablewrap{overflow:visible}}
 @media print{nav.rail,.noprint,.toast{display:none!important}main{padding:0}body{background:#fff;font-size:12px}.card{box-shadow:none;padding:0;margin-bottom:12px;break-inside:avoid}
  table.grid{font-size:11px;min-width:0}table.grid thead th{background:#ddd;color:#000}td.cell.empty{background:#fff}td.cell .lk{display:none}}
@@ -625,7 +628,7 @@ function viewYards(){
           '<td class="nm '+c+(stOn&&!A[k]?' empty':'')+'"'+(stOn?' data-act="cell" data-k="'+k+'"':'')+'>'+(stOn?(nm(k)||'חסר'):'<span class="muted">עמדה כבויה</span>')+'</td>'}).join('')+'</tr>';
     });
   });
-  h+='</tbody></table></div><div class="printonly">שיבוץ: '+(S.data.plan.at?stamp(S.data.plan.at):'—')+' · הודפס: '+stamp(Date.now())+'</div><div class="legend" style="margin-top:8px">'+[...LAY].map(l=>'<span class="L-'+l+'">שכבה '+l+'׳</span>').join('')+'<span class="L-multi">כמה שכבות</span></div></div>';
+  h+='</tbody></table></div><div class="printonly">שיבוץ: '+(S.data.plan.at?stamp(S.data.plan.at):'—')+' · הודפס: '+stamp(Date.now())+'</div><div class="legend" style="margin-top:8px">'+[...LAY].map(l=>'<span class="L-'+l+'">שכבה '+l+'׳</span>').join('')+'<span class="L-multi">כמה שכבות</span></div><figure class="ymap"><img src="yards-map.jpg" alt="מפת חצרות בית הספר"></figure></div>';
   return h;
 }
 function yardModal(){
@@ -662,7 +665,7 @@ async function yardsImport(){
   S.data.yards=Y;S.data.plan.stale=true;recompute();await save(true);render();toast('חלוקת החצרות עודכנה מהגיליון ('+n+' שורות)');
 }
 function printYards(){
-  const st=document.createElement('style');st.id='pgYards';st.textContent='@page{size:A4 landscape;margin:7mm}';document.head.appendChild(st);
+  const st=document.createElement('style');st.id='pgYards';st.textContent='@page{size:A4 portrait;margin:7mm}';document.head.appendChild(st);
   document.documentElement.classList.add('print-yards');S.printClean=true;render();   // גם דף המגרשים מודפס בלי נעדרי היום
   const done=()=>{if(!S.printClean)return;S.printClean=false;render();document.documentElement.classList.remove('print-yards');const x=document.getElementById('pgYards');if(x)x.remove();window.removeEventListener('afterprint',done)};
   window.addEventListener('afterprint',done);setTimeout(()=>{window.print();setTimeout(done,1500)},50);
