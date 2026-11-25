@@ -268,6 +268,7 @@ body.loading-class .view{opacity:.35;pointer-events:none;transition:opacity .15s
         <button class="btn" onclick="window.print()">🖨️ הדפסה</button>
         <button class="btn" onclick="printCards()" title="כרטיס לכל תלמיד, עמוד אחרי עמוד">🖨️ כרטיסי כל התלמידים</button>
         <button class="btn" onclick="wordCards()" title="אותם כרטיסים כקובץ וורד, לעריכה לפני ההדפסה">📄 כרטיסים לוורד</button>
+        <button class="btn" onclick="openMyNotes()" title="כל ההערות שכתבת על תלמידי הכיתה, במקום אחד">✎ ההערות שלי</button>
       </div>
     </header>
     <div class="content">
@@ -447,7 +448,10 @@ function rowsFromSheet(all){
   return all.slice(start).filter(r=>/^\d+$/.test(String((r||[])[off]||"").trim())&&String(r[off+1]||"").trim())
     .map(r=>{const o=MK_CANON.map((k,i)=>map[i]>=0?String(r[map[i]]==null?"":r[map[i]]):"");o[0]=String(r[off+2]||"");o[1]=String(r[off]).trim();o[2]=r[off+1];return o});
 }
+/* #59: התלמידים מסודרים לפי השם הרשמי, שמתחיל בשם המשפחה (א"ב), גם כשבגיליון נוספו תלמידים בסוף הרשימה */
+const byName=(a,b)=>String(a||"").trim().localeCompare(String(b||"").trim(),"he");
 function load(rows,cls,teacher){
+  rows=[...rows].sort((a,b)=>byName(a[2],b[2]));
   STATE.rows=rows.map((r,i)=>buildStudent(r,i));STATE.cls=cls;STATE.teacher=teacher;STATE.filter=null;qLoad();window._meOpen=0;
   document.getElementById("ttl").textContent="מפת כיתה "+cls;
   document.getElementById("demoTag").innerHTML=window._isDemo?'<span class="demo">⚠ כיתת דוגמה — שמות ונתונים בדויים. טענו את קובץ הכיתה שלכם כדי לראות אותה.</span>':"";
@@ -663,7 +667,7 @@ function printCard(s){
 }
 /* כרטיסים כקובץ וורד לעריכה: אותו תוכן כמו בהדפסה, עמוד A5 לכל תלמיד (בלי תמונות) */
 function wordCards(one){
-  const L=one!=null?[STATE.rows[one]]:[...STATE.rows].sort((a,b)=>(+a.num||0)-(+b.num||0));
+  const L=one!=null?[STATE.rows[one]]:[...STATE.rows].sort((a,b)=>byName(a.name,b.name));
   const css=[...document.styleSheets].flatMap(sh=>{try{return [...sh.cssRules]}catch(e){return []}}).filter(r=>r.selectorText&&/\.pc|\.pcard/.test(r.selectorText)).map(r=>r.cssText).join("\n");
   const body=L.map(printCard).map(h=>h.replace(/<img[^>]*>/g,"")).join("<br clear=all style='page-break-before:always'>");
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40" dir="rtl" lang="he"><head><meta charset="utf-8"><title>כרטיסי תלמידים</title>
@@ -680,7 +684,7 @@ ${css}
 /* הדפסת כרטיסי כל התלמידים בכיתה, לפי מספר התלמיד. בשחור־לבן המצב כתוב במילים, לא רק בצבע. */
 function printCards(){
   const box=document.getElementById("printCards");
-  const L=[...STATE.rows].sort((a,b)=>(+a.num||0)-(+b.num||0));
+  const L=[...STATE.rows].sort((a,b)=>byName(a.name,b.name));
   box.innerHTML=L.map(printCard).join("");
   const pg=document.createElement("style");pg.id="pcPage";pg.textContent="@page{size:A5 portrait;margin:9mm}";document.head.appendChild(pg);
   // כרטיס ארוך מדי לעמוד A5 מוקטן מעט, כדי שכל תלמיד יישאר בעמוד אחד
@@ -958,6 +962,16 @@ async function doLogin(phone,pin,silent){
 function showGate(){document.getElementById("gate").hidden=false;gateStep("phone")}
 function logout(){ses(null);location.reload()}
 /* "בנעליים של" מתוך מפת הכיתה (מנהל המערכת בלבד). המצב עצמו מנוהל ב-as/as.js, כמו בלוח ההנהלה */
+/* #60: סיכום ההערות האישיות שלי בכיתה — רק את/ה רואה; העתקה או הדפסה */
+function myNotesList(){return [...STATE.rows].sort((a,b)=>byName(a.name,b.name)).filter(s=>(NOTES[s.name]||"").trim())}
+function myNotesText(){return "ההערות שלי · "+STATE.cls+"\n\n"+myNotesList().map(s=>s.name+"\n"+NOTES[s.name].trim()).join("\n\n")}
+function openMyNotes(){const L=myNotesList();
+  document.getElementById("modal").innerHTML=`<div class="mh"><div><h3>ההערות שלי · ${esc(STATE.cls)}</h3><div style="opacity:.8;font-size:13px">${L.length?L.length+" תלמידים עם הערה. רק את/ה רואה את ההערות האלה.":"עוד לא כתבת הערות בכיתה הזאת."}</div></div><div class="nav2"><button onclick="closeS()" aria-label="סגירה">✕</button></div></div>
+   <div style="padding:16px 20px">${L.length?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><button class="btn" onclick="navigator.clipboard.writeText(myNotesText()).then(()=>{this.textContent='✓ הועתק'})">📋 העתקה</button><button class="btn" onclick="printMyNotes()">🖨️ הדפסה</button></div>`+
+     L.map(s=>`<div style="border-bottom:1px solid var(--line);padding:10px 0"><button class="linkish" style="font-weight:700;background:none;border:0;padding:0;cursor:pointer;color:inherit;font-size:16px" onclick="closeS();openS(${s.i})">${esc(s.name)}</button><div style="white-space:pre-wrap;margin-top:4px">${esc(NOTES[s.name])}</div></div>`).join(""):'<p class="hint">ההערות נכתבות בכרטיס של כל תלמיד, בתיבה "✎ ההערות שלי".</p>'}</div>`;
+  document.getElementById("ov").classList.add("on")}
+function printMyNotes(){const w=window.open("","_blank");if(!w){alert("הדפדפן חסם חלון חדש. אפשר להשתמש בהעתקה.");return}
+  w.document.write(`<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8"><title>ההערות שלי · ${esc(STATE.cls)}</title><style>body{font-family:Arial,sans-serif;margin:16mm;font-size:13pt;line-height:1.5}h1{font-size:18pt}h2{font-size:14pt;margin:14px 0 2px}p{white-space:pre-wrap;margin:0 0 8px}</style></head><body><h1>ההערות שלי · ${esc(STATE.cls)}</h1>${myNotesList().map(s=>`<h2>${esc(s.name)}</h2><p>${esc(NOTES[s.name])}</p>`).join("")}<script>onload=()=>{print()}<\/script></body></html>`);w.document.close()}
 let AS_LIST=null;
 async function openAs(){
   document.getElementById("modal").innerHTML=`<div class="mh"><div><h3>בנעליים של…</h3><div style="opacity:.8;font-size:13px">המפה תיפתח בדיוק כמו אצל איש הצוות. צפייה בלבד, שום שינוי לא נשמר.</div></div><div class="nav2"><button onclick="closeS()" aria-label="סגירה">✕</button></div></div>
