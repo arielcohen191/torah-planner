@@ -332,9 +332,9 @@ function mineHtml(){
       (!it.started&&!it.ended&&ev.can_cancel?'<div class="row noprint"><a class="link" href="'+esc(gcalLink(it,ev))+'" target="_blank" rel="noopener">ליומן גוגל</a><button class="link" data-act="ics" data-id="'+it.id+'">ליומן בטלפון</button><button class="link" style="color:var(--red)" data-act="pcancel" data-id="'+it.id+'" data-tok="'+esc(it.ptoken)+'">ביטול הפגישה</button></div>':'')+'</div>'});
   return '<section style="display:flex;flex-direction:column;gap:10px"><h2>הפגישות שלי</h2>'+(isDay?'<div class="small muted">הדף מתעדכן לבד כל חצי דקה.</div>':'')+cards.join('')+'</section>';
 }
-function bubbles(){const d=P.data;if(!d||!d.subject||!d.subject.length)return '';
+function bubbles(){const d=P.data;if(!d||!d.subject)return '';const sub=d.subject.filter(t=>!t.only||(P.stu&&t.only.includes(P.stu)));if(!sub.length)return '';
   return '<section class="card box subj"><h2 style="font-size:19px">רוצים להיפגש גם עם המורים המקצועיים?</h2><div class="small muted">לחצו על מורה כדי לקבוע אצלו/ה. הפרטים שכתבתם יישמרו.</div><div class="bubs">'+
-    d.subject.map(t=>'<a class="bub" data-act="bub" href="'+esc(location.pathname+'?t='+t.token+'&c='+encodeURIComponent(d.cls)+(P.stu?'&s='+encodeURIComponent(P.stu):''))+'">'+av(tName(t.name))+'<span><b>'+esc(tName(t.name))+'</b><span class="small muted">'+(t.free?t.free+' שעות פנויות':'אין שעות פנויות')+'</span></span></a>').join('')+'</div></section>'}
+    sub.map(t=>'<a class="bub" data-act="bub" href="'+esc(location.pathname+'?t='+t.token+'&c='+encodeURIComponent(d.cls)+(P.stu?'&s='+encodeURIComponent(P.stu):''))+'">'+av(tName(t.name))+'<span><b>'+esc(tName(t.name))+'</b>'+(t.only?'<span class="small" style="font-weight:700;color:var(--brand-dark)">'+(t.gender==='f'?'מורת':'מורה')+' השילוב של '+esc(P.stu.split(' ').slice(1).join(' ')||P.stu)+'</span>':'')+'<span class="small muted">'+(t.free?t.free+' שעות פנויות':'אין שעות פנויות')+'</span></span></a>').join('')+'</div></section>'}
 function renderParent(){
   if(!P.tok&&!P.ttok){root.innerHTML=parentShell(P.mine&&P.mine.items.length?mineHtml():'<div class="card box">לא נמצאו פגישות בקישור הזה.</div>');return}
   if(P.ttok&&!P.data){const td=P.tdata;
@@ -571,7 +571,7 @@ function printDiary(){
   window.addEventListener('afterprint',done);print();
 }
 function notBookedFor(tid){const d=S.d,p=d.P[tid];if(!p)return[];const have=new Set((d.byT[tid]||[]).filter(s=>s.b).map(s=>s.b.cls+'|'+s.b.stu));const out=[];
-  p.classes.forEach(c=>{const C=d.C[c];if(C)C.students.forEach(n=>{if(!have.has(c+'|'+n))out.push({cls:c,stu:n})})});return out}
+  p.classes.forEach(c=>{const C=d.C[c];if(C)(p.only?(p.only[c]||[]):C.students).forEach(n=>{if(!have.has(c+'|'+n))out.push({cls:c,stu:n})})});return out}
 function kpi(cls,title,sub,n,go){return '<button type="button" class="kpi '+cls+'" data-act="kpi" data-k="'+go+'"><div><b>'+title+'</b><span>'+sub+'</span><span class="go">הצג ←</span></div><span class="n">'+n+'</span></button>'}
 const canNote=s=>S.d.admin||s.tid===S.d.tid;
 const noteLine=b=>b.note?'<div class="nt"><b>הערה:</b> '+esc(b.note)+'</div>':'';
