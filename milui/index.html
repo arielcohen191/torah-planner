@@ -369,7 +369,10 @@ function msgFor(date,tid){
   const mine=S.data.assignments.filter(x=>x.date===date&&x.substitute_id===tid&&x.status==='assigned').map(x=>S.data.SL[x.slot_id]).filter(Boolean).sort((a,b)=>a.hour-b.hour);
   const lines=mine.map(s=>'שעה '+s.hour+' · '+(s.subject||'שיעור')+' · כיתה '+s.classes.map(cls).join(', ')+'\n(במקום '+T[s.tid].name+')');
   const when=date===today()?'היום, יום '+DAYS[dow(date)]+' '+short(date):'ביום '+DAYS[dow(date)]+' '+short(date);
-  return greet(T[tid].name)+',\nתודה שהסכמת למלא מקום '+when+':\n'+lines.join('\n')+'\nתודה רבה!';
+  const how=mine.map(s=>{const org=String(T[s.tid].name).replace(/^הרב\s+/,'').replace(/`/g,"'");
+    return '• שעה '+s.hour+': '+org+', '+(s.subject||'')+', '+s.classes.join(', ')});
+  return greet(T[tid].name)+',\nתודה שהסכמת למלא מקום '+when+':\n'+lines.join('\n')+
+    '\n\n📲 לדיווח נוכחות בוובטופ / סמארטסקול:\nבשעת השיעור לחצו על ⋮ (באתר: ➕) ← הוספת שיעור ← סוג האירוע: מילוי מקום ← בחרו את המורה ואת הקבוצה:\n'+how.join('\n')+'\n← שמירה.\n\nתודה רבה!';
 }
 function intlPhone(p){let d=String(p||'').replace(/\D/g,'');if(d.startsWith('0'))d='972'+d.slice(1);return d}
 const ORD=['','הראשונה','השנייה','השלישית','הרביעית','החמישית','השישית','השביעית','השמינית','התשיעית','העשירית'];
