@@ -257,11 +257,11 @@ function render(){
   if(!ME)return;
   if(!state.ther&&therapists[0])state.ther=therapists[0].id;
   if(!state.room&&rooms[0])state.room=rooms[0].id;
-  const v={home,cuts:cutsView,gaps:gapsView,students:studentsView,ther:therView,sched:schedView,rooms:roomsView}[state.tab]||home;
+  const v={home,cuts:cutsView,gaps:gapsView,students:studentsView,ther:therView,prov:provView,sched:schedView,rooms:roomsView}[state.tab]||home;
   document.getElementById('app').innerHTML=
    `<div class="app"><nav class="rail" aria-label="תפריט ראשי"><div class="brand" role="link" tabindex="0" title="לדף הראשי" onclick="location.href='/hanhala/'"><img src="/icons/kanfei-ruach-logo.png" alt="כנפי רוח" class="klogo"><span class="ktxt">כלי השילוב</span></div>
     <button type="button" title="לדף הראשי" onclick="location.href='/hanhala/'">${ICON.main}ראשי</button>
-    ${TABS.map(([k,n])=>`<button type="button" ${state.tab===k?'aria-current="page"':''} onclick="go('${k}')">${ICON[k]}${n}</button>`).join('')}
+    ${TABS.map(([k,n])=>`<button type="button" ${state.tab===k||(k==='ther'&&state.tab==='prov')?'aria-current="page"':''} onclick="go('${k}')">${ICON[k]}${n}</button>`).join('')}
     <div class="spacer"></div><button type="button" onclick="window.KFB&&KFB.mine()">${ICON.fb}פניות המשוב שלי</button>
     <div class="who">${esc(ME.name)}<br><a href="/hanhala/">ללוח ההנהלה</a><br><button class="lk" onclick="logout()">יציאה</button></div></nav>
    <main>${ME.ro?'<div class="note">מצב "בנעליים של" — צפייה בלבד.</div>':''}${v()}<div class="credit">${LOGO}<span>כלי השילוב · כנפי רוח · נבנה על ידי אריאל כהן</span></div></main></div>`;
@@ -373,12 +373,44 @@ function absBadge(t){if(!t.absence)return '';const a=t.absence,on=absent(t);
   return `<div class="note" style="${on?'':'background:#efece6;color:var(--mute)'}">${on?'🕓 ':''}${esc(a.reason)}: ${heb(a.from)} – ${a.to?heb(a.to):'לא ידוע'}<br>${a.sub?'מחליף/ה: <b>'+esc(a.sub)+'</b>':'<b>אין מחליף</b> — המענים מושהים'}</div>`}
 function therView(){
   return topbar()+`<div class="grid ther">`+therapists.map(t=>{const l=load_(t),p=t.cap?Math.min(100,l/t.cap*100):0,ov=t.cap&&l>t.cap;
-    return `<div class="card tcard ${absent(t)?'away':''}"><div onclick="go('sched',{ther:'${t.id}'})">
+    return `<div class="card tcard ${absent(t)?'away':''}"><div onclick="go('prov',{ther:'${t.id}'})" title="לדף של ${esc(t.name)}">
       <h3>${esc(t.name)}</h3><div class="meta">${esc(t.role||TYPES[t.type].n)} · ${RM(t.room)?esc(RM(t.room).name):'בלי חדר'}</div>
       <div class="meta">ימים: ${t.days.map(d=>DAYS[d]).join(', ')||'—'}</div>
       <div class="row" style="margin:8px 0 0"><div class="bar" style="flex:1"><i class="${ov?'over':''}" style="width:${p}%"></i></div><b>${l}/${t.cap?fmt(t.cap):'?'}</b></div>
       <div class="legend">שעות משובצות מתוך התקן${t.ind?` · ${t.ind} פרטניות`:''}</div>${t.note?`<div class="note">${esc(t.note)}</div>`:''}${absBadge(t)}</div>
-      ${ME.ro?'':`<button class="btng sm" onclick="absModal('${t.id}')">${t.absence?'עריכת היעדרות':'+ היעדרות ממושכת'}</button>`}</div>`}).join('')+`</div>`;
+      <div class="tools" style="margin-top:10px"><button class="btnp sm" onclick="go('prov',{ther:'${t.id}'})">התלמידים (${provStudents(t).length}) ←</button>${ME.ro?'':`<button class="btng sm" style="margin:0" onclick="absModal('${t.id}')">${t.absence?'עריכת היעדרות':'+ היעדרות ממושכת'}</button>`}</div></div>`}).join('')+`</div>`;
+}
+
+// ===== הדף של מטפל/ת או מורה שילוב: כל התלמידים מכל הכיתות =====
+function provStudents(t){const ids=new Set();sessions.filter(x=>x.t===t.id).forEach(x=>x.stu.forEach(i=>ids.add(i)));return [...ids].map(i=>SBY[i]).filter(Boolean)}
+function provView(){
+  const t=T(state.ther);if(!t||!t.id)return topbar()+'<div class="card">לא נמצא.</div>';
+  const X=sessions.filter(x=>x.t===t.id),studs=provStudents(t).sort((a,b)=>cmpHe(a.cls,b.cls)||cmpHe(a.name,b.name));
+  const hid=X.reduce((a,x)=>a+(x.hidden||0),0),cls=[...new Set(studs.map(s=>s.cls))].sort(cmpHe);
+  const ty=t.type,tn=(TYPES[ty]||{}).n||'';
+  const waiting=NEED_TYPES.includes(ty)?students.filter(s=>missing(s,ty)>0&&!studs.includes(s)).sort((a,b)=>missing(b,ty)-missing(a,ty)):[];
+  const heldW=X.filter(x=>attOf(x,WEEKS[2])===true).length,noTime=X.filter(x=>x.d==null).length;
+  const when=x=>x.d==null?'<span class="chip c-part">בלי שעה</span>':`${DAYS[x.d]} · שעה ${x.h}`;
+  let h=`<header class="card topbar"><div><h1>${esc(t.name)}</h1><div class="muted">${esc(t.role||tn)} · ${RM(t.room)?esc(RM(t.room).name):'בלי חדר קבוע'} · ימים: ${t.days.map(d=>DAYS[d]).join(', ')||'—'}</div></div>
+    <div class="tools"><button class="btng sm" onclick="go('ther')">→ כל המטפלים</button><button class="btnp sm" onclick="go('sched',{ther:'${t.id}'})">למערכת השבועית</button><button class="btng sm" onclick="window.print()">הדפסה</button></div></header>
+    ${absent(t)?absBadge(t):''}
+    <div class="kpis">
+    ${kpi('k-blue',studs.length+(hid?`<small style="font-size:22px">+${hid}</small>`:''),'תלמידים',cls.length?'מ־'+cls.length+' כיתות: '+cls.join(', '):'עוד אין תלמידים',"document.getElementById('provList').scrollIntoView({behavior:'smooth'})")}
+    ${kpi(t.cap&&X.length>t.cap?'k-red':'k-green',`${X.length}<small style="font-size:22px">/${t.cap?fmt(t.cap):'?'}</small>`,'שעות משובצות','מתוך התקן',`go('sched',{ther:'${t.id}'})`)}
+    ${kpi(noTime?'k-orange':'k-gray',noTime,'מענים בלי שעה',noTime?'מחכים לשיבוץ במערכת':'הכול משובץ',`go('sched',{ther:'${t.id}'})`)}
+    </div>
+    <div class="card" id="provList"><h2 style="margin:0 0 6px">התלמידים של ${esc(t.name.split(' ')[0])}</h2>`;
+  if(!studs.length)h+=`<p class="legend">עוד לא שובצו תלמידים אצל ${esc(t.name)}.</p>`;
+  else{h+=`<table><tr><th>תלמיד</th><th>כיתה</th><th>מתי</th><th>סוג</th><th>עם מי</th><th>${tn?esc(tn)+' — שובץ/פולח':''}</th><th>התקיים בשבוע ${heb(WEEKS[2])}</th></tr>`;
+    studs.forEach(s=>{const my=X.filter(x=>x.stu.includes(s.id));
+      my.forEach((x,i)=>{h+=`<tr class="click" onclick="openSession(${x.id})"><td>${i?'':`<b><a href="#" onclick="event.stopPropagation();openStudent(${s.id});return false">${esc(s.name)}</a></b>`}</td><td>${i?'':esc(s.cls)}</td><td>${when(x)}${x.room&&x.room!==t.room&&RM(x.room)?' <span class="meta">· '+esc(RM(x.room).name)+'</span>':''}</td><td>${esc(x.mode)}${!counts(x)?' <span class="chip c-part">מושהה</span>':''}</td>
+        <td class="meta">${esc(x.stu.filter(n=>n!==s.id).map(nm).join(', '))}${x.hidden?(x.stu.length>1?', ':'')+'+'+x.hidden+' משכבות אחרות':''}</td><td>${i?'':(NEED_TYPES.includes(ty)?statusChip(s,ty):'')}</td><td>${x.d==null?'—':attMark(x,WEEKS[2])}</td></tr>`})});
+    h+=`</table>`}
+  if(hid)h+=`<p class="legend">עוד ${hid} תלמידים אצל ${esc(t.name)} שייכים לשכבות שלא פתוחות לך.</p>`;
+  h+=`</div>`;
+  if(waiting.length)h+=`<div class="card"><h2 style="margin:0 0 6px">מגיע להם ${esc(tn)} ועוד לא אצל ${esc(t.name.split(' ')[0])}</h2><p class="legend">לחיצה פותחת את כרטיס התלמיד. כדי לשבץ — במערכת השבועית לוחצים על משבצת ריקה.</p>`+
+    waiting.map(s=>`<span class="chip btn" onclick="openStudent(${s.id})">${esc(s.name)} · ${esc(s.cls)} · חסרות ${fmt(missing(s,ty))}</span>`).join('')+`</div>`;
+  return h;
 }
 
 // ===== היעדרות ממושכת =====
