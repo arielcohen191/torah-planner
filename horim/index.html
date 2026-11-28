@@ -178,6 +178,7 @@ td:first-child{border-radius:0 var(--r-sm) var(--r-sm) 0}td:last-child{border-ra
  .grid2{grid-template-columns:1fr}
 }
 @media print{nav.rail,.acts,.noprint,.kfb-btn{display:none!important}main{padding:0}}
+.mklink{color:inherit;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:4px}.mklink:hover{color:var(--brand-dark)}
 #psheet{display:none}
 @media print{@page{size:A4;margin:12mm}body.psm>*:not(#psheet){display:none!important}body.psm #psheet{display:block}}
 #psheet h1{font-size:18pt;margin:0 0 2mm}#psheet .ps-sub{font-size:10pt;color:#444;margin-bottom:4mm}
@@ -573,6 +574,8 @@ function printDiary(){
 function notBookedFor(tid){const d=S.d,p=d.P[tid];if(!p)return[];const have=new Set((d.byT[tid]||[]).filter(s=>s.b).map(s=>s.b.cls+'|'+s.b.stu));const out=[];
   p.classes.forEach(c=>{const C=d.C[c];if(C)(p.only?(p.only[c]||[]):C.students).forEach(n=>{if(!have.has(c+'|'+n))out.push({cls:c,stu:n})})});return out}
 function kpi(cls,title,sub,n,go){return '<button type="button" class="kpi '+cls+'" data-act="kpi" data-k="'+go+'"><div><b>'+title+'</b><span>'+sub+'</span><span class="go">הצג ←</span></div><span class="n">'+n+'</span></button>'}
+/* שם התלמיד → הכרטיס שלו במפת הכיתה (לשונית אחת שמתחלפת) */
+const stuA=b=>'<a class="mklink" href="/mapat-kita/#stu='+encodeURIComponent((b.cls||'')+'|'+(b.stu||''))+'" target="kr_mapa" title="הכרטיס של '+esc(b.stu)+' במפת הכיתה">'+esc(b.stu)+'</a>';
 const canNote=s=>S.d.admin||s.tid===S.d.tid;
 const noteLine=b=>b.note?'<div class="nt"><b>הערה:</b> '+esc(b.note)+'</div>':'';
 const noteBtn=(s,b)=>canNote(s)?'<button class="btn sec xs noprint" data-act="note" data-id="'+b.id+'">'+(b.note?'עריכת הערה':'הערה')+'</button>':'';
@@ -583,7 +586,7 @@ function slotRow(s){
   const st=b.no_show?'<span class="tag r">לא הגיע</span>':b.ended?'<span class="tag g">הסתיים</span>':b.started?'<span class="tag o">בפגישה</span>':'';
   const wa=b.phone?'https://wa.me/'+intlPhone(b.phone)+'?text='+encodeURIComponent(reminderText(s,b)):null;
   const sepN=S.d.slots.filter(y=>y.b&&y.tid===s.tid&&y.b.stu===b.stu&&y.b.cls===b.cls).length;
-  return '<div class="slot taken"><span class="tm">'+s.t+'</span><div class="who"><b>'+esc(b.stu)+' <span class="small muted">· '+esc(b.cls)+'</span></b><span class="small muted">'+esc(b.parent)+(b.phone?' · <a href="tel:'+esc(b.phone)+'">'+esc(b.phone)+'</a>':'')+(b.by_staff?' · שובץ ע"י '+esc(b.by_staff):'')+'</span></div>'+(sepN>1?'<span class="tag b" title="לתלמיד הזה שתי פגישות אצלך: כל הורה בנפרד">פגישה נפרדת</span>':'')+st+
+  return '<div class="slot taken"><span class="tm">'+s.t+'</span><div class="who"><b>'+stuA(b)+' <span class="small muted">· '+esc(b.cls)+'</span></b><span class="small muted">'+esc(b.parent)+(b.phone?' · <a href="tel:'+esc(b.phone)+'">'+esc(b.phone)+'</a>':'')+(b.by_staff?' · שובץ ע"י '+esc(b.by_staff):'')+'</span></div>'+(sepN>1?'<span class="tag b" title="לתלמיד הזה שתי פגישות אצלך: כל הורה בנפרד">פגישה נפרדת</span>':'')+st+
     '<div class="acts">'+(wa?'<a class="btn wa xs" target="_blank" rel="noopener" href="'+esc(wa)+'"'+(b.consent?'':' title="ההורה לא אישר תזכורות"')+'>תזכורת בוואטסאפ</a>':'')+
     noteBtn(s,b)+'<button class="btn sec xs" data-act="move" data-id="'+b.id+'" data-tid="'+s.tid+'">הזזה</button><button class="btn bad xs" data-act="scancel" data-id="'+b.id+'">ביטול</button></div>'+noteLine(b)+'</div>';
 }
@@ -618,19 +621,19 @@ function viewLive(){
   if(!isDay)h+='<div class="info">המסך הזה נועד ליום ההורים עצמו ('+esc(longDate(S.dday))+'). אפשר לנסות אותו כבר עכשיו. ההורים רואים את העדכונים בקישור האישי שלהם.</div>';
   if(p.no_live){const nm=new Date(),nowM=nm.getHours()*60+nm.getMinutes();
     const live=sl.filter(s=>!s.b.no_show),curC=isDay?live.find(s=>mins(s.t)<=nowM&&nowM<mins(s.t)+L):null,nxt=live.filter(s=>!isDay||mins(s.t)>nowM);
-    h+='<section class="card box" style="border-right:6px solid var(--orange)"><div class="row" style="justify-content:space-between"><div class="muted">לפי השעון</div>'+(curC?lvTimer(curC.b.id,new Date((S.dday||d.event.day)+'T'+curC.t+':00').getTime(),L):'')+'</div>'+(curC?'<h2 style="font-size:26px">עכשיו: '+esc(curC.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(curC.b.cls)+' · '+curC.t+'</span></h2><div>'+esc(curC.b.parent)+'</div>':'<div>אין פגישה בשעה הזו.</div>')+
-      (nxt.length?'<div class="small" style="margin-top:8px">הבא: <b>'+esc(nxt[0].b.stu)+'</b> ב־'+nxt[0].t+'</div>':'')+
+    h+='<section class="card box" style="border-right:6px solid var(--orange)"><div class="row" style="justify-content:space-between"><div class="muted">לפי השעון</div>'+(curC?lvTimer(curC.b.id,new Date((S.dday||d.event.day)+'T'+curC.t+':00').getTime(),L):'')+'</div>'+(curC?'<h2 style="font-size:26px">עכשיו: '+stuA(curC.b)+' <span class="muted" style="font-size:18px">· '+esc(curC.b.cls)+' · '+curC.t+'</span></h2><div>'+esc(curC.b.parent)+'</div>':'<div>אין פגישה בשעה הזו.</div>')+
+      (nxt.length?'<div class="small" style="margin-top:8px">הבא: <b>'+stuA(nxt[0].b)+'</b> ב־'+nxt[0].t+'</div>':'')+
       (curC&&canNote(curC)?'<button class="btn sec sm" data-act="note" data-id="'+curC.b.id+'" style="margin-top:8px">הערה לפגישה</button>':'')+'</section>';
-    h+='<section class="card box"><h2>כל הפגישות</h2><div class="slots">'+sl.map(s=>{const b=s.b;return '<div class="slot taken"><span class="tm">'+s.t+'</span><div class="who"><b>'+esc(b.stu)+'</b><span class="small muted">'+esc(b.cls)+' · '+esc(b.parent)+'</span></div><div class="acts">'+noteBtn(s,b)+'</div>'+noteLine(b)+'</div>'}).join('')+'</div></section>';
+    h+='<section class="card box"><h2>כל הפגישות</h2><div class="slots">'+sl.map(s=>{const b=s.b;return '<div class="slot taken"><span class="tm">'+s.t+'</span><div class="who"><b>'+stuA(b)+'</b><span class="small muted">'+esc(b.cls)+' · '+esc(b.parent)+'</span></div><div class="acts">'+noteBtn(s,b)+'</div>'+noteLine(b)+'</div>'}).join('')+'</div></section>';
     return h}
   h+='<div class="'+(li.delay>=5?'warn':'info')+'">'+(li.delay>=3?'את/ה מאחר/ת בכ־<b>'+li.delay+' דקות</b>. ההורים רואים זמן כניסה משוער מעודכן.':'את/ה בזמן.')+'</div>';
-  if(cur)h+='<section class="card box" style="border-right:6px solid var(--orange)"><div class="row" style="justify-content:space-between"><div class="muted">עכשיו בפגישה</div>'+lvTimer(cur.b.id,new Date(cur.b.started).getTime(),L)+'</div><h2 style="font-size:26px">'+esc(cur.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(cur.b.cls)+' · '+cur.t+'</span></h2><div>'+esc(cur.b.parent)+'</div>'+(canNote(cur)?'<label class="f">הערות מהפגישה<textarea id="lnote" data-id="'+cur.b.id+'" maxlength="2000" placeholder="מה סוכם, מה חשוב לזכור. ההורים לא רואים את זה.">'+esc(S.lnote&&S.lnote.id===cur.b.id?S.lnote.v:cur.b.note||'')+'</textarea></label>':'')+
+  if(cur)h+='<section class="card box" style="border-right:6px solid var(--orange)"><div class="row" style="justify-content:space-between"><div class="muted">עכשיו בפגישה</div>'+lvTimer(cur.b.id,new Date(cur.b.started).getTime(),L)+'</div><h2 style="font-size:26px">'+stuA(cur.b)+' <span class="muted" style="font-size:18px">· '+esc(cur.b.cls)+' · '+cur.t+'</span></h2><div>'+esc(cur.b.parent)+'</div>'+(canNote(cur)?'<label class="f">הערות מהפגישה<textarea id="lnote" data-id="'+cur.b.id+'" maxlength="2000" placeholder="מה סוכם, מה חשוב לזכור. ההורים לא רואים את זה.">'+esc(S.lnote&&S.lnote.id===cur.b.id?S.lnote.v:cur.b.note||'')+'</textarea></label>':'')+
     '<button class="btn ok wide" data-act="live" data-id="'+cur.b.id+'" data-a="end">'+(canNote(cur)?'סיימתי · שמירת ההערות':'סיימתי')+'</button></section>';
-  if(next.length){const n=next[0];h+='<section class="card box"><div class="muted">'+(cur?'הבא בתור':'הראשון בתור')+'</div><h2 style="font-size:24px">'+esc(n.b.stu)+' <span class="muted" style="font-size:18px">· '+esc(n.b.cls)+' · '+n.t+'</span></h2><div>'+esc(n.b.parent)+'</div>'+
+  if(next.length){const n=next[0];h+='<section class="card box"><div class="muted">'+(cur?'הבא בתור':'הראשון בתור')+'</div><h2 style="font-size:24px">'+stuA(n.b)+' <span class="muted" style="font-size:18px">· '+esc(n.b.cls)+' · '+n.t+'</span></h2><div>'+esc(n.b.parent)+'</div>'+
     '<div class="grid2"><button class="btn wide" data-act="live" data-id="'+n.b.id+'" data-a="start">ההורה נכנס · התחלתי</button><button class="btn sec wide" data-act="live" data-id="'+n.b.id+'" data-a="noshow">לא הגיע</button></div></section>'}
   if(!cur&&!next.length)h+='<div class="okbox">'+(sl.length?'סיימת את כל הפגישות. תודה!':'אין פגישות שנקבעו.')+'</div>';
   h+='<section class="card box"><h2>כל הפגישות</h2><div class="slots">'+sl.map(s=>{const b=s.b;const c=b.no_show?'ns':b.ended?'done':b.started?'now':'taken';
-    return '<div class="slot '+c+'"><span class="tm">'+s.t+'</span><div class="who"><b>'+esc(b.stu)+'</b><span class="small muted">'+esc(b.cls)+' · '+esc(b.parent)+'</span></div><div class="acts">'+
+    return '<div class="slot '+c+'"><span class="tm">'+s.t+'</span><div class="who"><b>'+stuA(b)+'</b><span class="small muted">'+esc(b.cls)+' · '+esc(b.parent)+'</span></div><div class="acts">'+
       (b.ended||b.no_show?'<span class="tag '+(b.no_show?'r':'g')+'">'+(b.no_show?'לא הגיע':'הסתיים')+'</span><button class="link" data-act="live" data-id="'+b.id+'" data-a="reset">החזרה לתור</button>':b.started?'<button class="btn ok xs" data-act="live" data-id="'+b.id+'" data-a="end">סיימתי</button>':'<button class="btn sec xs" data-act="live" data-id="'+b.id+'" data-a="start">התחלתי</button>')+noteBtn(s,b)+
       '</div>'+noteLine(b)+'</div>'}).join('')+'</div></section>';
   return h;

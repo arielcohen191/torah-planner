@@ -1413,6 +1413,16 @@ document.addEventListener("keydown",e=>{if(SQ_OPEN&&e.key=="Escape")closeS()});
   if(m&&USER&&USER.role==="principal"){try{window._sqWant=decodeURIComponent(m[1])}catch(e){}history.replaceState(null,"",location.pathname);setTimeout(()=>go("me"),0)}
   return r}}
 
+/* קישור ישיר מיום ההורים: /mapat-kita/#stu=כיתה|שם — פותח את הכיתה ואת הכרטיס של התלמיד (אחרי כניסה עם הקוד האישי) */
+const _swk=n=>String(n||"").replace(/[^א-תa-zA-Z0-9\s]/g,"").trim().split(/\s+/).sort().join(" ");
+async function openStuLink(){const m=/^#stu=(.+)$/.exec(location.hash);if(!m||!USER)return;let v="";try{v=decodeURIComponent(m[1])}catch(e){return}
+  history.replaceState(null,"",location.pathname);const k=v.indexOf("|"),cls=v.slice(0,k),name=v.slice(k+1);if(!cls)return;
+  if(STATE.cls!==cls||CUR_CLASS!==cls)await openClass(cls);
+  const want=_swk(name),i=STATE.rows.findIndex(r=>_swk(r.name)===want);
+  if(i>=0)openS(i);else{const t=document.getElementById("subttl");if(t)t.textContent="לא מצאתי את "+name+" במפה של "+cls+(STATE.view==="shiluv"?" (מוצגים רק התלמידים שבחרת)":"")}}
+{const _al=afterLogin;afterLogin=function(){const r=_al.apply(this,arguments);if(/^#stu=/.test(location.hash))setTimeout(openStuLink,0);return r}}
+window.addEventListener("hashchange",()=>{if(/^#stu=/.test(location.hash))openStuLink()});
+
 // ================= תמונות תלמידים בכרטיס האישי (משוב #19) =================
 // מעלים: מחנך הכיתה וההנהלה. התמונה מוקטנת בדפדפן ל־240×240 לפני השליחה.
 let PHOTOS={},PH_EDIT=false,PH_MSG="";
